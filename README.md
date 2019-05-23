@@ -12,7 +12,6 @@ BittyTax comprises of 3 different tools.
 3. `bittytax_price` - lookup historic price data for cryptoassets and foreign currencies (see [Price Tool](#price-tool))
 
 ## Disclaimer
-
 This software is copyright (c) Nano Nano Ltd, and licensed for use under the AGPLv3 License, see [LICENSE](LICENSE) file for details.
 
 Nano Nano Ltd does not provide tax, legal, accounting or financial advice. This software and its content are provided for information only, and as such should not be relied upon for tax, legal, accounting or financial advice.
@@ -24,8 +23,7 @@ This software is provided 'as is', Nano Nano Ltd does not give any warranties of
 ## Getting Started
 
 ### Prerequisites
-
-You need to have Python 2.7 or 3.x installed on your machine before you can install BittyTax. MacOS and most Linux distributions already come with Python pre-installated.
+You need to have Python 2.7 or 3.x installed on your machine before you can install BittyTax. MacOS and most Linux distributions already come with Python pre-installed.
 
 If you need to install Python we recommend you install Python 3.x, see https://wiki.python.org/moin/BeginnersGuide/Download for instructions.
 
@@ -72,7 +70,7 @@ The file should be in CSV (comma-separated values) format and each row should co
 
 The transaction Type dictates which fields in the row are required, either (M)andatory or (O)ptional.   
 
-| Type | Buy Quantity | Buy Asset | Buy Value | Sell Quantity | Sell Asset | Sell Value | Fee Quantity | Fee Asset | Fee Value | Wallet | Time stamp |
+| Type | Buy Quantity | Buy Asset | Buy Value | Sell Quantity | Sell Asset | Sell Value | Fee Quantity | Fee Asset | Fee Value | Wallet | Timestamp |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---| --- |
 | `Deposit` | M | M |   |||| O | O |  | O | M |
 | `Mining` | M | M | O |||| O | O | O| O | M |
@@ -96,7 +94,7 @@ The transaction Type dictates which fields in the row are required, either (M)an
 
 - Transaction records can be listed in any order, bittytax will sort them by Timestamp before processing.
 
-An example transaction record file is [included](https://github.com/BittyTax/BittyTax/data/example.csv) here.
+An example transaction record file is included [here](data/example.csv).
 
 ### Deposit
 A `Deposit` is a transfer transaction record, indicating the receipt of cryptoasset tokens to a wallet you control. For example, you might have deposited tokens to a wallet on an exchange, ready to be traded.
@@ -202,7 +200,7 @@ The accounting tool performs these functions in the order below:
 6. [Process unmatched (Section 104)](#process-unmatched-section-104)
 7. [Process income](#process-income)
 8. [Tax summary report](#tax-summary-report) (for each year)
-9. [Current holdings report](current-holdings-report)
+9. [Current holdings report](#current-holdings-report)
 
 ### Import Transaction Records
 Firstly the transaction records are imported, and then validated according to their transaction type, making sure the correct mandatory and optional fields are included.
@@ -296,7 +294,6 @@ Tokens of the same cryptoasset, acquired on the same day, are pooled together in
 `Deposit` and `Withdrawal` transactions are not included within these pools as they are not taxable events.
 
 #### Logging
-
 By enabling debug logging you can check that transaction records have been correctly split into Buys and Sells, the correct price data sources have been used, and same day transactions have been pooled.
 
 TID is Transaction ID, it matches the row number from your CSV file for traceability.
@@ -494,14 +491,13 @@ INFO -- : Total value=£157,437.42
 ```
 
 ### Notes:
-
 **Rounding**
 
 Prices used for tax calculations are rounded to two decimal places, using "[Round half to even](https://en.wikipedia.org/wiki/Rounding#Round_half_to_even)", for the following.
 
 1. When a value is assigned to a transaction (see [Splitting Transactions](#splitting-transactions))
 1. The cost apportioned when a transaction is split into two, during the matching process (see [Match "same day" Rule](#match-same-day-rule))
-1. The fractional cost calculated for a part-disposal of a cryptoasset (see [Process Unmatched (Section 104)](#process-unmatched-section-104)) 
+1. The fractional cost calculated for a part-disposal of a cryptoasset (see [Process Unmatched](#process-unmatched-section-104)) 
 
 ## Conversion Tool
 The bittytax conversion tool `bittytax_conv` provides an easy way to convert your data files exported from various different wallets and exchanges into the transaction record format required by bittytax.
@@ -627,7 +623,7 @@ INFO -- : 0.002435 BTC=£0.82 GBP
 ## Config
 The `bittytax.conf` file resides in the .bittytax folder within your home directory.
 
-The [default](https://github.com/BittyTax/BittyTax/config/bittytax.conf) file created at installation should cater for most users. 
+The [default](config/bittytax.conf) file created at installation should cater for most users. 
 
 If you need to change anything, the parameters are described below, the file is in YAML format.
 
@@ -691,7 +687,6 @@ data_source_select: {
 ```
 
 ### data_source_fiat
-
 Specifies which data source(s), in priority order, will be used for retrieving foreign currency exchange rates.
 
 ```yaml
@@ -704,7 +699,6 @@ Supported data sources for fiat are:
 - `RatesAPI`
 
 ### data_source_crypto
-
 Specifies which data source(s), in priority order, will be used for retrieving cryptoasset prices.
 
 ```yaml
