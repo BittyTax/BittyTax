@@ -12,7 +12,7 @@ BittyTax comprises of 3 different tools.
 3. `bittytax_price` - lookup historic price data for cryptoassets and foreign currencies (see [Price Tool](#price-tool))
 
 ## Disclaimer
-This software is copyright (c) Nano Nano Ltd, and licensed for use under the AGPLv3 License, see [LICENSE](LICENSE) file for details.
+This software is copyright (c) Nano Nano Ltd, and licensed for use under the AGPLv3 License, see [LICENSE](https://github.com/BittyTax/BittyTax/blob/master/LICENSE) file for details.
 
 Nano Nano Ltd does not provide tax, legal, accounting or financial advice. This software and its content are provided for information only, and as such should not be relied upon for tax, legal, accounting or financial advice.
 
@@ -27,9 +27,20 @@ You need to have Python 2.7 or 3.x installed on your machine before you can inst
 
 If you need to install Python we recommend you install Python 3.x, see https://wiki.python.org/moin/BeginnersGuide/Download for instructions.
 
-**Note:** BittyTax is currently in Beta version (see the [CHANGELOG](CHANGELOG.md) file for details) it has been tested on MacOS and Windows 10, using both Python 2.7, and Python 3.7.
+**Note:** BittyTax is currently in Beta version (see the [CHANGELOG](https://github.com/BittyTax/BittyTax/blob/master/CHANGELOG.md) file for details) it has been tested on MacOS and Windows 10, using both Python 2.7, and Python 3.7.
 
 ### Installing
+
+#### Python3.x
+```console
+    $ pip3 install BittyTax
+```
+
+#### Python2.7
+```console
+    $ pip install BittyTax
+```
+
 Download the ZIP file from github, or clone this git repository.
 
 ```console
@@ -94,7 +105,7 @@ The transaction Type dictates which fields in the row are required, either (M)an
 
 - Transaction records can be listed in any order, bittytax will sort them by Timestamp before processing.
 
-An example transaction record file is included [here](data/example.csv).
+An example transaction record file is included [here](https://github.com/BittyTax/BittyTax/blob/master/data/example.csv).
 
 ### Deposit
 A `Deposit` is a transfer transaction record, indicating the receipt of cryptoasset tokens to a wallet you control. For example, you might have deposited tokens to a wallet on an exchange, ready to be traded.
@@ -623,7 +634,7 @@ INFO -- : 0.002435 BTC=£0.82 GBP
 ## Config
 The `bittytax.conf` file resides in the .bittytax folder within your home directory.
 
-The [default](config/bittytax.conf) file created at installation should cater for most users. 
+The [default](https://github.com/BittyTax/BittyTax/blob/master/config/bittytax.conf) file created at installation should cater for most users. 
 
 If you need to change anything, the parameters are described below, the file is in YAML format.
 
