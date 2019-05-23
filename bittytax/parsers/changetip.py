@@ -1,0 +1,35 @@
+# -*- coding: utf-8 -*-
+# (c) Nano Nano Ltd 2019
+# $Id: changetip.py,v 1.7 2019/05/16 20:26:52 scottgreen Exp $
+
+from decimal import Decimal
+
+from ..config import config
+from ..record import TransactionRecord
+from ..parser import DataParser
+
+WALLET = "ChangeTip"
+
+def parse_changetip(in_row):
+    if in_row[6] == "Delivered":
+        if in_row[2] in config.usernames:
+            return TransactionRecord(TransactionRecord.TYPE_GIFT_RECEIVED,
+                                     DataParser.parse_timestamp(in_row[3]),
+                                     buy_quantity=Decimal(in_row[4]) / 100000000,
+                                     buy_asset="BTC",
+                                     wallet=WALLET)
+        elif in_row[1] in config.usernames:
+            return TransactionRecord(TransactionRecord.TYPE_GIFT_SENT,
+                                     DataParser.parse_timestamp(in_row[3]),
+                                     sell_quantity=Decimal(in_row[4]) / 100000000,
+                                     sell_asset="BTC",
+                                     wallet=WALLET)
+        else:
+            raise ValueError("Unrecognised username: " + in_row[2])
+    else:
+        return None
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "ChangeTip",
+           ['On', 'From', 'To', 'When', 'Amount in Satoshi', 'mBTC', 'Status', 'Message'],
+           row_handler=parse_changetip)
