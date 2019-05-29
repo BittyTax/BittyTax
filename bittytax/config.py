@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import platform
+import pkg_resources
 
 import yaml
 import dateutil.tz
@@ -53,6 +54,16 @@ class Config(object):
                             datefmt='%Y-%m-%dT%H:%M:%S')
         self.log = logging.getLogger()
         self.args = None
+
+        if not os.path.exists(Config.BITTYTAX_PATH):
+            os.mkdir(Config.BITTYTAX_PATH)
+
+        if not os.path.exists(os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG)):
+            default_conf = pkg_resources.resource_string(__name__,
+                                                         'config/' + Config.BITTYTAX_CONFIG)
+            with open(os.path.join(Config.BITTYTAX_PATH,
+                                   Config.BITTYTAX_CONFIG), 'wb') as config_file:
+                config_file.write(default_conf)
 
         try:
             with open(os.path.join(Config.BITTYTAX_PATH,

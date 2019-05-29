@@ -639,7 +639,7 @@ INFO -- : 0.002435 BTC=£0.82 GBP
 ## Config
 The `bittytax.conf` file resides in the .bittytax folder within your home directory.
 
-The [default](https://github.com/BittyTax/BittyTax/blob/master/config/bittytax.conf) file created at installation should cater for most users. 
+The [default](https://github.com/BittyTax/BittyTax/blob/master/config/bittytax.conf) file created at runtime should cater for most users.
 
 If you need to change anything, the parameters are described below, the file is in YAML format.
 

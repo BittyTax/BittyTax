@@ -58,8 +58,6 @@ setup(
             'bittytax_price = bittytax.pricedata:main',
         ],
     },
-    data_files=[
-        (BITTYTAX_PATH, ['config/bittytax.conf']),
-    ],
+    include_package_data=True,
     zip_safe=False,
     )

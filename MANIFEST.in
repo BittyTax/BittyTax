@@ -2,3 +2,4 @@ include LICENSE
 include README.md
 include CHANGELOG.md
 include data/example.csv
+include bittytax/config/bittytax.conf
