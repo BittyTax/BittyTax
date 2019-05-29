@@ -1,3 +1,5 @@
+![BittyTax logo](https://github.com/BittyTax/BittyTax/raw/master/img/BittyTax.png)
+[![Version badge][version-badge]][version] [![License badge][license-badge]][license] [![Python badge][python-badge]][python]
 # BittyTax
 BittyTax is a collection of command-line tools to help you manage your cryptoasset accounts. Allowing you to audit, value and calculate your annual UK Capital Gains and Income Tax.
 
@@ -31,22 +33,25 @@ If you need to install Python we recommend you install Python 3.x, see https://w
 
 ### Installing
 
-#### Python3.x
-```console
-    $ pip3 install BittyTax
-```
-
-#### Python2.7
+To install the latest release:
 ```console
     $ pip install BittyTax
 ```
 
-Download the ZIP file from github, or clone this git repository.
+or [download the ZIP file](https://github.com/BittyTax/BittyTax/archive/master.zip), unpack, navigate to the top level of the repository and install using:
 
 ```console
-    $ git clone https://github.com/BittyTax/BittyTax
-    $ cd BittyTax
     $ python setup.py install
+```
+
+Note: This will install the latest unreleased version which may include untested changes, check the [CHANGELOG](https://github.com/BittyTax/BittyTax/blob/master/CHANGELOG.md).
+
+### Upgrade
+
+To upgrade to the latest release:
+
+```console
+    $ pip install --upgrade BittyTax
 ```
 
 ## Transaction Records
@@ -770,3 +775,10 @@ Ideas for the project roadmap, let me know what you would fine most useful, or a
 
 **HMRC Webinar**
 - https://www.youtube.com/watch?v=borjzzNFnrI
+
+[version-badge]: https://img.shields.io/pypi/v/BittyTax.svg
+[license-badge]: https://img.shields.io/pypi/l/BittyTax.svg
+[python-badge]: https://img.shields.io/pypi/pyversions/BittyTax.svg
+[version]: https://pypi.org/project/BittyTax/
+[license]: https://github.com/BittyTax/BittyTax/blob/master/LICENSE
+[python]: https://wiki.python.org/moin/BeginnersGuide/Download
