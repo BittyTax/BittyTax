@@ -4,6 +4,7 @@ from setuptools import setup, find_packages
 
 BITTYTAX_PATH = os.path.expanduser('~/.bittytax')
 VERSION_FILE = 'bittytax/version.py'
+GITHUB_REPO = 'https://github.com/BittyTax/BittyTax'
 
 def get_version():
     line = open(VERSION_FILE, "rt").read()
@@ -24,7 +25,8 @@ setup(
                 'Tax)',
     long_description=get_long_description(),
     long_description_content_type="text/markdown",
-    url='https://bitty.tax',
+    url=GITHUB_REPO,
+    download_url=GITHUB_REPO + '/archive/v{}.zip'.format(get_version()),
     author='Scott Green/Nano Nano Ltd',
     author_email='scott@bitty.tax',
     license='AGPLv3',
