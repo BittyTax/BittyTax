@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
-# $Id: transactions.py,v 1.24 2019/05/22 20:28:51 scottgreen Exp $
 
 import sys
 import csv

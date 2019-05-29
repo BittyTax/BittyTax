@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # Cryptoasset accounting, auditing and UK tax calculations (Capital Gains/Income Tax)
 # (c) Nano Nano Ltd 2019
-# $Id: bittytax.py,v 1.16 2019/05/20 09:30:05 scottgreen Exp $
 
 import argparse
 import io

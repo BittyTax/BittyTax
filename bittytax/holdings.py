@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
-# $Id: holdings.py,v 1.14 2019/05/22 10:46:35 scottgreen Exp $
 
 from decimal import Decimal
 

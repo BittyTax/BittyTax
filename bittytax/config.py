@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
-# $Id: config.py,v 1.12 2019/05/15 08:41:50 scottgreen Exp $
 
 import logging
 import os

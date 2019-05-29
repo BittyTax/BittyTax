@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
-# $Id: etherscan.py,v 1.6 2019/05/16 20:26:52 scottgreen Exp $
 
 from decimal import Decimal
 

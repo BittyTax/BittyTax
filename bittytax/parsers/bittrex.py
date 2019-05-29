@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
-# $Id: bittrex.py,v 1.7 2019/05/16 20:26:52 scottgreen Exp $
 
 from ..record import TransactionRecord
 from ..parser import DataParser

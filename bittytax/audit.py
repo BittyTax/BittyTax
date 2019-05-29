@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
-# $Id: audit.py,v 1.5 2019/05/16 19:52:54 scottgreen Exp $
 
 from .config import config, log
 

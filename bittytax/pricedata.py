@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
-# $Id: pricedata.py,v 1.26 2019/05/21 21:53:59 scottgreen Exp $
 
 import os
 import argparse

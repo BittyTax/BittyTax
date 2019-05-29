@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
-# $Id: circle.py,v 1.8 2019/05/16 20:26:52 scottgreen Exp $
 
 from ..config import config
 from ..record import TransactionRecord

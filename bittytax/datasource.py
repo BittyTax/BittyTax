@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
-# $Id: datasource.py,v 1.7 2019/05/16 20:10:41 scottgreen Exp $
 
 import os
 import atexit

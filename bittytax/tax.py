@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
-# $Id: tax.py,v 1.20 2019/05/22 20:29:31 scottgreen Exp $
 
 import copy
 from decimal import Decimal

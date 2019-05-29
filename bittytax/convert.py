@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
-# $Id: convert.py,v 1.15 2019/05/16 20:09:50 scottgreen Exp $
 
 import argparse
 import csv
