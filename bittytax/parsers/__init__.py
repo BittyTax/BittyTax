@@ -1,3 +1,4 @@
+from . import binance
 from . import barclays
 from . import bitstamp
 from . import bittrex
@@ -18,3 +19,4 @@ from . import qtwallet
 from . import tradesatoshi
 from . import trezor
 from . import uphold
+from . import wirex

@@ -525,6 +525,7 @@ The bittytax conversion tool `bittytax_conv` provides an easy way to convert you
 - Trezor
 
 **Exchanges:**
+- Binance
 - Bitstamp
 - Bittrex
 - ChangeTip 
@@ -539,6 +540,7 @@ The bittytax conversion tool `bittytax_conv` provides an easy way to convert you
 - Poloniex
 - TradeSatoshi
 - Uphold
+- Wirex
 
 **Explorers:**
 - Etherscan

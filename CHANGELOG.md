@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Added
+- Exchange data files: Wirex, Binance.
 
 ## Version [0.1.1] Beta (2019-05-29)
 ### Fixed

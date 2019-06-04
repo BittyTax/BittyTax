@@ -19,8 +19,7 @@ OUT_HEADER = ['Type',
               'Fee Quantity', 'Fee Asset', 'Fee Value',
               'Wallet', 'Timestamp']
 
-def _open_excel_file(filename):
-    workbook = xlrd.open_workbook(filename)
+def _open_excel_file(workbook):
     sheet = workbook.sheet_by_index(0)
 
     reader = _get_cell_values(sheet.get_rows(), workbook)
@@ -135,11 +134,12 @@ def main():
     config.args = parser.parse_args()
 
     for filename in config.args.filename:
-        if filename.lower().endswith(('.xls', '.xlsx')):
-            _open_excel_file(filename)
-        elif filename.lower().endswith('.csv'):
+        try:
+            workbook = xlrd.open_workbook(filename)
+        except xlrd.XLRDError:
+            # See if it's a CSV file
             _open_csv_file(filename)
         else:
-            raise Exception("Unsupported file extension")
+            _open_excel_file(workbook)
 
         config.args.noheader = True
