@@ -1,5 +1,5 @@
 ![BittyTax logo](https://github.com/BittyTax/BittyTax/raw/master/img/BittyTax.png)
-[![Version badge][version-badge]][version] [![License badge][license-badge]][license] [![Python badge][python-badge]][python]
+[![Version badge][version-badge]][version] [![License badge][license-badge]][license] [![Python badge][python-badge]][python] [![Discord badge][discord-badge]][discord]
 # BittyTax
 BittyTax is a collection of command-line tools to help you manage your cryptoasset accounts. Allowing you to audit, value and calculate your annual UK Capital Gains and Income Tax.
 
@@ -781,6 +781,8 @@ Ideas for the project roadmap, let me know what you would fine most useful, or a
 [version-badge]: https://img.shields.io/pypi/v/BittyTax.svg
 [license-badge]: https://img.shields.io/pypi/l/BittyTax.svg
 [python-badge]: https://img.shields.io/pypi/pyversions/BittyTax.svg
+[discord-badge]: https://img.shields.io/discord/581493570112847872.svg
 [version]: https://pypi.org/project/BittyTax/
 [license]: https://github.com/BittyTax/BittyTax/blob/master/LICENSE
+[discord]: https://discord.gg/NHE3QFt
 [python]: https://wiki.python.org/moin/BeginnersGuide/Download
