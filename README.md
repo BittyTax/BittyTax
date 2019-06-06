@@ -749,8 +749,8 @@ Ideas for the project roadmap, let me know what you would fine most useful, or a
 - Add tests
 
 ### Conversion Tool
-- Add Wirex exchange
-- Add Binance exchange
+- ~~Add Wirex exchange~~
+- ~~Add Binance exchange~~
 - Convert data from clipboard. Some wallets/exchanges don't provide an export function, it should be possible to copy the transaction data directly from the webpage and have the conversion tool analysis this data and then convert it into the transaction record format.
 - Add option to generate .xls file of transaction records instead of .csv, this will make editing in Excel easier.
 - Add exchange APIs to automatically convert new trades into the transaction record format.
