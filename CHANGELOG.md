@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Fixed
 - Fix for 'get_average_cost' exception when debug enabled.
+- Same-day buy pools should the use the timestamp of earliest transaction, not the latest, this prevents the possiblity of a negative balance.
 ### Added
 - Exchange data files: Wirex, Binance.
 

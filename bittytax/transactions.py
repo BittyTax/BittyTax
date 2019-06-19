@@ -208,8 +208,8 @@ class Buy(TransactionBase):
         self.buy_quantity += other.buy_quantity
         self.cost += other.cost
 
-        if other.timestamp > self.timestamp:
-            # Keep timestamp of oldest transaction
+        if other.timestamp < self.timestamp:
+            # Keep timestamp of earliest transaction
             self.timestamp = other.timestamp
 
         if other.wallet != self.wallet:
@@ -273,7 +273,7 @@ class Sell(TransactionBase):
         self.proceeds += other.proceeds
 
         if other.timestamp > self.timestamp:
-            # Keep timestamp of oldest transaction
+            # Keep timestamp of latest transaction
             self.timestamp = other.timestamp
 
         if other.wallet != self.wallet:
