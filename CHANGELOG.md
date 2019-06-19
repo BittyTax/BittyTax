@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Fixed
+- Fix for 'get_average_cost' exception when debug enabled.
 ### Added
 - Exchange data files: Wirex, Binance.
 

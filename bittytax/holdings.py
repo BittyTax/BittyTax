@@ -16,26 +16,23 @@ class Holdings(object):
         self.cost += cost
 
         if config.args.debug:
-            log.debug("%s=%s (+%s) %s%s %s (+%s%s %s) AVG=%s%s %s",
+            log.debug("%s=%s (+%s) %s%s %s (+%s%s %s)",
                       self.asset,
                       self.format_quantity(),
                       '{:0,f}'.format(quantity.normalize()),
                       config.sym(), self._format_cost(), config.CCY,
-                      config.sym(), '{:0,.2f}'.format(cost), config.CCY,
-                      config.sym(), '{:0,.2f}'.format(self.get_average_cost()), config.CCY)
-
+                      config.sym(), '{:0,.2f}'.format(cost), config.CCY)
     def subtract_tokens(self, quantity, cost):
         self.quantity -= quantity
         self.cost -= cost
 
         if config.args.debug:
-            log.debug("%s=%s (-%s) %s%s %s (-%s%s %s) AVG=%s%s %s",
+            log.debug("%s=%s (-%s) %s%s %s (-%s%s %s)",
                       self.asset,
                       self.format_quantity(),
                       '{:0,f}'.format(quantity.normalize()),
                       config.sym(), self._format_cost(), config.CCY,
-                      config.sym(), '{:0,.2f}'.format(cost), config.CCY,
-                      config.sym(), '{:0,.2f}'.format(self.get_average_cost()), config.CCY)
+                      config.sym(), '{:0,.2f}'.format(cost), config.CCY)
 
         if self.quantity < 0:
             log.warning("Balance in %s is negative %s", self.asset, self.format_quantity())

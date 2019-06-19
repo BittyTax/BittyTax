@@ -428,7 +428,7 @@ DEBUG -- : [TID:8.2] Buy (Trade): 0.969995 BTC (£355.07 GBP) "Bitstamp" 2014-07
 
 With debug enabled you can see detailed logging of the unmatched transactions being processed, and the impact it has on the individual holding.
 
-Below each transaction it shows the cryptoasset holding, and by what amount the token and cost totals are being updated. AVG indicates the average cost of 1 token.
+Below each transaction it shows the cryptoasset holding, and by what amount the token and cost totals are being updated.
 
 When a disposal takes place, indicated at the end of the transaction, the gain calculation is then shown below. 
 
