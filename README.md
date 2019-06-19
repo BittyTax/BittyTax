@@ -436,9 +436,9 @@ When a disposal takes place, indicated at the end of the transaction, the gain c
 DEBUG -- : ==PROCESS UNMATCHED TRANSACTIONS==
 ...
 DEBUG -- : [TID:18] Buy (Trade): 843.00981977 ETH (£1,474.70 GBP) "Poloniex" 2016-01-27T22:09:19 GMT [5]
-DEBUG -- : ETH=843.00981977 (+843.00981977) £1,474.70 GBP (+£1,474.70 GBP) AVG=£1.75 GBP
+DEBUG -- : ETH=843.00981977 (+843.00981977) £1,474.70 GBP (+£1,474.70 GBP)
 DEBUG -- : [TID:23] Sell (Trade): 843.00981977 ETH (£1,471.33 GBP) "Poloniex" 2016-01-29T14:12:31 GMT [9] (Disposal)
-DEBUG -- : ETH=0 (-843.00981977) £0.00 GBP (-£1,474.70 GBP) AVG=£0.00 GBP
+DEBUG -- : ETH=0 (-843.00981977) £0.00 GBP (-£1,474.70 GBP)
 DEBUG -- :  Gain=£-3.37 (£1,471.33 - £1,474.70)
 ```
 
