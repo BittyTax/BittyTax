@@ -7,6 +7,7 @@
 - Circle parser: added missing transaction types, 'internal_switch_currency' and 'switch_currency'.
 ### Added
 - Exchange data files: Wirex, Binance.
+- Poloniex parser: added new withdrawalHistory.csv data format.
 
 ## Version [0.1.1] Beta (2019-05-29)
 ### Fixed

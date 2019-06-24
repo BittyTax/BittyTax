@@ -46,6 +46,15 @@ def parse_poloniex_deposits_withdrawals(in_row):
                                  buy_asset=in_row[1],
                                  wallet=WALLET)
 
+def parse_poloniex_withdrawals(in_row):
+    return TransactionRecord(TransactionRecord.TYPE_WITHDRAWAL,
+                             DataParser.parse_timestamp(in_row[0]),
+                             sell_quantity=Decimal(in_row[2]) - Decimal(in_row[3]),
+                             sell_asset=in_row[1],
+                             fee_quantity=in_row[3],
+                             fee_asset=in_row[1],
+                             wallet=WALLET)
+
 DataParser(DataParser.TYPE_EXCHANGE,
            "Poloniex Trades",
            ['Date', 'Market', 'Category', 'Type', 'Price', 'Amount', 'Total', 'Fee', 'Order Number',
@@ -56,3 +65,8 @@ DataParser(DataParser.TYPE_EXCHANGE,
            "Poloniex Deposits/Withdrawals",
            ['Date', 'Currency', 'Amount', 'Address', 'Status'],
            row_handler=parse_poloniex_deposits_withdrawals)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Poloniex Withdrawals",
+           ['Date', 'Currency', 'Amount', 'Fee Deducted', 'Amount - Fee', 'Address', 'Status'],
+           row_handler=parse_poloniex_withdrawals)
