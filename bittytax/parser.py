@@ -52,11 +52,11 @@ class DataParser(object):
         return header_str[:TERM_WIDTH] + '...' if len(header_str) > TERM_WIDTH else header_str
 
     @classmethod
-    def parse_timestamp(cls, timestamp_str, tzinfos=None, tz=None):
+    def parse_timestamp(cls, timestamp_str, tzinfos=None, tz=None, dayfirst=False):
         if isinstance(timestamp_str, int):
             timestamp = datetime.datetime.utcfromtimestamp(timestamp_str)
         else:
-            timestamp = dateutil.parser.parse(timestamp_str, tzinfos=tzinfos)
+            timestamp = dateutil.parser.parse(timestamp_str, tzinfos=tzinfos, dayfirst=dayfirst)
 
         if tz:
             timestamp = timestamp.replace(tzinfo=dateutil.tz.gettz(tz))
@@ -96,8 +96,12 @@ class DataParser(object):
         txt = ""
         for p_type in cls.LIST_ORDER:
             txt += ' ' * 2 + p_type + ':\n'
+            prev_name = None
             for parser in sorted([parser for parser in cls.parsers if parser.p_type == p_type]):
-                txt += ' ' * 4 + parser.name + '\n'
+                if parser.name != prev_name:
+                    txt += ' ' * 4 + parser.name + '\n'
                 txt += ' ' * 6 + parser.format_header() + '\n'
+
+                prev_name = parser.name
 
         return txt

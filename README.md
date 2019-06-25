@@ -526,6 +526,7 @@ The bittytax conversion tool `bittytax_conv` provides an easy way to convert you
 
 **Exchanges:**
 - Binance
+- Bitfinex
 - Bitstamp
 - Bittrex
 - ChangeTip 
@@ -581,6 +582,7 @@ This will instantly show you what the remaining balance of each asset should be 
 
 ### Notes:
 1. Some exchanges only allow the export of trades, this means transaction records of deposits and withdrawals will have to be created manually, otherwise the assets will not balance.
+1. Bitfinex - when exporting your data, make sure the "*Date Format*" is set to "*DD-MM-YY*" which is the default.
 1. ChangeTip - the conversion tool requires your username(s) to be configured, this is to identify which transactions are a gift received or a gift sent, (see [Config](#config)).
 1. Coinbase - has many different export formats, bittytax recognises the "*Transactions history*" and "*Buys, sells, and merchant payouts*" reports (also known as "*Transfers*"). Coinbase provides these reports for each individual wallet (both fiat and crypto). It's possible to end up with duplicate transaction records (i.e. one for the GBP wallet and another for the BTC wallet), these have to be filtered manually, the converter will flag some of these duplicates it finds by setting the transaction type to Duplicate.
 1. Coinbase Pro - the converter recognises both the "*Fills Report*" export for trades and the "*Account Report*" export for deposits and withdrawals. Please note, the "*Account Report*" also contains details of the trades ("*match*") but with less detail, these are filtered by the tool to prevent duplicates.

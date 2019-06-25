@@ -8,6 +8,7 @@
 ### Added
 - Exchange data files: Wirex, Binance.
 - Poloniex parser: added new withdrawalHistory.csv data format.
+- Bitfinex exchange data files.
 
 ## Version [0.1.1] Beta (2019-05-29)
 ### Fixed
