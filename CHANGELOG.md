@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Fixed
+- Bitstamp parser: added missing type 'Ripple deposit'.
 
 ## Version [0.1.2] Beta (2019-06-30)
 ### Fixed

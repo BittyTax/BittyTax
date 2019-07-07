@@ -7,13 +7,13 @@ from ..parser import DataParser
 WALLET = "Bitstamp"
 
 def parse_bitstamp(in_row):
-    if in_row[0] == "Deposit":
+    if in_row[0] in ("Ripple deposit", "Deposit"):
         return TransactionRecord(TransactionRecord.TYPE_DEPOSIT,
                                  DataParser.parse_timestamp(in_row[1]),
                                  buy_quantity=in_row[3].split(' ')[0],
                                  buy_asset=in_row[3].split(' ')[1],
                                  wallet=WALLET)
-    elif in_row[0] == "Ripple payment" or in_row[0] == "Withdrawal":
+    elif in_row[0] in ("Ripple payment", "Withdrawal"):
         return TransactionRecord(TransactionRecord.TYPE_WITHDRAWAL,
                                  DataParser.parse_timestamp(in_row[1]),
                                  sell_quantity=in_row[3].split(' ')[0],
