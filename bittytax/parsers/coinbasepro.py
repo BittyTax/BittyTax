@@ -21,7 +21,7 @@ def parse_coinbase_pro_deposits_withdrawals(in_row):
                                  buy_quantity=in_row[2],
                                  buy_asset=in_row[4],
                                  wallet=WALLET)
-    elif in_row[0] == "match":
+    elif in_row[0] in ("match", "fee"):
         # Skip trades
         return None
     else:
