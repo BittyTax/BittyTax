@@ -212,6 +212,7 @@ def main():
 
     value_asset = ValueAsset()
     asset = config.args.asset[0]
+    timestamp = None
 
     if asset == config.CCY:
         return
@@ -236,7 +237,10 @@ def main():
                      config.sym(), '{:0,.2f}'.format(quantity * price_ccy), config.CCY)
     else:
         if name is not None:
-            log.warning("Price for %s at %s is not available",
-                        asset, timestamp.strftime('%Y-%m-%d'))
+            if timestamp:
+                log.warning("Price for %s at %s is not available",
+                            asset, timestamp.strftime('%Y-%m-%d'))
+            else:
+                log.warning("Current price for %s is not available", asset)
         else:
-            log.warning("Price for %s is not available", asset)
+            log.warning("Prices for %s are not supported", asset)

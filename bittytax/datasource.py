@@ -116,7 +116,7 @@ class ExchangeRatesAPI(DataSourceBase):
             'https://api.exchangeratesapi.io/latest'
             '?base={}&symbols={}'.format(asset, quote)
         )
-        return Decimal(repr(json_resp['rates'][quote]))
+        return Decimal(repr(json_resp['rates'][quote])) if quote in json_resp['rates'] else None
 
     def get_historical(self, asset, quote, timestamp):
         json_resp = self.get_json(
@@ -148,7 +148,7 @@ class RatesAPI(DataSourceBase):
             'https://api.ratesapi.io/api/latest'
             '?base={}&symbols={}'.format(asset, quote)
         )
-        return Decimal(repr(json_resp['rates'][quote]))
+        return Decimal(repr(json_resp['rates'][quote])) if quote in json_resp['rates'] else None
 
     def get_historical(self, asset, quote, timestamp):
         json_resp = self.get_json(
@@ -171,7 +171,8 @@ class CoinDesk(DataSourceBase):
 
     def get_latest(self, _, quote):
         json_resp = self.get_json('https://api.coindesk.com/v1/bpi/currentprice.json')
-        return Decimal(repr(json_resp['bpi'][quote]['rate_float']))
+        return Decimal(repr(json_resp['bpi'][quote]['rate_float'])) \
+                if quote in json_resp['bpi'] else None
 
     def get_historical(self, asset, quote, timestamp):
         json_resp = self.get_json(
@@ -195,7 +196,7 @@ class CryptoCompare(DataSourceBase):
         json_resp = self.get_json(
             'https://min-api.cryptocompare.com/data/price'
             '?extraParams={}&fsym={}&tsyms={}'.format(self.USER_AGENT, asset, quote))
-        return Decimal(repr(json_resp[quote]))
+        return Decimal(repr(json_resp[quote])) if quote in json_resp else None
 
     def get_historical(self, asset, quote, timestamp):
         json_resp = self.get_json(
@@ -224,7 +225,8 @@ class CoinGecko(DataSourceBase):
         json_resp = self.get_json(
             'https://api.coingecko.com/api/v3/coins/{}'
             '?localization=false&community_data=false&developer_data=false'.format(self.ids[asset]))
-        return Decimal(repr(json_resp['market_data']['current_price'][quote.lower()]))
+        return Decimal(repr(json_resp['market_data']['current_price'][quote.lower()])) \
+                if quote.lower() in json_resp['market_data']['current_price'] else None
 
     def get_historical(self, asset, quote, timestamp):
         json_resp = self.get_json(
@@ -248,7 +250,8 @@ class CoinPaprika(DataSourceBase):
         json_resp = self.get_json(
             'https://api.coinpaprika.com/v1/tickers/{}'
             '?quotes={}'.format(self.ids[asset], quote))
-        return Decimal(repr(json_resp['quotes'][quote]['price']))
+        return Decimal(repr(json_resp['quotes'][quote]['price'])) \
+                if quote in json_resp['quotes'] else None
 
     def get_historical(self, asset, quote, timestamp):
         # Historic prices only available in USD or BTC
