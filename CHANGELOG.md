@@ -5,6 +5,7 @@
 - Bitstamp parser: added missing type 'Ripple deposit'.
 - Coinbase Pro parser: filter "fee" transactions.
 - Validate symbol is not missing for latest price response from data source.
+- Poloniex parser: workaround to fix rounding issues found in recent trading history exports.
 ### Added
 - Bittrex: new data file format for trades added.
 

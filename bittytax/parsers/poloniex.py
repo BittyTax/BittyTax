@@ -1,32 +1,40 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-from decimal import Decimal
+from decimal import Decimal, ROUND_UP
 
 from ..record import TransactionRecord
 from ..parser import DataParser
 
 WALLET = "Poloniex"
 
+PRECISION = Decimal('0.00000000')
+
 def parse_poloniex_trades(in_row):
     if in_row[3] == "Buy":
+        fee_quantity = Decimal(in_row[5]) - Decimal(in_row[5]) * \
+                (Decimal(in_row[7].replace('%', '')) / Decimal(100))
+        fee_quantity = fee_quantity.quantize(PRECISION, rounding=ROUND_UP)
         return TransactionRecord(TransactionRecord.TYPE_TRADE,
                                  DataParser.parse_timestamp(in_row[0]),
                                  buy_quantity=in_row[5],
                                  buy_asset=in_row[1].split('/')[0],
                                  sell_quantity=in_row[6],
                                  sell_asset=in_row[1].split('/')[1],
-                                 fee_quantity=Decimal(in_row[5]) - Decimal(in_row[10]),
+                                 fee_quantity=Decimal(in_row[5]) - fee_quantity,
                                  fee_asset=in_row[1].split('/')[0],
                                  wallet=WALLET)
     elif in_row[3] == "Sell":
+        fee_quantity = Decimal(in_row[6]) - Decimal(in_row[6]) * \
+                (Decimal(in_row[7].replace('%', '')) / Decimal(100))
+        fee_quantity = fee_quantity.quantize(PRECISION, rounding=ROUND_UP)
         return TransactionRecord(TransactionRecord.TYPE_TRADE,
                                  DataParser.parse_timestamp(in_row[0]),
                                  buy_quantity=in_row[6],
                                  buy_asset=in_row[1].split('/')[1],
                                  sell_quantity=in_row[5],
                                  sell_asset=in_row[1].split('/')[0],
-                                 fee_quantity=Decimal(in_row[6]) - Decimal(in_row[9]),
+                                 fee_quantity=Decimal(in_row[6]) - fee_quantity,
                                  fee_asset=in_row[1].split('/')[1],
                                  wallet=WALLET)
     else:
@@ -46,7 +54,7 @@ def parse_poloniex_deposits_withdrawals(in_row):
                                  buy_asset=in_row[1],
                                  wallet=WALLET)
 
-def parse_poloniex_withdrawals(in_row):
+def parse_poloniex_withdrawals(in_row, _):
     return TransactionRecord(TransactionRecord.TYPE_WITHDRAWAL,
                              DataParser.parse_timestamp(in_row[0]),
                              sell_quantity=Decimal(in_row[2]) - Decimal(in_row[3]),
