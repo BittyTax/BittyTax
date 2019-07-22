@@ -5,6 +5,8 @@
 - Bitstamp parser: added missing type 'Ripple deposit'.
 - Coinbase Pro parser: filter "fee" transactions.
 - Validate symbol is not missing for latest price response from data source.
+### Added
+- Bittrex: new data file format for trades added.
 
 ## Version [0.1.2] Beta (2019-06-30)
 ### Fixed
