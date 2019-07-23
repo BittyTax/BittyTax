@@ -34,9 +34,6 @@ class Holdings(object):
                       config.sym(), self._format_cost(), config.CCY,
                       config.sym(), '{:0,.2f}'.format(cost), config.CCY)
 
-        if self.quantity < 0:
-            log.warning("Balance in %s is negative %s", self.asset, self.format_quantity())
-
     def format_quantity(self):
         return '{:0,f}'.format(self.quantity.normalize())
 

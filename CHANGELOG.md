@@ -8,6 +8,8 @@
 - Poloniex parser: workaround to fix rounding issues found in recent trading history exports.
 ### Added
 - Bittrex: new data file format for trades added.
+### Removed
+- Negative balance warning in a Section 104 holding. 
 
 ## Version [0.1.2] Beta (2019-06-30)
 ### Fixed
