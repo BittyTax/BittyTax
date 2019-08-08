@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import logging
+
 from decimal import Decimal
 
-from .config import config, log
+from .config import config
+
+log = logging.getLogger()
 
 class Holdings(object):
     def __init__(self, asset):

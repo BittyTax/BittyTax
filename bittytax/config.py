@@ -3,7 +3,6 @@
 
 import logging
 import os
-import sys
 import platform
 import pkg_resources
 
@@ -11,6 +10,8 @@ import yaml
 import dateutil.tz
 
 from .version import __version__
+
+log = logging.getLogger()
 
 class Config(object):
     TZ_INFOS = {'BST': dateutil.tz.gettz('Europe/London'),
@@ -48,11 +49,6 @@ class Config(object):
     }
 
     def __init__(self):
-        logging.basicConfig(stream=sys.stdout,
-                            level=logging.INFO,
-                            format='[%(asctime)s.%(msecs)03d] %(levelname)s -- : %(message)s',
-                            datefmt='%Y-%m-%dT%H:%M:%S')
-        self.log = logging.getLogger()
         self.args = None
 
         if not os.path.exists(Config.BITTYTAX_PATH):
@@ -86,9 +82,6 @@ class Config(object):
         except KeyError:
             return getattr(self.args, name)
 
-    def debug_logging_enable(self):
-        self.log.setLevel(logging.DEBUG)
-
     def output_config(self, progname):
         log.debug("BITTYTAX: %s v%s", progname, __version__)
         log.debug("PYTHON: v%s SYSTEM: %s RELEASE: %s",
@@ -104,4 +97,3 @@ class Config(object):
             raise ValueError("Currency not supported")
 
 config = Config()
-log = config.log

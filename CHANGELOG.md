@@ -14,6 +14,11 @@
 - Conversion tool has debug option.
 ### Removed
 - Negative balance warning in a Section 104 holding. 
+- Logging removed from within config module.
+### Changed
+- Logging is now initialised by each tool, instead of within the `config.py` module.
+- Conversion tool now outputs logging to `stderr` so it will be filtered when piping into `bittytax`. 
+- The `pricedata.py` module has been renamed `valueasset.py`, and main function moved to new `price.py` module.
 
 ## Version [0.1.2] Beta (2019-06-30)
 ### Fixed

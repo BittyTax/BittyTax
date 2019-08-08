@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import logging
 import argparse
 import csv
 import sys
@@ -9,7 +10,7 @@ import io
 import xlrd
 
 from .version import __version__
-from .config import config, log
+from .config import config
 from .parser import DataParser
 from .parsers import *
 
@@ -19,6 +20,12 @@ OUT_HEADER = ['Type',
               'Sell Quantity', 'Sell Asset', 'Sell Value',
               'Fee Quantity', 'Fee Asset', 'Fee Value',
               'Wallet', 'Timestamp']
+
+logging.basicConfig(stream=sys.stderr,
+                    level=logging.INFO,
+                    format='[%(asctime)s.%(msecs)03d] %(levelname)s -- : %(message)s',
+                    datefmt='%Y-%m-%dT%H:%M:%S')
+log = logging.getLogger()
 
 def _open_excel_file(workbook):
     sheet = workbook.sheet_by_index(0)
@@ -45,14 +52,14 @@ def _open_csv_file(filename, delimiter):
     with io.open(filename, newline='', encoding='utf-8-sig') as data_file:
         if sys.version_info[0] < 3:
             # special handling required for utf-8 encoded csv files
-            reader = csv.reader(utf_8_encoder(data_file), delimiter=delimiter)
+            reader = csv.reader(_utf_8_encoder(data_file), delimiter=delimiter)
         else:
             reader = csv.reader(data_file, delimiter=delimiter)
         _parse_file(reader)
 
     data_file.close()
 
-def utf_8_encoder(unicode_csv_data):
+def _utf_8_encoder(unicode_csv_data):
     for line in unicode_csv_data:
         yield line.encode('utf-8')
 
@@ -141,7 +148,7 @@ def main():
     config.args = parser.parse_args()
 
     if config.args.debug:
-        config.debug_logging_enable()
+        log.setLevel(logging.DEBUG)
         config.output_config(parser.prog)
 
     for filename in config.args.filename:

@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import logging
 import copy
 from decimal import Decimal
 
-from ..config import log, config
+from ..config import config
 from ..record import TransactionRecord
 from ..parser import DataParser
 
 WALLET = "Gatehub"
+
+log = logging.getLogger()
 
 def parse_gatehub(all_in_row):
     all_out_row = copy.deepcopy(all_in_row)

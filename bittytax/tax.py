@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import logging
 import copy
 from decimal import Decimal
 from datetime import datetime, timedelta
 
-from .config import config, log
+from .config import config
 from .transactions import Buy, Sell
 from .holdings import Holdings
+
+log = logging.getLogger()
 
 class TaxCalculator(object):
     DISPOSAL_SAME_DAY = 'Same Day'

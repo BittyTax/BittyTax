@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import logging
 import datetime
 
 import dateutil.parser
 import dateutil.tz
 
-from .config import config, log
+from .config import config
 
 TERM_WIDTH = 69
+
+log = logging.getLogger()
 
 class DataParser(object):
     TYPE_WALLET = "Wallets"

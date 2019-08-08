@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-from .config import config, log
+import logging
+
+from .config import config
+
+log = logging.getLogger()
 
 class Wallet(object):
     wallets = {}

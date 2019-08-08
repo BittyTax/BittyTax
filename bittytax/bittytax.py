@@ -2,17 +2,23 @@
 # Cryptoasset accounting, auditing and UK tax calculations (Capital Gains/Income Tax)
 # (c) Nano Nano Ltd 2019
 
+import logging
 import argparse
 import io
 import sys
 
 from .version import __version__
 from .config import config
-from .transactions import load_transaction_records
-from .transactions import TransactionHistory
+from .transactions import load_transaction_records, TransactionHistory
 from .audit import audit_transactions
-from .pricedata import ValueAsset
+from .valueasset import ValueAsset
 from .tax import TaxCalculator
+
+logging.basicConfig(stream=sys.stdout,
+                    level=logging.INFO,
+                    format='[%(asctime)s.%(msecs)03d] %(levelname)s -- : %(message)s',
+                    datefmt='%Y-%m-%dT%H:%M:%S')
+log = logging.getLogger()
 
 def main():
     parser = argparse.ArgumentParser()
@@ -42,7 +48,7 @@ def main():
     config.args.nocache = False
 
     if config.args.debug:
-        config.debug_logging_enable()
+        log.setLevel(logging.DEBUG)
         config.output_config(parser.prog)
 
     if config.args.filename:

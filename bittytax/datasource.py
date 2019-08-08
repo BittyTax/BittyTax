@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import logging
 import os
 import atexit
 import json
@@ -11,10 +12,12 @@ import dateutil.parser
 import requests
 
 from .version import __version__
-from .config import log, config
+from .config import config
 
 CRYPTOCOMPARE_MAX_DAYS = 2000
 COINPAPRIKA_MAX_DAYS = 5000
+
+log = logging.getLogger()
 
 class DataSourceBase(object):
     USER_AGENT = 'BittyTax/v{}'.format(__version__)

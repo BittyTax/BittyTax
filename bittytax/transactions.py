@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import logging
 import sys
 import csv
 import copy
@@ -8,11 +9,12 @@ from decimal import Decimal
 
 import dateutil.parser
 
-from .config import log, config
+from .config import config
 from .record import TransactionRecord
-from .convert import utf_8_encoder
 
 PRECISION = Decimal('0.00')
+
+log = logging.getLogger()
 
 def load_transaction_records(import_file):
     log.info("==IMPORT TRANSACTION RECORDS==")
@@ -20,7 +22,7 @@ def load_transaction_records(import_file):
 
     if sys.version_info[0] < 3:
         # Special handling required for utf-8 encoded csv files
-        reader = csv.reader(utf_8_encoder(import_file))
+        reader = csv.reader(_utf_8_encoder(import_file))
     else:
         reader = csv.reader(import_file)
 
@@ -35,6 +37,10 @@ def load_transaction_records(import_file):
 
     log.info("Total transaction records=%s", len(transaction_records))
     return transaction_records
+
+def _utf_8_encoder(unicode_csv_data):
+    for line in unicode_csv_data:
+        yield line.encode('utf-8')
 
 def _parse_row(row):
     timestamp = dateutil.parser.parse(row[11], tzinfos=config.TZ_INFOS)

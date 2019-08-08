@@ -55,7 +55,7 @@ setup(
         'console_scripts': [
             'bittytax = bittytax.bittytax:main',
             'bittytax_conv = bittytax.convert:main',
-            'bittytax_price = bittytax.pricedata:main',
+            'bittytax_price = bittytax.price:main',
         ],
     },
     include_package_data=True,
