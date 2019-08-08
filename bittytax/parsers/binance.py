@@ -60,5 +60,5 @@ DataParser(DataParser.TYPE_EXCHANGE,
 DataParser(DataParser.TYPE_EXCHANGE,
            "Binance Deposits/Withdrawals",
            ['Date', 'Coin', 'Amount', 'TransactionFee', 'Address', 'TXID', 'SourceAddress',
-            'PaymentID'],
+            'PaymentID', 'Status'],
            row_handler=parse_binance_deposits_withdrawals)

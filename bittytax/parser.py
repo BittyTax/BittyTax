@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+#: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
 import datetime
@@ -6,7 +6,7 @@ import datetime
 import dateutil.parser
 import dateutil.tz
 
-from .config import config
+from .config import config, log
 
 TERM_WIDTH = 69
 
@@ -20,10 +20,11 @@ class DataParser(object):
 
     parsers = []
 
-    def __init__(self, p_type, name, header, row_handler=None, all_handler=None):
+    def __init__(self, p_type, name, header, delimiter=',', row_handler=None, all_handler=None):
         self.p_type = p_type
         self.name = name
         self.header = header
+        self.delimiter = delimiter
         self.row_handler = row_handler
         self.all_handler = all_handler
         self.args = []
@@ -47,7 +48,7 @@ class DataParser(object):
             else:
                 header.append(col)
 
-        header_str = '"' + ','.join(header) + '"'
+        header_str = '"' + str(self.delimiter).join(header) + '"'
 
         return header_str[:TERM_WIDTH] + '...' if len(header_str) > TERM_WIDTH else header_str
 
@@ -71,23 +72,26 @@ class DataParser(object):
 
     @classmethod
     def match_header(cls, row):
-        for parser in cls.parsers:
+        log.debug("TRY: %s", row)
+        parsers_reduced = [p for p in cls.parsers if len(p.header) == len(row)]
+        for parser in parsers_reduced:
             match = False
-            for i, col in enumerate(parser.header):
-                if i >= len(row):
-                    break
-                if callable(col):
-                    match = col(row[i])
+            for i, row_field in enumerate(row):
+                if callable(parser.header[i]):
+                    match = parser.header[i](row_field)
                     parser.args.append(match)
-                elif col is not None:
-                    match = col == row[i]
+                elif parser.header[i] is not None:
+                    match = row_field == parser.header[i]
 
                 if not match:
                     break
 
             if match:
+                log.debug("MATCHED: %s \"%s\"", parser.header, parser.name)
                 parser.in_header = row
                 return parser
+            else:
+                log.debug("NO MATCH: %s \"%s\"", parser.header, parser.name)
 
         raise KeyError
 

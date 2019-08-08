@@ -6,9 +6,12 @@
 - Coinbase Pro parser: filter "fee" transactions.
 - Validate symbol is not missing for latest price response from data source.
 - Poloniex parser: workaround to fix rounding issues found in recent trading history exports.
+- Data parser: only match headers which are of the same number of fields.
 ### Added
 - Bittrex: new data file format for trades added.
 - TradeSatoshi: new data file format for deposits and withdrawals added.
+- Conversion tool can now support data files with different CSV delimiters.
+- Conversion tool has debug option.
 ### Removed
 - Negative balance warning in a Section 104 holding. 
 

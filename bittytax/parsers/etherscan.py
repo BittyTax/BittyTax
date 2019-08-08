@@ -38,3 +38,10 @@ DataParser(DataParser.TYPE_EXPLORER,
             'Value_IN(ETH)', 'Value_OUT(ETH)', None, 'TxnFee(ETH)', 'TxnFee(USD)',
             'Historical $Price/Eth', 'Status', 'ErrCode'],
            row_handler=parse_etherscan)
+
+DataParser(DataParser.TYPE_EXPLORER,
+           "Etherscan (Ethereum)",
+           ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
+            'Value_IN(ETH)', 'Value_OUT(ETH)', None, 'TxnFee(ETH)', 'TxnFee(USD)',
+            'Historical $Price/Eth', 'Status', 'ErrCode', 'PrivateNote'],
+           row_handler=parse_etherscan)
