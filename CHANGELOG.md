@@ -8,6 +8,7 @@
 - Poloniex parser: workaround to fix rounding issues found in recent trading history exports.
 ### Added
 - Bittrex: new data file format for trades added.
+- TradeSatoshi: new data file format for deposits and withdrawals added.
 ### Removed
 - Negative balance warning in a Section 104 holding. 
 

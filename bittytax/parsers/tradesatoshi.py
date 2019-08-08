@@ -8,11 +8,25 @@ from ..parser import DataParser
 
 WALLET = "TradeSatoshi"
 
+def parse_tradesatoshi_deposits2(in_row):
+    return TransactionRecord(TransactionRecord.TYPE_DEPOSIT,
+                             DataParser.parse_timestamp(in_row[0]),
+                             buy_quantity=in_row[3],
+                             buy_asset=in_row[2],
+                             wallet=WALLET)
+
 def parse_tradesatoshi_deposits(in_row):
     return TransactionRecord(TransactionRecord.TYPE_DEPOSIT,
                              DataParser.parse_timestamp(in_row[7]),
                              buy_quantity=in_row[3],
                              buy_asset=in_row[2],
+                             wallet=WALLET)
+
+def parse_tradesatoshi_withdrawals2(in_row):
+    return TransactionRecord(TransactionRecord.TYPE_WITHDRAWAL,
+                             DataParser.parse_timestamp(in_row[0]),
+                             sell_quantity=Decimal(in_row[3]),
+                             sell_asset=in_row[2],
                              wallet=WALLET)
 
 def parse_tradesatoshi_withdrawals(in_row):
@@ -50,20 +64,28 @@ def parse_tradesatoshi_trades(in_row, *_):
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "TradeSatoshi Deposits",
+           ['TimeStamp', 'Currency', 'Symbol', 'Amount', 'Confirmation', 'TxId'],
+           row_handler=parse_tradesatoshi_deposits2)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "TradeSatoshi Deposits",
            ['Id', 'Currency', 'Symbol', 'Amount', 'Status', 'Confirmations', 'TxId', 'TimeStamp'],
-           parse_tradesatoshi_deposits,
-           None)
+           row_handler=parse_tradesatoshi_deposits)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "TradeSatoshi Withdrawals",
+           ['TimeStamp', 'Currency', 'Symbol', 'Amount', 'Confirmation', 'TxId', 'Address',
+            'PaymentId', 'Status'],
+           row_handler=parse_tradesatoshi_withdrawals2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "TradeSatoshi Withdrawals",
            ['Id', 'User', 'Symbol', 'Amount', 'Fee', 'Net Amount', 'Status', 'Confirmations',
             'TxId', 'Address', 'TimeStamp'],
-           parse_tradesatoshi_withdrawals,
-           None)
+           row_handler=parse_tradesatoshi_withdrawals)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "TradeSatoshi Trades",
            ['Id', 'TradePair', lambda c: c in ('TradeType', 'TradeHistoryType'), 'Amount', 'Rate',
             'Fee', lambda c: c.lower() == 'timestamp', 'IsApi'],
-           parse_tradesatoshi_trades,
-           None)
+           row_handler=parse_tradesatoshi_trades)
