@@ -47,7 +47,7 @@ def _open_csv_file(filename, delimiter):
             # special handling required for utf-8 encoded csv files
             reader = csv.reader(utf_8_encoder(data_file), delimiter=delimiter)
         else:
-            reader = csv.reader(data_file, delimiter)
+            reader = csv.reader(data_file, delimiter=delimiter)
         _parse_file(reader)
 
     data_file.close()
