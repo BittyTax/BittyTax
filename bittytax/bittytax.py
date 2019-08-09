@@ -11,7 +11,7 @@ from .version import __version__
 from .config import config
 from .transactions import load_transaction_records, TransactionHistory
 from .audit import audit_transactions
-from .valueasset import ValueAsset
+from .price.valueasset import ValueAsset
 from .tax import TaxCalculator
 
 logging.basicConfig(stream=sys.stdout,

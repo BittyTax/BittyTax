@@ -6,9 +6,9 @@ from decimal import Decimal
 
 import dateutil.tz
 
-from ..config import config
-from ..record import TransactionRecord
-from ..parser import DataParser
+from ...config import config
+from ...record import TransactionRecord
+from ..dataparser import DataParser
 
 TZ_INFOS = {'CST': dateutil.tz.gettz('Asia/Shanghai')}
 

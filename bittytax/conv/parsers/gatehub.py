@@ -5,9 +5,9 @@ import logging
 import copy
 from decimal import Decimal
 
-from ..config import config
-from ..record import TransactionRecord
-from ..parser import DataParser
+from ...config import config
+from ...record import TransactionRecord
+from ..dataparser import DataParser
 
 WALLET = "Gatehub"
 

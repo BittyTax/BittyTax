@@ -9,9 +9,9 @@ import io
 
 import xlrd
 
-from .version import __version__
-from .config import config
-from .parser import DataParser
+from ..version import __version__
+from ..config import config
+from .dataparser import DataParser
 from .parsers import *
 
 CSV_DELIMITERS = (',', ';')

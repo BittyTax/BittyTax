@@ -11,8 +11,8 @@ from datetime import datetime, timedelta
 import dateutil.parser
 import requests
 
-from .version import __version__
-from .config import config
+from ..version import __version__
+from ..config import config
 
 CRYPTOCOMPARE_MAX_DAYS = 2000
 COINPAPRIKA_MAX_DAYS = 5000

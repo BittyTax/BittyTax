@@ -3,8 +3,8 @@
 
 from decimal import Decimal
 
-from ..record import TransactionRecord
-from ..parser import DataParser
+from ...record import TransactionRecord
+from ..dataparser import DataParser
 
 WALLET = "Coinbase Pro"
 

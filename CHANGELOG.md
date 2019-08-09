@@ -19,11 +19,12 @@
 - Logging is now initialised by each tool, instead of within the `config.py` module.
 - Conversion tool now outputs logging to `stderr` so it will be filtered when piping into `bittytax`. 
 - The `pricedata.py` module has been renamed `valueasset.py`, and main function moved to new `price.py` module.
+- Package layout restructured, added subfolders for price and conv tools.
 
 ## Version [0.1.2] Beta (2019-06-30)
 ### Fixed
 - Fix for 'get_average_cost' exception when debug enabled.
-- Same-day buy pools should the use the timestamp of earliest transaction, not the latest, this prevents the possiblity of a negative balance.
+- Same-day buy pools should the use the timestamp of earliest transaction, not the latest, this prevents the possibility of a negative balance.
 - Circle parser: added missing transaction types, 'internal_switch_currency' and 'switch_currency'.
 ### Added
 - Exchange data files: Wirex, Binance.

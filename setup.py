@@ -54,8 +54,8 @@ setup(
     entry_points={
         'console_scripts': [
             'bittytax = bittytax.bittytax:main',
-            'bittytax_conv = bittytax.convert:main',
-            'bittytax_price = bittytax.price:main',
+            'bittytax_conv = bittytax.conv.bittytax_conv:main',
+            'bittytax_price = bittytax.price.bittytax_price:main',
         ],
     },
     include_package_data=True,

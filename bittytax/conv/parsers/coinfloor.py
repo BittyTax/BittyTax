@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-from ..record import TransactionRecord
-from ..parser import DataParser
+from ...record import TransactionRecord
+from ..dataparser import DataParser
 
 WALLET = "Coinfloor"
 

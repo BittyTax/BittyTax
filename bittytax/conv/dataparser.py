@@ -7,7 +7,7 @@ import datetime
 import dateutil.parser
 import dateutil.tz
 
-from .config import config
+from ..config import config
 
 TERM_WIDTH = 69
 

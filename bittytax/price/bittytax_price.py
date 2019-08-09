@@ -8,8 +8,8 @@ from decimal import Decimal
 
 import dateutil.parser
 
-from .version import __version__
-from .config import config
+from ..version import __version__
+from ..config import config
 from .valueasset import ValueAsset
 
 logging.basicConfig(stream=sys.stdout,

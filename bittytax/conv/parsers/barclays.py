@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-from ..config import config
-from ..record import TransactionRecord
-from ..parser import DataParser
+from ...config import config
+from ...record import TransactionRecord
+from ..dataparser import DataParser
 
 def parse_barclays(in_row):
     if in_row[2] != "Completed":
