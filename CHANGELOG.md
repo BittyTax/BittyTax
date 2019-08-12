@@ -12,6 +12,7 @@
 - TradeSatoshi: new data file format for deposits and withdrawals added.
 - Conversion tool can now support data files with different CSV delimiters.
 - Conversion tool has debug option.
+- Conversion tool raises warning if 15-digit precision exceeded (Excel limit).
 ### Removed
 - Negative balance warning in a Section 104 holding. 
 - Logging removed from within config module.

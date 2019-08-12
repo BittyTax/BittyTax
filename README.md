@@ -189,7 +189,9 @@ If you do use Excel, there are some pitfalls to be aware of.
 
 1. When you save a worksheet as a CSV file, the numbers saved are those as displayed by the formatting, which might be truncated, not the actual number you see if click on the cell to edit it.
 
-One way to avoid these issues is to format all cells as Text. Instead of opening a CSV file directly into Excel, it's better to open Excel and use File > Import, follow the steps of the Text Import Wizard, and when selecting the Data Format, be sure to select Text for all the columns.  
+One way to avoid these issues is to format all cells as Text. Instead of opening a CSV file directly into Excel, it's better to open Excel and use File > Import, follow the steps of the Text Import Wizard, and when selecting the Data Format, be sure to select Text for all the columns. 
+
+The conversion tool will display a warning if it detects any data which exceeds 15-digits of precision.
 
 ## Accounting Tool
 Once you have all of your transaction records stored in a CSV file you can use `bittytax` to process them.

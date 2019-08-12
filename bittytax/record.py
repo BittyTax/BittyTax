@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import logging
+
 from decimal import Decimal
 
 from .config import config
+
+log = logging.getLogger()
+
+EXCEL_PRECISION = 15
 
 class TransactionRecord(object):
     TYPE_DEPOSIT = 'Deposit'
@@ -100,6 +106,18 @@ class TransactionRecord(object):
             self.fee_value = None
 
     def to_csv(self):
+        if self.buy_quantity is not None and \
+                len(self.buy_quantity.normalize().as_tuple().digits) > EXCEL_PRECISION:
+            log.warning("%d-digit precision exceeded! %s", EXCEL_PRECISION, self)
+
+        if self.sell_quantity is not None and \
+                len(self.sell_quantity.normalize().as_tuple().digits) > EXCEL_PRECISION:
+            log.warning("%d-digit precision exceeded! %s", EXCEL_PRECISION, self)
+
+        if self.fee_quantity is not None and \
+                len(self.fee_quantity.normalize().as_tuple().digits) > EXCEL_PRECISION:
+            log.warning("%d-digit precision exceeded! %s", EXCEL_PRECISION, self)
+
         return [self.t_type,
                 '{0:f}'.format(self.buy_quantity) if self.buy_quantity is not None else None,
                 self.buy_asset,
