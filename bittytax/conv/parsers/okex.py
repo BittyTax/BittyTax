@@ -1,29 +1,27 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import copy
 from decimal import Decimal
 
 import dateutil.tz
 
-from ...config import config
 from ...record import TransactionRecord
 from ..dataparser import DataParser
 
+WALLET = "OKEx"
 TZ_INFOS = {'CST': dateutil.tz.gettz('Asia/Shanghai')}
 
 def parse_okex_trades(all_in_row):
-    all_out_row = copy.deepcopy(all_in_row)
-    i = 0
+    t_records = []
 
-    while i < len(all_in_row):
-        in_row = all_in_row[i]
-
+    for in_row in all_in_row:
         if in_row[1] == "buy":
             buy_quantity = in_row[2]
             buy_asset = in_row[5]
             fee_quantity = abs(Decimal(in_row[4]))
             fee_asset = in_row[5]
+
+            t_records.append(None)
         elif in_row[1] == "sell":
             sell_quantity = abs(Decimal(in_row[2]))
             sell_asset = in_row[5]
@@ -37,21 +35,12 @@ def parse_okex_trades(all_in_row):
                                          sell_asset=sell_asset,
                                          fee_quantity=fee_quantity,
                                          fee_asset=fee_asset,
-                                         wallet="OKEx")
-
-            all_out_row[i].extend(t_record.to_csv())
+                                         wallet=WALLET)
+            t_records.append(t_record)
         else:
             raise ValueError("Unrecognised type: " + in_row[1])
 
-        i += 1
-
-    if not config.args.append:
-        for i, _ in enumerate(all_in_row):
-            del all_out_row[i][0:len(all_in_row[i])]
-
-        all_out_row = filter(None, all_out_row)
-
-    return all_out_row
+    return t_records
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "OKEx",

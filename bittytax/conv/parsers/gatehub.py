@@ -5,7 +5,6 @@ import logging
 import copy
 from decimal import Decimal
 
-from ...config import config
 from ...record import TransactionRecord
 from ..dataparser import DataParser
 
@@ -13,12 +12,11 @@ WALLET = "Gatehub"
 
 log = logging.getLogger()
 
-def parse_gatehub(all_in_row):
-    all_out_row = copy.deepcopy(all_in_row)
-    i = 0
+def parse_gatehub(all_in_row_orig):
+    all_in_row = copy.deepcopy(all_in_row_orig)
+    t_records = []
 
-    while i < len(all_in_row):
-        in_row = all_in_row[i]
+    for i, in_row in enumerate(all_in_row):
         t_type = ""
         buy_quantity = None
         buy_asset = ""
@@ -26,6 +24,11 @@ def parse_gatehub(all_in_row):
         sell_asset = ""
         fee_quantity = None
         fee_asset = ""
+
+        if not in_row[1] or not in_row[3]:
+            # Skip if already matched, or Amount missing
+            t_records.append(None)
+            continue
 
         if in_row[2] == "payment":
             if Decimal(in_row[3]) < 0:
@@ -38,33 +41,36 @@ def parse_gatehub(all_in_row):
                 buy_asset = in_row[4]
 
             fee_quantity, fee_asset = find_same_tx(all_in_row, i,
-                                                   in_row[1],
                                                    "ripple_network_fee",
                                                    [sell_asset, buy_asset])
         elif in_row[2] == "exchange":
-            if in_row[3]:
-                t_type = TransactionRecord.TYPE_TRADE
-                if Decimal(in_row[3]) < 0:
-                    sell_quantity = abs(Decimal(in_row[3]))
-                    sell_asset = in_row[4]
+            t_type = TransactionRecord.TYPE_TRADE
+            if Decimal(in_row[3]) < 0:
+                sell_quantity = abs(Decimal(in_row[3]))
+                sell_asset = in_row[4]
 
-                    buy_quantity, buy_asset = find_same_tx(all_in_row, i,
-                                                           in_row[1],
-                                                           "exchange", [])
-                    fee_quantity, fee_asset = find_same_tx(all_in_row, i,
-                                                           in_row[1],
-                                                           "ripple_network_fee",
-                                                           [sell_asset, buy_asset])
-                else:
-                    i += 1
-                    continue
+                buy_quantity, buy_asset = find_same_tx(all_in_row, i,
+                                                       "exchange")
             else:
-                i += 1
+                buy_quantity = in_row[3]
+                buy_asset = in_row[4]
+
+                sell_quantity, sell_asset = find_same_tx(all_in_row, i,
+                                                         "exchange")
+
+            if sell_quantity is None or buy_quantity is None:
+                # Skip if buy or sell is missing from Trade
                 continue
+
+            fee_quantity, fee_asset = find_same_tx(all_in_row, i,
+                                                   "ripple_network_fee",
+                                                   [sell_asset, buy_asset])
         elif in_row[2] == "ripple_network_fee":
-            # Check for left over fees last
-            i += 1
-            continue
+            # Fees which are not associated with a payment or exchange are added
+            # as a Spend
+            t_type = TransactionRecord.TYPE_SPEND
+            sell_quantity = abs(Decimal(in_row[3]))
+            sell_asset = in_row[4]
         else:
             raise ValueError("Unrecognised Type: " + in_row[2])
 
@@ -77,62 +83,29 @@ def parse_gatehub(all_in_row):
                                      fee_quantity=fee_quantity,
                                      fee_asset=fee_asset,
                                      wallet=WALLET)
+        t_records.append(t_record)
+        in_row[1] = None    # Remove hash to prevent future matches
 
-        all_out_row[i].extend(t_record.to_csv())
-        in_row[1] = ""    # remove hash to prevent future matches
-
-        i += 1
-
-    i = 0
-    while i < len(all_in_row):
-        # Search for any remaining unmatched fees
-        in_row = all_in_row[i]
-        if in_row[2] == "ripple_network_fee" and in_row[1] != "":
-            t_type = "Spend"
-            sell_quantity = abs(Decimal(in_row[3]))
-            sell_asset = in_row[4]
-
-            t_record = TransactionRecord(TransactionRecord.TYPE_SPEND,
-                                         DataParser.parse_timestamp(in_row[0]),
-                                         sell_quantity=sell_quantity,
-                                         sell_asset=sell_asset,
-                                         wallet=WALLET)
-
-            all_out_row[i].extend(t_record.to_csv())
-            in_row[1] = ""    # remove hash to prevent future matches
-
-        i += 1
-
-    for i, _ in enumerate(all_in_row):
+    for i, in_row in enumerate(all_in_row):
         # Check for unmatched transactions
-        if all_in_row[i][1] != "":
-            log.warning("Skipping row: %s", all_in_row[i])
+        if in_row[1]:
+            log.warning("Skipping row[%s]: %s", i + 2, in_row)
 
-    if not config.args.append:
-        for i, _ in enumerate(all_in_row):
-            del all_out_row[i][0:len(all_in_row[i])]
+    return t_records
 
-        all_out_row = filter(None, all_out_row)
-
-    return all_out_row
-
-def find_same_tx(all_in_row, i, tx_hash, tx_type, currencies):
-    x = 0
+def find_same_tx(all_in_row, i, tx_type, currencies=None):
+    tx_hash = all_in_row[i][1]
     quantity = None
     asset = ""
 
-    while x < len(all_in_row):
-        in_row = all_in_row[x]
-
-        if in_row[1] == tx_hash and in_row[2] == tx_type and i != x:
-            if (tx_type == "ripple_network_fee" and
-                    in_row[4] in currencies) or tx_type != "ripple_network_fee":
-                quantity = abs(Decimal(in_row[3]))
-                asset = in_row[4]
-                in_row[1] = ""    # remove hash to prevent future matches
-                break
-
-        x += 1
+    for _, in_row in enumerate(all_in_row[i + 1:len(all_in_row)]):
+        if in_row[1] == tx_hash and in_row[2] == tx_type and \
+                (tx_type == "ripple_network_fee" and in_row[4] in currencies or
+                 tx_type != "ripple_network_fee"):
+            quantity = abs(Decimal(in_row[3]))
+            asset = in_row[4]
+            in_row[1] = None    # Remove hash to prevent future matches
+            break
 
     return quantity, asset
 

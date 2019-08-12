@@ -20,6 +20,7 @@
 - Conversion tool now outputs logging to `stderr` so it will be filtered when piping into `bittytax`. 
 - The `pricedata.py` module has been renamed `valueasset.py`, and main function moved to new `price.py` module.
 - Package layout restructured, added subfolders for price and conv tools.
+- Refactored code for "all_handler" data parsers.
 
 ## Version [0.1.2] Beta (2019-06-30)
 ### Fixed

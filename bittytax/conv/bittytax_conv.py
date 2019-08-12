@@ -92,7 +92,13 @@ def _parse_file(reader):
     else:
         # all rows handled together
         all_in_row = list(reader)
-        out_rows = parser.all_handler(all_in_row, *parser.args)
+        t_records = parser.all_handler(all_in_row, *parser.args)
+
+        if config.args.append:
+            out_rows = [in_row + t_record.to_csv() if t_record else in_row
+                        for in_row, t_record in zip(all_in_row, t_records)]
+        else:
+            out_rows = [t_record.to_csv() for t_record in t_records if t_record]
 
     writer = csv.writer(sys.stdout, lineterminator='\n')
 
