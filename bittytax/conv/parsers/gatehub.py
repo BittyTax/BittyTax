@@ -5,7 +5,7 @@ import logging
 import copy
 from decimal import Decimal
 
-from ...record import TransactionRecord
+from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 
 WALLET = "Gatehub"
@@ -32,11 +32,11 @@ def parse_gatehub(all_in_row_orig):
 
         if in_row[2] == "payment":
             if Decimal(in_row[3]) < 0:
-                t_type = TransactionRecord.TYPE_WITHDRAWAL
+                t_type = TransactionOutRecord.TYPE_WITHDRAWAL
                 sell_quantity = abs(Decimal(in_row[3]))
                 sell_asset = in_row[4]
             else:
-                t_type = TransactionRecord.TYPE_DEPOSIT
+                t_type = TransactionOutRecord.TYPE_DEPOSIT
                 buy_quantity = in_row[3]
                 buy_asset = in_row[4]
 
@@ -44,7 +44,7 @@ def parse_gatehub(all_in_row_orig):
                                                    "ripple_network_fee",
                                                    [sell_asset, buy_asset])
         elif in_row[2] == "exchange":
-            t_type = TransactionRecord.TYPE_TRADE
+            t_type = TransactionOutRecord.TYPE_TRADE
             if Decimal(in_row[3]) < 0:
                 sell_quantity = abs(Decimal(in_row[3]))
                 sell_asset = in_row[4]
@@ -68,21 +68,21 @@ def parse_gatehub(all_in_row_orig):
         elif in_row[2] == "ripple_network_fee":
             # Fees which are not associated with a payment or exchange are added
             # as a Spend
-            t_type = TransactionRecord.TYPE_SPEND
+            t_type = TransactionOutRecord.TYPE_SPEND
             sell_quantity = abs(Decimal(in_row[3]))
             sell_asset = in_row[4]
         else:
             raise ValueError("Unrecognised Type: " + in_row[2])
 
-        t_record = TransactionRecord(t_type,
-                                     DataParser.parse_timestamp(in_row[0]),
-                                     buy_quantity=buy_quantity,
-                                     buy_asset=buy_asset,
-                                     sell_quantity=sell_quantity,
-                                     sell_asset=sell_asset,
-                                     fee_quantity=fee_quantity,
-                                     fee_asset=fee_asset,
-                                     wallet=WALLET)
+        t_record = TransactionOutRecord(t_type,
+                                        DataParser.parse_timestamp(in_row[0]),
+                                        buy_quantity=buy_quantity,
+                                        buy_asset=buy_asset,
+                                        sell_quantity=sell_quantity,
+                                        sell_asset=sell_asset,
+                                        fee_quantity=fee_quantity,
+                                        fee_asset=fee_asset,
+                                        wallet=WALLET)
         t_records.append(t_record)
         in_row[1] = None    # Remove hash to prevent future matches
 

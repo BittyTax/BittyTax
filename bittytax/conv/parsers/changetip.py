@@ -4,7 +4,7 @@
 from decimal import Decimal
 
 from ...config import config
-from ...record import TransactionRecord
+from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 
 WALLET = "ChangeTip"
@@ -12,17 +12,17 @@ WALLET = "ChangeTip"
 def parse_changetip(in_row):
     if in_row[6] == "Delivered":
         if in_row[2] in config.usernames:
-            return TransactionRecord(TransactionRecord.TYPE_GIFT_RECEIVED,
-                                     DataParser.parse_timestamp(in_row[3]),
-                                     buy_quantity=Decimal(in_row[4]) / 100000000,
-                                     buy_asset="BTC",
-                                     wallet=WALLET)
+            return TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
+                                        DataParser.parse_timestamp(in_row[3]),
+                                        buy_quantity=Decimal(in_row[4]) / 100000000,
+                                        buy_asset="BTC",
+                                        wallet=WALLET)
         elif in_row[1] in config.usernames:
-            return TransactionRecord(TransactionRecord.TYPE_GIFT_SENT,
-                                     DataParser.parse_timestamp(in_row[3]),
-                                     sell_quantity=Decimal(in_row[4]) / 100000000,
-                                     sell_asset="BTC",
-                                     wallet=WALLET)
+            return TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_SENT,
+                                        DataParser.parse_timestamp(in_row[3]),
+                                        sell_quantity=Decimal(in_row[4]) / 100000000,
+                                        sell_asset="BTC",
+                                        wallet=WALLET)
         else:
             raise ValueError("Unrecognised username: " + in_row[2])
     else:

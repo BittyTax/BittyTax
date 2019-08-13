@@ -13,13 +13,9 @@ from ..version import __version__
 from ..config import config
 from .dataparser import DataParser
 from .parsers import *
+from .out_record import TransactionOutRecord
 
 CSV_DELIMITERS = (',', ';')
-OUT_HEADER = ['Type',
-              'Buy Quantity', 'Buy Asset', 'Buy Value',
-              'Sell Quantity', 'Sell Asset', 'Sell Value',
-              'Fee Quantity', 'Fee Asset', 'Fee Value',
-              'Wallet', 'Timestamp']
 
 logging.basicConfig(stream=sys.stderr,
                     level=logging.INFO,
@@ -31,7 +27,8 @@ def _open_excel_file(workbook):
     sheet = workbook.sheet_by_index(0)
 
     reader = _get_cell_values(sheet.get_rows(), workbook)
-    _parse_file(reader)
+    all_in_row, t_records, in_header = _parse_file(reader)
+    TransactionOutRecord.csv_file(all_in_row, t_records, in_header)
     workbook.release_resources()
     del workbook
 
@@ -55,7 +52,9 @@ def _open_csv_file(filename, delimiter):
             reader = csv.reader(_utf_8_encoder(data_file), delimiter=delimiter)
         else:
             reader = csv.reader(data_file, delimiter=delimiter)
-        _parse_file(reader)
+
+        all_in_row, t_records, in_header = _parse_file(reader)
+        TransactionOutRecord.csv_file(all_in_row, t_records, in_header)
 
     data_file.close()
 
@@ -80,38 +79,19 @@ def _parse_file(reader):
     if parser is None:
         raise KeyError("Data file format unrecognised")
 
-    out_rows = []
     if parser.row_handler:
+        all_in_row = []
+        t_records = []
+
         for in_row in reader:
-            t_record = parser.row_handler(in_row, *parser.args)
-            out_row = t_record.to_csv() if t_record else []
-            if config.args.append:
-                out_rows.append(in_row + out_row)
-            elif out_row:
-                out_rows.append(out_row)
+            all_in_row.append(in_row)
+            t_records.append(parser.row_handler(in_row, *parser.args))
     else:
         # all rows handled together
         all_in_row = list(reader)
         t_records = parser.all_handler(all_in_row, *parser.args)
 
-        if config.args.append:
-            out_rows = [in_row + t_record.to_csv() if t_record else in_row
-                        for in_row, t_record in zip(all_in_row, t_records)]
-        else:
-            out_rows = [t_record.to_csv() for t_record in t_records if t_record]
-
-    writer = csv.writer(sys.stdout, lineterminator='\n')
-
-    if not config.args.noheader:
-        if config.args.append:
-            writer.writerow(parser.in_header + OUT_HEADER)
-        else:
-            writer.writerow(OUT_HEADER)
-
-    if config.args.sort:
-        out_rows.sort(key=lambda c: c[-1], reverse=False)
-
-    writer.writerows(out_rows)
+    return all_in_row, t_records, parser.in_header
 
 def main():
     parser = argparse.ArgumentParser(epilog="supported data file formats:\n" + \
@@ -129,18 +109,6 @@ def main():
                         "--debug",
                         action='store_true',
                         help="enabled debug logging")
-    parser.add_argument("-a",
-                        "--append",
-                        action='store_true',
-                        help="append output as new columns to the input data file")
-    parser.add_argument("-nh",
-                        "--noheader",
-                        action='store_true',
-                        help="exclude header from CSV output")
-    parser.add_argument("-s",
-                        "--sort",
-                        action='store_true',
-                        help="sort output by timestamp")
     parser.add_argument("-uc",
                         "--unconfirmed",
                         action='store_true',
@@ -150,6 +118,23 @@ def main():
                         type=str,
                         help="specify a cryptoasset symbol, if it cannot be identified "
                              "automatically")
+    parser.add_argument("-nh",
+                        "--noheader",
+                        action='store_true',
+                        help="exclude header from CSV output")
+    parser.add_argument("-a",
+                        "--append",
+                        action='store_true',
+                        help="append output as new columns to the input data file")
+    parser.add_argument("--format",
+                        choices=['CSV', 'RECAP'],
+                        default='CSV',
+                        type=str.upper,
+                        help="specify the output format")
+    parser.add_argument("-s",
+                        "--sort",
+                        action='store_true',
+                        help="sort output by timestamp")
 
     config.args = parser.parse_args()
 

@@ -1,17 +1,11 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
-
 from decimal import Decimal
 
 from .config import config
 
-log = logging.getLogger()
-
-EXCEL_PRECISION = 15
-
-class TransactionRecord(object):
+class TransactionRecordBase(object):
     TYPE_DEPOSIT = 'Deposit'
     TYPE_MINING = 'Mining'
     TYPE_INCOME = 'Income'
@@ -33,8 +27,8 @@ class TransactionRecord(object):
                  fee_quantity=None, fee_asset="", fee_value=None,
                  wallet=""):
 
-        TransactionRecord.cnt += 1
-        self.line_num = TransactionRecord.cnt
+        TransactionRecordBase.cnt += 1
+        self.line_num = TransactionRecordBase.cnt
         self.t_type = t_type
         self.buy_quantity = Decimal(buy_quantity) if buy_quantity is not None else None
         self.buy_asset = buy_asset
@@ -48,6 +42,50 @@ class TransactionRecord(object):
         self.wallet = wallet
         self.timestamp = timestamp
 
+    @staticmethod
+    def format_quantity(quantity):
+        if quantity is None:
+            return '-'
+
+        return '{:0,f}'.format(quantity.normalize())
+
+    @staticmethod
+    def format_value(value):
+        if value is not None:
+            return ' (' + config.sym() + '{:0,.2f} {})'.format(value, config.CCY)
+
+        return ''
+
+    def __str__(self):
+        if self.t_type in self.BUY_TYPES or self.t_type == self.TYPE_DEPOSIT:
+            return "[Row:" + str(self.line_num) + "] " + \
+                   self.t_type + ": " + \
+                   self.format_quantity(self.buy_quantity) + " " + \
+                   self.buy_asset + \
+                   self.format_value(self.buy_value) + " \"" + \
+                   self.wallet + "\" " + \
+                   self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
+        elif self.t_type in self.SELL_TYPES or self.t_type == self.TYPE_WITHDRAWAL:
+            return "[Row:" + str(self.line_num) + "] " + \
+                   self.t_type + ": " + \
+                   self.format_quantity(self.sell_quantity) + " " + \
+                   self.sell_asset + \
+                   self.format_value(self.sell_value) + " \"" + \
+                   self.wallet + "\" " + \
+                   self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
+        else:
+            return "[Row:" + str(self.line_num) + "] " + \
+                   self.t_type + ": " + \
+                   self.format_quantity(self.buy_quantity) + " " + \
+                   self.buy_asset + \
+                   self.format_value(self.buy_value) + " <- " + \
+                   self.format_quantity(self.sell_quantity) + " " + \
+                   self.sell_asset + \
+                   self.format_value(self.sell_value) + " \"" + \
+                   self.wallet + "\" " + \
+                   self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
+
+class TransactionInRecord(TransactionRecordBase):
     def validate(self):
         if self.t_type in self.BUY_TYPES or self.t_type == self.TYPE_DEPOSIT:
             if not self.buy_asset or self.buy_quantity is None:
@@ -104,81 +142,3 @@ class TransactionRecord(object):
             self.fee_quantity = None
             self.fee_asset = ""
             self.fee_value = None
-
-    def to_csv(self):
-        if self.buy_quantity is not None and \
-                len(self.buy_quantity.normalize().as_tuple().digits) > EXCEL_PRECISION:
-            log.warning("%d-digit precision exceeded! %s", EXCEL_PRECISION, self)
-
-        if self.sell_quantity is not None and \
-                len(self.sell_quantity.normalize().as_tuple().digits) > EXCEL_PRECISION:
-            log.warning("%d-digit precision exceeded! %s", EXCEL_PRECISION, self)
-
-        if self.fee_quantity is not None and \
-                len(self.fee_quantity.normalize().as_tuple().digits) > EXCEL_PRECISION:
-            log.warning("%d-digit precision exceeded! %s", EXCEL_PRECISION, self)
-
-        return [self.t_type,
-                '{0:f}'.format(self.buy_quantity) if self.buy_quantity is not None else None,
-                self.buy_asset,
-                '{0:f}'.format(self.buy_value) if self.buy_value is not None else None,
-                '{0:f}'.format(self.sell_quantity) if self.sell_quantity is not None else None,
-                self.sell_asset,
-                '{0:f}'.format(self.sell_value) if self.sell_value is not None else None,
-                '{0:f}'.format(self.fee_quantity) if self.fee_quantity is not None else None,
-                self.fee_asset,
-                '{0:f}'.format(self.fee_value) if self.fee_value is not None else None,
-                self.wallet,
-                self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')]
-
-    @staticmethod
-    def format_quantity(quantity):
-        if quantity is None:
-            return '-'
-
-        return '{:0,f}'.format(quantity.normalize())
-
-    @staticmethod
-    def format_value(value):
-        if value is not None:
-            return ' (' + config.sym() + '{:0,.2f} {})'.format(value, config.CCY)
-
-        return ''
-
-    def __eq__(self, other):
-        return self.timestamp == other.timestamp
-
-    def __ne__(self, other):
-        return not self == other
-
-    def __lt__(self, other):
-        return self.timestamp < other.timestamp
-
-    def __str__(self):
-        if self.t_type in self.BUY_TYPES or self.t_type == self.TYPE_DEPOSIT:
-            return "[Row:" + str(self.line_num) + "] " + \
-                   self.t_type + ": " + \
-                   self.format_quantity(self.buy_quantity) + " " + \
-                   self.buy_asset + \
-                   self.format_value(self.buy_value) + " \"" + \
-                   self.wallet + "\" " + \
-                   self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
-        elif self.t_type in self.SELL_TYPES or self.t_type == self.TYPE_WITHDRAWAL:
-            return "[Row:" + str(self.line_num) + "] " + \
-                   self.t_type + ": " + \
-                   self.format_quantity(self.sell_quantity) + " " + \
-                   self.sell_asset + \
-                   self.format_value(self.sell_value) + " \"" + \
-                   self.wallet + "\" " + \
-                   self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
-        else:
-            return "[Row:" + str(self.line_num) + "] " + \
-                   self.t_type + ": " + \
-                   self.format_quantity(self.buy_quantity) + " " + \
-                   self.buy_asset + \
-                   self.format_value(self.buy_value) + " <- " + \
-                   self.format_quantity(self.sell_quantity) + " " + \
-                   self.sell_asset + \
-                   self.format_value(self.sell_value) + " \"" + \
-                   self.wallet + "\" " + \
-                   self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')

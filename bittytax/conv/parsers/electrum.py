@@ -4,7 +4,7 @@
 from decimal import Decimal
 
 from ...config import config
-from ...record import TransactionRecord
+from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 
 WALLET = "Electrum"
@@ -14,18 +14,18 @@ def parse_electrum(in_row):
         raise Exception(config.ERROR_TXT[0])
 
     if Decimal(in_row[3]) > 0:
-        return TransactionRecord(TransactionRecord.TYPE_DEPOSIT,
-                                 DataParser.parse_timestamp(in_row[4]),
-                                 buy_quantity=Decimal(in_row[3]),
-                                 buy_asset=config.args.cryptoasset,
-                                 wallet=WALLET)
+        return TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                    DataParser.parse_timestamp(in_row[4]),
+                                    buy_quantity=Decimal(in_row[3]),
+                                    buy_asset=config.args.cryptoasset,
+                                    wallet=WALLET)
 
     else:
-        return TransactionRecord(TransactionRecord.TYPE_WITHDRAWAL,
-                                 DataParser.parse_timestamp(in_row[4]),
-                                 sell_quantity=abs(Decimal(in_row[3])),
-                                 sell_asset=config.args.cryptoasset,
-                                 wallet=WALLET)
+        return TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                    DataParser.parse_timestamp(in_row[4]),
+                                    sell_quantity=abs(Decimal(in_row[3])),
+                                    sell_asset=config.args.cryptoasset,
+                                    wallet=WALLET)
 
 DataParser(DataParser.TYPE_WALLET,
            "Electrum",

@@ -27,6 +27,9 @@ class Config(object):
     FIAT_LIST = ['GBP', 'EUR', 'USD']
     CRYPTO_LIST = ['BTC', 'ETH', 'XRP', 'LTC', 'BCH', 'USDT']
 
+    FORMAT_CSV = 'CSV'
+    FORMAT_RECAP = 'RECAP'
+
     TRADE_ASSET_TYPE_BUY = 0
     TRADE_ASSET_TYPE_SELL = 1
     TRADE_ASSET_TYPE_PRIORITY = 2

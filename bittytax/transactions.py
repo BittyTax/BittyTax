@@ -10,7 +10,7 @@ from decimal import Decimal
 import dateutil.parser
 
 from .config import config
-from .record import TransactionRecord
+from .record import TransactionInRecord
 
 PRECISION = Decimal('0.00')
 
@@ -49,18 +49,18 @@ def _parse_row(row):
         # Default to UTC if no timezone is specified
         timestamp = timestamp.replace(tzinfo=config.TZ_UTC)
 
-    return TransactionRecord(row[0],
-                             timestamp,
-                             buy_quantity=_strip_non_digits(row[1]) if row[1] else None,
-                             buy_asset=row[2],
-                             buy_value=_strip_non_digits(row[3]) if row[3] else None,
-                             sell_quantity=_strip_non_digits(row[4]) if row[4] else None,
-                             sell_asset=row[5],
-                             sell_value=_strip_non_digits(row[6]) if row[6] else None,
-                             fee_quantity=_strip_non_digits(row[7]) if row[7] else None,
-                             fee_asset=row[8],
-                             fee_value=_strip_non_digits(row[9]) if row[9] else None,
-                             wallet=row[10])
+    return TransactionInRecord(row[0],
+                               timestamp,
+                               buy_quantity=_strip_non_digits(row[1]) if row[1] else None,
+                               buy_asset=row[2],
+                               buy_value=_strip_non_digits(row[3]) if row[3] else None,
+                               sell_quantity=_strip_non_digits(row[4]) if row[4] else None,
+                               sell_asset=row[5],
+                               sell_value=_strip_non_digits(row[6]) if row[6] else None,
+                               fee_quantity=_strip_non_digits(row[7]) if row[7] else None,
+                               fee_asset=row[8],
+                               fee_value=_strip_non_digits(row[9]) if row[9] else None,
+                               wallet=row[10])
 
 def _strip_non_digits(string):
     return string.strip('£€$').replace(',', '')
@@ -192,11 +192,11 @@ class TransactionBase(object):
         return result
 
 class Buy(TransactionBase):
-    TYPE_DEPOSIT = TransactionRecord.TYPE_DEPOSIT
-    TYPE_MINING = TransactionRecord.TYPE_MINING
-    TYPE_INCOME = TransactionRecord.TYPE_INCOME
-    TYPE_GIFT_RECEIVED = TransactionRecord.TYPE_GIFT_RECEIVED
-    TYPE_TRADE = TransactionRecord.TYPE_TRADE
+    TYPE_DEPOSIT = TransactionInRecord.TYPE_DEPOSIT
+    TYPE_MINING = TransactionInRecord.TYPE_MINING
+    TYPE_INCOME = TransactionInRecord.TYPE_INCOME
+    TYPE_GIFT_RECEIVED = TransactionInRecord.TYPE_GIFT_RECEIVED
+    TYPE_TRADE = TransactionInRecord.TYPE_TRADE
 
     ACQUISITION_TYPES = {TYPE_MINING, TYPE_INCOME, TYPE_GIFT_RECEIVED, TYPE_TRADE}
 
@@ -256,11 +256,11 @@ class Buy(TransactionBase):
                self._format_match_status()
 
 class Sell(TransactionBase):
-    TYPE_WITHDRAWAL = TransactionRecord.TYPE_WITHDRAWAL
-    TYPE_SPEND = TransactionRecord.TYPE_SPEND
-    TYPE_GIFT_SENT = TransactionRecord.TYPE_GIFT_SENT
-    TYPE_CHARITY_SENT = TransactionRecord.TYPE_CHARITY_SENT
-    TYPE_TRADE = TransactionRecord.TYPE_TRADE
+    TYPE_WITHDRAWAL = TransactionInRecord.TYPE_WITHDRAWAL
+    TYPE_SPEND = TransactionInRecord.TYPE_SPEND
+    TYPE_GIFT_SENT = TransactionInRecord.TYPE_GIFT_SENT
+    TYPE_CHARITY_SENT = TransactionInRecord.TYPE_CHARITY_SENT
+    TYPE_TRADE = TransactionInRecord.TYPE_TRADE
 
     DISPOSAL_TYPES = {TYPE_SPEND, TYPE_GIFT_SENT, TYPE_CHARITY_SENT, TYPE_TRADE}
 

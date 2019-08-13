@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import dateutil.tz
 
-from ...record import TransactionRecord
+from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 
 WALLET = "OKEx"
@@ -26,16 +26,16 @@ def parse_okex_trades(all_in_row):
             sell_quantity = abs(Decimal(in_row[2]))
             sell_asset = in_row[5]
 
-            t_record = TransactionRecord(TransactionRecord.TYPE_TRADE,
-                                         DataParser.parse_timestamp(in_row[0],
-                                                                    tzinfos=TZ_INFOS),
-                                         buy_quantity=buy_quantity,
-                                         buy_asset=buy_asset,
-                                         sell_quantity=sell_quantity,
-                                         sell_asset=sell_asset,
-                                         fee_quantity=fee_quantity,
-                                         fee_asset=fee_asset,
-                                         wallet=WALLET)
+            t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                            DataParser.parse_timestamp(in_row[0],
+                                                                       tzinfos=TZ_INFOS),
+                                            buy_quantity=buy_quantity,
+                                            buy_asset=buy_asset,
+                                            sell_quantity=sell_quantity,
+                                            sell_asset=sell_asset,
+                                            fee_quantity=fee_quantity,
+                                            fee_asset=fee_asset,
+                                            wallet=WALLET)
             t_records.append(t_record)
         else:
             raise ValueError("Unrecognised type: " + in_row[1])

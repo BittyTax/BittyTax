@@ -3,34 +3,34 @@
 
 from decimal import Decimal
 
-from ...record import TransactionRecord
+from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 
 WALLET = "Ethereum"
 
 def parse_etherscan(in_row):
     if Decimal(in_row[7]) > 0:
-        return TransactionRecord(TransactionRecord.TYPE_DEPOSIT,
-                                 DataParser.parse_timestamp(int(in_row[2])),
-                                 buy_quantity=in_row[7],
-                                 buy_asset="ETH",
-                                 wallet=WALLET)
+        return TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                    DataParser.parse_timestamp(int(in_row[2])),
+                                    buy_quantity=in_row[7],
+                                    buy_asset="ETH",
+                                    wallet=WALLET)
     elif Decimal(in_row[8]) > 0:
-        return TransactionRecord(TransactionRecord.TYPE_WITHDRAWAL,
-                                 DataParser.parse_timestamp(int(in_row[2])),
-                                 sell_quantity=in_row[8],
-                                 sell_asset="ETH",
-                                 fee_quantity=in_row[10],
-                                 fee_asset="ETH",
-                                 wallet=WALLET)
+        return TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                    DataParser.parse_timestamp(int(in_row[2])),
+                                    sell_quantity=in_row[8],
+                                    sell_asset="ETH",
+                                    fee_quantity=in_row[10],
+                                    fee_asset="ETH",
+                                    wallet=WALLET)
     else:
-        return TransactionRecord(TransactionRecord.TYPE_SPEND,
-                                 DataParser.parse_timestamp(int(in_row[2])),
-                                 sell_quantity=in_row[8],
-                                 sell_asset="ETH",
-                                 fee_quantity=in_row[10],
-                                 fee_asset="ETH",
-                                 wallet=WALLET)
+        return TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
+                                    DataParser.parse_timestamp(int(in_row[2])),
+                                    sell_quantity=in_row[8],
+                                    sell_asset="ETH",
+                                    fee_quantity=in_row[10],
+                                    fee_asset="ETH",
+                                    wallet=WALLET)
 
 DataParser(DataParser.TYPE_EXPLORER,
            "Etherscan (Ethereum)",

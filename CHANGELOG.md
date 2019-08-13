@@ -13,6 +13,7 @@
 - Conversion tool can now support data files with different CSV delimiters.
 - Conversion tool has debug option.
 - Conversion tool raises warning if 15-digit precision exceeded (Excel limit).
+- Conversion tool: added option to output in Recap import CSV format.
 ### Removed
 - Negative balance warning in a Section 104 holding. 
 - Logging removed from within config module.
