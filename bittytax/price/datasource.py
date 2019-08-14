@@ -131,7 +131,8 @@ class ExchangeRatesAPI(DataSourceBase):
         # Date returned in response might not be date requested due to weekends/holidays
         self.update_prices(pair,
                            {timestamp.strftime('%Y-%m-%d'):
-                            Decimal(repr(json_resp['rates'][quote]))},
+                            Decimal(repr(json_resp['rates'][quote]))
+                            if quote in json_resp['rates'] else None},
                            timestamp)
         return self.prices[pair]
 
@@ -163,7 +164,8 @@ class RatesAPI(DataSourceBase):
         # Date returned in response might not be date requested due to weekends/holidays
         self.update_prices(pair,
                            {timestamp.strftime('%Y-%m-%d'):
-                            Decimal(repr(json_resp['rates'][quote]))},
+                            Decimal(repr(json_resp['rates'][quote]))
+                            if quote in json_resp['rates'] else None},
                            timestamp)
         return self.prices[pair]
 
@@ -185,8 +187,8 @@ class CoinDesk(DataSourceBase):
         )
         pair = self.pair(asset, quote)
         self.update_prices(pair,
-                           {k: Decimal(repr(v)) for k, v in json_resp['bpi'].items()},
-                           timestamp)
+                           {k: Decimal(repr(v)) if v else None
+                            for k, v in json_resp['bpi'].items()}, timestamp)
         return self.prices[pair]
 
 class CryptoCompare(DataSourceBase):
@@ -213,8 +215,8 @@ class CryptoCompare(DataSourceBase):
         # Warning - CryptoCompare returns 0 as data for missing dates, convert these to None.
         self.update_prices(pair,
                            {datetime.fromtimestamp(d['time']).strftime('%Y-%m-%d'):
-                            Decimal(repr(d['close']))
-                            for d in json_resp['Data'] if d['close'] != 0}, timestamp)
+                            Decimal(repr(d['close'])) if d['close'] else None
+                            for d in json_resp['Data']}, timestamp)
         return self.prices[pair]
 
 class CoinGecko(DataSourceBase):
@@ -238,7 +240,7 @@ class CoinGecko(DataSourceBase):
         pair = self.pair(asset, quote)
         self.update_prices(pair,
                            {datetime.utcfromtimestamp(p[0]/1000).strftime('%Y-%m-%d'):
-                            Decimal(repr(p[1])) for p in json_resp['prices']},
+                            Decimal(repr(p[1])) if p[1] else None for p in json_resp['prices']},
                            timestamp)
         return self.prices[pair]
 
@@ -269,6 +271,6 @@ class CoinPaprika(DataSourceBase):
         pair = self.pair(asset, quote)
         self.update_prices(pair,
                            {dateutil.parser.parse(p['timestamp']).strftime('%Y-%m-%d'):
-                            Decimal(repr(p['price'])) for p in json_resp},
+                            Decimal(repr(p['price'])) if p['price'] else None for p in json_resp},
                            timestamp)
         return self.prices[pair]
