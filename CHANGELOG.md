@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## Version [0.1.3] Beta (2019-08-14)
 ### Fixed
 - Bitstamp parser: added missing type 'Ripple deposit'.
 - Coinbase Pro parser: filter "fee" transactions.
@@ -46,7 +48,8 @@ This is the initial beta release. Although it has been throughly tested, it's po
 - Exchange data files supported: Bitstamp, Bittrex, ChangeTip, Circle, Coinbase, Coinbase Pro, Coinfloor, Cryptopia, Cryptsy, Gatehub, OKEx, Poloniex, TradeSatoshi, Uphold.
 - Explorer data files supported: Etherscan.
 
-[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/BittyTax/BittyTax/compare/v0.1.1...v0.1.3
 [0.1.2]: https://github.com/BittyTax/BittyTax/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/BittyTax/BittyTax/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/BittyTax/BittyTax/releases/tag/v0.1.0
