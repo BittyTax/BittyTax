@@ -56,6 +56,15 @@ class TransactionRecordBase(object):
 
         return ''
 
+    def __eq__(self, other):
+        return self.timestamp == other.timestamp
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __lt__(self, other):
+        return self.timestamp < other.timestamp
+
     def __str__(self):
         if self.t_type in self.BUY_TYPES or self.t_type == self.TYPE_DEPOSIT:
             return "[Row:" + str(self.line_num) + "] " + \

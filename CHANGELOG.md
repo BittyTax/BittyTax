@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Fixed
+- Audit function failure due to missing sort methods.
 
 ## Version [0.1.3] Beta (2019-08-14)
 ### Fixed
