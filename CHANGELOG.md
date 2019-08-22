@@ -4,6 +4,7 @@
 ### Fixed
 - Audit function failure due to missing sort methods.
 - More robust error handling for data source historic prices.
+- Poloniex Withdrawals parser failure.
 
 ## Version [0.1.3] Beta (2019-08-14)
 ### Fixed

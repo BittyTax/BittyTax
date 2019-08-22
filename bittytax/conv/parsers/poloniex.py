@@ -54,7 +54,7 @@ def parse_poloniex_deposits_withdrawals(in_row):
                                     buy_asset=in_row[1],
                                     wallet=WALLET)
 
-def parse_poloniex_withdrawals(in_row, _):
+def parse_poloniex_withdrawals(in_row):
     return TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                 DataParser.parse_timestamp(in_row[0]),
                                 sell_quantity=Decimal(in_row[2]) - Decimal(in_row[3]),
