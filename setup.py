@@ -1,5 +1,7 @@
 import os
 import re
+import io
+
 from setuptools import setup, find_packages
 
 BITTYTAX_PATH = os.path.expanduser('~/.bittytax')
@@ -7,16 +9,16 @@ VERSION_FILE = 'bittytax/version.py'
 GITHUB_REPO = 'https://github.com/BittyTax/BittyTax'
 
 def get_version():
-    line = open(VERSION_FILE, "rt").read()
-    version = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", line, re.MULTILINE)
+    line = open(VERSION_FILE, 'rt').read()
+    version = re.search(r'^__version__ = [\'"]([^\'"]*)[\'"]', line, re.MULTILINE)
     if version:
         return version.group(1)
     else:
-        raise RuntimeError("Unable to find version string in " + VERSION_FILE)
+        raise RuntimeError('Unable to find version string in ' + VERSION_FILE)
 
 def get_long_description():
-    with open("README.md", "r") as fh:
-        return fh.read()
+    with io.open('README.md', encoding='utf8') as ld:
+        return ld.read()
 
 setup(
     name='BittyTax',
@@ -24,7 +26,7 @@ setup(
     description='Cryptoasset accounting, auditing and UK tax calculations (Capital Gains/Income '
                 'Tax)',
     long_description=get_long_description(),
-    long_description_content_type="text/markdown",
+    long_description_content_type='text/markdown',
     url=GITHUB_REPO,
     download_url=GITHUB_REPO + '/archive/v{}.zip'.format(get_version()),
     author='Scott Green/Nano Nano Ltd',
