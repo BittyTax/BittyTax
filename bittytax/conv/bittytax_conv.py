@@ -8,6 +8,7 @@ import sys
 import io
 
 import xlrd
+from future.utils import raise_from
 
 from ..version import __version__
 from ..config import config
@@ -155,14 +156,15 @@ def main():
                 try:
                     key_error = None
                     _open_csv_file(filename, delimiter=delimiter)
-                except KeyError as key_error:
+                except KeyError as e:
                     # Try with next delimiter
+                    key_error = e
                     continue
                 else:
                     break
 
             if key_error is not None:
-                raise
+                raise_from(key_error, None)
         else:
             _open_excel_file(workbook)
 

@@ -52,6 +52,7 @@ setup(
         'requests',
         'pyyaml',
         'xlrd',
+        'future',
     ],
     entry_points={
         'console_scripts': [
