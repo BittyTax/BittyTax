@@ -14,6 +14,9 @@ from .audit import audit_transactions
 from .price.valueasset import ValueAsset
 from .tax import TaxCalculator
 
+if sys.version_info[0] >= 3:
+    sys.stdout.reconfigure(encoding='utf-8')
+
 logging.basicConfig(stream=sys.stdout,
                     level=logging.INFO,
                     format='[%(asctime)s.%(msecs)03d] %(levelname)s -- : %(message)s',

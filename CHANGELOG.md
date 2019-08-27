@@ -6,6 +6,7 @@
 - More robust error handling for data source historic prices.
 - Poloniex Withdrawals parser failure.
 - Setup.py failing for Windows.
+- Set encoding of stdout/sdterr to be utf-8.
 
 ## Version [0.1.3] Beta (2019-08-14)
 ### Fixed

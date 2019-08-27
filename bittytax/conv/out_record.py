@@ -120,6 +120,9 @@ class TransactionOutRecord(TransactionRecordBase):
         if config.args.sort:
             out_rows.sort(key=cls.sort_key(), reverse=False)
 
+        if sys.version_info[0] >= 3:
+            sys.stdout.reconfigure(encoding='utf-8')
+
         writer = csv.writer(sys.stdout, lineterminator='\n')
         if not config.args.noheader:
             if config.args.append:

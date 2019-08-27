@@ -17,6 +17,9 @@ from .out_record import TransactionOutRecord
 
 CSV_DELIMITERS = (',', ';')
 
+if sys.version_info[0] >= 3:
+    sys.stderr.reconfigure(encoding='utf-8')
+
 logging.basicConfig(stream=sys.stderr,
                     level=logging.INFO,
                     format='[%(asctime)s.%(msecs)03d] %(levelname)s -- : %(message)s',

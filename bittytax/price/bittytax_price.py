@@ -12,6 +12,9 @@ from ..version import __version__
 from ..config import config
 from .valueasset import ValueAsset
 
+if sys.version_info[0] >= 3:
+    sys.stdout.reconfigure(encoding='utf-8')
+
 logging.basicConfig(stream=sys.stdout,
                     level=logging.INFO,
                     format='[%(asctime)s.%(msecs)03d] %(levelname)s -- : %(message)s',
