@@ -29,11 +29,15 @@ def load_transaction_records(import_file):
     next(reader, None) # skip headers
     for row in reader:
         record = _parse_row(row)
-        record.validate()
-        record.normalise_to_localtime()
-        record.include_fees()
-        log.debug(record)
-        transaction_records.append(record)
+
+        if record:
+            record.validate()
+            record.normalise_to_localtime()
+            record.include_fees()
+            log.debug(record)
+            transaction_records.append(record)
+        else:
+            log.debug("Skipping empty row[%d]: %s", reader.line_num, row)
 
     log.info("Total transaction records=%s", len(transaction_records))
     return transaction_records
@@ -43,6 +47,10 @@ def _utf_8_encoder(unicode_csv_data):
         yield line.encode('utf-8')
 
 def _parse_row(row):
+    if all(not row[i] for i in range(12)):
+        # Skip empty rows
+        return None
+
     timestamp = dateutil.parser.parse(row[11], tzinfos=config.TZ_INFOS)
 
     if timestamp.tzinfo is None:

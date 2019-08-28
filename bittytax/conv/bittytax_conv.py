@@ -129,7 +129,7 @@ def main():
     parser.add_argument("-a",
                         "--append",
                         action='store_true',
-                        help="append output as new columns to the input data file")
+                        help="append original data as extra columns in the CSV output")
     parser.add_argument("--format",
                         choices=['CSV', 'RECAP'],
                         default='CSV',

@@ -8,6 +8,8 @@
 - Setup.py failing for Windows.
 - Set encoding of stdout/sdterr to be utf-8.
 - Re-raising exception failure in Python 3.
+### Changed
+- Conversion tool: The append option now appends the original data as extra columns in the CSV output.
 
 ## Version [0.1.3] Beta (2019-08-14)
 ### Fixed

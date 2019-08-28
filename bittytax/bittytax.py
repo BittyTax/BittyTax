@@ -6,6 +6,7 @@ import logging
 import argparse
 import io
 import sys
+import codecs
 
 from .version import __version__
 from .config import config
@@ -59,7 +60,10 @@ def main():
             transaction_records = load_transaction_records(import_file)
             import_file.close()
     else:
-        transaction_records = load_transaction_records(sys.stdin)
+        if sys.version_info[0] < 3:
+            transaction_records = load_transaction_records(codecs.getreader('utf-8')(sys.stdin))
+        else:
+            transaction_records = load_transaction_records(sys.stdin)
 
     if not config.args.skipaudit:
         audit_transactions(sorted(transaction_records))

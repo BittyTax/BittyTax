@@ -36,11 +36,11 @@ class TransactionOutRecord(TransactionRecordBase):
 
     def to_csv(self):
         if config.args.format == config.FORMAT_RECAP:
-            return self._to_recap()
+            return self._to_recap_csv()
         else:
-            return self._to_bittytax()
+            return self._to_bittytax_csv()
 
-    def _to_bittytax(self):
+    def _to_bittytax_csv(self):
         if self.buy_quantity is not None and \
                 len(self.buy_quantity.normalize().as_tuple().digits) > EXCEL_PRECISION:
             log.warning("%d-digit precision exceeded! %s", EXCEL_PRECISION, self)
@@ -66,7 +66,7 @@ class TransactionOutRecord(TransactionRecordBase):
                 self.wallet,
                 self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')]
 
-    def _to_recap(self):
+    def _to_recap_csv(self):
         return [self.RECAP_TYPE_MAPPING[self.t_type],
                 self.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
                 '{0:f}'.format(self.buy_quantity) if self.buy_quantity is not None else None,
@@ -91,29 +91,18 @@ class TransactionOutRecord(TransactionRecordBase):
             return in_header
 
     @classmethod
-    def prepend(cls):
-        if config.args.format == config.FORMAT_RECAP:
-            return True
-        else:
-            return False
-
-    @classmethod
     def sort_key(cls):
         if config.args.format == config.FORMAT_RECAP:
             return lambda c: c[cls.RECAP_OUT_HEADER.index('Date')]
         else:
-            return lambda c: c[-1]
+            return lambda c: c[cls.BITTYTAX_OUT_HEADER.index('Timestamp')]
 
     @classmethod
     def csv_file(cls, all_in_row, t_records, in_header):
         if config.args.append:
-            if cls.prepend():
-                out_rows = [t_record.to_csv() + in_row if t_record
-                            else [None] * len(cls.out_header()) + in_row
-                            for in_row, t_record in zip(all_in_row, t_records)]
-            else:
-                out_rows = [in_row + t_record.to_csv() if t_record else in_row
-                            for in_row, t_record in zip(all_in_row, t_records)]
+            out_rows = [t_record.to_csv() + in_row if t_record
+                        else [None] * len(cls.out_header()) + in_row
+                        for in_row, t_record in zip(all_in_row, t_records)]
         else:
             out_rows = [t_record.to_csv() for t_record in t_records if t_record]
 
@@ -126,10 +115,7 @@ class TransactionOutRecord(TransactionRecordBase):
         writer = csv.writer(sys.stdout, lineterminator='\n')
         if not config.args.noheader:
             if config.args.append:
-                if cls.prepend():
-                    writer.writerow(cls.out_header() + cls.in_header(in_header))
-                else:
-                    writer.writerow(cls.in_header(in_header) + cls.out_header())
+                writer.writerow(cls.out_header() + cls.in_header(in_header))
             else:
                 writer.writerow(cls.out_header())
 
