@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Fixed
+- Bitfinex parser: wallet name typo
 
 ## Version [0.1.4] Beta (2019-08-28)
 ### Fixed

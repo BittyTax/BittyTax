@@ -6,7 +6,7 @@ from decimal import Decimal
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 
-WALLET = "Bifinex"
+WALLET = "Bitfinex"
 
 def parse_bitfinex_trades(in_row):
     if Decimal(in_row[2]) > 0:
