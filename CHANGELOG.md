@@ -3,7 +3,9 @@
 ## [Unreleased]
 ### Fixed
 - Bitfinex parser: wallet name typo.
-- Conversion tool: use repr when parsing numbers in excel files to ensure no precision is lost
+- Conversion tool: use repr when parsing numbers in excel files to ensure no precision is lost.
+### Added
+- Audit: output transaction record in debug.
 
 ## Version [0.1.4] Beta (2019-08-28)
 ### Fixed

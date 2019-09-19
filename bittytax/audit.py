@@ -60,6 +60,7 @@ class Wallet(object):
 def audit_transactions(transaction_records):
     log.debug("==FULL AUDIT TRANSACTIONS==")
     for tr in transaction_records:
+        log.debug(tr)
         if tr.buy_asset:
             Wallet.add_tokens(tr.wallet, tr.buy_asset, tr.buy_quantity)
 

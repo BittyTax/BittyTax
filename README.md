@@ -278,16 +278,22 @@ In the debug example below, you can see each line shows the wallet name, it's as
 ```console
 DEBUG -- : ==FULL AUDIT TRANSACTIONS==
 ...
+DEBUG -- : [Row:8] Trade: 0.41525742 BTC <- 258.82 USD "Bitstamp" 2014-07-23T11:58:00 BST
 DEBUG -- : Bitstamp:BTC=0.41525742 (+0.41525742)
 DEBUG -- : Bitstamp:USD=2,434.98 (-258.82)
+DEBUG -- : [Row:9] Trade: 0.58474258 BTC <- 364.45 USD "Bitstamp" 2014-07-23T11:58:00 BST
 DEBUG -- : Bitstamp:BTC=1 (+0.58474258)
 DEBUG -- : Bitstamp:USD=2,070.53 (-364.45)
+DEBUG -- : [Row:10] Trade: 0.86 BTC <- 523.67 USD "Bitstamp" 2014-07-24T14:08:00 BST
 DEBUG -- : Bitstamp:BTC=1.86 (+0.86)
 DEBUG -- : Bitstamp:USD=1,546.86 (-523.67)
+DEBUG -- : [Row:11] Trade: 0.9 BTC <- 548.21 USD "Bitstamp" 2014-07-24T14:08:00 BST
 DEBUG -- : Bitstamp:BTC=2.76 (+0.9)
 DEBUG -- : Bitstamp:USD=998.65 (-548.21)
+DEBUG -- : [Row:12] Trade: 1.64037953 BTC <- 998.65 USD "Bitstamp" 2014-07-24T14:09:00 BST
 DEBUG -- : Bitstamp:BTC=4.40037953 (+1.64037953)
 DEBUG -- : Bitstamp:USD=0 (-998.65)
+DEBUG -- : [Row:13] Withdrawal: 4.40037953 BTC "Bitstamp" 2014-07-24T22:01:00 BST
 DEBUG -- : Bitstamp:BTC=0 (-4.40037953)
 
 ```
