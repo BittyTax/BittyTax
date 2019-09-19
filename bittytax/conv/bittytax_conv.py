@@ -44,6 +44,9 @@ def _convert_cell(cell, workbook):
     if cell.ctype == xlrd.XL_CELL_DATE:
         value = xlrd.xldate.xldate_as_datetime(cell.value, workbook.datemode). \
                     strftime('%Y-%m-%dT%H:%M:%S %Z')
+    elif cell.ctype == xlrd.XL_CELL_NUMBER:
+        # repr is required to ensure no precision is lost
+        value = repr(cell.value)
     else:
         value = str(cell.value)
 
