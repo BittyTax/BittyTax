@@ -151,7 +151,7 @@ DataParser(DataParser.TYPE_EXCHANGE,
            "Coinbase Transactions",
            ['Timestamp', 'Balance', 'Amount', 'Currency', 'To', 'Notes', 'Instantly Exchanged',
             'Transfer Total', 'Transfer Total Currency', 'Transfer Fee', 'Transfer Fee Currency',
-            'Transfer Payment Method', 'Transfer ID', 'Order Price', 'Order Currency', 'Order BTC',
+            'Transfer Payment Method', 'Transfer ID', 'Order Price', 'Order Currency', None,
             'Order Tracking Code', 'Order Custom Parameter', 'Order Paid Out',
             'Recurring Payment ID', None, None],
            row_handler=parse_coinbase_transactions)
