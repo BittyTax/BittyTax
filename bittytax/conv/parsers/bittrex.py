@@ -61,6 +61,13 @@ def parse_bittrex_deposits(in_row):
                                 buy_asset=in_row[2],
                                 wallet=WALLET)
 
+def parse_bittrex_deposits2(in_row):
+    return TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                DataParser.parse_timestamp(in_row[4]),
+                                buy_quantity=in_row[2],
+                                buy_asset=in_row[1],
+                                wallet=WALLET)
+
 def parse_bittrex_withdrawals(in_row):
     return TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                 DataParser.parse_timestamp(in_row[4]),
@@ -85,8 +92,20 @@ DataParser(DataParser.TYPE_EXCHANGE,
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bittrex Deposits",
+           ['Id', 'Currency', 'Amount', 'Confirmations', 'LastUpdatedDate', 'TxId',
+            'CryptoAddress'],
+           row_handler=parse_bittrex_deposits2)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Bittrex Deposits",
            ['Id', 'Amount', 'Currency', 'Confirmations', 'LastUpdated', 'TxId', 'CryptoAddress'],
            row_handler=parse_bittrex_deposits)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Bittrex Withdrawals",
+           ['PaymentUuid', 'Currency', 'Amount', 'Address', 'OpenedDate', 'Authorized', 'Pending',
+            'TxFee', 'Canceled', 'TxId'],
+           row_handler=parse_bittrex_withdrawals)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bittrex Withdrawals",
