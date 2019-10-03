@@ -60,6 +60,7 @@ def parse_gatehub(all_in_row_orig):
 
             if sell_quantity is None or buy_quantity is None:
                 # Skip if buy or sell is missing from Trade
+                t_records.append(None)
                 continue
 
             fee_quantity, fee_asset = find_same_tx(all_in_row, i,

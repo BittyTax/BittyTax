@@ -5,6 +5,7 @@
 - Bitfinex parser: wallet name typo.
 - Conversion tool: use repr when parsing numbers in excel files to ensure no precision is lost.
 - Coinbase: updated with new TransactionsReport header.
+- Gatehub parser: exchange transactions with missing component incorrecly handled when --append option used.
 ### Added
 - Audit: output transaction record in debug.
 - Bittrex: new data file format for deposits and withdrawals added.
