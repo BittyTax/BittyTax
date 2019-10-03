@@ -75,7 +75,7 @@ def main():
         if config.args.quantity:
             quantity = Decimal(config.args.quantity)
             log.info("%s %s=%s%s %s",
-                     str(quantity),
+                     '{:0,f}'.format(quantity.normalize()),
                      asset,
                      config.sym(), '{:0,.2f}'.format(quantity * price_ccy), config.CCY)
     else:

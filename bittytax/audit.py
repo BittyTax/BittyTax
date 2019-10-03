@@ -40,14 +40,14 @@ class Wallet(object):
         log.debug("%s=%s (+%s)",
                   self._format_wallet_name(),
                   self._format_balance(),
-                  '{:0,f}'.format(quantity))
+                  '{:0,f}'.format(quantity.normalize()))
 
     def subtract(self, quantity):
         self.balance -= quantity
         log.debug("%s=%s (-%s)",
                   self._format_wallet_name(),
                   self._format_balance(),
-                  '{:0,f}'.format(quantity))
+                  '{:0,f}'.format(quantity.normalize()))
 
         if self.balance < 0 and self.asset not in config.fiat_list:
             log.warning("Balance at %s is negative %s",

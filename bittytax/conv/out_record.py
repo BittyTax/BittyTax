@@ -54,26 +54,26 @@ class TransactionOutRecord(TransactionRecordBase):
             log.warning("%d-digit precision exceeded! %s", EXCEL_PRECISION, self)
 
         return [self.t_type,
-                '{0:f}'.format(self.buy_quantity) if self.buy_quantity is not None else None,
+                '{0:f}'.format(self.buy_quantity.normalize()) if self.buy_quantity is not None else None,
                 self.buy_asset,
-                '{0:f}'.format(self.buy_value) if self.buy_value is not None else None,
-                '{0:f}'.format(self.sell_quantity) if self.sell_quantity is not None else None,
+                '{0:f}'.format(self.buy_value.normalize()) if self.buy_value is not None else None,
+                '{0:f}'.format(self.sell_quantity.normalize()) if self.sell_quantity is not None else None,
                 self.sell_asset,
-                '{0:f}'.format(self.sell_value) if self.sell_value is not None else None,
-                '{0:f}'.format(self.fee_quantity) if self.fee_quantity is not None else None,
+                '{0:f}'.format(self.sell_value.normalize()) if self.sell_value is not None else None,
+                '{0:f}'.format(self.fee_quantity.normalize()) if self.fee_quantity is not None else None,
                 self.fee_asset,
-                '{0:f}'.format(self.fee_value) if self.fee_value is not None else None,
+                '{0:f}'.format(self.fee_value.normalize()) if self.fee_value is not None else None,
                 self.wallet,
                 self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')]
 
     def _to_recap_csv(self):
         return [self.RECAP_TYPE_MAPPING[self.t_type],
                 self.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-                '{0:f}'.format(self.buy_quantity) if self.buy_quantity is not None else None,
+                '{0:f}'.format(self.buy_quantity.normalize()) if self.buy_quantity is not None else None,
                 self.buy_asset,
-                '{0:f}'.format(self.sell_quantity) if self.sell_quantity is not None else None,
+                '{0:f}'.format(self.sell_quantity.normalize()) if self.sell_quantity is not None else None,
                 self.sell_asset,
-                '{0:f}'.format(self.fee_quantity) if self.fee_quantity is not None else None,
+                '{0:f}'.format(self.fee_quantity.normalize()) if self.fee_quantity is not None else None,
                 self.fee_asset]
 
     @classmethod

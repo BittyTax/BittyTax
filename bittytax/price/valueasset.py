@@ -27,7 +27,7 @@ class ValueAsset(object):
                           timestamp.strftime('%Y-%m-%d'),
                           asset,
                           config.sym(), '{:0,.2f}'.format(price_ccy), config.CCY,
-                          str(quantity),
+                          '{:0,f}'.format(quantity.normalize()),
                           asset,
                           config.sym(), '{:0,.2f}'.format(value), config.CCY)
             else:
@@ -38,7 +38,7 @@ class ValueAsset(object):
         else:
             value = fixed_value
             log.debug("Using fixed value, %s %s=%s%s %s",
-                      str(quantity),
+                      '{:0,f}'.format(quantity.normalize()),
                       asset,
                       config.sym(), '{:0,.2f}'.format(value), config.CCY)
 

@@ -8,6 +8,8 @@
 ### Added
 - Audit: output transaction record in debug.
 - Bittrex: new data file format for deposits and withdrawals added.
+### Changed
+- Remove trailing zeros from CSV output and other places in logging. 
 
 ## Version [0.1.4] Beta (2019-08-28)
 ### Fixed
