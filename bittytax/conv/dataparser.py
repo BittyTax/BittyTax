@@ -23,14 +23,18 @@ class DataParser(object):
 
     parsers = []
 
-    def __init__(self, p_type, name, header, delimiter=',', row_handler=None, all_handler=None):
+    def __init__(self, p_type, name, header, delimiter=',',
+                 worksheet_name=None, row_handler=None, all_handler=None):
         self.p_type = p_type
         self.name = name
         self.header = header
+        self.worksheet_name = worksheet_name if worksheet_name else name
         self.delimiter = delimiter
         self.row_handler = row_handler
         self.all_handler = all_handler
         self.args = []
+        self.in_header = None
+        self.in_header_row_num = None
 
         self.parsers.append(self)
 
@@ -51,7 +55,7 @@ class DataParser(object):
             else:
                 header.append(col)
 
-        header_str = '"' + str(self.delimiter).join(header) + '"'
+        header_str = '\'' + str(self.delimiter).join(header) + '\''
 
         return header_str[:TERM_WIDTH] + '...' if len(header_str) > TERM_WIDTH else header_str
 
@@ -74,8 +78,8 @@ class DataParser(object):
         return timestamp
 
     @classmethod
-    def match_header(cls, row):
-        log.debug("TRY: %s", row)
+    def match_header(cls, row, row_num):
+        log.debug("Row[%s] TRY: %s", row_num+1, cls.format_row(row))
         parsers_reduced = [p for p in cls.parsers if len(p.header) == len(row)]
         for parser in parsers_reduced:
             match = False
@@ -90,11 +94,14 @@ class DataParser(object):
                     break
 
             if match:
-                log.debug("MATCHED: %s \"%s\"", parser.header, parser.name)
+                log.debug("Row[%s] MATCHED: %s '%s'",
+                          row_num+1, cls.format_row(parser.header), parser.name)
                 parser.in_header = row
+                parser.in_header_row_num = row_num + 1
                 return parser
             else:
-                log.debug("NO MATCH: %s \"%s\"", parser.header, parser.name)
+                log.debug("Row[%s] NO MATCH: %s '%s'",
+                          row_num+1, cls.format_row(parser.header), parser.name)
 
         raise KeyError
 
@@ -112,3 +119,16 @@ class DataParser(object):
                 prev_name = parser.name
 
         return txt
+
+    @staticmethod
+    def format_row(row):
+        row_out = []
+        for col in row:
+            if callable(col):
+                row_out.append('<lambda>')
+            elif col is None:
+                row_out.append('*')
+            else:
+                row_out.append('\'{}\''.format(col))
+
+        return '[' + ', '.join(row_out) + ']'

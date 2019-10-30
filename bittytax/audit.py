@@ -57,8 +57,8 @@ class Wallet(object):
     def __str__(self):
         return self._format_wallet_name() + "=" + self._format_balance()
 
-def audit_transactions(transaction_records):
-    log.debug("==FULL AUDIT TRANSACTIONS==")
+def audit_records(transaction_records):
+    log.debug("==FULL AUDIT TRANSACTION RECORDS==")
     for tr in transaction_records:
         log.debug(tr)
         if tr.buy_asset:

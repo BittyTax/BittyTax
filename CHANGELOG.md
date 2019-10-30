@@ -9,8 +9,13 @@
 ### Added
 - Audit: output transaction record in debug.
 - Bittrex: new data file format for deposits and withdrawals added.
+- Conversion tool: Support for Excel as output file format.
+- Conversion tool: New --duplicates argument added to remove duplicate input rows across data files.
+- Conversion tool: New -o argument added to specify an output filename for Excel or CSV files
+- Accounting tool: Importing transaction records from an Excel file.
 ### Changed
-- Remove trailing zeros from CSV output and other places in logging. 
+- Remove trailing zeros from CSV output and other places in logging.
+- TID's (Transaction ID) are now allocated in time order sequence.
 
 ## Version [0.1.4] Beta (2019-08-28)
 ### Fixed

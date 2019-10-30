@@ -28,6 +28,7 @@ class Config(object):
     CRYPTO_LIST = ['BTC', 'ETH', 'XRP', 'LTC', 'BCH', 'USDT']
 
     FORMAT_CSV = 'CSV'
+    FORMAT_EXCEL = 'EXCEL'
     FORMAT_RECAP = 'RECAP'
 
     TRADE_ASSET_TYPE_BUY = 0
@@ -36,9 +37,6 @@ class Config(object):
 
     DATA_SOURCE_FIAT = ["ExchangeRatesAPI", "RatesAPI"]
     DATA_SOURCE_CRYPTO = ["CryptoCompare", "CoinGecko"]
-
-    ERROR_TXT = ["Cryptoasset cannot be identified from data file, "
-                 "please specify using the [-ca CRYPTOASSET] option"]
 
     DEFAULT_CONFIG = {
         'fiat_list': FIAT_LIST,

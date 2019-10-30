@@ -31,14 +31,14 @@ def main():
                         type=str,
                         nargs='?',
                         help="date (YYYY-MM-DD)")
-    parser.add_argument("-d",
-                        "--debug",
-                        action='store_true',
-                        help="enabled debug logging")
     parser.add_argument("-v",
                         "--version",
                         action='version',
                         version='%(prog)s {version}'.format(version=__version__))
+    parser.add_argument("-d",
+                        "--debug",
+                        action='store_true',
+                        help="enabled debug logging")
     parser.add_argument("-q",
                         "--quantity",
                         type=Decimal,

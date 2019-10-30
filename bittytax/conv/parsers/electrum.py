@@ -4,30 +4,34 @@
 from decimal import Decimal
 
 from ...config import config
-from ..out_record import TransactionOutRecord
+from ...record import TransactionRecordBase as TransactionOutRecord
 from ..dataparser import DataParser
+from ..exceptions import UnknownCryptoassetError
 
 WALLET = "Electrum"
 
-def parse_electrum(in_row):
+def parse_electrum(data_row, _):
+    in_row = data_row.in_row
+    data_row.timestamp = DataParser.parse_timestamp(in_row[4])
+
     if not config.args.cryptoasset:
-        raise Exception(config.ERROR_TXT[0])
+        raise UnknownCryptoassetError
 
     if Decimal(in_row[3]) > 0:
-        return TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                    DataParser.parse_timestamp(in_row[4]),
-                                    buy_quantity=Decimal(in_row[3]),
-                                    buy_asset=config.args.cryptoasset,
-                                    wallet=WALLET)
-
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                                 data_row.timestamp,
+                                                 buy_quantity=Decimal(in_row[3]),
+                                                 buy_asset=config.args.cryptoasset,
+                                                 wallet=WALLET)
     else:
-        return TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
-                                    DataParser.parse_timestamp(in_row[4]),
-                                    sell_quantity=abs(Decimal(in_row[3])),
-                                    sell_asset=config.args.cryptoasset,
-                                    wallet=WALLET)
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                 data_row.timestamp,
+                                                 sell_quantity=abs(Decimal(in_row[3])),
+                                                 sell_asset=config.args.cryptoasset,
+                                                 wallet=WALLET)
 
 DataParser(DataParser.TYPE_WALLET,
            "Electrum",
            ['transaction_hash', 'label', 'confirmations', 'value', 'timestamp'],
+           worksheet_name="Electrum",
            row_handler=parse_electrum)

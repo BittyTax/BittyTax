@@ -8,10 +8,13 @@ import io
 import sys
 import codecs
 
+import xlrd
+
 from .version import __version__
 from .config import config
-from .transactions import load_transaction_records, TransactionHistory
-from .audit import audit_transactions
+from .import_records import ImportRecords
+from .transactions import TransactionHistory
+from .audit import audit_records
 from .price.valueasset import ValueAsset
 from .tax import TaxCalculator
 
@@ -30,7 +33,15 @@ def main():
                         type=str,
                         nargs='?',
                         help="filename of transaction records, "
-                             "or can read from standard input")
+                             "or can read CSV data from standard input")
+    parser.add_argument("-v",
+                        "--version",
+                        action='version',
+                        version='%(prog)s {version}'.format(version=__version__))
+    parser.add_argument("-d",
+                        "--debug",
+                        action='store_true',
+                        help="enabled debug logging")
     parser.add_argument("-ty",
                         "--taxyear",
                         type=int,
@@ -39,14 +50,6 @@ def main():
                         "--skipaudit",
                         action='store_true',
                         help="skip auditing of transactions")
-    parser.add_argument("-d",
-                        "--debug",
-                        action='store_true',
-                        help="enabled debug logging")
-    parser.add_argument("-v",
-                        "--version",
-                        action='version',
-                        version='%(prog)s {version}'.format(version=__version__))
 
     config.args = parser.parse_args()
     config.args.nocache = False
@@ -55,24 +58,32 @@ def main():
         log.setLevel(logging.DEBUG)
         config.output_config(parser.prog)
 
+    import_records = ImportRecords()
+
     if config.args.filename:
-        with io.open(config.args.filename, newline='', encoding='utf-8') as import_file:
-            transaction_records = load_transaction_records(import_file)
-            import_file.close()
+        try:
+            import_records.import_excel(config.args.filename)
+        except xlrd.XLRDError:
+            with io.open(config.args.filename, newline='', encoding='utf-8') as csv_file:
+                import_records.import_csv(csv_file)
     else:
         if sys.version_info[0] < 3:
-            transaction_records = load_transaction_records(codecs.getreader('utf-8')(sys.stdin))
+            import_records.import_csv(codecs.getreader('utf-8')(sys.stdin))
         else:
-            transaction_records = load_transaction_records(sys.stdin)
+            import_records.import_csv(sys.stdin)
+
+    if import_records.failures():
+        parser.exit()
+
+    transaction_records = import_records.get_records()
 
     if not config.args.skipaudit:
-        audit_transactions(sorted(transaction_records))
+        audit_records(transaction_records)
 
-    transaction_history = TransactionHistory(transaction_records)
     value_asset = ValueAsset()
-    transactions = transaction_history.split_transaction_records(value_asset)
+    transaction_history = TransactionHistory(transaction_records, value_asset)
 
-    tax = TaxCalculator(transactions)
+    tax = TaxCalculator(transaction_history.transactions)
     tax.pool_same_day()
     tax.match(tax.DISPOSAL_SAME_DAY)
     tax.match(tax.DISPOSAL_BED_AND_BREAKFAST)

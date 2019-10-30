@@ -16,8 +16,11 @@ class TransactionRecordBase(object):
     TYPE_CHARITY_SENT = 'Charity-Sent'
     TYPE_TRADE = 'Trade'
 
-    BUY_TYPES = (TYPE_MINING, TYPE_INCOME, TYPE_GIFT_RECEIVED)
-    SELL_TYPES = (TYPE_SPEND, TYPE_GIFT_SENT, TYPE_CHARITY_SENT)
+    BUY_TYPES = (TYPE_DEPOSIT, TYPE_MINING, TYPE_INCOME, TYPE_GIFT_RECEIVED)
+    SELL_TYPES = (TYPE_WITHDRAWAL, TYPE_SPEND, TYPE_GIFT_SENT, TYPE_CHARITY_SENT)
+
+    BUY_VALUE_TYPES = (TYPE_MINING, TYPE_INCOME, TYPE_GIFT_RECEIVED)
+    SELL_VALUE_TYPES = (TYPE_SPEND, TYPE_GIFT_SENT, TYPE_CHARITY_SENT)
 
     cnt = 0
 
@@ -27,8 +30,7 @@ class TransactionRecordBase(object):
                  fee_quantity=None, fee_asset="", fee_value=None,
                  wallet=""):
 
-        TransactionRecordBase.cnt += 1
-        self.line_num = TransactionRecordBase.cnt
+        self.tid = None
         self.t_type = t_type
         self.buy_quantity = Decimal(buy_quantity) if buy_quantity is not None else None
         self.buy_asset = buy_asset
@@ -41,6 +43,10 @@ class TransactionRecordBase(object):
         self.fee_value = Decimal(fee_value) if fee_value is not None else None
         self.wallet = wallet
         self.timestamp = timestamp
+
+    def set_tid(self):
+        TransactionRecordBase.cnt += 1
+        self.tid = TransactionRecordBase.cnt
 
     @staticmethod
     def format_quantity(quantity):
@@ -66,76 +72,38 @@ class TransactionRecordBase(object):
         return self.timestamp < other.timestamp
 
     def __str__(self):
-        if self.t_type in self.BUY_TYPES or self.t_type == self.TYPE_DEPOSIT:
-            return "[Row:" + str(self.line_num) + "] " + \
+        if self.t_type in self.BUY_TYPES:
+            return "[TID:" + str(self.tid) + "] " + \
                    self.t_type + ": " + \
                    self.format_quantity(self.buy_quantity) + " " + \
                    self.buy_asset + \
-                   self.format_value(self.buy_value) + " \"" + \
-                   self.wallet + "\" " + \
+                   self.format_value(self.buy_value) + " '" + \
+                   self.wallet + "' " + \
                    self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
-        elif self.t_type in self.SELL_TYPES or self.t_type == self.TYPE_WITHDRAWAL:
-            return "[Row:" + str(self.line_num) + "] " + \
+        elif self.t_type in self.SELL_TYPES:
+            return "[TID:" + str(self.tid) + "] " + \
                    self.t_type + ": " + \
                    self.format_quantity(self.sell_quantity) + " " + \
                    self.sell_asset + \
-                   self.format_value(self.sell_value) + " \"" + \
-                   self.wallet + "\" " + \
+                   self.format_value(self.sell_value) + " '" + \
+                   self.wallet + "' " + \
                    self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
         else:
-            return "[Row:" + str(self.line_num) + "] " + \
+            return "[TID:" + str(self.tid) + "] " + \
                    self.t_type + ": " + \
                    self.format_quantity(self.buy_quantity) + " " + \
                    self.buy_asset + \
                    self.format_value(self.buy_value) + " <- " + \
                    self.format_quantity(self.sell_quantity) + " " + \
                    self.sell_asset + \
-                   self.format_value(self.sell_value) + " \"" + \
-                   self.wallet + "\" " + \
+                   self.format_value(self.sell_value) + " '" + \
+                   self.wallet + "' " + \
                    self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
 
 class TransactionInRecord(TransactionRecordBase):
-    def validate(self):
-        if self.t_type in self.BUY_TYPES or self.t_type == self.TYPE_DEPOSIT:
-            if not self.buy_asset or self.buy_quantity is None:
-                raise Exception("Type: " + self.t_type + " missing buy details")
-            if self.sell_asset or self.sell_quantity is not None:
-                raise Exception("Type: " + self.t_type + " sell details not required")
-            if self.buy_quantity < 0:
-                raise Exception("Type: " + self.t_type + " buy quantity is negative")
-        elif self.t_type in self.SELL_TYPES or self.t_type == self.TYPE_WITHDRAWAL:
-            if not self.sell_asset or self.sell_quantity is None:
-                raise Exception("Type: " + self.t_type + " missing sell details")
-            elif self.buy_asset or self.buy_quantity is not None:
-                raise Exception("Type: " + self.t_type + " buy details not required")
-            elif self.sell_quantity < 0:
-                raise Exception("Type: " + self.t_type + " sell quantity is negative")
-        elif self.t_type == self.TYPE_TRADE:
-            if not self.buy_asset or self.buy_quantity is None:
-                raise Exception("Type: " + self.t_type + " missing buy details")
-            if not self.sell_asset or self.sell_quantity is None:
-                raise Exception("Type: " + self.t_type + " missing sell details")
-            if self.buy_quantity < 0:
-                raise Exception("Type: " + self.t_type + " buy quantity is negative")
-            if self.sell_quantity < 0:
-                raise Exception("Type: " + self.t_type + " sell quantity is negative")
-        else:
-            raise ValueError("Type: " + self.t_type + " is unrecognised")
-
-        if self.fee_asset and (self.fee_asset != self.buy_asset
-                               and self.fee_asset != self.sell_asset):
-            raise Exception("Fee asset: " + self.fee_asset + " does not match")
-        elif self.fee_asset and self.fee_quantity is None:
-            raise Exception("Missing fee quantity")
-        elif self.fee_asset and self.fee_quantity < 0:
-            raise Exception("Fee quantity is negative")
-
-    def normalise_to_localtime(self):
-        self.timestamp = self.timestamp.astimezone(config.TZ_LOCAL)
-
     def include_fees(self):
         # Include fees within buy/sell portion
-        if self.buy_asset == self.fee_asset and self.fee_quantity:
+        if self.buy_asset == self.fee_asset:
             self.buy_quantity -= self.fee_quantity
             if self.fee_value:
                 self.buy_value -= self.fee_value
@@ -143,7 +111,7 @@ class TransactionInRecord(TransactionRecordBase):
             self.fee_quantity = None
             self.fee_asset = ""
             self.fee_value = None
-        elif self.sell_asset == self.fee_asset and self.fee_quantity:
+        elif self.sell_asset == self.fee_asset:
             self.sell_quantity += self.fee_quantity
             if self.fee_value:
                 self.sell_value += self.fee_value

@@ -2,12 +2,8 @@
 # (c) Nano Nano Ltd 2019
 
 import logging
-import sys
-import csv
 import copy
 from decimal import Decimal
-
-import dateutil.parser
 
 from .config import config
 from .record import TransactionInRecord
@@ -16,116 +12,37 @@ PRECISION = Decimal('0.00')
 
 log = logging.getLogger()
 
-def load_transaction_records(import_file):
-    log.info("==IMPORT TRANSACTION RECORDS==")
-    transaction_records = []
-
-    if sys.version_info[0] < 3:
-        # Special handling required for utf-8 encoded csv files
-        reader = csv.reader(_utf_8_encoder(import_file))
-    else:
-        reader = csv.reader(import_file)
-
-    next(reader, None) # skip headers
-    for row in reader:
-        record = _parse_row(row)
-
-        if record:
-            record.validate()
-            record.normalise_to_localtime()
-            record.include_fees()
-            log.debug(record)
-            transaction_records.append(record)
-        else:
-            log.debug("Skipping empty row[%d]: %s", reader.line_num, row)
-
-    log.info("Total transaction records=%s", len(transaction_records))
-    return transaction_records
-
-def _utf_8_encoder(unicode_csv_data):
-    for line in unicode_csv_data:
-        yield line.encode('utf-8')
-
-def _parse_row(row):
-    if all(not row[i] for i in range(12)):
-        # Skip empty rows
-        return None
-
-    timestamp = dateutil.parser.parse(row[11], tzinfos=config.TZ_INFOS)
-
-    if timestamp.tzinfo is None:
-        # Default to UTC if no timezone is specified
-        timestamp = timestamp.replace(tzinfo=config.TZ_UTC)
-
-    return TransactionInRecord(row[0],
-                               timestamp,
-                               buy_quantity=_strip_non_digits(row[1]) if row[1] else None,
-                               buy_asset=row[2],
-                               buy_value=_strip_non_digits(row[3]) if row[3] else None,
-                               sell_quantity=_strip_non_digits(row[4]) if row[4] else None,
-                               sell_asset=row[5],
-                               sell_value=_strip_non_digits(row[6]) if row[6] else None,
-                               fee_quantity=_strip_non_digits(row[7]) if row[7] else None,
-                               fee_asset=row[8],
-                               fee_value=_strip_non_digits(row[9]) if row[9] else None,
-                               wallet=row[10])
-
-def _strip_non_digits(string):
-    return string.strip('£€$').replace(',', '')
-
-def _format_quantity(quantity):
-    if quantity is None:
-        return '-'
-
-    return '{:0,f}'.format(quantity.normalize())
-
-def _format_value(value):
-    if value is not None:
-        return ' (' + config.sym() + '{:0,.2f} {})'.format(value, config.CCY)
-
-    return ''
-
-def _format_pooled(pooled):
-    if len(pooled) > 1:
-        return " [" + str(len(pooled)) + "]"
-
-    return ''
-
 class TransactionHistory(object):
-    def __init__(self, transaction_records):
-        self.transaction_records = transaction_records
-
-    def split_transaction_records(self, value_asset):
+    def __init__(self, transaction_records, value_asset):
+        self.transactions = []
         log.debug("==SPLIT TRANSACTION RECORDS==")
 
-        transactions = []
-        for tr in self.transaction_records:
+        for tr in transaction_records:
             if tr.sell_asset and tr.sell_asset not in config.fiat_list:
                 value = self.which_asset_value(tr, value_asset)
-                sell = Sell(tr.line_num, tr.t_type, tr.wallet, tr.timestamp,
+                sell = Sell(tr.tid, tr.t_type, tr.wallet, tr.timestamp,
                             tr.sell_quantity, tr.sell_asset, value)
-                transactions.append(sell)
+                self.transactions.append(sell)
                 log.debug(sell)
 
             if tr.buy_asset and tr.buy_asset not in config.fiat_list:
                 value = self.which_asset_value(tr, value_asset)
-                buy = Buy(tr.line_num, tr.t_type, tr.wallet, tr.timestamp,
+                buy = Buy(tr.tid, tr.t_type, tr.wallet, tr.timestamp,
                           tr.buy_quantity, tr.buy_asset, value)
-                transactions.append(buy)
+                self.transactions.append(buy)
                 log.debug(buy)
 
-        log.debug("Total transactions=%s", len(transactions))
-        return transactions
+        log.debug("Total transactions=%s", len(self.transactions))
 
     @staticmethod
     def which_asset_value(tr, value_asset):
         value = None
-        if tr.t_type in tr.BUY_TYPES:
+        if tr.t_type in tr.BUY_VALUE_TYPES:
             value = value_asset.get_value(tr.buy_asset,
                                           tr.timestamp,
                                           tr.buy_quantity,
                                           tr.buy_value)
-        elif tr.t_type in tr.SELL_TYPES:
+        elif tr.t_type in tr.SELL_VALUE_TYPES:
             value = value_asset.get_value(tr.sell_asset,
                                           tr.timestamp,
                                           tr.sell_quantity,
@@ -174,13 +91,18 @@ class TransactionBase(object):
         self.matched = False
         self.pooled = []
 
-    def _format_match_status(self):
-        return " (M)" if self.matched else ""
-
     def _format_tid(self):
         if self.tid[1] == 0:
             return str(self.tid[0])
         return str(self.tid[0]) + "." + str(self.tid[1])
+
+    def _format_match_status(self):
+        return " (M)" if self.matched else ""
+
+    def _format_pooled(self):
+        if len(self.pooled) > 1:
+            return " [" + str(len(self.pooled)) + "]"
+        return ''
 
     def __eq__(self, other):
         return (self.asset, self.timestamp) == (other.asset, other.timestamp)
@@ -251,16 +173,26 @@ class Buy(TransactionBase):
 
         return remainder
 
+    def _format_buy_quantity(self):
+        if self.buy_quantity is None:
+            return '-'
+        return '{:0,f}'.format(self.buy_quantity.normalize())
+
+    def _format_cost(self):
+        if self.cost is not None:
+            return ' (' + config.sym() + '{:0,.2f} {})'.format(self.cost, config.CCY)
+        return ''
+
     def __str__(self):
         return "[TID:" + self._format_tid() + "] " + \
                type(self).__name__ + " (" + \
                self.t_type + "): " + \
-               _format_quantity(self.buy_quantity) + " " + \
+               self._format_buy_quantity() + " " + \
                self.asset + \
-               _format_value(self.cost) + " \"" + \
-               self.wallet + "\" " + \
+               self._format_cost() + " '" + \
+               self.wallet + "' " + \
                self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z') + \
-               _format_pooled(self.pooled) + \
+               self._format_pooled() + \
                self._format_match_status()
 
 class Sell(TransactionBase):
@@ -315,14 +247,24 @@ class Sell(TransactionBase):
 
         return remainder
 
+    def _format_sell_quantity(self):
+        if self.sell_quantity is None:
+            return '-'
+        return '{:0,f}'.format(self.sell_quantity.normalize())
+
+    def _format_proceeds(self):
+        if self.proceeds is not None:
+            return ' (' + config.sym() + '{:0,.2f} {})'.format(self.proceeds, config.CCY)
+        return ''
+
     def __str__(self):
         return "[TID:" + self._format_tid() + "] " + \
                type(self).__name__ + " (" + \
                self.t_type + "): " + \
-               _format_quantity(self.sell_quantity) + " " + \
+               self._format_sell_quantity() + " " + \
                self.asset + \
-               _format_value(self.proceeds) + " \"" + \
-               self.wallet + "\" " + \
+               self._format_proceeds() + " '" + \
+               self.wallet + "' " + \
                self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z') + \
-               _format_pooled(self.pooled) + \
+               self._format_pooled() + \
                self._format_match_status()

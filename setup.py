@@ -52,7 +52,7 @@ setup(
         'requests',
         'pyyaml',
         'xlrd',
-        'future',
+        'xlsxwriter',
     ],
     entry_points={
         'console_scripts': [
