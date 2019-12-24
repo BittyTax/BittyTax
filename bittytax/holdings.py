@@ -14,32 +14,37 @@ class Holdings(object):
         self.asset = asset
         self.quantity = Decimal(0)
         self.cost = Decimal(0)
+        self.fees = Decimal(0)
 
-    def add_tokens(self, quantity, cost):
+    def add_tokens(self, quantity, cost, fees):
         self.quantity += quantity
         self.cost += cost
+        self.fees += fees
 
         if config.args.debug:
-            log.debug("%s=%s (+%s) %s%s %s (+%s%s %s)",
+            log.debug("%s=%s (+%s) cost=%s%s %s (+%s%s %s) fees=%s%s %s (+%s%s %s)",
                       self.asset,
                       self.format_quantity(),
                       '{:0,f}'.format(quantity.normalize()),
-                      config.sym(), self._format_cost(), config.CCY,
-                      config.sym(), '{:0,.2f}'.format(cost), config.CCY)
-    def subtract_tokens(self, quantity, cost):
+                      config.sym(), '{:0,.2f}'.format(self.cost), config.CCY,
+                      config.sym(), '{:0,.2f}'.format(cost), config.CCY,
+                      config.sym(), '{:0,.2f}'.format(self.fees), config.CCY,
+                      config.sym(), '{:0,.2f}'.format(fees), config.CCY)
+
+    def subtract_tokens(self, quantity, cost, fees):
         self.quantity -= quantity
         self.cost -= cost
+        self.fees -= fees
 
         if config.args.debug:
-            log.debug("%s=%s (-%s) %s%s %s (-%s%s %s)",
+            log.debug("%s=%s (-%s) cost=%s%s %s (-%s%s %s) fees=%s%s %s (-%s%s %s)",
                       self.asset,
                       self.format_quantity(),
                       '{:0,f}'.format(quantity.normalize()),
-                      config.sym(), self._format_cost(), config.CCY,
-                      config.sym(), '{:0,.2f}'.format(cost), config.CCY)
+                      config.sym(), '{:0,.2f}'.format(self.cost), config.CCY,
+                      config.sym(), '{:0,.2f}'.format(cost), config.CCY,
+                      config.sym(), '{:0,.2f}'.format(self.fees), config.CCY,
+                      config.sym(), '{:0,.2f}'.format(fees), config.CCY)
 
     def format_quantity(self):
         return '{:0,f}'.format(self.quantity.normalize())
-
-    def _format_cost(self):
-        return '{:0,.2f}'.format(self.cost)

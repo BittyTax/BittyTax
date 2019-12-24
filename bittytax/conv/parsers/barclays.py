@@ -2,7 +2,7 @@
 # (c) Nano Nano Ltd 2019
 
 from ...config import config
-from ...record import TransactionRecordBase as TransactionOutRecord
+from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError
 

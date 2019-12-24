@@ -5,7 +5,7 @@ import re
 from decimal import Decimal
 
 from ...config import config
-from ...record import TransactionRecordBase as TransactionOutRecord
+from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import UnknownCryptoassetError, UnexpectedTypeError
 

@@ -12,6 +12,8 @@ from .holdings import Holdings
 
 log = logging.getLogger()
 
+PRECISION = Decimal('0.00')
+
 class TaxCalculator(object):
     DISPOSAL_SAME_DAY = 'Same Day'
     DISPOSAL_BED_AND_BREAKFAST = 'Bed & Breakfast'
@@ -24,8 +26,6 @@ class TaxCalculator(object):
     ANNUAL_ALLOWANCE = {2010: 10100, 2011: 10100, 2012: 10600, 2013: 10600, 2014: 10900,
                         2015: 11000, 2016: 11100, 2017: 11100, 2018: 11300, 2019: 11700,
                         2020: 12000}
-
-    PRECISION = Decimal('0.00')
 
     def __init__(self, transactions):
         self.transactions = transactions
@@ -43,12 +43,12 @@ class TaxCalculator(object):
 
         log.debug("==POOL SAME DAY TRANSACTIONS==")
         for t in transactions:
-            if isinstance(t, Buy) and t.is_acquisition():
+            if isinstance(t, Buy) and t.acquisition:
                 if (t.asset, t.timestamp.date()) not in buy_transactions:
                     buy_transactions[(t.asset, t.timestamp.date())] = t
                 else:
                     buy_transactions[(t.asset, t.timestamp.date())] += t
-            elif isinstance(t, Sell) and t.is_disposal():
+            elif isinstance(t, Sell) and t.disposal:
                 if (t.asset, t.timestamp.date()) not in sell_transactions:
                     sell_transactions[(t.asset, t.timestamp.date())] = t
                 else:
@@ -56,18 +56,18 @@ class TaxCalculator(object):
             else:
                 self.other_transactions.append(t)
 
-        self.sells_ordered = sorted(sell_transactions.values())
         self.buys_ordered = sorted(buy_transactions.values())
+        self.sells_ordered = sorted(sell_transactions.values())
 
         if config.args.debug:
-            for t in sorted(self.sells_ordered + self.buys_ordered + self.other_transactions):
+            for t in sorted(self.buys_ordered + self.sells_ordered + self.other_transactions):
                 log.debug(t)
                 if len(t.pooled) > 1:
                     for tp in t.pooled:
                         log.debug("  %s", tp)
 
             log.debug("Total Transactions(Pooled)=%s",
-                      len(self.sells_ordered + self.buys_ordered + self.other_transactions))
+                      len(self.buys_ordered + self.sells_ordered + self.other_transactions))
 
     def match(self, rule):
         log.debug("==MATCH %s TRANSACTIONS==", rule.upper())
@@ -90,15 +90,15 @@ class TaxCalculator(object):
                     else:
                         log.debug("%s (%s)", b, rule)
 
-                if b.buy_quantity > s.sell_quantity:
-                    b_remainder = b.split_buy(s.sell_quantity)
+                if b.quantity > s.quantity:
+                    b_remainder = b.split_buy(s.quantity)
                     self.buys_ordered.insert(buy_index + 1, b_remainder)
-                elif s.sell_quantity > b.buy_quantity:
-                    s_remainder = s.split_sell(b.buy_quantity)
+                elif s.quantity > b.quantity:
+                    s_remainder = s.split_sell(b.quantity)
                     self.sells_ordered.insert(sell_index + 1, s_remainder)
 
                 s.matched = b.matched = True
-                tax_event = TaxCapitalGains(rule, b, s, b.cost)
+                tax_event = TaxCapitalGains(rule, b, s, b.cost, b.fee_value + s.fee_value)
                 self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
                 # Find next sell
@@ -137,7 +137,7 @@ class TaxCalculator(object):
 
         for t in unmatched_transactions:
             if config.args.debug:
-                if isinstance(t, Sell) and t.is_disposal():
+                if isinstance(t, Sell) and t.disposal:
                     log.debug("%s (Disposal)", t)
                 else:
                     log.debug(t)
@@ -151,39 +151,43 @@ class TaxCalculator(object):
         if t.asset not in self.holdings:
             self.holdings[t.asset] = Holdings(t.asset)
 
-        if t.t_type in self.TRANSFER_TYPES:
+        if not t.acquisition:
             if config.transfers_include:
                 # !IMPORTANT! - Make sure no disposal event occurs between a Withdrawal and a
                 #   Deposit (of the same asset) otherwise the average cost basis would be incorrect
-                cost = Decimal(0)
+                cost = fees = Decimal(0)
             else:
                 return
         else:
             cost = t.cost
+            fees = t.fee_value
 
-        self.holdings[t.asset].add_tokens(t.buy_quantity, cost)
+        self.holdings[t.asset].add_tokens(t.quantity, cost, fees)
 
     def _subtract_tokens(self, t):
         if t.asset not in self.holdings:
             self.holdings[t.asset] = Holdings(t.asset)
 
-        if t.t_type in self.TRANSFER_TYPES:
+        if not t.disposal:
             if config.transfers_include:
-                cost = Decimal(0)
+                cost = fees = Decimal(0)
             else:
                 return
         else:
             if self.holdings[t.asset].quantity:
-                cost = self.holdings[t.asset].cost * (t.sell_quantity /
+                cost = self.holdings[t.asset].cost * (t.quantity /
+                                                      self.holdings[t.asset].quantity)
+                fees = self.holdings[t.asset].fees * (t.quantity /
                                                       self.holdings[t.asset].quantity)
             else:
-                cost = Decimal(0)
+                # Should never happen, only if incorrect transaction records
+                cost = fees = Decimal(0)
 
-        self.holdings[t.asset].subtract_tokens(t.sell_quantity, cost)
+        self.holdings[t.asset].subtract_tokens(t.quantity, cost, fees)
 
-        if t.is_disposal():
+        if t.disposal:
             tax_event = TaxCapitalGains(self.DISPOSAL_SECTION_104,
-                                        None, t, cost.quantize(self.PRECISION))
+                                        None, t, cost, fees + t.fee_value)
             self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
     def process_income(self):
@@ -198,12 +202,13 @@ class TaxCalculator(object):
         allowance = Decimal(self.ANNUAL_ALLOWANCE[tax_year])
         disposals = total_cost = total_proceeds = total_gain = Decimal(0)
 
-        log.info("%s %s %s %s %s %s %s",
+        log.info("%s %s %s %s %s %s %s %s",
                  "Asset".ljust(7),
                  "Date".ljust(10),
                  "Disposal Type".ljust(28),
                  "Quantity".rjust(25),
                  "Cost".rjust(13),
+                 "Fees".rjust(13),
                  "Proceeds".rjust(13),
                  "Gain".rjust(13))
 
@@ -212,7 +217,7 @@ class TaxCalculator(object):
                 if isinstance(t, TaxCapitalGains):
                     log.info(t)
                     disposals += 1
-                    total_cost += t.cost
+                    total_cost += t.cost + t.fees
                     total_proceeds += t.proceeds
                     total_gain += t.gain
 
@@ -250,22 +255,25 @@ class TaxCalculator(object):
     def report_income(self, tax_year):
         log.info("--INCOME--")
 
-        total_income = Decimal(0)
+        total_income = total_fees = Decimal(0)
 
-        log.info("%s %s %s %s %s",
+        log.info("%s %s %s %s %s %s",
                  "Asset".ljust(7),
                  "Date".ljust(10),
                  "Income Type".ljust(28),
                  "Quantity".rjust(25),
-                 "Amount".rjust(13))
+                 "Amount".rjust(13),
+                 "Fees".rjust(13))
 
         if tax_year in self.tax_events:
             for t in sorted(self.tax_events[tax_year]):
                 if isinstance(t, TaxIncome):
                     log.info(t)
                     total_income += t.amount
+                    total_fees += t.fees
 
         log.info("Total income=%s%s", config.sym(), '{:0,.2f}'.format(total_income))
+        log.info("Total fees=%s%s", config.sym(), '{:0,.2f}'.format(total_fees))
 
     def report_holdings(self, value_asset):
         log.info("==CURRENT HOLDINGS==")
@@ -281,17 +289,16 @@ class TaxCalculator(object):
 
         for h in sorted(self.holdings):
             if self.holdings[h].quantity > 0 or config.show_empty_wallets:
-                cost = self.holdings[h].cost
+                cost = self.holdings[h].cost + self.holdings[h].fees
                 value, name, data_source = value_asset.get_current_value(self.holdings[h].asset,
                                                                          self.holdings[h].quantity)
-                cost = cost.quantize(self.PRECISION)
-                value = value.quantize(self.PRECISION)
+                value = value.quantize(PRECISION)
 
                 if data_source:
                     log.info("%s %s %s %s  %s (%s)",
                              self.holdings[h].asset.ljust(7),
                              self.holdings[h].format_quantity().rjust(25),
-                             (config.sym() + '{:0,.2f}'.format(cost)).rjust(13),
+                             (config.sym() + '{:0,.2f}'.format(cost + 0)).rjust(13),
                              (config.sym() + '{:0,.2f}'.format(value)).rjust(13),
                              data_source,
                              name)
@@ -299,7 +306,7 @@ class TaxCalculator(object):
                     log.info("%s %s %s %s  -",
                              self.holdings[h].asset.ljust(7),
                              self.holdings[h].format_quantity().rjust(25),
-                             (config.sym() + '{:0,.2f}'.format(cost)).rjust(13),
+                             (config.sym() + '{:0,.2f}'.format(cost + 0)).rjust(13),
                              (config.sym() + '{:0,.2f}'.format(value)).rjust(13))
 
                 total_cost += cost
@@ -334,19 +341,21 @@ class TaxEvent(object):
         return (self.asset, self.date) < (other.asset, other.date)
 
 class TaxCapitalGains(TaxEvent):
-    def __init__(self, disposal_type, b, s, cost):
+    def __init__(self, disposal_type, b, s, cost, fees):
         super(TaxCapitalGains, self).__init__(s.timestamp, s.asset)
         self.disposal_type = disposal_type
-        self.quantity = s.sell_quantity
-        self.cost = cost
-        self.proceeds = s.proceeds
-        self.gain = self.proceeds - self.cost
+        self.quantity = s.quantity
+        self.cost = cost.quantize(PRECISION)
+        self.fees = fees.quantize(PRECISION)
+        self.proceeds = s.proceeds.quantize(PRECISION)
+        self.gain = self.proceeds - self.cost - self.fees
         self.acquisition_date = b.timestamp if b else None
 
-        log.debug(" Gain=%s%s (%s%s - %s%s)",
+        log.debug(" Gain=%s%s (proceeds=%s%s - cost=%s%s - fees=%s%s)",
                   config.sym(), '{:0,.2f}'.format(self.gain),
                   config.sym(), '{:0,.2f}'.format(self.proceeds),
-                  config.sym(), '{:0,.2f}'.format(self.cost))
+                  config.sym(), '{:0,.2f}'.format(self.cost),
+                  config.sym(), '{:0,.2f}'.format(self.fees))
 
     @staticmethod
     def format_disposal(disposal_type, date):
@@ -360,20 +369,23 @@ class TaxCapitalGains(TaxEvent):
                self.date.strftime('%d/%m/%Y') + " " + \
                self.format_disposal(self.disposal_type, self.acquisition_date).ljust(28) + " " + \
                '{:0,f}'.format(self.quantity.normalize()).rjust(25) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.cost)).rjust(13) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.proceeds)).rjust(13) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.gain)).rjust(13)
+               (config.sym() + '{:0,.2f}'.format(self.cost + 0)).rjust(13) + " " + \
+               (config.sym() + '{:0,.2f}'.format(self.fees + 0)).rjust(13) + " " + \
+               (config.sym() + '{:0,.2f}'.format(self.proceeds + 0)).rjust(13) + " " + \
+               (config.sym() + '{:0,.2f}'.format(self.gain + 0)).rjust(13)
 
 class TaxIncome(TaxEvent):
     def __init__(self, b):
         super(TaxIncome, self).__init__(b.timestamp, b.asset)
         self.type = b.t_type
-        self.quantity = b.buy_quantity
-        self.amount = b.cost
+        self.quantity = b.quantity
+        self.amount = b.cost.quantize(PRECISION)
+        self.fees = b.fee_value.quantize(PRECISION)
 
     def __str__(self):
         return self.asset.ljust(7) + " " + \
                self.date.strftime('%d/%m/%Y') + " " + \
                self.type.ljust(28) + " " + \
                '{:0,f}'.format(self.quantity.normalize()).rjust(25) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.amount)).rjust(13)
+               (config.sym() + '{:0,.2f}'.format(self.amount + 0)).rjust(13) + " " + \
+               (config.sym() + '{:0,.2f}'.format(self.fees + 0)).rjust(13)

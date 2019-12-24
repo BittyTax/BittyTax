@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-from decimal import Decimal
-
 from .config import config
 
-class TransactionRecordBase(object):
+class TransactionRecord(object):
     TYPE_DEPOSIT = 'Deposit'
     TYPE_MINING = 'Mining'
     TYPE_INCOME = 'Income'
@@ -16,37 +14,53 @@ class TransactionRecordBase(object):
     TYPE_CHARITY_SENT = 'Charity-Sent'
     TYPE_TRADE = 'Trade'
 
-    BUY_TYPES = (TYPE_DEPOSIT, TYPE_MINING, TYPE_INCOME, TYPE_GIFT_RECEIVED)
-    SELL_TYPES = (TYPE_WITHDRAWAL, TYPE_SPEND, TYPE_GIFT_SENT, TYPE_CHARITY_SENT)
-
-    BUY_VALUE_TYPES = (TYPE_MINING, TYPE_INCOME, TYPE_GIFT_RECEIVED)
-    SELL_VALUE_TYPES = (TYPE_SPEND, TYPE_GIFT_SENT, TYPE_CHARITY_SENT)
-
+    ALL_TYPES = (TYPE_DEPOSIT,
+                 TYPE_MINING,
+                 TYPE_INCOME,
+                 TYPE_GIFT_RECEIVED,
+                 TYPE_WITHDRAWAL,
+                 TYPE_SPEND,
+                 TYPE_GIFT_SENT,
+                 TYPE_CHARITY_SENT,
+                 TYPE_TRADE)
     cnt = 0
 
-    def __init__(self, t_type, timestamp,
-                 buy_quantity=None, buy_asset="", buy_value=None,
-                 sell_quantity=None, sell_asset="", sell_value=None,
-                 fee_quantity=None, fee_asset="", fee_value=None,
-                 wallet=""):
-
+    def __init__(self, t_type, buy, sell, fee, wallet, timestamp):
         self.tid = None
         self.t_type = t_type
-        self.buy_quantity = Decimal(buy_quantity) if buy_quantity is not None else None
-        self.buy_asset = buy_asset
-        self.buy_value = Decimal(buy_value) if buy_value is not None else None
-        self.sell_quantity = Decimal(sell_quantity) if sell_quantity is not None else None
-        self.sell_asset = sell_asset
-        self.sell_value = Decimal(sell_value) if sell_value is not None else None
-        self.fee_quantity = Decimal(fee_quantity) if fee_quantity is not None else None
-        self.fee_asset = fee_asset
-        self.fee_value = Decimal(fee_value) if fee_value is not None else None
+        self.buy = buy
+        self.sell = sell
+        self.fee = fee
         self.wallet = wallet
         self.timestamp = timestamp
 
+        if self.buy:
+            self.buy.t_record = self
+            self.buy.timestamp = self.timestamp
+            self.buy.wallet = self.wallet
+        if self.sell:
+            self.sell.t_record = self
+            self.sell.timestamp = self.timestamp
+            self.sell.wallet = self.wallet
+        if self.fee:
+            self.fee.t_record = self
+            self.fee.timestamp = self.timestamp
+            self.fee.wallet = self.wallet
+
     def set_tid(self):
-        TransactionRecordBase.cnt += 1
-        self.tid = TransactionRecordBase.cnt
+        if self.tid is None:
+            TransactionRecord.cnt += 1
+            self.tid = [TransactionRecord.cnt, 0]
+        else:
+            self.tid[1] += 1
+
+        return list(self.tid)
+
+    def _format_fee(self):
+        if self.fee:
+            return ' + Fee=' + self.format_quantity(self.fee.quantity) + \
+                   ' ' + self.fee.asset + self.format_value(self.fee.proceeds)
+        return ''
 
     @staticmethod
     def format_quantity(quantity):
@@ -72,50 +86,35 @@ class TransactionRecordBase(object):
         return self.timestamp < other.timestamp
 
     def __str__(self):
-        if self.t_type in self.BUY_TYPES:
-            return "[TID:" + str(self.tid) + "] " + \
+        if self.buy and self.sell:
+            return "TR [TID:" + str(self.tid[0]) + "] " + \
                    self.t_type + ": " + \
-                   self.format_quantity(self.buy_quantity) + " " + \
-                   self.buy_asset + \
-                   self.format_value(self.buy_value) + " '" + \
+                   self.format_quantity(self.buy.quantity) + " " + \
+                   self.buy.asset + \
+                   self.format_value(self.buy.cost) + " <- " + \
+                   self.format_quantity(self.sell.quantity) + " " + \
+                   self.sell.asset + \
+                   self.format_value(self.sell.proceeds) + \
+                   self._format_fee() + " '" + \
                    self.wallet + "' " + \
                    self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
-        elif self.t_type in self.SELL_TYPES:
-            return "[TID:" + str(self.tid) + "] " + \
+        elif self.buy:
+            return "TR [TID:" + str(self.tid[0]) + "] " + \
                    self.t_type + ": " + \
-                   self.format_quantity(self.sell_quantity) + " " + \
-                   self.sell_asset + \
-                   self.format_value(self.sell_value) + " '" + \
+                   self.format_quantity(self.buy.quantity) + " " + \
+                   self.buy.asset + \
+                   self.format_value(self.buy.cost) + \
+                   self._format_fee() + " '" + \
                    self.wallet + "' " + \
                    self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
-        else:
-            return "[TID:" + str(self.tid) + "] " + \
+        elif self.sell:
+            return "TR [TID:" + str(self.tid[0]) + "] " + \
                    self.t_type + ": " + \
-                   self.format_quantity(self.buy_quantity) + " " + \
-                   self.buy_asset + \
-                   self.format_value(self.buy_value) + " <- " + \
-                   self.format_quantity(self.sell_quantity) + " " + \
-                   self.sell_asset + \
-                   self.format_value(self.sell_value) + " '" + \
+                   self.format_quantity(self.sell.quantity) + " " + \
+                   self.sell.asset + \
+                   self.format_value(self.sell.proceeds) + \
+                   self._format_fee() + " '" + \
                    self.wallet + "' " + \
                    self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
 
-class TransactionInRecord(TransactionRecordBase):
-    def include_fees(self):
-        # Include fees within buy/sell portion
-        if self.buy_asset == self.fee_asset:
-            self.buy_quantity -= self.fee_quantity
-            if self.fee_value:
-                self.buy_value -= self.fee_value
-
-            self.fee_quantity = None
-            self.fee_asset = ""
-            self.fee_value = None
-        elif self.sell_asset == self.fee_asset:
-            self.sell_quantity += self.fee_quantity
-            if self.fee_value:
-                self.sell_value += self.fee_value
-
-            self.fee_quantity = None
-            self.fee_asset = ""
-            self.fee_value = None
+        return ''

@@ -61,11 +61,14 @@ def audit_records(transaction_records):
     log.debug("==FULL AUDIT TRANSACTION RECORDS==")
     for tr in transaction_records:
         log.debug(tr)
-        if tr.buy_asset:
-            Wallet.add_tokens(tr.wallet, tr.buy_asset, tr.buy_quantity)
+        if tr.buy:
+            Wallet.add_tokens(tr.wallet, tr.buy.asset, tr.buy.quantity)
 
-        if tr.sell_asset:
-            Wallet.subtract_tokens(tr.wallet, tr.sell_asset, tr.sell_quantity)
+        if tr.sell:
+            Wallet.subtract_tokens(tr.wallet, tr.sell.asset, tr.sell.quantity)
+
+        if tr.fee:
+            Wallet.subtract_tokens(tr.wallet, tr.fee.asset, tr.fee.quantity)
 
     log.info("==FINAL AUDIT BALANCES==")
     for w in sorted(Wallet.wallets):

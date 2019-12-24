@@ -10,16 +10,17 @@ import dateutil.parser
 import xlrd
 
 from .config import config
-from .record import TransactionInRecord
+from .transactions import Buy, Sell
+from .record import TransactionRecord
 from .exceptions import TransactionParserError, UnexpectedTransactionTypeError, \
                         TimestampParserError, DataValueError, MissingDataError, \
-                        UnexpectedDataError, FeeAssetMismatchError
+                        UnexpectedDataError
 
 log = logging.getLogger()
 
 class ImportRecords(object):
     def __init__(self):
-        self.data_rows = []
+        self.t_rows = []
 
     def import_excel(self, filename):
         workbook = xlrd.open_workbook(filename)
@@ -28,19 +29,19 @@ class ImportRecords(object):
         for worksheet in workbook.sheets():
             for row_num in range(1, worksheet.nrows):
                 row = [self.convert_cell(worksheet.cell(row_num, cell_num), workbook)
-                       for cell_num in range(0, len(DataRow.HEADER))]
+                       for cell_num in range(0, len(TransactionRow.HEADER))]
 
-                data_row = DataRow(row, row_num+1, worksheet.name)
+                t_row = TransactionRow(row, row_num+1, worksheet.name)
                 try:
-                    data_row.parse()
+                    t_row.parse()
                 except TransactionParserError as e:
-                    data_row.failure = e
+                    t_row.failure = e
 
-                if data_row.failure:
-                    log.error("%s", data_row)
-                    log.error("%s", data_row.failure)
+                if t_row.failure:
+                    log.error("%s", t_row)
+                    log.error("%s", t_row.failure)
 
-                self.data_rows.append(data_row)
+                self.t_rows.append(t_row)
 
         workbook.release_resources()
         del workbook
@@ -69,17 +70,17 @@ class ImportRecords(object):
 
         next(reader, None) # skip headers
         for row in reader:
-            data_row = DataRow(row[:len(DataRow.HEADER)], reader.line_num)
+            t_row = TransactionRow(row[:len(TransactionRow.HEADER)], reader.line_num)
             try:
-                data_row.parse()
+                t_row.parse()
             except TransactionParserError as e:
-                data_row.failure = e
+                t_row.failure = e
 
-            if data_row.failure:
-                log.error("%s", data_row)
-                log.error("%s", data_row.failure)
+            if t_row.failure:
+                log.error("%s", t_row)
+                log.error("%s", t_row.failure)
 
-            self.data_rows.append(data_row)
+            self.t_rows.append(t_row)
 
     @staticmethod
     def utf_8_encoder(unicode_csv_data):
@@ -87,29 +88,41 @@ class ImportRecords(object):
             yield line.encode('utf-8')
 
     def failures(self):
-        return bool([data_row for data_row in self.data_rows if data_row.failure is not None])
+        return bool([t_row for t_row in self.t_rows if t_row.failure is not None])
 
     def get_records(self):
-        transaction_records = [dr.t_record for dr in self.data_rows if dr.t_record]
+        transaction_records = [t_row.t_record for t_row in self.t_rows if t_row.t_record]
 
         transaction_records.sort()
-        for tr in transaction_records:
-            tr.set_tid()
-            if tr.fee_quantity:
-                tr.include_fees()
+        for t_record in transaction_records:
+            t_record.set_tid()
 
-        for dr in self.data_rows:
-            log.debug("%s", dr)
+        for t_row in self.t_rows:
+            log.debug("%s", t_row)
 
         log.info("Total transaction records=%s", len(transaction_records))
         return transaction_records
 
-class DataRow(object):
+class TransactionRow(object):
     HEADER = ['Type',
               'Buy Quantity', 'Buy Asset', 'Buy Value',
               'Sell Quantity', 'Sell Asset', 'Sell Value',
               'Fee Quantity', 'Fee Asset', 'Fee Value',
               'Wallet', 'Timestamp']
+
+    BUY_TYPES = (TransactionRecord.TYPE_DEPOSIT,
+                 TransactionRecord.TYPE_MINING,
+                 TransactionRecord.TYPE_INCOME,
+                 TransactionRecord.TYPE_GIFT_RECEIVED)
+    SELL_TYPES = (TransactionRecord.TYPE_WITHDRAWAL,
+                  TransactionRecord.TYPE_SPEND,
+                  TransactionRecord.TYPE_GIFT_SENT,
+                  TransactionRecord.TYPE_CHARITY_SENT)
+
+    TRANSFER_TYPES = (TransactionRecord.TYPE_DEPOSIT,
+                      TransactionRecord.TYPE_WITHDRAWAL)
+
+    cnt = 0
 
     def __init__(self, row, row_num, worksheet_name=None):
         self.row = row
@@ -119,67 +132,49 @@ class DataRow(object):
         self.failure = None
 
     def parse(self):
-        if all(not self.row[i] for i in range(len(DataRow.HEADER))):
+        if all(not self.row[i] for i in range(len(self.HEADER))):
             # Skip empty rows
             return
 
-        timestamp = self.parse_timestamp(self.row[11])
+        buy = sell = fee = None
+        buy_asset = sell_asset = fee_asset = None
 
-        if self.row[0] in TransactionInRecord.BUY_TYPES:
+        t_type = self.row[0]
+        if t_type in self.BUY_TYPES:
             buy_quantity, buy_asset, buy_value = self.validate_buy(self.row)
             self.validate_no_sell(self.row)
-            fee_quantity, fee_asset, fee_value = self.validate_fee(self.row, buy_asset)
-
-            self.t_record = TransactionInRecord(self.row[0],
-                                                timestamp,
-                                                buy_quantity=buy_quantity,
-                                                buy_asset=buy_asset,
-                                                buy_value=buy_value,
-                                                fee_quantity=fee_quantity,
-                                                fee_asset=fee_asset,
-                                                fee_value=fee_value,
-                                                wallet=self.row[10])
-        elif self.row[0] in TransactionInRecord.SELL_TYPES:
+            fee_quantity, fee_asset, fee_value = self.validate_fee(self.row)
+        elif t_type in self.SELL_TYPES:
             self.validate_no_buy(self.row)
             sell_quantity, sell_asset, sell_value = self.validate_sell(self.row)
-            fee_quantity, fee_asset, fee_value = self.validate_fee(self.row, sell_asset)
-
-            self.t_record = TransactionInRecord(self.row[0],
-                                                timestamp,
-                                                sell_quantity=sell_quantity,
-                                                sell_asset=sell_asset,
-                                                sell_value=sell_value,
-                                                fee_quantity=fee_quantity,
-                                                fee_asset=fee_asset,
-                                                fee_value=fee_value,
-                                                wallet=self.row[10])
-        elif self.row[0] == TransactionInRecord.TYPE_TRADE:
+            fee_quantity, fee_asset, fee_value = self.validate_fee(self.row)
+        elif t_type == TransactionRecord.TYPE_TRADE:
             buy_quantity, buy_asset, buy_value = self.validate_buy(self.row)
             sell_quantity, sell_asset, sell_value = self.validate_sell(self.row)
-            fee_quantity, fee_asset, fee_value = self.validate_fee(self.row, buy_asset, sell_asset)
-
-            self.t_record = TransactionInRecord(self.row[0],
-                                                timestamp,
-                                                buy_quantity=buy_quantity,
-                                                buy_asset=buy_asset,
-                                                buy_value=buy_value,
-                                                sell_quantity=sell_quantity,
-                                                sell_asset=sell_asset,
-                                                sell_value=sell_value,
-                                                fee_quantity=fee_quantity,
-                                                fee_asset=fee_asset,
-                                                fee_value=fee_value,
-                                                wallet=self.row[10])
-
+            fee_quantity, fee_asset, fee_value = self.validate_fee(self.row)
         else:
-            raise UnexpectedTransactionTypeError(0, DataRow.HEADER[0], self.row[0])
+            raise UnexpectedTransactionTypeError(0, self.HEADER[0], t_type)
+
+        if buy_asset:
+            buy = Buy(t_type, buy_quantity, buy_asset, buy_value)
+        if sell_asset:
+            sell = Sell(t_type, sell_quantity, sell_asset, sell_value)
+        if fee_asset:
+            # Fees are added as a seperate spend transaction
+            fee = Sell(TransactionRecord.TYPE_SPEND, fee_quantity, fee_asset, fee_value)
+            if t_type in self.TRANSFER_TYPES:
+                # A fee spend is normally a disposal unless it's part of a transfer
+                fee.disposal = False
+
+        self.t_record = TransactionRecord(t_type, buy, sell, fee, self.row[10],
+                                          self.parse_timestamp(self.row[11]))
 
     @staticmethod
     def parse_timestamp(timestamp_str):
         try:
             timestamp = dateutil.parser.parse(timestamp_str, tzinfos=config.TZ_INFOS)
         except ValueError:
-            raise TimestampParserError(11, DataRow.HEADER[11], timestamp_str)
+            raise TimestampParserError(11, TransactionRow.HEADER[11], timestamp_str)
 
         if timestamp.tzinfo is None:
             # Default to UTC if no timezone is specified
@@ -194,31 +189,31 @@ class DataRow(object):
     def validate_buy(row):
         if row[1]:
             try:
-                buy_quantity = Decimal(DataRow.strip_non_digits(row[1]))
+                buy_quantity = Decimal(TransactionRow.strip_non_digits(row[1]))
             except InvalidOperation:
-                raise DataValueError(1, DataRow.HEADER[1], row[1])
+                raise DataValueError(1, TransactionRow.HEADER[1], row[1])
 
             if buy_quantity < 0:
-                raise DataValueError(1, DataRow.HEADER[1], buy_quantity)
+                raise DataValueError(1, TransactionRow.HEADER[1], buy_quantity)
         else:
-            raise MissingDataError(1, DataRow.HEADER[1])
+            raise MissingDataError(1, TransactionRow.HEADER[1])
 
         if row[2]:
             buy_asset = row[2]
         else:
-            raise MissingDataError(2, DataRow.HEADER[2])
+            raise MissingDataError(2, TransactionRow.HEADER[2])
 
         if row[3]:
             try:
-                buy_value = Decimal(DataRow.strip_non_digits(row[3]))
+                buy_value = Decimal(TransactionRow.strip_non_digits(row[3]))
             except InvalidOperation:
-                raise DataValueError(3, DataRow.HEADER[3], row[3])
+                raise DataValueError(3, TransactionRow.HEADER[3], row[3])
 
             if buy_value < 0:
-                raise DataValueError(3, DataRow.HEADER[3], buy_value)
+                raise DataValueError(3, TransactionRow.HEADER[3], buy_value)
 
             if buy_asset == config.CCY and buy_value != buy_quantity:
-                raise DataValueError(3, DataRow.HEADER[3], buy_value)
+                raise DataValueError(3, TransactionRow.HEADER[3], buy_value)
         else:
             buy_value = None
 
@@ -227,43 +222,43 @@ class DataRow(object):
     @staticmethod
     def validate_no_buy(row):
         if row[1]:
-            raise UnexpectedDataError(1, DataRow.HEADER[1], row[1])
+            raise UnexpectedDataError(1, TransactionRow.HEADER[1], row[1])
 
         if row[2]:
-            raise UnexpectedDataError(2, DataRow.HEADER[2], row[2])
+            raise UnexpectedDataError(2, TransactionRow.HEADER[2], row[2])
 
         if row[3]:
-            raise UnexpectedDataError(3, DataRow.HEADER[3], row[3])
+            raise UnexpectedDataError(3, TransactionRow.HEADER[3], row[3])
 
     @staticmethod
     def validate_sell(row):
         if row[4]:
             try:
-                sell_quantity = Decimal(DataRow.strip_non_digits(row[4]))
+                sell_quantity = Decimal(TransactionRow.strip_non_digits(row[4]))
             except InvalidOperation:
-                raise DataValueError(4, DataRow.HEADER[4], row[4])
+                raise DataValueError(4, TransactionRow.HEADER[4], row[4])
 
             if sell_quantity < 0:
-                raise DataValueError(4, DataRow.HEADER[4], sell_quantity)
+                raise DataValueError(4, TransactionRow.HEADER[4], sell_quantity)
         else:
-            raise MissingDataError(4, DataRow.HEADER[4])
+            raise MissingDataError(4, TransactionRow.HEADER[4])
 
         if row[5]:
             sell_asset = row[5]
         else:
-            raise MissingDataError(5, DataRow.HEADER[5])
+            raise MissingDataError(5, TransactionRow.HEADER[5])
 
         if row[6]:
             try:
-                sell_value = Decimal(DataRow.strip_non_digits(row[6]))
+                sell_value = Decimal(TransactionRow.strip_non_digits(row[6]))
             except InvalidOperation:
-                raise DataValueError(6, DataRow.HEADER[6], row[6])
+                raise DataValueError(6, TransactionRow.HEADER[6], row[6])
 
             if sell_value < 0:
-                raise DataValueError(6, DataRow.HEADER[6], sell_value)
+                raise DataValueError(6, TransactionRow.HEADER[6], sell_value)
 
             if sell_asset == config.CCY and sell_value != sell_quantity:
-                raise DataValueError(6, DataRow.HEADER[6], sell_value)
+                raise DataValueError(6, TransactionRow.HEADER[6], sell_value)
         else:
             sell_value = None
 
@@ -272,24 +267,24 @@ class DataRow(object):
     @staticmethod
     def validate_no_sell(row):
         if row[4]:
-            raise UnexpectedDataError(4, DataRow.HEADER[4], row[4])
+            raise UnexpectedDataError(4, TransactionRow.HEADER[4], row[4])
 
         if row[5]:
-            raise UnexpectedDataError(5, DataRow.HEADER[5], row[5])
+            raise UnexpectedDataError(5, TransactionRow.HEADER[5], row[5])
 
         if row[6]:
-            raise UnexpectedDataError(6, DataRow.HEADER[6], row[6])
+            raise UnexpectedDataError(6, TransactionRow.HEADER[6], row[6])
 
     @staticmethod
-    def validate_fee(row, buy_asset=None, sell_asset=None):
+    def validate_fee(row):
         if row[7]:
             try:
-                fee_quantity = Decimal(DataRow.strip_non_digits(row[7]))
+                fee_quantity = Decimal(TransactionRow.strip_non_digits(row[7]))
             except InvalidOperation:
-                raise DataValueError(7, DataRow.HEADER[7], row[7])
+                raise DataValueError(7, TransactionRow.HEADER[7], row[7])
 
             if fee_quantity < 0:
-                raise DataValueError(7, DataRow.HEADER[7], fee_quantity)
+                raise DataValueError(7, TransactionRow.HEADER[7], fee_quantity)
         else:
             fee_quantity = None
 
@@ -300,25 +295,22 @@ class DataRow(object):
 
         if row[9]:
             try:
-                fee_value = Decimal(DataRow.strip_non_digits(row[9]))
+                fee_value = Decimal(TransactionRow.strip_non_digits(row[9]))
             except InvalidOperation:
-                raise DataValueError(9, DataRow.HEADER[9], row[9])
+                raise DataValueError(9, TransactionRow.HEADER[9], row[9])
 
             if fee_value < 0:
-                raise DataValueError(9, DataRow.HEADER[9], fee_value)
+                raise DataValueError(9, TransactionRow.HEADER[9], fee_value)
 
             if fee_asset == config.CCY and fee_value != fee_quantity:
-                raise DataValueError(9, DataRow.HEADER[9], fee_value)
+                raise DataValueError(9, TransactionRow.HEADER[9], fee_value)
         else:
             fee_value = None
 
         if fee_quantity is not None and not fee_asset:
-            raise MissingDataError(8, DataRow.HEADER[8])
+            raise MissingDataError(8, TransactionRow.HEADER[8])
         elif fee_quantity is None and fee_asset:
-            raise MissingDataError(7, DataRow.HEADER[7])
-
-        if fee_asset and (fee_asset != buy_asset and fee_asset != sell_asset):
-            raise FeeAssetMismatchError(8, DataRow.HEADER[8], fee_asset)
+            raise MissingDataError(7, TransactionRow.HEADER[7])
 
         return fee_quantity, fee_asset, fee_value
 
@@ -328,7 +320,7 @@ class DataRow(object):
 
     def __str__(self):
         if self.t_record and self.t_record.tid:
-            tid_str = " TID:" + str(self.t_record.tid)
+            tid_str = " TID:" + str(self.t_record.tid[0])
         else:
             tid_str = ""
 
@@ -337,7 +329,7 @@ class DataRow(object):
                    "' Row[" + str(self.row_num) + "]: " + \
                    '[' + '\'{0}\''.format('\', \''.join(self.row)) + ']' + \
                    tid_str
-        else:
-            return "Row[" + str(self.row_num) + "]: " + \
-                   '[' + '\'{0}\''.format('\', \''.join(self.row)) + ']' + \
-                   tid_str
+
+        return "Row[" + str(self.row_num) + "]: " + \
+               '[' + '\'{0}\''.format('\', \''.join(self.row)) + ']' + \
+               tid_str

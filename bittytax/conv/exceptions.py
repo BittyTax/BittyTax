@@ -3,6 +3,7 @@
 
 class DataParserError(Exception):
     def __init__(self, col_num, col_name, value=None):
+        super(DataParserError, self).__init__()
         self.col_num = col_num
         self.col_name = col_name
         self.value = value

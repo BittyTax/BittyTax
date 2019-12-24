@@ -10,7 +10,7 @@ import xlsxwriter
 from xlsxwriter.utility import xl_rowcol_to_cell
 
 from ..config import config
-from ..record import TransactionRecordBase
+from .out_record import TransactionOutRecord
 from .output_csv import OutputBase
 
 log = logging.getLogger()
@@ -72,15 +72,15 @@ class OutputExcel(OutputBase):
         log.info("Output EXCEL file created: %s", self.filename)
 
 class Worksheet(object):
-    BUY_LIST = (TransactionRecordBase.TYPE_DEPOSIT,
-                TransactionRecordBase.TYPE_MINING,
-                TransactionRecordBase.TYPE_INCOME,
-                TransactionRecordBase.TYPE_GIFT_RECEIVED)
+    BUY_LIST = (TransactionOutRecord.TYPE_DEPOSIT,
+                TransactionOutRecord.TYPE_MINING,
+                TransactionOutRecord.TYPE_INCOME,
+                TransactionOutRecord.TYPE_GIFT_RECEIVED)
 
-    SELL_LIST = (TransactionRecordBase.TYPE_WITHDRAWAL,
-                 TransactionRecordBase.TYPE_SPEND,
-                 TransactionRecordBase.TYPE_GIFT_SENT,
-                 TransactionRecordBase.TYPE_CHARITY_SENT)
+    SELL_LIST = (TransactionOutRecord.TYPE_WITHDRAWAL,
+                 TransactionOutRecord.TYPE_SPEND,
+                 TransactionOutRecord.TYPE_GIFT_SENT,
+                 TransactionOutRecord.TYPE_CHARITY_SENT)
     SHEETNAME_MAX_LEN = 31
 
     names = {}
@@ -164,7 +164,7 @@ class Worksheet(object):
         else:
             self.worksheet.data_validation(row_num, col_num, row_num, col_num,
                                            {'validate': 'list',
-                                            'source': [TransactionRecordBase.TYPE_TRADE]})
+                                            'source': [TransactionOutRecord.TYPE_TRADE]})
 
         self.worksheet.write_string(row_num, col_num, t_type)
         self._autofit_calc(col_num, len(t_type))
