@@ -160,7 +160,7 @@ class TransactionRow(object):
         if sell_asset:
             sell = Sell(t_type, sell_quantity, sell_asset, sell_value)
         if fee_asset:
-            # Fees are added as a seperate spend transaction
+            # Fees are added as a separate spend transaction
             fee = Sell(TransactionRecord.TYPE_SPEND, fee_quantity, fee_asset, fee_value)
             if t_type in self.TRANSFER_TYPES:
                 # A fee spend is normally a disposal unless it's part of a transfer
