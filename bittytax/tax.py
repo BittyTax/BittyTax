@@ -196,7 +196,7 @@ class TaxCalculator(object):
         log.info("==TAX SUMMARY %s/%s==", tax_year - 1, tax_year)
         log.info("--CAPITAL GAINS--")
         allowance = Decimal(self.ANNUAL_ALLOWANCE[tax_year])
-        disposals = total_cost = total_proceeds = total_gain = Decimal(0)
+        disposals = total_cost = total_proceeds = total_gain = total_loss = Decimal(0)
 
         log.info("%s %s %s %s %s %s %s",
                  "Asset".ljust(7),
@@ -214,29 +214,29 @@ class TaxCalculator(object):
                     disposals += 1
                     total_cost += t.cost
                     total_proceeds += t.proceeds
-                    total_gain += t.gain
+                    if t.gain >= 0:
+                        total_gain += t.gain
+                    else:
+                        total_loss += abs(t.gain)
 
         log.info("Number of disposals=%s", disposals)
-        log.info("Disposal proceeds=%s%s", config.sym(), '{:0,.2f}'.format(total_proceeds))
+        log.info("Disposal proceeds=%s%s",
+                 config.sym(), '{:0,.2f}'.format(total_proceeds))
         if total_proceeds >= allowance * 4:
             log.warning("Assets sold are more than 4 times the annual allowance (%s%s), "
                         "this needs to be reported to HMRC",
                         config.sym(), '{:0,.2f}'.format(allowance * 4))
-        log.info("Allowable costs=%s%s", config.sym(), '{:0,.2f}'.format(total_cost))
-
-        gain = loss = Decimal(0)
-        if total_gain >= 0:
-            gain = total_gain
-        else:
-            loss = abs(total_gain)
-
-        log.info("Gains in the year=%s%s", config.sym(), '{:0,.2f}'.format(gain))
-        log.info("Losses in the year=%s%s", config.sym(), '{:0,.2f}'.format(loss))
+        log.info("Allowable costs=%s%s",
+                 config.sym(), '{:0,.2f}'.format(total_cost))
+        log.info("Gains in the year, before losses=%s%s",
+                 config.sym(), '{:0,.2f}'.format(total_gain))
+        log.info("Losses in the year=%s%s",
+                 config.sym(), '{:0,.2f}'.format(total_loss))
 
         taxable_gain = Decimal(0)
         total_cg_tax = Decimal(0)
         if total_gain > allowance:
-            taxable_gain = total_gain - allowance
+            taxable_gain = total_gain - total_loss - allowance
             total_cg_tax = taxable_gain * self.CGT_RATE / 100
 
         log.info("--TAX ESTIMATE--")
