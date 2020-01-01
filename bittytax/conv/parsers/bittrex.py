@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+from decimal import Decimal
+
 from ...record import TransactionRecordBase as TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError
@@ -14,7 +16,8 @@ def parse_bittrex_trades2(data_row, parser):
     if in_row[3] == "LIMIT_BUY":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[5],
+                                                 buy_quantity=Decimal(in_row[5]) - \
+                                                              Decimal(in_row[6]),
                                                  buy_asset=in_row[1].split('-')[1],
                                                  sell_quantity=in_row[8],
                                                  sell_asset=in_row[1].split('-')[0],
@@ -26,13 +29,14 @@ def parse_bittrex_trades2(data_row, parser):
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[8],
                                                  buy_asset=in_row[1].split('-')[0],
-                                                 sell_quantity=in_row[5],
+                                                 sell_quantity=Decimal(in_row[5]) - \
+                                                               Decimal(in_row[6]),
                                                  sell_asset=in_row[1].split('-')[1],
                                                  fee_quantity=in_row[7],
                                                  fee_asset=in_row[1].split('-')[0],
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
+        raise UnexpectedTypeError(3, parser.in_header[3], in_row[3])
 
 def parse_bittrex_trades(data_row, parser):
     in_row = data_row.in_row
