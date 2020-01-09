@@ -546,6 +546,7 @@ The bittytax conversion tool `bittytax_conv` provides an easy way to convert you
 - Cryptsy
 - Gatehub
 - HitBTC
+- KuCoin
 - OKEx
 - Poloniex
 - TradeSatoshi
