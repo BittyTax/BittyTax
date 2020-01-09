@@ -2,8 +2,10 @@
 
 ## [Unreleased]
 ### Fixed
-- Tax summary: Gains in the year should exclude losses
-- Bittrex parser: Adjust quantity for partially filled orders
+- Tax summary: Gains in the year should exclude losses.
+- Bittrex parser: Adjust quantity for partially filled orders.
+### Addded
+- HitBTC exchange data files.
 
 ## Version [0.2.0] Beta (2019-10-30)
 ### Fixed

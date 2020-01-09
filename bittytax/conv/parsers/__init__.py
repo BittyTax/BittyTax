@@ -13,6 +13,7 @@ from . import cryptsy
 from . import electrum
 from . import etherscan
 from . import gatehub
+from . import hitbtc
 from . import ledgerlive
 from . import okex
 from . import poloniex
