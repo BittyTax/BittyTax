@@ -7,6 +7,8 @@
 ### Addded
 - HitBTC exchange data files.
 - KuCoin trades data file.
+### Changed
+- Conversion tool: Changed Excel spreadsheet style.
 
 ## Version [0.2.0] Beta (2019-10-30)
 ### Fixed

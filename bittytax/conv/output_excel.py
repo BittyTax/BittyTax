@@ -24,37 +24,43 @@ else:
 class OutputExcel(OutputBase):
     FILE_EXTENSION = 'xlsx'
     DATE_FORMAT = 'yyyy-mm-dd hh:mm:ss'
+    FONT_COLOR_IN_DATA = '#808080'
 
     def __init__(self, data_files):
         super(OutputExcel, self).__init__(data_files)
         self.filename = self.get_output_filename(self.FILE_EXTENSION)
         self.workbook = xlsxwriter.Workbook(self.filename)
+        self.workbook.set_size(1800, 1200)
 
-        self.format_header = self.workbook.add_format({'font_size': FONT_SIZE,
-                                                       'font_color': 'black',
-                                                       'bold': True,
-                                                       'bg_color': '#BABABA'})
+        self.format_out_header = self.workbook.add_format({'font_size': FONT_SIZE,
+                                                           'font_color': 'white',
+                                                           'bold': True,
+                                                           'bg_color': 'black'})
+        self.format_in_header = self.workbook.add_format({'font_size': FONT_SIZE,
+                                                          'font_color': 'white',
+                                                          'bold': True,
+                                                          'bg_color': self.FONT_COLOR_IN_DATA})
         self.format_out_data = self.workbook.add_format({'font_size': FONT_SIZE,
-                                                         'font_color': 'blue'})
+                                                         'font_color': 'black'})
         self.format_in_data = self.workbook.add_format({'font_size': FONT_SIZE,
-                                                        'font_color': 'black'})
+                                                        'font_color': self.FONT_COLOR_IN_DATA})
         self.format_in_data_err = self.workbook.add_format({'font_size': FONT_SIZE,
-                                                            'font_color': 'black',
+                                                            'font_color': self.FONT_COLOR_IN_DATA,
                                                             'diag_type': 3,
                                                             'diag_border': 7,
                                                             'diag_color': 'red'})
         self.format_num_float = self.workbook.add_format({'font_size': FONT_SIZE,
-                                                          'font_color': 'blue',
+                                                          'font_color': 'black',
                                                           'num_format': '#,##0.' + '#' * 30})
         self.format_num_int = self.workbook.add_format({'num_format': '#,##0'})
         self.format_num_string = self.workbook.add_format({'font_size': FONT_SIZE,
-                                                           'font_color': 'blue',
+                                                           'font_color': 'black',
                                                            'align': 'right'})
         self.format_currency = self.workbook.add_format({'font_size': FONT_SIZE,
-                                                         'font_color': 'blue',
+                                                         'font_color': 'black',
                                                          'num_format': config.sym() + '#,##0.00'})
         self.format_timestamp = self.workbook.add_format({'font_size': FONT_SIZE,
-                                                          'font_color': 'blue',
+                                                          'font_color': 'black',
                                                           'num_format': self.DATE_FORMAT})
 
     def write_excel(self):
@@ -93,11 +99,14 @@ class Worksheet(object):
 
         #Add headings row
         self.worksheet.freeze_panes(1, len(self.output.BITTYTAX_OUT_HEADER))
-        self.worksheet.set_row(0, None, self.output.format_header)
-        self.worksheet.write_row(0, 0, self.output.BITTYTAX_OUT_HEADER + data_file.parser.in_header)
 
         for col_num, col_name in enumerate(self.output.BITTYTAX_OUT_HEADER +
                                            data_file.parser.in_header):
+            if col_num < len(self.output.BITTYTAX_OUT_HEADER):
+                self.worksheet.write(0, col_num, col_name, self.output.format_out_header)
+            else:
+                self.worksheet.write(0, col_num, col_name, self.output.format_in_header)
+
             self._autofit_calc(col_num, len(col_name))
 
     def _sheet_name(self, parser_name):
