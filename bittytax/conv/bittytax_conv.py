@@ -96,7 +96,7 @@ def main():
 
     if DataFile.data_files:
         if config.args.format == config.FORMAT_EXCEL:
-            output = OutputExcel(DataFile.data_files_ordered)
+            output = OutputExcel(parser.prog, DataFile.data_files_ordered)
             output.write_excel()
         else:
             output = OutputCsv(DataFile.data_files_ordered)

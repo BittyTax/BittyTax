@@ -9,6 +9,7 @@ import re
 import xlsxwriter
 from xlsxwriter.utility import xl_rowcol_to_cell
 
+from ..version import __version__
 from ..config import config
 from ..record import TransactionRecordBase
 from .output_csv import OutputBase
@@ -25,12 +26,17 @@ class OutputExcel(OutputBase):
     FILE_EXTENSION = 'xlsx'
     DATE_FORMAT = 'yyyy-mm-dd hh:mm:ss'
     FONT_COLOR_IN_DATA = '#808080'
+    TITLE = 'BittyTax Records'
+    PROJECT_URL = 'https://github.com/BittyTax/BittyTax'
 
-    def __init__(self, data_files):
+    def __init__(self, progname, data_files):
         super(OutputExcel, self).__init__(data_files)
         self.filename = self.get_output_filename(self.FILE_EXTENSION)
         self.workbook = xlsxwriter.Workbook(self.filename)
         self.workbook.set_size(1800, 1200)
+        self.workbook.set_properties({'title': self.TITLE,
+                                      'author': '{} {}'.format(progname, __version__),
+                                      'comments': self.PROJECT_URL})
 
         self.format_out_header = self.workbook.add_format({'font_size': FONT_SIZE,
                                                            'font_color': 'white',
