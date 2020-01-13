@@ -235,7 +235,7 @@ class TaxCalculator(object):
 
         taxable_gain = Decimal(0)
         total_cg_tax = Decimal(0)
-        if total_gain > allowance:
+        if total_gain - total_loss > allowance:
             taxable_gain = total_gain - total_loss - allowance
             total_cg_tax = taxable_gain * self.CGT_RATE / 100
 
