@@ -7,7 +7,7 @@ import sys
 import os
 
 from ..config import config
-from ..record import TransactionRecordBase
+from .out_record import TransactionOutRecord
 
 log = logging.getLogger()
 
@@ -31,15 +31,15 @@ class OutputBase(object):
     def out_header(self):
         if config.args.format == config.FORMAT_RECAP:
             return self.RECAP_OUT_HEADER
-        else:
-            return self.BITTYTAX_OUT_HEADER
+
+        return self.BITTYTAX_OUT_HEADER
 
     def in_header(self, in_header):
         if config.args.format == config.FORMAT_RECAP:
             return [name if name not in self.out_header()
                     else name + '_' for name in in_header]
-        else:
-            return in_header
+
+        return in_header
 
     @staticmethod
     def get_output_filename(extension_type):
@@ -64,15 +64,15 @@ class OutputBase(object):
 
 class OutputCsv(OutputBase):
     FILE_EXTENSION = 'csv'
-    RECAP_TYPE_MAPPING = {TransactionRecordBase.TYPE_DEPOSIT: 'Deposit',
-                          TransactionRecordBase.TYPE_MINING: 'Mining',
-                          TransactionRecordBase.TYPE_INCOME: 'Income',
-                          TransactionRecordBase.TYPE_GIFT_RECEIVED: 'Gift',
-                          TransactionRecordBase.TYPE_WITHDRAWAL: 'Withdrawal',
-                          TransactionRecordBase.TYPE_SPEND: 'Purchase',
-                          TransactionRecordBase.TYPE_GIFT_SENT: 'Gift',
-                          TransactionRecordBase.TYPE_CHARITY_SENT: 'Donation',
-                          TransactionRecordBase.TYPE_TRADE: 'Trade'}
+    RECAP_TYPE_MAPPING = {TransactionOutRecord.TYPE_DEPOSIT: 'Deposit',
+                          TransactionOutRecord.TYPE_MINING: 'Mining',
+                          TransactionOutRecord.TYPE_INCOME: 'Income',
+                          TransactionOutRecord.TYPE_GIFT_RECEIVED: 'Gift',
+                          TransactionOutRecord.TYPE_WITHDRAWAL: 'Withdrawal',
+                          TransactionOutRecord.TYPE_SPEND: 'Purchase',
+                          TransactionOutRecord.TYPE_GIFT_SENT: 'Gift',
+                          TransactionOutRecord.TYPE_CHARITY_SENT: 'Donation',
+                          TransactionOutRecord.TYPE_TRADE: 'Trade'}
     def write_csv(self):
         if config.args.output_filename:
             filename = self.get_output_filename(self.FILE_EXTENSION)
@@ -122,8 +122,8 @@ class OutputCsv(OutputBase):
     def _to_csv(self, t_record):
         if config.args.format == config.FORMAT_RECAP:
             return self._to_recap_csv(t_record)
-        else:
-            return self._to_bittytax_csv(t_record)
+
+        return self._to_bittytax_csv(t_record)
 
     @staticmethod
     def _to_bittytax_csv(tr):

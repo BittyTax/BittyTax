@@ -4,7 +4,7 @@
 import logging
 from decimal import Decimal
 
-from ...record import TransactionRecordBase as TransactionOutRecord
+from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import DataParserError, UnexpectedTypeError, \
                          MissingValueError, MissingComponentError
@@ -50,8 +50,7 @@ def parse_gatehub_row(data_rows, parser, data_row):
             buy_asset = in_row[4]
 
         fee_quantity, fee_asset = find_same_tx(data_rows, in_row[1],
-                                               "ripple_network_fee",
-                                               [sell_asset, buy_asset])
+                                               "ripple_network_fee")
     elif in_row[2] == "exchange":
         t_type = TransactionOutRecord.TYPE_TRADE
         if Decimal(in_row[3]) < 0:
@@ -71,8 +70,7 @@ def parse_gatehub_row(data_rows, parser, data_row):
             raise MissingComponentError(1, parser.in_header[1], in_row[1])
 
         fee_quantity, fee_asset = find_same_tx(data_rows, in_row[1],
-                                               "ripple_network_fee",
-                                               [sell_asset, buy_asset])
+                                               "ripple_network_fee")
     elif in_row[2] == "ripple_network_fee":
         # Fees which are not associated with a payment or exchange are added
         # as a Spend
@@ -92,15 +90,14 @@ def parse_gatehub_row(data_rows, parser, data_row):
                                              fee_asset=fee_asset,
                                              wallet=WALLET)
 
-def find_same_tx(data_rows, tx_hash, tx_type, currencies=None):
+def find_same_tx(data_rows, tx_hash, tx_type):
     quantity = None
     asset = ""
 
     data_rows = [data_row for data_row in data_rows
                  if data_row.in_row[1] == tx_hash and not data_row.parsed]
     for data_row in data_rows:
-        if tx_type == data_row.in_row[2] == "ripple_network_fee" and \
-                data_row.in_row[4] in currencies or tx_type != "ripple_network_fee":
+        if tx_type == data_row.in_row[2]:
             quantity = abs(Decimal(data_row.in_row[3]))
             asset = data_row.in_row[4]
             data_row.timestamp = DataParser.parse_timestamp(data_row.in_row[0])

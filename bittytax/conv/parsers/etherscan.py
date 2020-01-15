@@ -3,7 +3,7 @@
 
 from decimal import Decimal
 
-from ...record import TransactionRecordBase as TransactionOutRecord
+from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 
 WALLET = "Ethereum"

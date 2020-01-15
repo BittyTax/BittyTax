@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import dateutil.tz
 
-from ...record import TransactionRecordBase as TransactionOutRecord
+from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import DataParserError, UnexpectedTypeError
 

@@ -7,6 +7,7 @@
 ### Addded
 - HitBTC exchange data files.
 - KuCoin trades data file.
+- Improved fee handling, including 3rd asset fees.
 ### Changed
 - Conversion tool: Changed Excel spreadsheet style and added file properties.
 

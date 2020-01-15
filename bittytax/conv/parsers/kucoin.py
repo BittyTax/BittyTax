@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2020
 
-from ...record import TransactionRecordBase as TransactionOutRecord
+from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError
 

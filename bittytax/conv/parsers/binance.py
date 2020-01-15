@@ -3,23 +3,29 @@
 
 from decimal import Decimal
 
-from ...record import TransactionRecordBase as TransactionOutRecord
+from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
-from ..exceptions import UnexpectedTypeError
+from ..exceptions import UnexpectedTypeError, UnexpectedTradingPairError
 
 WALLET = "Binance"
+QUOTE_ASSETS = ['BNB', 'BTC', 'BUSD', 'ETH', 'EUR', 'GBP', 'NGN', 'PAX', 'RUB', 'TRX',
+                'TUSD', 'USDC', 'USDS', 'USDT', 'XRP']
 
 def parse_binance_trades(data_row, parser):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 
+    base_asset, quote_asset = split_trading_pair(in_row[1])
+    if base_asset is None or quote_asset is None:
+        raise UnexpectedTradingPairError(1, parser.in_header[1], in_row[1])
+
     if in_row[2] == "BUY":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[4],
-                                                 buy_asset=in_row[7],
+                                                 buy_asset=base_asset,
                                                  sell_quantity=in_row[5],
-                                                 sell_asset=in_row[1].replace(in_row[7], ''),
+                                                 sell_asset=quote_asset,
                                                  fee_quantity=in_row[6],
                                                  fee_asset=in_row[7],
                                                  wallet=WALLET)
@@ -27,9 +33,9 @@ def parse_binance_trades(data_row, parser):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[5],
-                                                 buy_asset=in_row[7],
+                                                 buy_asset=quote_asset,
                                                  sell_quantity=in_row[4],
-                                                 sell_asset=in_row[1].replace(in_row[7], ''),
+                                                 sell_asset=base_asset,
                                                  fee_quantity=in_row[6],
                                                  fee_asset=in_row[7],
                                                  wallet=WALLET)
@@ -58,6 +64,12 @@ def parse_binance_deposits_withdrawals(data_row, _):
                                                  fee_quantity=in_row[3],
                                                  fee_asset=in_row[1],
                                                  wallet=WALLET)
+def split_trading_pair(trading_pair):
+    for quote_asset in QUOTE_ASSETS:
+        if trading_pair.endswith(quote_asset):
+            return trading_pair.replace(quote_asset, ''), quote_asset
+
+    return None, None
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Binance Trades",

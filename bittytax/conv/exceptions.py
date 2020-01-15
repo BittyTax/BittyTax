@@ -3,6 +3,7 @@
 
 class DataParserError(Exception):
     def __init__(self, col_num, col_name, value=None):
+        super(DataParserError, self).__init__()
         self.col_num = col_num
         self.col_name = col_name
         self.value = value
@@ -18,6 +19,10 @@ class MissingValueError(DataParserError):
 class MissingComponentError(DataParserError):
     def __str__(self):
         return 'Missing component data for {}: \'{}\''.format(self.col_name, self.value)
+
+class UnexpectedTradingPairError(DataParserError):
+    def __str__(self):
+        return 'Unrecognised trading pair for {}: \'{}\''.format(self.col_name, self.value)
 
 class UnknownCryptoassetError(Exception):
     def __str__(self):

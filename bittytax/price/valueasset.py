@@ -15,33 +15,25 @@ class ValueAsset(object):
     def __init__(self):
         self.price_data = PriceData()
 
-    def get_value(self, asset, timestamp, quantity, fixed_value):
+    def get_value(self, asset, timestamp, quantity):
         if asset == config.CCY:
             return quantity
 
-        if fixed_value is None:
-            price_ccy, _, _ = self.get_historical_price(asset, timestamp)
-            if price_ccy is not None:
-                value = price_ccy * quantity
-                log.debug("Price on %s, 1 %s=%s%s %s, %s %s=%s%s %s",
-                          timestamp.strftime('%Y-%m-%d'),
-                          asset,
-                          config.sym(), '{:0,.2f}'.format(price_ccy), config.CCY,
-                          '{:0,f}'.format(quantity.normalize()),
-                          asset,
-                          config.sym(), '{:0,.2f}'.format(value), config.CCY)
-            else:
-                value = Decimal(0)
-                log.warning("Price at %s for %s is not available",
-                            timestamp.strftime('%Y-%m-%d'),
-                            asset)
-        else:
-            value = fixed_value
-            log.debug("Using fixed value, %s %s=%s%s %s",
-                      '{:0,f}'.format(quantity.normalize()),
+        price_ccy, _, _ = self.get_historical_price(asset, timestamp)
+        if price_ccy is not None:
+            value = price_ccy * quantity
+            log.debug("Price on %s, 1 %s=%s%s %s, %s %s=%s%s %s",
+                      timestamp.strftime('%Y-%m-%d'),
+                      asset,
+                      config.sym(), '{:0,.2f}'.format(price_ccy), config.CCY,
+                      '{:0,f}'.format(quantity),
                       asset,
                       config.sym(), '{:0,.2f}'.format(value), config.CCY)
-
+        else:
+            value = Decimal(0)
+            log.warning("Price at %s for %s is not available",
+                        timestamp.strftime('%Y-%m-%d'),
+                        asset)
         return value
 
     def get_current_value(self, asset, quantity):
