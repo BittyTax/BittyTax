@@ -18,8 +18,9 @@ class DataParser(object):
     TYPE_EXCHANGE = "Exchanges"
     TYPE_EXPLORER = "Explorers"
     TYPE_SHARES = "Stocks & Shares"
+    TYPE_ACCOUNTING = "Accounting"
 
-    LIST_ORDER = (TYPE_WALLET, TYPE_EXCHANGE, TYPE_EXPLORER, TYPE_SHARES)
+    LIST_ORDER = (TYPE_WALLET, TYPE_EXCHANGE, TYPE_EXPLORER, TYPE_ACCOUNTING, TYPE_SHARES)
 
     parsers = []
 

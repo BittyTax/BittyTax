@@ -8,6 +8,7 @@ from . import circle
 from . import coinbase
 from . import coinbasepro
 from . import coinfloor
+from . import cointracking
 from . import cryptopia
 from . import cryptsy
 from . import electrum
