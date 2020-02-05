@@ -1,0 +1,115 @@
+<h2>Capital Gains</h2>
+{% set cgains = tax_report[tax_year]['CapitalGains'] %}
+{% for asset in cgains.assets|sort %}
+    {% set asset_totals = namespace(disposals=0, quantity=0, cost=0, fees=0, proceeds=0, gain=0) %}
+    <table repeat="1" width="100%">
+        <tr>
+            <th align="left">Asset</th>
+            <th align="left">Date</th>
+            <th align="left">Disposal Type</th>
+            <th align="right">Quantity</th>
+            <th align="right">Cost</th>
+            <th align="right">Fees</th>
+            <th align="right">Proceeds</th>
+            <th align="right">Gain</th>
+        </tr>
+        {% for te in cgains.assets[asset] %}
+            {% set asset_totals.disposals = asset_totals.disposals + 1 %}
+            <tr>
+                <td>{{te.asset}}</td>
+                <td>{{te.date|datefilter}}</td>
+                <td width="25%">{{te.format_disposal()|nowrapfilter}}</td>
+                <td align="right">{{te.quantity|quantityfilter}}</td>
+                {% set asset_totals.quantity = asset_totals.quantity + te.quantity %}
+                <td align="right">{{te.cost|valuefilter}}</td>
+                {% set asset_totals.cost = asset_totals.cost + te.cost %}
+                <td align="right">{{te.fees|valuefilter}}</td>
+                {% set asset_totals.fees = asset_totals.fees + te.fees %}
+                <td align="right">{{te.proceeds|valuefilter}}</td>
+                {% set asset_totals.proceeds = asset_totals.proceeds + te.proceeds %}
+                <td align="right">{{te.gain|valuefilter}}</td>
+                {% set asset_totals.gain = asset_totals.gain + te.gain %}
+            </tr>
+        {% endfor %}
+        {% if asset_totals.disposals > 1 %}
+            <tr>
+                <td align="left">Total</td>
+                <td align="left"></td>
+                <td align="left"></td>
+                <td align="right">{{asset_totals.quantity|quantityfilter}}</td>
+                <td align="right">{{asset_totals.cost|valuefilter}}</td>
+                <td align="right">{{asset_totals.fees|valuefilter}}</td>
+                <td align="right">{{asset_totals.proceeds|valuefilter}}</td>
+                <td align="right">{{asset_totals.gain|valuefilter}}</td>
+            </tr>
+        {% endif %}
+    </table>
+    <br>
+{% endfor %}
+<table>
+    <tr class="total_row">
+        <td align="left">Total</td>
+        <td align="left"></td>
+        <td align="left" width="25%"></td>
+        <td align="right"></td>
+        <td align="right">{{cgains.totals['cost']|valuefilter}}</td>
+        <td align="right">{{cgains.totals['fees']|valuefilter}}</td>
+        <td align="right">{{cgains.totals['proceeds']|valuefilter}}</td>
+        <td align="right">{{cgains.totals['gain']|valuefilter}}</td>
+    </tr>
+</table>
+<h3>Summary</h3>
+<table width="50%">
+    <tr>
+        <td>Number of disposals:</td>
+        <td align="right">{{cgains.summary['disposals']}}</td>
+    </tr>
+    <tr>
+        <td>Disposal proceeds:</td>
+        {% if cgains.proceeds_warning %}
+            <td align="right">*{{cgains.totals['proceeds']|valuefilter}}</td>
+        {% else %}
+            <td align="right">{{cgains.totals['proceeds']|valuefilter}}</td>
+        {% endif %}
+    </tr>
+    <tr>
+        <td>Allowable costs (including the purchase price):</td>
+        <td valign="top" align="right">{{(cgains.totals['cost'] + cgains.totals['fees'])|valuefilter}}</td>
+    </tr>
+    <tr>
+        <td>Gains in the year, before losses:</td>
+        <td align="right">{{cgains.summary['total_gain']|valuefilter}}</td>
+    </tr>
+    <tr>
+        <td>Losses in the year:</td>
+        <td align="right">{{cgains.summary['total_loss']|abs|valuefilter}}</td>
+    </tr>
+</table>
+{% if cgains.proceeds_warning %}
+    <p>*Assets sold are more than 4 times the annual allowance ({{(cgains.estimate['.allowance'] * 4)|valuefilter}}), this needs to be reported to HMRC</p>
+{% endif %}
+{% if not config.args.summary %}
+    <h3>Tax Estimate</h3>
+    <p>The figures below are only an estimate, they do not take into consideration other gains and losses in the same tax year, always consult with a professional accountant before filing.</p>
+    <table width="50%">
+        <tr>
+            {% if cgains.totals['gain'] > 0 %}
+                <td>Taxable gain*:</td>
+            {% else %}
+                <td>Taxable gain:</td>
+            {% endif %}
+            <td align="right">{{cgains.estimate['taxable_gain']|valuefilter}}</td>
+        </tr>
+        <tr>
+            <td>Capital Gains Tax (Basic rate):</td>
+            <td align="right">{{cgains.estimate['cgt_basic']|valuefilter}}</td>
+        </tr>
+        <tr>
+            <td>Capital Gains Tax (Higher rate):</td>
+            <td align="right">{{cgains.estimate['cgt_higher']|valuefilter}}</td>
+        </tr>
+    </table> 
+    {% if cgains.estimate['allowance_used'] %}
+        <p>*{{cgains.estimate['allowance_used']|valuefilter}} of the tax-free allowance ({{cgains.estimate['allowance']|valuefilter}}) used</p>
+    {% endif %}
+{% endif %}

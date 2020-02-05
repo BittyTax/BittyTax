@@ -53,6 +53,8 @@ setup(
         'pyyaml',
         'xlrd',
         'xlsxwriter',
+        'jinja2',
+        'xhtml2pdf',
     ],
     entry_points={
         'console_scripts': [
