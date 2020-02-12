@@ -2,7 +2,7 @@ import os
 import re
 import io
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 BITTYTAX_PATH = os.path.expanduser('~/.bittytax')
 VERSION_FILE = 'bittytax/version.py'
@@ -46,7 +46,8 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     keywords='bittytax cryptoasset cryptocurrency crypto tax',
-    packages=find_packages('.'),
+    packages=['bittytax'],
+    package_data={'bittytax': ['templates/*.html']},
     install_requires=[
         'python-dateutil',
         'requests',

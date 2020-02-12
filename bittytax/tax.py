@@ -14,6 +14,14 @@ log = logging.getLogger()
 
 PRECISION = Decimal('0.00')
 
+def which_tax_year(timestamp):
+    if timestamp > datetime(timestamp.year, 4, 5, tzinfo=config.TZ_LOCAL):
+        tax_year = timestamp.year + 1
+    else:
+        tax_year = timestamp.year
+
+    return tax_year
+
 class TaxCalculator(object):
     DISPOSAL_SAME_DAY = 'Same Day'
     DISPOSAL_BED_AND_BREAKFAST = 'Bed & Breakfast'
@@ -254,11 +262,7 @@ class TaxCalculator(object):
         log.info("Total value=%s%s", config.sym(), '{:0,.2f}'.format(total_value))
 
     def _which_tax_year(self, timestamp):
-        if timestamp > datetime(timestamp.year, 4, 5, tzinfo=config.TZ_LOCAL):
-            tax_year = timestamp.year + 1
-        else:
-            tax_year = timestamp.year
-
+        tax_year = which_tax_year(timestamp)
         if tax_year not in self.tax_events:
             self.tax_events[tax_year] = []
 

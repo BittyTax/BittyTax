@@ -1,0 +1,46 @@
+<h1>Appendix</h1>
+{% for tax_year in price_report|sort %}
+    {% set price_missing = namespace(flag=false) %}
+    <h2>Price Data - {{tax_year - 1}}/{{tax_year}}</h2>
+    <table repeat="1" width="100%">
+        <tr>
+            <th align="left">Asset</th>
+            <th align="left">Date</th>
+            <th align="left">Data Source</th>
+            <th align="right">Price ({{config.CCY}})</th>
+            <th align="right">Price (BTC)</th>
+        </tr>
+        {% for asset in price_report[tax_year]|sort %}
+            {% for date in price_report[tax_year][asset]|sort %}
+                {% if price_report[tax_year][asset][date]['price_ccy'] != none %}
+                    <tr>
+                        <td>1 {{asset}} ({{price_report[tax_year][asset][date]['name']}})</td>
+                        <td>{{date|datefilter}}</td>
+                        <td><a href="{{price_report[tax_year][asset][date]['url']}}">{{price_report[tax_year][asset][date]['data_source']}}</a></td>
+                        <td align="right">{{price_report[tax_year][asset][date]['price_ccy']|valuefilter}}</td>
+                        {% if price_report[tax_year][asset][date]['price_btc'] != none %} 
+                            <td align="right">{{price_report[tax_year][asset][date]['price_btc']|quantityfilter}}</td>
+                        {% else %} 
+                            <td align="right">n/a</td>
+                        {% endif %}
+                    </tr>
+                {% else %} 
+                    {% set price_missing.flag = true %}
+                    <tr>
+                        <td>1 {{asset}}</td>
+                        <td>{{date|datefilter}}</td>
+                        <td></td>
+                        <td align="right"><i>Not available*</i></td>
+                        <td></td>
+                    </tr>
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+    </table>
+    {% if price_missing.flag %}
+        <p>*Price of £0.00 used</p>        
+    {% endif %}
+    {% if not loop.last %}
+        <div><pdf:nextpage /></div>
+    {% endif %}
+{% endfor %}

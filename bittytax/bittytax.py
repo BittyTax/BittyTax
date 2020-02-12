@@ -58,6 +58,9 @@ def main():
                         dest='output_filename',
                         type=str,
                         help="specify the output filename for the tax report")
+    parser.add_argument("--nopdf",
+                        action='store_true',
+                        help="don't output pdf report, output report to terminal only")
 
     config.args = parser.parse_args()
     config.args.nocache = False
@@ -113,10 +116,11 @@ def main():
             tax.calculate_capital_gains(year)
             tax.calculate_income(year)
 
-    if config.args.debug:
-        ReportLog(tax.tax_report)
+    if config.args.debug or config.args.nopdf:
+        ReportLog(tax.tax_report, value_asset.price_report)
 
     if not config.args.taxyear:
         tax.report_holdings(value_asset)
 
-    ReportPdf(parser.prog, tax.tax_report)
+    if not config.args.nopdf:
+        ReportPdf(parser.prog, tax.tax_report, value_asset.price_report)

@@ -55,14 +55,14 @@
         <th></th>
         <th></th>
     </tr>
-    {% for type in income.type_totals|sort %}
+    {% for i_type in income.type_totals|sort %}
         <tr>
-            <td>{{type}}</td>
+            <td>{{i_type}}</td>
             <td></td>
             <td width="25%"></td>
             <td></td>
-            <td align="right">{{income.type_totals[type]['amount']|valuefilter}}</td>
-            <td align="right">{{income.type_totals[type]['fees']|valuefilter}}</td>
+            <td align="right">{{income.type_totals[i_type]['amount']|valuefilter}}</td>
+            <td align="right">{{income.type_totals[i_type]['fees']|valuefilter}}</td>
             <td></td>
             <td></td>
         </tr>

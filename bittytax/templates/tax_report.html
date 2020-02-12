@@ -35,6 +35,9 @@
                 border-top-style: solid;
                 border-top-width: 0.1px;
             }
+            h1 {
+                text-decoration: underline;
+            }
         </style>
     </head>
     <body>
@@ -68,6 +71,10 @@
                     <div><pdf:nextpage /></div>
                 {% endif %}
             {% endfor %}
+            <div><pdf:nextpage /></div>
+            {% if not config.args.summary %}
+                {% include "price_data.html" %}
+            {% endif %}
         {% endif %}
     </body>
 </html>
