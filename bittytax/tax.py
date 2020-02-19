@@ -39,6 +39,7 @@ class TaxCalculator(object):
         self.holdings = {}
 
         self.tax_report = {}
+        self.holdings_report = {}
 
     def pool_same_day(self):
         transactions = copy.deepcopy(self.transactions)
@@ -221,45 +222,35 @@ class TaxCalculator(object):
 
         self.tax_report[tax_year]['Income'].totals_by_type()
 
-    def report_holdings(self, value_asset):
-        log.info("==CURRENT HOLDINGS==")
+    def calculate_holdings(self, value_asset):
+        holdings = {}
+        totals = {'cost': Decimal(0),
+                  'value': Decimal(0),
+                  'gain': Decimal(0)}
 
-        total_cost = total_value = Decimal(0)
-
-        log.info("%s %s %s %s  %s",
-                 "Asset".ljust(7),
-                 "Quantity".rjust(25),
-                 "Cost".rjust(13),
-                 "Value".rjust(13),
-                 "Data Source")
-
-        for h in sorted(self.holdings):
+        for h in self.holdings:
             if self.holdings[h].quantity > 0 or config.show_empty_wallets:
-                cost = self.holdings[h].cost + self.holdings[h].fees
+                holdings[h] = {}
+                holdings[h]['asset'] = self.holdings[h].asset
+                holdings[h]['quantity'] = self.holdings[h].quantity
+                holdings[h]['cost'] = (self.holdings[h].cost +
+                                       self.holdings[h].fees).quantize(PRECISION)
+
                 value, name, data_source = value_asset.get_current_value(self.holdings[h].asset,
                                                                          self.holdings[h].quantity)
-                value = value.quantize(PRECISION)
+                holdings[h]['value'] = value.quantize(PRECISION) if value is not None else None
+                holdings[h]['name'] = name
+                holdings[h]['data_source'] = data_source
 
-                if data_source:
-                    log.info("%s %s %s %s  %s (%s)",
-                             self.holdings[h].asset.ljust(7),
-                             self.holdings[h].format_quantity().rjust(25),
-                             (config.sym() + '{:0,.2f}'.format(cost + 0)).rjust(13),
-                             (config.sym() + '{:0,.2f}'.format(value)).rjust(13),
-                             data_source,
-                             name)
-                else:
-                    log.info("%s %s %s %s  -",
-                             self.holdings[h].asset.ljust(7),
-                             self.holdings[h].format_quantity().rjust(25),
-                             (config.sym() + '{:0,.2f}'.format(cost + 0)).rjust(13),
-                             (config.sym() + '{:0,.2f}'.format(value)).rjust(13))
+                if holdings[h]['value'] is not None:
+                    holdings[h]['gain'] = value - holdings[h]['cost']
+                    totals['value'] += holdings[h]['value']
+                    totals['gain'] += holdings[h]['gain']
 
-                total_cost += cost
-                total_value += value
+                totals['cost'] += holdings[h]['cost']
 
-        log.info("Total cost=%s%s", config.sym(), '{:0,.2f}'.format(total_cost))
-        log.info("Total value=%s%s", config.sym(), '{:0,.2f}'.format(total_value))
+        self.holdings_report['holdings'] = holdings
+        self.holdings_report['totals'] = totals
 
     def _which_tax_year(self, timestamp):
         tax_year = which_tax_year(timestamp)

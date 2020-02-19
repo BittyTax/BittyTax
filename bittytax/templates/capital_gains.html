@@ -27,7 +27,11 @@
                 {% set asset_totals.fees = asset_totals.fees + te.fees %}
                 <td align="right">{{te.proceeds|valuefilter}}</td>
                 {% set asset_totals.proceeds = asset_totals.proceeds + te.proceeds %}
-                <td align="right">{{te.gain|valuefilter}}</td>
+                {% if te.gain >= 0 %}
+                   <td align="right">{{te.gain|valuefilter}}</td>
+                {% else %}
+                   <td align="right" class="red_font">{{te.gain|valuefilter}}</td>
+                {% endif %}
                 {% set asset_totals.gain = asset_totals.gain + te.gain %}
             </tr>
         {% endfor %}
@@ -40,7 +44,11 @@
                 <td align="right">{{asset_totals.cost|valuefilter}}</td>
                 <td align="right">{{asset_totals.fees|valuefilter}}</td>
                 <td align="right">{{asset_totals.proceeds|valuefilter}}</td>
-                <td align="right">{{asset_totals.gain|valuefilter}}</td>
+                {% if asset_totals.gain >= 0 %}
+                    <td align="right">{{asset_totals.gain|valuefilter}}</td>
+                {% else %}
+                    <td align="right" class="red_font">{{asset_totals.gain|valuefilter}}</td>
+                {% endif %}
             </tr>
         {% endif %}
     </table>
@@ -55,7 +63,11 @@
         <td align="right">{{cgains.totals['cost']|valuefilter}}</td>
         <td align="right">{{cgains.totals['fees']|valuefilter}}</td>
         <td align="right">{{cgains.totals['proceeds']|valuefilter}}</td>
-        <td align="right">{{cgains.totals['gain']|valuefilter}}</td>
+        {% if cgains.totals['gain'] >= 0 %}
+            <td align="right">{{cgains.totals['gain']|valuefilter}}</td>
+        {% else %}
+            <td align="right" class="red_font">{{cgains.totals['gain']|valuefilter}}</td>
+        {% endif %}
     </tr>
 </table>
 <h3>Summary</h3>

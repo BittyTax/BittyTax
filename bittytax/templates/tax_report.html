@@ -35,6 +35,9 @@
                 border-top-style: solid;
                 border-top-width: 0.1px;
             }
+            .red_font {
+                color: red
+            }
             h1 {
                 text-decoration: underline;
             }
@@ -59,6 +62,9 @@
             {% include "capital_gains.html" %}
             {% if not config.args.summary %}
                 {% include "income.html" %}
+                <div><pdf:nextpage /></div>
+                <h1>Appendix</h1>
+                {% include "price_data.html" %}
             {% endif %}
         {% else %}
             {% for tax_year in tax_report|sort %}
@@ -73,7 +79,12 @@
             {% endfor %}
             <div><pdf:nextpage /></div>
             {% if not config.args.summary %}
-                {% include "price_data.html" %}
+                <h1>Appendix</h1>
+                {% for tax_year in price_report|sort %}
+                    {% include "price_data.html" %}
+                    <div><pdf:nextpage /></div>
+                {% endfor %}
+                {% include "holdings.html" %}
             {% endif %}
         {% endif %}
     </body>

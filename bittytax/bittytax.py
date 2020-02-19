@@ -14,7 +14,7 @@ from .version import __version__
 from .config import config
 from .import_records import ImportRecords
 from .transactions import TransactionHistory
-from .audit import audit_records
+from .audit import AuditRecords
 from .price.valueasset import ValueAsset
 from .tax import TaxCalculator
 from .report import ReportLog, ReportPdf
@@ -91,7 +91,7 @@ def main():
     transaction_records = import_records.get_records()
 
     if not config.args.skipaudit:
-        audit_records(transaction_records)
+        AuditRecords(transaction_records)
 
     value_asset = ValueAsset()
     transaction_history = TransactionHistory(transaction_records, value_asset)
@@ -116,11 +116,15 @@ def main():
             tax.calculate_capital_gains(year)
             tax.calculate_income(year)
 
-    if config.args.debug or config.args.nopdf:
-        ReportLog(tax.tax_report, value_asset.price_report)
+        tax.calculate_holdings(value_asset)
 
-    if not config.args.taxyear:
-        tax.report_holdings(value_asset)
+    if config.args.debug or config.args.nopdf:
+        ReportLog(tax.holdings_report,
+                  tax.tax_report,
+                  value_asset.price_report)
 
     if not config.args.nopdf:
-        ReportPdf(parser.prog, tax.tax_report, value_asset.price_report)
+        ReportPdf(parser.prog,
+                  tax.holdings_report,
+                  tax.tax_report,
+                  value_asset.price_report)

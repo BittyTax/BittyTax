@@ -43,7 +43,7 @@ class ValueAsset(object):
         if asset_price_ccy is not None:
             return asset_price_ccy * quantity, name, data_source
 
-        return Decimal(0), None, None
+        return None, None, None
 
     def get_historical_price(self, asset, timestamp):
         asset_price_ccy = None

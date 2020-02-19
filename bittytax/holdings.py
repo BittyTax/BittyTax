@@ -24,7 +24,7 @@ class Holdings(object):
         if config.args.debug:
             log.debug("%s=%s (+%s) cost=%s%s %s (+%s%s %s) fees=%s%s %s (+%s%s %s)",
                       self.asset,
-                      self.format_quantity(),
+                      '{:0,f}'.format(self.quantity.normalize()),
                       '{:0,f}'.format(quantity.normalize()),
                       config.sym(), '{:0,.2f}'.format(self.cost), config.CCY,
                       config.sym(), '{:0,.2f}'.format(cost), config.CCY,
@@ -39,12 +39,9 @@ class Holdings(object):
         if config.args.debug:
             log.debug("%s=%s (-%s) cost=%s%s %s (-%s%s %s) fees=%s%s %s (-%s%s %s)",
                       self.asset,
-                      self.format_quantity(),
+                      '{:0,f}'.format(self.quantity.normalize()),
                       '{:0,f}'.format(quantity.normalize()),
                       config.sym(), '{:0,.2f}'.format(self.cost), config.CCY,
                       config.sym(), '{:0,.2f}'.format(cost), config.CCY,
                       config.sym(), '{:0,.2f}'.format(self.fees), config.CCY,
                       config.sym(), '{:0,.2f}'.format(fees), config.CCY)
-
-    def format_quantity(self):
-        return '{:0,f}'.format(self.quantity.normalize())

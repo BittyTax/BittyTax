@@ -19,7 +19,7 @@ class ReportPdf(object):
     FILE_EXTENSION = 'pdf'
     TEMPLATE_FILE = 'tax_report.html'
 
-    def __init__(self, progname, tax_report, price_report):
+    def __init__(self, progname, holdings_report, tax_report, price_report):
         self.env = jinja2.Environment(loader=jinja2.PackageLoader('bittytax', 'templates'))
         self.filename = self.get_output_filename(self.FILE_EXTENSION)
 
@@ -31,6 +31,7 @@ class ReportPdf(object):
         template = self.env.get_template(self.TEMPLATE_FILE)
         html = template.render({'date': datetime.now(),
                                 'author': '{} {}'.format(progname, __version__),
+                                'holdings_report': holdings_report,
                                 'tax_report': tax_report,
                                 'price_report': price_report,
                                 'config': config})
@@ -84,26 +85,30 @@ class ReportPdf(object):
         return new_fname
 
 class ReportLog(object):
-    def __init__(self, tax_report, price_report):
+    def __init__(self, holdings_report, tax_report, price_report):
+        self.holdings_report = holdings_report
         self.tax_report = tax_report
         self.price_report = price_report
 
         if config.args.nopdf:
-            log_level = logging.INFO
+            level = logging.INFO
         else:
-            log_level = logging.DEBUG
+            level = logging.DEBUG
 
         if config.args.taxyear:
-            log.debug("==TAX YEAR %s/%s==", config.args.taxyear - 1, config.args.taxyear)
-            self.capital_gains(config.args.taxyear, log_level)
+            log.log(level, "==TAX YEAR %s/%s==", config.args.taxyear - 1, config.args.taxyear)
+            self.capital_gains(config.args.taxyear, level)
             if not config.args.summary:
-                self.income(config.args.taxyear, log_level)
+                self.income(config.args.taxyear, level)
         else:
             for tax_year in sorted(tax_report):
-                log.debug("==TAX YEAR %s/%s==", tax_year - 1, tax_year)
-                self.capital_gains(tax_year, log_level)
+                log.log(level, "==TAX YEAR %s/%s==", tax_year - 1, tax_year)
+                self.capital_gains(tax_year, level)
                 if not config.args.summary:
-                    self.income(tax_year, log_level)
+                    self.income(tax_year, level)
+
+            if not config.args.summary:
+                self.holdings()
 
             if config.args.debug:
                 self.price_data()
@@ -200,6 +205,38 @@ class ReportLog(object):
                                       [date]['price_ccy']).rjust(13),
                               self.format_quantity(self.price_report[tax_year][asset] \
                                       [date]['price_btc']).rjust(25))
+
+    def holdings(self):
+        holdings = self.holdings_report['holdings']
+
+        log.info("==CURRENT HOLDINGS==")
+        log.info("%s %s %s %s  %s",
+                 "Asset".ljust(7),
+                 "Quantity".rjust(25),
+                 "Cost".rjust(13),
+                 "Value".rjust(13),
+                 "Data Source")
+
+        for h in sorted(holdings):
+            if holdings[h]['value'] is not None:
+                log.info("%s %s %s %s  %s (%s)",
+                         holdings[h]['asset'].ljust(7),
+                         self.format_quantity(holdings[h]['quantity']).rjust(25),
+                         (config.sym() + '{:0,.2f}'.format(holdings[h]['cost'])).rjust(13),
+                         (config.sym() + '{:0,.2f}'.format(holdings[h]['value'])).rjust(13),
+                         holdings[h]['data_source'],
+                         holdings[h]['name'])
+            else:
+                log.info("%s %s %s %s  -",
+                         holdings[h]['asset'].ljust(7),
+                         self.format_quantity(holdings[h]['quantity']).rjust(25),
+                         (config.sym() + '{:0,.2f}'.format(holdings[h]['cost'])).rjust(13),
+                         (config.sym() + '0.00').rjust(13))
+
+        log.info("Total cost=%s%s",
+                 config.sym(), '{:0,.2f}'.format(self.holdings_report['totals']['cost']))
+        log.info("Total value=%s%s",
+                 config.sym(), '{:0,.2f}'.format(self.holdings_report['totals']['value']))
 
     @staticmethod
     def format_quantity(quantity):
