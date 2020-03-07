@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## Version [0.2.1] Beta (2020-03-07)
 ### Fixed
 - Tax summary: Gains in the year should exclude losses.
 - Bittrex parser: Adjust quantity for partially filled orders.
@@ -85,7 +87,8 @@ This is the initial beta release. Although it has been throughly tested, it's po
 - Exchange data files supported: Bitstamp, Bittrex, ChangeTip, Circle, Coinbase, Coinbase Pro, Coinfloor, Cryptopia, Cryptsy, Gatehub, OKEx, Poloniex, TradeSatoshi, Uphold.
 - Explorer data files supported: Etherscan.
 
-[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/BittyTax/BittyTax/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/BittyTax/BittyTax/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/BittyTax/BittyTax/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/BittyTax/BittyTax/compare/v0.1.2...v0.1.3
