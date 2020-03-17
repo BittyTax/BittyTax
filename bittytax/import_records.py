@@ -180,9 +180,6 @@ class TransactionRow(object):
             # Default to UTC if no timezone is specified
             timestamp = timestamp.replace(tzinfo=config.TZ_UTC)
 
-        # Convert to local time
-        timestamp = timestamp.astimezone(config.TZ_LOCAL)
-
         return timestamp
 
     @staticmethod

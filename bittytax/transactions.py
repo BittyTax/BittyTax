@@ -58,7 +58,7 @@ class TransactionHistory(object):
                 tr.buy.cost = self.which_asset_value(tr)
             else:
                 tr.buy.cost = self.value_asset.get_value(tr.buy.asset,
-                                                         tr.timestamp,
+                                                         tr.buy.timestamp,
                                                          tr.buy.quantity)
 
         if tr.sell and tr.sell.disposal and tr.sell.proceeds is None:
@@ -66,7 +66,7 @@ class TransactionHistory(object):
                 tr.sell.proceeds = tr.buy.cost
             else:
                 tr.sell.proceeds = self.value_asset.get_value(tr.sell.asset,
-                                                              tr.timestamp,
+                                                              tr.sell.timestamp,
                                                               tr.sell.quantity)
 
         if tr.fee and tr.fee.disposal and tr.fee.proceeds is None:
@@ -80,22 +80,22 @@ class TransactionHistory(object):
                 else:
                     # Must be a 3rd cryptoasset
                     tr.fee.proceeds = self.value_asset.get_value(tr.fee.asset,
-                                                                 tr.timestamp,
+                                                                 tr.fee.timestamp,
                                                                  tr.fee.quantity)
             else:
                 # Fee paid in fiat
                 tr.fee.proceeds = self.value_asset.get_value(tr.fee.asset,
-                                                             tr.timestamp,
+                                                             tr.fee.timestamp,
                                                              tr.fee.quantity)
 
     def which_asset_value(self, tr):
         if config.trade_asset_type == config.TRADE_ASSET_TYPE_BUY:
             value = self.value_asset.get_value(tr.buy.asset,
-                                               tr.timestamp,
+                                               tr.buy.timestamp,
                                                tr.buy.quantity)
         elif config.trade_asset_type == config.TRADE_ASSET_TYPE_SELL:
             value = self.value_asset.get_value(tr.sell.asset,
-                                               tr.timestamp,
+                                               tr.sell.timestamp,
                                                tr.sell.quantity)
         else:
             pos_sell_asset = pos_buy_asset = len(config.asset_priority) + 1
@@ -107,11 +107,11 @@ class TransactionHistory(object):
 
             if pos_sell_asset <= pos_buy_asset:
                 value = self.value_asset.get_value(tr.sell.asset,
-                                                   tr.timestamp,
+                                                   tr.sell.timestamp,
                                                    tr.sell.quantity)
             else:
                 value = self.value_asset.get_value(tr.buy.asset,
-                                                   tr.timestamp,
+                                                   tr.buy.timestamp,
                                                    tr.buy.quantity)
         return value
 

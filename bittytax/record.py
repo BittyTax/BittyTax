@@ -36,15 +36,15 @@ class TransactionRecord(object):
 
         if self.buy:
             self.buy.t_record = self
-            self.buy.timestamp = self.timestamp
+            self.buy.timestamp = self.timestamp.astimezone(config.TZ_LOCAL)
             self.buy.wallet = self.wallet
         if self.sell:
             self.sell.t_record = self
-            self.sell.timestamp = self.timestamp
+            self.sell.timestamp = self.timestamp.astimezone(config.TZ_LOCAL)
             self.sell.wallet = self.wallet
         if self.fee:
             self.fee.t_record = self
-            self.fee.timestamp = self.timestamp
+            self.fee.timestamp = self.timestamp.astimezone(config.TZ_LOCAL)
             self.fee.wallet = self.wallet
 
     def set_tid(self):
