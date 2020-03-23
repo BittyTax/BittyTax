@@ -572,11 +572,7 @@ Most terminals allow you to drag and drop files from the desktop into the termin
 
     bittytax_conv <filename> [<filename> ...]
 
-Each file is analysed to try and match it against one of the recognised formats. If successful, an Excel file will be generated with the default filename as shown below. Unrecognised files are skipped and a warning displayed.
-
-```console
-INFO -- : Output EXCEL file created: BittyTax_Records.xlsx
-```
+Each file is analysed to try and match it against one of the recognised formats. If successful, an Excel file will be generated with the default filename `BittyTax_Records.xlsx`. Unrecognised files are skipped and a warning displayed.
 
 If you want to change the default filename you can use the `-o` argument followed by the output filename.
 

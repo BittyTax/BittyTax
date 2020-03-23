@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Added
+- Conversion tool: Improved exception handling.
 ### Changed
 - Accounting tool: Timestamps normalized to local time only for Buy/Sell transactions.
 

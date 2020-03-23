@@ -11,6 +11,7 @@ import xlrd
 from ..config import config
 from .dataparser import DataParser
 from .datarow import DataRow
+from .exceptions import DataFormatUnrecognised
 
 log = logging.getLogger()
 
@@ -70,10 +71,11 @@ class DataFile(object):
         parser = cls.get_parser(reader)
 
         if parser is not None:
+            log.info("File: %s matched as \"%s\"", filename, parser.worksheet_name)
             data_file = DataFile(cls.FORMAT_EXCEL, filename, parser, reader)
             cls.consolidate_datafiles(data_file)
         else:
-            log.warning("Data file format unrecognised: %s", filename)
+            raise DataFormatUnrecognised
 
         workbook.release_resources()
         del workbook
@@ -110,6 +112,7 @@ class DataFile(object):
 
                 parser = cls.get_parser(reader)
                 if parser is not None:
+                    log.info("File: %s matched as \"%s\"", filename, parser.worksheet_name)
                     data_file = DataFile(cls.FORMAT_CSV, filename, parser, reader)
                     cls.consolidate_datafiles(data_file)
                     break
@@ -117,7 +120,7 @@ class DataFile(object):
                     csv_file.seek(0)
 
         if parser is None:
-            log.warning("Data file format unrecognised: %s", filename)
+            raise DataFormatUnrecognised
 
     @classmethod
     def consolidate_datafiles(cls, data_file):
@@ -143,6 +146,8 @@ class DataFile(object):
                 continue
             except StopIteration:
                 pass
+            except UnicodeDecodeError:
+                break
             else:
                 break
 

@@ -31,3 +31,7 @@ class UnknownCryptoassetError(Exception):
 class UnknownUsernameError(Exception):
     def __str__(self):
         return 'Username cannot be identified'
+
+class DataFormatUnrecognised(Exception):
+    def __str__(self):
+        return 'Data file format unrecognised'
