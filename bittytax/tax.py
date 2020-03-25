@@ -98,7 +98,9 @@ class TaxCalculator(object):
                     self.sells_ordered.insert(sell_index + 1, s_remainder)
 
                 s.matched = b.matched = True
-                tax_event = TaxCapitalGains(rule, b, s, b.cost, b.fee_value + s.fee_value)
+                tax_event = TaxCapitalGains(rule, b, s, b.cost,
+                                            (b.fee_value or Decimal(0)) +
+                                            (s.fee_value or Decimal(0)))
                 self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
                 # Find next sell
@@ -160,7 +162,7 @@ class TaxCalculator(object):
                 return
         else:
             cost = t.cost
-            fees = t.fee_value
+            fees = t.fee_value or Decimal(0)
 
         self.holdings[t.asset].add_tokens(t.quantity, cost, fees)
 
@@ -187,7 +189,7 @@ class TaxCalculator(object):
 
         if t.disposal:
             tax_event = TaxCapitalGains(self.DISPOSAL_SECTION_104,
-                                        None, t, cost, fees + t.fee_value)
+                                        None, t, cost, fees + (t.fee_value or Decimal(0)))
             self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
     def process_income(self):
@@ -380,7 +382,10 @@ class TaxIncome(TaxEvent):
         self.type = b.t_type
         self.quantity = b.quantity
         self.amount = b.cost.quantize(PRECISION)
-        self.fees = b.fee_value.quantize(PRECISION)
+        if b.fee_value:
+            self.fees = b.fee_value.quantize(PRECISION)
+        else:
+            self.fees = Decimal(0)
 
     def __str__(self):
         return self.asset.ljust(7) + " " + \

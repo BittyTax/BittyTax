@@ -5,6 +5,7 @@
 - Conversion tool: Improved exception handling.
 ### Changed
 - Accounting tool: Timestamps normalized to local time only for Buy/Sell transactions.
+- Accounting tool: Made fees optional for Buy/Sell transactions.
 
 ## Version [0.2.1] Beta (2020-03-07)
 ### Fixed

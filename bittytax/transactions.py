@@ -122,7 +122,7 @@ class TransactionBase(object):
         self.t_type = t_type
         self.asset = asset
         self.quantity = quantity
-        self.fee_value = Decimal(0)
+        self.fee_value = None
         self.wallet = None
         self.timestamp = None
         self.matched = False
@@ -148,7 +148,9 @@ class TransactionBase(object):
         return ''
 
     def _format_fee(self):
-        return ' + Fee=' + config.sym() + '{:0,.2f} {}'.format(self.fee_value, config.CCY)
+        if self.fee_value is not None:
+            return ' + Fee=' + config.sym() + '{:0,.2f} {}'.format(self.fee_value, config.CCY)
+        return ''
 
     def __eq__(self, other):
         return (self.asset, self.timestamp) == (other.asset, other.timestamp)
@@ -194,7 +196,11 @@ class Buy(TransactionBase):
             raise Exception
         self.quantity += other.quantity
         self.cost += other.cost
-        self.fee_value += other.fee_value
+
+        if self.fee_value is not None and other.fee_value is not None:
+            self.fee_value += other.fee_value
+        elif self.fee_value is None and other.fee_value is not None:
+            self.fee_value = other.fee_value
 
         if other.timestamp < self.timestamp:
             # Keep timestamp of earliest transaction
@@ -210,12 +216,18 @@ class Buy(TransactionBase):
         remainder = copy.deepcopy(self)
 
         self.cost = self.cost * (sell_quantity / self.quantity)
-        self.fee_value = self.fee_value * (sell_quantity / self.quantity)
+
+        if self.fee_value:
+            self.fee_value = self.fee_value * (sell_quantity / self.quantity)
+
         self.quantity = sell_quantity
         self.set_tid()
 
         remainder.cost = remainder.cost - self.cost
-        remainder.fee_value = remainder.fee_value - self.fee_value
+
+        if self.fee_value:
+            remainder.fee_value = remainder.fee_value - self.fee_value
+
         remainder.quantity = remainder.quantity - sell_quantity
         remainder.set_tid()
 
@@ -272,7 +284,11 @@ class Sell(TransactionBase):
             raise Exception
         self.quantity += other.quantity
         self.proceeds += other.proceeds
-        self.fee_value += other.fee_value
+
+        if self.fee_value is not None and other.fee_value is not None:
+            self.fee_value += other.fee_value
+        elif self.fee_value is None and other.fee_value is not None:
+            self.fee_value = other.fee_value
 
         if other.timestamp > self.timestamp:
             # Keep timestamp of latest transaction
@@ -288,12 +304,18 @@ class Sell(TransactionBase):
         remainder = copy.deepcopy(self)
 
         self.proceeds = self.proceeds * (buy_quantity / self.quantity)
-        self.fee_value = self.fee_value * (buy_quantity / self.quantity)
+
+        if self.fee_value:
+            self.fee_value = self.fee_value * (buy_quantity / self.quantity)
+
         self.quantity = buy_quantity
         self.set_tid()
 
         remainder.proceeds = remainder.proceeds - self.proceeds
-        remainder.fee_value = remainder.fee_value - self.fee_value
+
+        if self.fee_value:
+            remainder.fee_value = remainder.fee_value - self.fee_value
+
         remainder.quantity = remainder.quantity - buy_quantity
         remainder.set_tid()
 
