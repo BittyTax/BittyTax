@@ -17,7 +17,7 @@ class ValueAsset(object):
 
     def get_value(self, asset, timestamp, quantity):
         if asset == config.CCY:
-            return quantity
+            return quantity, True
 
         price_ccy, _, _ = self.get_historical_price(asset, timestamp)
         if price_ccy is not None:
@@ -29,12 +29,12 @@ class ValueAsset(object):
                       '{:0,f}'.format(quantity),
                       asset,
                       config.sym(), '{:0,.2f}'.format(value), config.CCY)
+            return value, False
         else:
-            value = Decimal(0)
             log.warning("Price at %s for %s is not available",
                         timestamp.strftime('%Y-%m-%d'),
                         asset)
-        return value
+            return Decimal(0), False
 
     def get_current_value(self, asset, quantity):
         price_ccy, name, data_source = self.get_latest_price(asset)
