@@ -296,16 +296,6 @@ class TaxEventCapitalGains(TaxEvent):
 
         return self.disposal_type
 
-    def __str__(self):
-        return self.asset.ljust(7) + " " + \
-               self.date.strftime('%d/%m/%Y') + " " + \
-               self.format_disposal().ljust(28) + " " + \
-               '{:0,f}'.format(self.quantity.normalize()).rjust(25) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.cost + 0)).rjust(13) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.fees + 0)).rjust(13) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.proceeds + 0)).rjust(13) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.gain + 0)).rjust(13)
-
 class TaxEventIncome(TaxEvent):
     def __init__(self, b):
         super(TaxEventIncome, self).__init__(b.timestamp, b.asset)
@@ -313,14 +303,6 @@ class TaxEventIncome(TaxEvent):
         self.quantity = b.quantity
         self.amount = b.cost.quantize(PRECISION)
         self.fees = b.fee_value.quantize(PRECISION)
-
-    def __str__(self):
-        return self.asset.ljust(7) + " " + \
-               self.date.strftime('%d/%m/%Y') + " " + \
-               self.type.ljust(28) + " " + \
-               '{:0,f}'.format(self.quantity.normalize()).rjust(25) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.amount + 0)).rjust(13) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.fees + 0)).rjust(13)
 
 class CalculateCapitalGains(object):
     CG_DATA_INDIVIDUALS = {2010: {'allowance': 10100, 'basic_rate': 18, 'higher_rate': 18},

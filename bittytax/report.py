@@ -19,7 +19,7 @@ class ReportPdf(object):
     FILE_EXTENSION = 'pdf'
     TEMPLATE_FILE = 'tax_report.html'
 
-    def __init__(self, progname, holdings_report, tax_report, price_report):
+    def __init__(self, progname, tax_report, price_report, holdings_report):
         self.env = jinja2.Environment(loader=jinja2.PackageLoader('bittytax', 'templates'))
         self.filename = self.get_output_filename(self.FILE_EXTENSION)
 
@@ -31,10 +31,10 @@ class ReportPdf(object):
         template = self.env.get_template(self.TEMPLATE_FILE)
         html = template.render({'date': datetime.now(),
                                 'author': '{} {}'.format(progname, __version__),
-                                'holdings_report': holdings_report,
+                                'config': config,
                                 'tax_report': tax_report,
                                 'price_report': price_report,
-                                'config': config})
+                                'holdings_report': holdings_report})
 
         log.info("Generating PDF report...")
         pdf_file = open(self.filename, 'w+b')
@@ -85,158 +85,215 @@ class ReportPdf(object):
         return new_fname
 
 class ReportLog(object):
-    def __init__(self, holdings_report, tax_report, price_report):
+    MAX_SYMBOL_LEN = 8
+    MAX_NAME_LEN = 32
+    ASSET_WIDTH = MAX_SYMBOL_LEN + MAX_NAME_LEN + 3
+
+    def __init__(self, tax_report, price_report, holdings_report):
         self.holdings_report = holdings_report
         self.tax_report = tax_report
         self.price_report = price_report
 
-        if config.args.nopdf:
-            level = logging.INFO
-        else:
-            level = logging.DEBUG
-
         if config.args.taxyear:
-            log.log(level, "==TAX YEAR %s/%s==", config.args.taxyear - 1, config.args.taxyear)
-            self.capital_gains(config.args.taxyear, level)
+            log.info("==TAX YEAR %s/%s==", config.args.taxyear - 1, config.args.taxyear)
+            self.capital_gains(config.args.taxyear)
             if not config.args.summary:
-                self.income(config.args.taxyear, level)
+                self.income(config.args.taxyear)
+                self.price_data(config.args.taxyear)
         else:
             for tax_year in sorted(tax_report):
-                log.log(level, "==TAX YEAR %s/%s==", tax_year - 1, tax_year)
-                self.capital_gains(tax_year, level)
+                log.info("==TAX YEAR %s/%s==", tax_year - 1, tax_year)
+                self.capital_gains(tax_year)
                 if not config.args.summary:
-                    self.income(tax_year, level)
+                    self.income(tax_year)
 
             if not config.args.summary:
+                log.info("==APPENDIX==")
+                for tax_year in sorted(tax_report):
+                    self.price_data(tax_year)
                 self.holdings()
 
-            if config.args.debug:
-                self.price_data()
-
-    def capital_gains(self, tax_year, level):
+    def capital_gains(self, tax_year):
         cgains = self.tax_report[tax_year]['CapitalGains']
 
-        log.log(level, "--CAPITAL GAINS--")
-        log.log(level, "%s %s %s %s %s %s %s %s",
-                "Asset".ljust(7),
-                "Date".ljust(10),
-                "Disposal Type".ljust(28),
-                "Quantity".rjust(25),
-                "Cost".rjust(13),
-                "Fees".rjust(13),
-                "Proceeds".rjust(13),
-                "Gain".rjust(13))
+        log.info("--CAPITAL GAINS--")
+        header = "%s %s %s %s %s %s %s %s" % ("Asset".ljust(self.MAX_SYMBOL_LEN),
+                                              "Date".ljust(10),
+                                              "Disposal Type".ljust(28),
+                                              "Quantity".rjust(25),
+                                              "Cost".rjust(13),
+                                              "Fees".rjust(13),
+                                              "Proceeds".rjust(13),
+                                              "Gain".rjust(13))
+        log.info(header)
 
         for asset in sorted(cgains.assets):
             for te in cgains.assets[asset]:
-                log.log(level, te)
+                log.info("%s %s %s %s %s %s %s %s",
+                         te.asset.ljust(self.MAX_SYMBOL_LEN),
+                         self.format_date(te.date),
+                         te.format_disposal().ljust(28),
+                         self.format_quantity(te.quantity).rjust(25),
+                         self.format_value(te.cost).rjust(13),
+                         self.format_value(te.fees).rjust(13),
+                         self.format_value(te.proceeds).rjust(13),
+                         self.format_value(te.gain).rjust(13))
 
-        log.log(level, "-TAX SUMMARY-")
-        log.log(level, "Number of disposals=%s", cgains.summary['disposals'])
-        log.log(level, "Disposal proceeds=%s%s",
-                config.sym(), '{:0,.2f}'.format(cgains.totals['proceeds']))
+        log.info("%s", '-' * len(header))
+        log.info("%s %s %s %s %s %s %s %s",
+                 "Total".ljust(self.MAX_SYMBOL_LEN),
+                 ' ' * 10,
+                 ' ' * 28,
+                 ' ' * 25,
+                 self.format_value(cgains.totals['cost']).rjust(13),
+                 self.format_value(cgains.totals['fees']).rjust(13),
+                 self.format_value(cgains.totals['proceeds']).rjust(13),
+                 self.format_value(cgains.totals['gain']).rjust(13))
+
+        log.info("-TAX SUMMARY-")
+        log.info("Number of disposals=%s", cgains.summary['disposals'])
+        log.info("Disposal proceeds=%s",
+                 self.format_value(cgains.totals['proceeds']))
 
         if cgains.estimate['proceeds_warning']:
-            log.warning("Assets sold are more than 4 times the annual allowance (%s%s), "
+            log.warning("Assets sold are more than 4 times the annual allowance (%s), "
                         "this needs to be reported to HMRC",
-                        config.sym(), '{:0,.2f}'.format(cgains.estimate['allowance'] * 4))
+                        self.format_value(cgains.estimate['allowance'] * 4))
 
-        log.log(level, "Allowable costs=%s%s",
-                config.sym(), '{:0,.2f}'.format(cgains.totals['cost'] + cgains.totals['fees']))
-        log.log(level, "Gains in the year, before losses=%s%s",
-                config.sym(), '{:0,.2f}'.format(cgains.summary['total_gain']))
-        log.log(level, "Losses in the year=%s%s",
-                config.sym(), '{:0,.2f}'.format(abs(cgains.summary['total_loss'])))
+        log.info("Allowable costs=%s",
+                 self.format_value(cgains.totals['cost'] + cgains.totals['fees']))
+        log.info("Gains in the year, before losses=%s",
+                 self.format_value(cgains.summary['total_gain']))
+        log.info("Losses in the year=%s",
+                 self.format_value(abs(cgains.summary['total_loss'])))
 
         if not config.args.summary:
-            log.log(level, "-TAX ESTIMATE-")
-            log.log(level, "Taxable Gain=%s%s (-%s%s tax-free allowance)",
-                    config.sym(), '{:0,.2f}'.format(cgains.estimate['taxable_gain']),
-                    config.sym(), '{:0,.2f}'.format(cgains.estimate['allowance']))
-            log.log(level, "Capital Gains Tax (Basic rate)=%s%s",
-                    config.sym(), '{:0,.2f}'.format(cgains.estimate['cgt_basic']))
-            log.log(level, "Capital Gains Tax (Higher rate)=%s%s",
-                    config.sym(), '{:0,.2f}'.format(cgains.estimate['cgt_higher']))
+            log.info("-TAX ESTIMATE-")
+            if cgains.totals['gain'] > 0:
+                log.info("Taxable Gain=%s (%s of the tax-fee allowance %s used)",
+                         self.format_value(cgains.estimate['taxable_gain']),
+                         self.format_value(cgains.estimate['allowance_used']),
+                         self.format_value(cgains.estimate['allowance']))
+            else:
+                log.info("Taxable Gain=%s",
+                         self.format_value(cgains.estimate['taxable_gain']))
+            log.info("Capital Gains Tax (Basic rate)=%s",
+                     self.format_value(cgains.estimate['cgt_basic']))
+            log.info("Capital Gains Tax (Higher rate)=%s",
+                     self.format_value(cgains.estimate['cgt_higher']))
 
-    def income(self, tax_year, level):
+    def income(self, tax_year):
         income = self.tax_report[tax_year]['Income']
 
-        log.log(level, "--INCOME--")
-        log.log(level, "%s %s %s %s %s %s",
-                "Asset".ljust(7),
-                "Date".ljust(10),
-                "Income Type".ljust(28),
-                "Quantity".rjust(25),
-                "Amount".rjust(13),
-                "Fees".rjust(13))
+        log.info("--INCOME--")
+        header = "%s %s %s %s %s %s" % ("Asset".ljust(self.MAX_SYMBOL_LEN),
+                                        "Date".ljust(10),
+                                        "Income Type".ljust(28),
+                                        "Quantity".rjust(25),
+                                        "Amount".rjust(13),
+                                        "Fees".rjust(13))
+        log.info(header)
 
         for asset in sorted(income.assets):
             for te in income.assets[asset]:
-                log.log(level, te)
+                log.info("%s %s %s %s %s %s",
+                         te.asset.ljust(self.MAX_SYMBOL_LEN),
+                         self.format_date(te.date),
+                         te.type.ljust(28),
+                         self.format_quantity(te.quantity).rjust(25),
+                         self.format_value(te.amount).rjust(13),
+                         self.format_value(te.fees).rjust(13))
 
-        log.log(level, "%s %s %s",
-                "Income Type".ljust(73),
-                "Amount".rjust(13),
-                "Fees".rjust(13))
+        log.info("%s %s %s %s %s",
+                 "Income Type".ljust(self.MAX_SYMBOL_LEN + 11),
+                 ' ' * 28,
+                 ' ' * 25,
+                 "Amount".rjust(13),
+                 "Fees".rjust(13))
 
         for i_type in sorted(income.type_totals):
-            log.log(level, "%s %s %s",
-                    i_type.ljust(73),
-                    self.format_value(income.type_totals[i_type]['amount']).rjust(13),
-                    self.format_quantity(income.type_totals[i_type]['fees']).rjust(13))
+            log.info("%s %s %s %s %s",
+                     i_type.ljust(self.MAX_SYMBOL_LEN + 11),
+                     ' ' * 28,
+                     ' ' * 25,
+                     self.format_value(income.type_totals[i_type]['amount']).rjust(13),
+                     self.format_value(income.type_totals[i_type]['fees']).rjust(13))
 
-    def price_data(self):
-        for tax_year in sorted(self.price_report):
-            log.debug("==PRICE DATA %s/%s==", tax_year - 1, tax_year)
-            log.debug("%s %s %s %s %s",
-                      "Asset".ljust(9),
-                      "Date".ljust(10),
-                      "Data Source".ljust(20),
-                      "Price (GBP)".rjust(13),
-                      "Price (BTC)".rjust(25))
+        log.info("%s", '-' * len(header))
+        log.info("%s %s %s %s %s",
+                 "Total".ljust(self.MAX_SYMBOL_LEN + 11),
+                 ' ' * 28,
+                 ' ' * 25,
+                 self.format_value(income.totals['amount']).rjust(13),
+                 self.format_value(income.totals['fees']).rjust(13))
 
-            for asset in sorted(self.price_report[tax_year]):
-                for date in sorted(self.price_report[tax_year][asset]):
-                    log.debug("%s %s %s %s %s",
-                              ("1 " + asset).ljust(9),
-                              dateutil.parser.parse(date).strftime('%d/%m/%Y').ljust(10),
-                              self.price_report[tax_year][asset][date]['data_source'].ljust(20),
-                              self.format_value(self.price_report[tax_year][asset] \
-                                      [date]['price_ccy']).rjust(13),
-                              self.format_quantity(self.price_report[tax_year][asset] \
-                                      [date]['price_btc']).rjust(25))
+    def price_data(self, tax_year):
+        log.info("--PRICE DATA %s/%s--", tax_year - 1, tax_year)
+        log.info("%s %s %s %s %s",
+                 "Asset".ljust(self.ASSET_WIDTH),
+                 "Data Source".ljust(16),
+                 "Date".ljust(10),
+                 "Price (GBP)".rjust(13),
+                 "Price (BTC)".rjust(25))
+
+        for asset in sorted(self.price_report[tax_year]):
+            for date in sorted(self.price_report[tax_year][asset]):
+                price_data = self.price_report[tax_year][asset][date]
+                if price_data['price_ccy'] is not None:
+                    log.info("1 %s %s %s %s %s",
+                             self.format_asset(asset, price_data['name']).ljust(self.ASSET_WIDTH),
+                             price_data['data_source'].ljust(16),
+                             self.format_date(date),
+                             self.format_value(price_data['price_ccy']).rjust(13),
+                             self.format_quantity(price_data['price_btc']).rjust(25))
+                else:
+                    log.info("1 %s %s %s %s",
+                             self.format_asset(asset, price_data['name']).ljust(self.ASSET_WIDTH),
+                             ' ' * 16,
+                             self.format_date(date),
+                             self.format_value(price_data['price_ccy']).rjust(13))
 
     def holdings(self):
-        holdings = self.holdings_report['holdings']
-
         log.info("==CURRENT HOLDINGS==")
-        log.info("%s %s %s %s  %s",
-                 "Asset".ljust(7),
-                 "Quantity".rjust(25),
-                 "Cost".rjust(13),
-                 "Value".rjust(13),
-                 "Data Source")
+        header = "%s %s %s %s %s" % ("Asset".ljust(self.ASSET_WIDTH),
+                                     "Quantity".rjust(25),
+                                     "Cost + Fees".rjust(16),
+                                     "Value".rjust(16),
+                                     "Gain".rjust(16))
+        log.info(header)
 
-        for h in sorted(holdings):
-            if holdings[h]['value'] is not None:
-                log.info("%s %s %s %s  %s (%s)",
-                         holdings[h]['asset'].ljust(7),
-                         self.format_quantity(holdings[h]['quantity']).rjust(25),
-                         (config.sym() + '{:0,.2f}'.format(holdings[h]['cost'])).rjust(13),
-                         (config.sym() + '{:0,.2f}'.format(holdings[h]['value'])).rjust(13),
-                         holdings[h]['data_source'],
-                         holdings[h]['name'])
+        for h in sorted(self.holdings_report['holdings']):
+            holding = self.holdings_report['holdings'][h]
+            if holding['value'] is not None:
+                log.info("%s %s %s %s %s",
+                         self.format_asset(holding['asset'],
+                                           holding['name']).ljust(self.ASSET_WIDTH),
+                         self.format_quantity(holding['quantity']).rjust(25),
+                         self.format_value(holding['cost']).rjust(16),
+                         self.format_value(holding['value']).rjust(16),
+                         self.format_value(holding['gain']).rjust(16))
             else:
-                log.info("%s %s %s %s  -",
-                         holdings[h]['asset'].ljust(7),
-                         self.format_quantity(holdings[h]['quantity']).rjust(25),
-                         (config.sym() + '{:0,.2f}'.format(holdings[h]['cost'])).rjust(13),
-                         (config.sym() + '0.00').rjust(13))
+                log.info("%s %s %s %s",
+                         self.format_asset(holding['asset'],
+                                           holding['name']).ljust(self.ASSET_WIDTH),
+                         self.format_quantity(holding['quantity']).rjust(25),
+                         self.format_value(holding['cost']).rjust(16),
+                         self.format_value(holding['value']).rjust(16))
 
-        log.info("Total cost=%s%s",
-                 config.sym(), '{:0,.2f}'.format(self.holdings_report['totals']['cost']))
-        log.info("Total value=%s%s",
-                 config.sym(), '{:0,.2f}'.format(self.holdings_report['totals']['value']))
+        log.info("%s", '-' * len(header))
+        log.info("%s %s %s %s %s",
+                 "Total".ljust(self.ASSET_WIDTH),
+                 ' ' * 25,
+                 self.format_value(self.holdings_report['totals']['cost']).rjust(16),
+                 self.format_value(self.holdings_report['totals']['value']).rjust(16),
+                 self.format_value(self.holdings_report['totals']['gain']).rjust(16))
+
+    @staticmethod
+    def format_date(date):
+        if isinstance(date, datetime):
+            return date.strftime('%d/%m/%Y')
+        else:
+            return dateutil.parser.parse(date).strftime('%d/%m/%Y')
 
     @staticmethod
     def format_quantity(quantity):
@@ -247,5 +304,11 @@ class ReportLog(object):
     @staticmethod
     def format_value(value):
         if value is not None:
-            return config.sym() + '{:0,.2f}'.format(value)
+            return config.sym() + '{:0,.2f}'.format(value + 0)
         return 'NOT AVAILABLE'
+
+    @staticmethod
+    def format_asset(asset, name):
+        if name is not None:
+            return '{} ({})'.format(asset, name)
+        return asset

@@ -118,13 +118,12 @@ def main():
 
         tax.calculate_holdings(value_asset)
 
-    if config.args.debug or config.args.nopdf:
-        ReportLog(tax.holdings_report,
-                  tax.tax_report,
-                  value_asset.price_report)
-
-    if not config.args.nopdf:
+    if config.args.nopdf:
+        ReportLog(tax.tax_report,
+                  value_asset.price_report,
+                  tax.holdings_report)
+    else:
         ReportPdf(parser.prog,
-                  tax.holdings_report,
                   tax.tax_report,
-                  value_asset.price_report)
+                  value_asset.price_report,
+                  tax.holdings_report)

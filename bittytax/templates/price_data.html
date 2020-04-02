@@ -3,8 +3,8 @@
 <table repeat="1" width="100%">
     <tr>
         <th align="left">Asset</th>
-        <th align="left">Date</th>
         <th align="left">Data Source</th>
+        <th align="left">Date</th>
         <th align="right">Price ({{config.CCY}})</th>
         <th align="right">Price (BTC)</th>
     </tr>
@@ -13,8 +13,8 @@
             {% if price_report[tax_year][asset][date]['price_ccy'] != none %}
                 <tr>
                     <td>1 {{asset}} ({{price_report[tax_year][asset][date]['name']|nowrapfilter}})</td>
-                    <td>{{date|datefilter}}</td>
                     <td><a href="{{price_report[tax_year][asset][date]['url']}}">{{price_report[tax_year][asset][date]['data_source']}}</a></td>
+                    <td>{{date|datefilter}}</td>
                     <td align="right">{{price_report[tax_year][asset][date]['price_ccy']|valuefilter}}</td>
                     {% if price_report[tax_year][asset][date]['price_btc'] != none %} 
                         <td align="right">{{price_report[tax_year][asset][date]['price_btc']|quantityfilter}}</td>
@@ -26,8 +26,8 @@
                 {% set price_missing.flag = true %}
                 <tr>
                     <td>1 {{asset}}</td>
-                    <td>{{date|datefilter}}</td>
                     <td></td>
+                    <td>{{date|datefilter}}</td>
                     <td align="right"><i>Not available*</i></td>
                     <td></td>
                 </tr>
