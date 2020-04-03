@@ -51,6 +51,7 @@ def main():
 
     if config.args.debug:
         log.setLevel(logging.DEBUG)
+        logging.getLogger('urllib3').setLevel(logging.WARNING)
         config.output_config(parser.prog)
 
     value_asset = ValueAsset()

@@ -3,73 +3,85 @@
 
 import logging
 
+from decimal import Decimal
+
 from .config import config
 
 log = logging.getLogger()
 
-class Wallet(object):
-    wallets = {}
+class AuditRecords(object):
+    def __init__(self, transaction_records):
+        self.wallets = {}
+        self.totals = {}
 
-    @classmethod
-    def add_tokens(cls, wallet, asset, quantity):
-        if (wallet, asset) not in cls.wallets:
-            cls.wallets[(wallet, asset)] = Wallet(wallet, asset)
+        log.debug("==FULL AUDIT TRANSACTION RECORDS==")
+        for tr in transaction_records:
+            log.debug(tr)
+            if tr.buy:
+                self._add_tokens(tr.wallet, tr.buy.asset, tr.buy.quantity)
 
-        cls.wallets[(wallet, asset)].add(quantity)
+            if tr.sell:
+                self._subtract_tokens(tr.wallet, tr.sell.asset, tr.sell.quantity)
 
-    @classmethod
-    def subtract_tokens(cls, wallet, asset, quantity):
-        if (wallet, asset) not in cls.wallets:
-            cls.wallets[(wallet, asset)] = Wallet(wallet, asset)
+            if tr.fee:
+                self._subtract_tokens(tr.wallet, tr.fee.asset, tr.fee.quantity)
 
-        cls.wallets[(wallet, asset)].subtract(quantity)
+        log.info("==FINAL AUDIT BALANCES==")
+        for wallet in sorted(self.wallets):
+            for asset in sorted(self.wallets[wallet]):
+                log.info("%s:%s=%s",
+                         wallet,
+                         asset,
+                         '{:0,f}'.format(self.wallets[wallet][asset].normalize()))
 
-    def __init__(self, wallet, asset):
-        self.wallet = wallet
-        self.asset = asset
-        self.balance = 0
+        log.debug("==TOTAL BALANCES==")
+        for asset in sorted(self.totals):
+            log.debug("%s=%s",
+                      asset,
+                      '{:0,f}'.format(self.totals[asset].normalize()))
 
-    def _format_balance(self):
-        return '{:0,f}'.format(self.balance.normalize())
+    def _add_tokens(self, wallet, asset, quantity):
+        if wallet not in self.wallets:
+            self.wallets[wallet] = {}
 
-    def _format_wallet_name(self):
-        return self.wallet + ":" + self.asset
+        if asset not in self.wallets[wallet]:
+            self.wallets[wallet][asset] = Decimal(0)
 
-    def add(self, quantity):
-        self.balance += quantity
-        log.debug("%s=%s (+%s)",
-                  self._format_wallet_name(),
-                  self._format_balance(),
+        self.wallets[wallet][asset] += quantity
+
+        if asset not in self.totals:
+            self.totals[asset] = Decimal(0)
+
+        self.totals[asset] += quantity
+
+        log.debug("%s:%s=%s (+%s)",
+                  wallet,
+                  asset,
+                  '{:0,f}'.format(self.wallets[wallet][asset].normalize()),
                   '{:0,f}'.format(quantity.normalize()))
 
-    def subtract(self, quantity):
-        self.balance -= quantity
-        log.debug("%s=%s (-%s)",
-                  self._format_wallet_name(),
-                  self._format_balance(),
+    def _subtract_tokens(self, wallet, asset, quantity):
+        if wallet not in self.wallets:
+            self.wallets[wallet] = {}
+
+        if asset not in self.wallets[wallet]:
+            self.wallets[wallet][asset] = Decimal(0)
+
+        self.wallets[wallet][asset] -= quantity
+
+        if asset not in self.totals:
+            self.totals[asset] = Decimal(0)
+
+        self.totals[asset] -= quantity
+
+        log.debug("%s:%s=%s (-%s)",
+                  wallet,
+                  asset,
+                  '{:0,f}'.format(self.wallets[wallet][asset].normalize()),
                   '{:0,f}'.format(quantity.normalize()))
 
-        if self.balance < 0 and self.asset not in config.fiat_list:
-            log.warning("Balance at %s is negative %s",
-                        self._format_wallet_name(),
-                        self._format_balance())
-
-    def __str__(self):
-        return self._format_wallet_name() + "=" + self._format_balance()
-
-def audit_records(transaction_records):
-    log.debug("==FULL AUDIT TRANSACTION RECORDS==")
-    for tr in transaction_records:
-        log.debug(tr)
-        if tr.buy:
-            Wallet.add_tokens(tr.wallet, tr.buy.asset, tr.buy.quantity)
-
-        if tr.sell:
-            Wallet.subtract_tokens(tr.wallet, tr.sell.asset, tr.sell.quantity)
-
-        if tr.fee:
-            Wallet.subtract_tokens(tr.wallet, tr.fee.asset, tr.fee.quantity)
-
-    log.info("==FINAL AUDIT BALANCES==")
-    for w in sorted(Wallet.wallets):
-        log.info(Wallet.wallets[w])
+        if self.wallets[wallet][asset] < 0 and asset not in config.fiat_list:
+            log.warning("Balance at %s:%s is negative %s",
+                        wallet,
+                        asset,
+                        '{:0,f}'.format(self.wallets[wallet][asset].normalize()))

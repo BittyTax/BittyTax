@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+    <head lang="en">
+        <meta charset="UTF-8">
+        <meta name="author" content="{{author}}">
+        <title>BittyTax Report</title>
+        <style>
+            @page {
+                size: a4 portrait;
+                @frame header {
+                    -pdf-frame-content: header-content;
+                    left: 50pt; width: 495pt; top: 50pt; height: 40pt;
+                }
+                @frame content {
+                    left: 50pt; width: 495pt; top: 90pt; height: 682pt;
+                }
+                @frame footer {
+                    -pdf-frame-content: footer-content;
+                    left: 50pt; width: 495pt; top: 772pt; height: 20pt;
+                }
+            }
+            #header-title {
+                text-align: left
+            }
+            #header-date {
+                text-align: right
+            }
+            #footer-content {
+                text-align: center
+            }
+            .total_row {
+                font-weight: bold;
+                padding-top: 2px;
+                border-top-color: black;
+                border-top-style: solid;
+                border-top-width: 0.1px;
+            }
+            .red_font {
+                color: red
+            }
+            h1 {
+                text-decoration: underline;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="header-content">
+            <table>
+                <tr>
+                    <td align="left">BittyTax Report</td>
+                    <td align="right">{{date|datefilter}}</td>
+                </tr>
+            </table>
+        </div>
+        <div id="footer-content">
+            Page <pdf:pagenumber> of <pdf:pagecount> 
+        </div>
+
+        {% if config.args.taxyear %}
+            {% set tax_year = config.args.taxyear %}
+            <h1>Tax Year - {{tax_year - 1}}/{{tax_year}}</h1>
+            {% include "capital_gains.html" %}
+            {% if not config.args.summary %}
+                {% include "income.html" %}
+                <div><pdf:nextpage /></div>
+                <h1>Appendix</h1>
+                {% include "price_data.html" %}
+            {% endif %}
+        {% else %}
+            {% for tax_year in tax_report|sort %}
+                <h1>Tax Year - {{tax_year - 1}}/{{tax_year}}</h1>
+                {% include "capital_gains.html" %}
+                {% if not config.args.summary %}
+                    {% include "income.html" %}
+                {% endif %}
+                {% if not loop.last %}
+                    <div><pdf:nextpage /></div>
+                {% endif %}
+            {% endfor %}
+            <div><pdf:nextpage /></div>
+            {% if not config.args.summary %}
+                <h1>Appendix</h1>
+                {% for tax_year in price_report|sort %}
+                    {% include "price_data.html" %}
+                    <div><pdf:nextpage /></div>
+                {% endfor %}
+                {% include "holdings.html" %}
+            {% endif %}
+        {% endif %}
+    </body>
+</html>

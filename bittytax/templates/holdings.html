@@ -1,0 +1,45 @@
+<h2>Current Holdings</h2>
+<table repeat="1" width="100%">
+    <tr>
+        <th align="left">Asset</th>
+        <th align="right">Quantity</th>
+        <th align="right">Cost (inc. fees) </th>
+        <th align="right">Value</th>
+        <th align="right">Gain</th>
+    </tr>
+    {% for h in holdings_report['holdings']|sort %}
+        <tr>
+            {% if holdings_report['holdings'][h]['name'] %}
+                <td>{{holdings_report['holdings'][h]['asset']}} ({{holdings_report['holdings'][h]['name']|nowrapfilter}})</td>
+            {% else %}
+                <td>{{holdings_report['holdings'][h]['asset']}}</td>
+            {% endif %}
+            <td align="right">{{holdings_report['holdings'][h]['quantity']|quantityfilter}}</td>
+            <td align="right">{{holdings_report['holdings'][h]['cost']|valuefilter}}</td>
+            {% if holdings_report['holdings'][h]['value'] is not none %}
+                <td align="right">{{holdings_report['holdings'][h]['value']|valuefilter}}</td>
+                {% if holdings_report['holdings'][h]['gain'] >= 0 %}
+                    <td align="right">{{holdings_report['holdings'][h]['gain']|valuefilter}}</td>
+                {% else %}
+                    <td align="right" class="red_font">{{holdings_report['holdings'][h]['gain']|valuefilter}}</td>
+                {% endif %}
+            {% else %}
+                <td align="right"><i>Not available</i></td>
+                <td></td>
+            {% endif %}
+        </tr>
+    {% endfor %}
+</table>
+<table>
+    <tr class="total_row">
+        <td align="left">Total</td>
+        <td align="right"></td>
+        <td align="right">{{holdings_report['totals']['cost']|valuefilter}}</td>
+        <td align="right">{{holdings_report['totals']['value']|valuefilter}}</td>
+        {% if holdings_report['totals']['gain'] >= 0 %}
+            <td align="right">{{holdings_report['totals']['gain']|valuefilter}}</td>
+        {% else %}
+            <td align="right" class="red_font">{{holdings_report['totals']['gain']|valuefilter}}</td>
+        {% endif %}
+    </tr>
+</table>

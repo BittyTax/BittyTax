@@ -14,18 +14,20 @@ log = logging.getLogger()
 
 PRECISION = Decimal('0.00')
 
+def which_tax_year(timestamp):
+    if timestamp > datetime(timestamp.year, 4, 5, tzinfo=config.TZ_LOCAL):
+        tax_year = timestamp.year + 1
+    else:
+        tax_year = timestamp.year
+
+    return tax_year
+
 class TaxCalculator(object):
     DISPOSAL_SAME_DAY = 'Same Day'
     DISPOSAL_BED_AND_BREAKFAST = 'Bed & Breakfast'
     DISPOSAL_SECTION_104 = 'Section 104'
 
     INCOME_TYPES = (Buy.TYPE_MINING, Buy.TYPE_INCOME)
-    TRANSFER_TYPES = (Buy.TYPE_DEPOSIT, Sell.TYPE_WITHDRAWAL)
-
-    CGT_RATE = 20
-    ANNUAL_ALLOWANCE = {2010: 10100, 2011: 10100, 2012: 10600, 2013: 10600, 2014: 10900,
-                        2015: 11000, 2016: 11100, 2017: 11100, 2018: 11300, 2019: 11700,
-                        2020: 12000}
 
     def __init__(self, transactions):
         self.transactions = transactions
@@ -35,6 +37,9 @@ class TaxCalculator(object):
 
         self.tax_events = {}
         self.holdings = {}
+
+        self.tax_report = {}
+        self.holdings_report = {}
 
     def pool_same_day(self):
         transactions = copy.deepcopy(self.transactions)
@@ -98,7 +103,7 @@ class TaxCalculator(object):
                     self.sells_ordered.insert(sell_index + 1, s_remainder)
 
                 s.matched = b.matched = True
-                tax_event = TaxCapitalGains(rule, b, s, b.cost,
+                tax_event = TaxEventCapitalGains(rule, b, s, b.cost,
                                             (b.fee_value or Decimal(0)) +
                                             (s.fee_value or Decimal(0)))
                 self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
@@ -188,141 +193,69 @@ class TaxCalculator(object):
         self.holdings[t.asset].subtract_tokens(t.quantity, cost, fees)
 
         if t.disposal:
-            tax_event = TaxCapitalGains(self.DISPOSAL_SECTION_104,
+            tax_event = TaxEventCapitalGains(self.DISPOSAL_SECTION_104,
                                         None, t, cost, fees + (t.fee_value or Decimal(0)))
             self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
     def process_income(self):
         for t in self.transactions:
             if t.t_type in self.INCOME_TYPES:
-                tax_event = TaxIncome(t)
+                tax_event = TaxEventIncome(t)
                 self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
-    def report_capital_gains(self, tax_year):
-        log.info("==TAX SUMMARY %s/%s==", tax_year - 1, tax_year)
-        log.info("--CAPITAL GAINS--")
-        allowance = Decimal(self.ANNUAL_ALLOWANCE[tax_year])
-        disposals = total_cost = total_proceeds = total_gain = total_loss = Decimal(0)
-
-        log.info("%s %s %s %s %s %s %s %s",
-                 "Asset".ljust(7),
-                 "Date".ljust(10),
-                 "Disposal Type".ljust(28),
-                 "Quantity".rjust(25),
-                 "Cost".rjust(13),
-                 "Fees".rjust(13),
-                 "Proceeds".rjust(13),
-                 "Gain".rjust(13))
+    def calculate_capital_gains(self, tax_year):
+        self.tax_report[tax_year] = {}
+        self.tax_report[tax_year]['CapitalGains'] = CalculateCapitalGains(tax_year)
 
         if tax_year in self.tax_events:
-            for t in sorted(self.tax_events[tax_year]):
-                if isinstance(t, TaxCapitalGains):
-                    log.info(t)
-                    disposals += 1
-                    total_cost += t.cost + t.fees
-                    total_proceeds += t.proceeds
-                    if t.gain >= 0:
-                        total_gain += t.gain
-                    else:
-                        total_loss += abs(t.gain)
+            for te in sorted(self.tax_events[tax_year]):
+                if isinstance(te, TaxEventCapitalGains):
+                    self.tax_report[tax_year]['CapitalGains'].tax_summary(te)
 
-        log.info("Number of disposals=%s", disposals)
-        log.info("Disposal proceeds=%s%s",
-                 config.sym(), '{:0,.2f}'.format(total_proceeds))
-        if total_proceeds >= allowance * 4:
-            log.warning("Assets sold are more than 4 times the annual allowance (%s%s), "
-                        "this needs to be reported to HMRC",
-                        config.sym(), '{:0,.2f}'.format(allowance * 4))
-        log.info("Allowable costs=%s%s",
-                 config.sym(), '{:0,.2f}'.format(total_cost))
-        log.info("Gains in the year, before losses=%s%s",
-                 config.sym(), '{:0,.2f}'.format(total_gain))
-        log.info("Losses in the year=%s%s",
-                 config.sym(), '{:0,.2f}'.format(total_loss))
+        self.tax_report[tax_year]['CapitalGains'].tax_estimate(tax_year)
 
-        taxable_gain = Decimal(0)
-        total_cg_tax = Decimal(0)
-        if total_gain - total_loss > allowance:
-            taxable_gain = total_gain - total_loss - allowance
-            total_cg_tax = taxable_gain * self.CGT_RATE / 100
-
-        log.info("--TAX ESTIMATE--")
-        log.info("Taxable Gain=%s%s (-%s%s tax-free allowance)",
-                 config.sym(), '{:0,.2f}'.format(taxable_gain),
-                 config.sym(), '{:0,.2f}'.format(allowance))
-        log.info("Capital Gains Tax=%s%s (%s%%)",
-                 config.sym(), '{:0,.2f}'.format(total_cg_tax),
-                 self.CGT_RATE)
-
-    def report_income(self, tax_year):
-        log.info("--INCOME--")
-
-        total_income = total_fees = Decimal(0)
-
-        log.info("%s %s %s %s %s %s",
-                 "Asset".ljust(7),
-                 "Date".ljust(10),
-                 "Income Type".ljust(28),
-                 "Quantity".rjust(25),
-                 "Amount".rjust(13),
-                 "Fees".rjust(13))
+    def calculate_income(self, tax_year):
+        self.tax_report[tax_year]['Income'] = CalculateIncome()
 
         if tax_year in self.tax_events:
-            for t in sorted(self.tax_events[tax_year]):
-                if isinstance(t, TaxIncome):
-                    log.info(t)
-                    total_income += t.amount
-                    total_fees += t.fees
+            for te in sorted(self.tax_events[tax_year]):
+                if isinstance(te, TaxEventIncome):
+                    self.tax_report[tax_year]['Income'].totalise(te)
 
-        log.info("Total income=%s%s", config.sym(), '{:0,.2f}'.format(total_income))
-        log.info("Total fees=%s%s", config.sym(), '{:0,.2f}'.format(total_fees))
+        self.tax_report[tax_year]['Income'].totals_by_type()
 
-    def report_holdings(self, value_asset):
-        log.info("==CURRENT HOLDINGS==")
+    def calculate_holdings(self, value_asset):
+        holdings = {}
+        totals = {'cost': Decimal(0),
+                  'value': Decimal(0),
+                  'gain': Decimal(0)}
 
-        total_cost = total_value = Decimal(0)
-
-        log.info("%s %s %s %s  %s",
-                 "Asset".ljust(7),
-                 "Quantity".rjust(25),
-                 "Cost".rjust(13),
-                 "Value".rjust(13),
-                 "Data Source")
-
-        for h in sorted(self.holdings):
+        for h in self.holdings:
             if self.holdings[h].quantity > 0 or config.show_empty_wallets:
-                cost = self.holdings[h].cost + self.holdings[h].fees
+                holdings[h] = {}
+                holdings[h]['asset'] = self.holdings[h].asset
+                holdings[h]['quantity'] = self.holdings[h].quantity
+                holdings[h]['cost'] = (self.holdings[h].cost +
+                                       self.holdings[h].fees).quantize(PRECISION)
+
                 value, name, data_source = value_asset.get_current_value(self.holdings[h].asset,
                                                                          self.holdings[h].quantity)
-                value = value.quantize(PRECISION)
+                holdings[h]['value'] = value.quantize(PRECISION) if value is not None else None
+                holdings[h]['name'] = name
+                holdings[h]['data_source'] = data_source
 
-                if data_source:
-                    log.info("%s %s %s %s  %s (%s)",
-                             self.holdings[h].asset.ljust(7),
-                             self.holdings[h].format_quantity().rjust(25),
-                             (config.sym() + '{:0,.2f}'.format(cost + 0)).rjust(13),
-                             (config.sym() + '{:0,.2f}'.format(value)).rjust(13),
-                             data_source,
-                             name)
-                else:
-                    log.info("%s %s %s %s  -",
-                             self.holdings[h].asset.ljust(7),
-                             self.holdings[h].format_quantity().rjust(25),
-                             (config.sym() + '{:0,.2f}'.format(cost + 0)).rjust(13),
-                             (config.sym() + '{:0,.2f}'.format(value)).rjust(13))
+                if holdings[h]['value'] is not None:
+                    holdings[h]['gain'] = value - holdings[h]['cost']
+                    totals['value'] += holdings[h]['value']
+                    totals['gain'] += holdings[h]['gain']
 
-                total_cost += cost
-                total_value += value
+                totals['cost'] += holdings[h]['cost']
 
-        log.info("Total cost=%s%s", config.sym(), '{:0,.2f}'.format(total_cost))
-        log.info("Total value=%s%s", config.sym(), '{:0,.2f}'.format(total_value))
+        self.holdings_report['holdings'] = holdings
+        self.holdings_report['totals'] = totals
 
     def _which_tax_year(self, timestamp):
-        if timestamp > datetime(timestamp.year, 4, 5, tzinfo=config.TZ_LOCAL):
-            tax_year = timestamp.year + 1
-        else:
-            tax_year = timestamp.year
-
+        tax_year = which_tax_year(timestamp)
         if tax_year not in self.tax_events:
             self.tax_events[tax_year] = []
 
@@ -334,17 +267,17 @@ class TaxEvent(object):
         self.asset = asset
 
     def __eq__(self, other):
-        return (self.asset, self.date) == (other.asset, other.date)
+        return self.date == other.date
 
     def __ne__(self, other):
         return not self == other
 
     def __lt__(self, other):
-        return (self.asset, self.date) < (other.asset, other.date)
+        return self.date < other.date
 
-class TaxCapitalGains(TaxEvent):
+class TaxEventCapitalGains(TaxEvent):
     def __init__(self, disposal_type, b, s, cost, fees):
-        super(TaxCapitalGains, self).__init__(s.timestamp, s.asset)
+        super(TaxEventCapitalGains, self).__init__(s.timestamp, s.asset)
         self.disposal_type = disposal_type
         self.quantity = s.quantity
         self.cost = cost.quantize(PRECISION)
@@ -359,26 +292,15 @@ class TaxCapitalGains(TaxEvent):
                   config.sym(), '{:0,.2f}'.format(self.cost),
                   config.sym(), '{:0,.2f}'.format(self.fees))
 
-    @staticmethod
-    def format_disposal(disposal_type, date):
-        if disposal_type == TaxCalculator.DISPOSAL_BED_AND_BREAKFAST:
-            return disposal_type + " (" + date.strftime('%d/%m/%Y') + ")"
+    def format_disposal(self):
+        if self.disposal_type == TaxCalculator.DISPOSAL_BED_AND_BREAKFAST:
+            return self.disposal_type + " (" + self.acquisition_date.strftime('%d/%m/%Y') + ")"
 
-        return disposal_type
+        return self.disposal_type
 
-    def __str__(self):
-        return self.asset.ljust(7) + " " + \
-               self.date.strftime('%d/%m/%Y') + " " + \
-               self.format_disposal(self.disposal_type, self.acquisition_date).ljust(28) + " " + \
-               '{:0,f}'.format(self.quantity.normalize()).rjust(25) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.cost + 0)).rjust(13) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.fees + 0)).rjust(13) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.proceeds + 0)).rjust(13) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.gain + 0)).rjust(13)
-
-class TaxIncome(TaxEvent):
+class TaxEventIncome(TaxEvent):
     def __init__(self, b):
-        super(TaxIncome, self).__init__(b.timestamp, b.asset)
+        super(TaxEventIncome, self).__init__(b.timestamp, b.asset)
         self.type = b.t_type
         self.quantity = b.quantity
         self.amount = b.cost.quantize(PRECISION)
@@ -387,10 +309,94 @@ class TaxIncome(TaxEvent):
         else:
             self.fees = Decimal(0)
 
-    def __str__(self):
-        return self.asset.ljust(7) + " " + \
-               self.date.strftime('%d/%m/%Y') + " " + \
-               self.type.ljust(28) + " " + \
-               '{:0,f}'.format(self.quantity.normalize()).rjust(25) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.amount + 0)).rjust(13) + " " + \
-               (config.sym() + '{:0,.2f}'.format(self.fees + 0)).rjust(13)
+class CalculateCapitalGains(object):
+    CG_DATA_INDIVIDUALS = {2010: {'allowance': 10100, 'basic_rate': 18, 'higher_rate': 18},
+                           2011: {'allowance': 10100, 'basic_rate': 18, 'higher_rate': 28},
+                           2012: {'allowance': 10600, 'basic_rate': 18, 'higher_rate': 28},
+                           2013: {'allowance': 10600, 'basic_rate': 18, 'higher_rate': 28},
+                           2014: {'allowance': 10900, 'basic_rate': 18, 'higher_rate': 28},
+                           2015: {'allowance': 11000, 'basic_rate': 18, 'higher_rate': 28},
+                           2016: {'allowance': 11100, 'basic_rate': 18, 'higher_rate': 28},
+                           2017: {'allowance': 11100, 'basic_rate': 10, 'higher_rate': 20},
+                           2018: {'allowance': 11300, 'basic_rate': 10, 'higher_rate': 20},
+                           2019: {'allowance': 11700, 'basic_rate': 10, 'higher_rate': 20},
+                           2020: {'allowance': 12000, 'basic_rate': 10, 'higher_rate': 20}}
+
+    def __init__(self, tax_year):
+        self.totals = {'cost': Decimal(0),
+                       'fees': Decimal(0),
+                       'proceeds': Decimal(0),
+                       'gain': Decimal(0)}
+        self.summary = {'disposals': Decimal(0),
+                        'total_gain': Decimal(0),
+                        'total_loss': Decimal(0)}
+        self.estimate = {'allowance': Decimal(self.CG_DATA_INDIVIDUALS[tax_year]['allowance']),
+                         'allowance_used': Decimal(0),
+                         'taxable_gain': Decimal(0),
+                         'cgt_basic': Decimal(0),
+                         'cgt_higher': Decimal(0),
+                         'proceeds_warning': False}
+        self.assets = {}
+
+    def tax_summary(self, te):
+        self.summary['disposals'] += 1
+        self.totals['cost'] += te.cost
+        self.totals['fees'] += te.fees
+        self.totals['proceeds'] += te.proceeds
+        self.totals['gain'] += te.gain
+        if te.gain >= 0:
+            self.summary['total_gain'] += te.gain
+        else:
+            self.summary['total_loss'] += te.gain
+
+        if te.asset not in self.assets:
+            self.assets[te.asset] = []
+
+        self.assets[te.asset].append(te)
+
+    def tax_estimate(self, tax_year):
+        if self.totals['gain'] > self.estimate['allowance']:
+            self.estimate['allowance_used'] = self.estimate['allowance']
+            self.estimate['taxable_gain'] = self.totals['gain'] - self.estimate['allowance']
+            self.estimate['cgt_basic'] = self.estimate['taxable_gain'] * \
+                                         self.CG_DATA_INDIVIDUALS[tax_year]['basic_rate'] / 100
+            self.estimate['cgt_higher'] = self.estimate['taxable_gain'] * \
+                                          self.CG_DATA_INDIVIDUALS[tax_year]['higher_rate'] /100
+        elif self.totals['gain'] > 0:
+            self.estimate['allowance_used'] = self.totals['gain']
+
+        if self.totals['proceeds'] >= self.estimate['allowance'] * 4:
+            self.estimate['proceeds_warning'] = True
+
+class CalculateIncome(object):
+    def __init__(self):
+        self.totals = {'amount': Decimal(0),
+                       'fees': Decimal(0)}
+        self.assets = {}
+        self.types = {}
+        self.type_totals = {}
+
+    def totalise(self, te):
+        self.totals['amount'] += te.amount
+        self.totals['fees'] += te.fees
+
+        if te.asset not in self.assets:
+            self.assets[te.asset] = []
+
+        self.assets[te.asset].append(te)
+
+        if te.type not in self.types:
+            self.types[te.type] = []
+
+        self.types[te.type].append(te)
+
+    def totals_by_type(self):
+        for income_type in self.types:
+            for te in self.types[income_type]:
+                if income_type not in self.type_totals:
+                    self.type_totals[income_type] = {}
+                    self.type_totals[income_type]['amount'] = te.amount
+                    self.type_totals[income_type]['fees'] = te.fees
+                else:
+                    self.type_totals[income_type]['amount'] += te.amount
+                    self.type_totals[income_type]['fees'] += te.fees

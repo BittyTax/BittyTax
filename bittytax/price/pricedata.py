@@ -56,18 +56,20 @@ class PriceData(object):
                     # check cache first
                     if pair in self.data_sources[data_source].prices and \
                        date in self.data_sources[data_source].prices[pair]:
-                        return self.data_sources[data_source].prices[pair][date], \
-                               self.data_sources[data_source].assets[asset]
+                        return self.data_sources[data_source].prices[pair][date]['price'], \
+                               self.data_sources[data_source].assets[asset], \
+                               self.data_sources[data_source].prices[pair][date]['url']
 
                 self.data_sources[data_source].get_historical(asset, quote, timestamp)
                 if pair in self.data_sources[data_source].prices and \
                    date in self.data_sources[data_source].prices[pair]:
-                    return self.data_sources[data_source].prices[pair][date], \
-                           self.data_sources[data_source].assets[asset]
+                    return self.data_sources[data_source].prices[pair][date]['price'], \
+                           self.data_sources[data_source].assets[asset], \
+                           self.data_sources[data_source].prices[pair][date]['url']
                 else:
-                    return None, self.data_sources[data_source].assets[asset]
+                    return None, self.data_sources[data_source].assets[asset], None
             else:
-                return None, None
+                return None, None, None
         else:
             raise ValueError("Data source: %s not recognised" % [data_source])
 
@@ -89,7 +91,7 @@ class PriceData(object):
     def get_historical(self, asset, quote, timestamp):
         price = name = data_source = None
         for data_source in self.data_source_priority(asset):
-            price, name = self.get_historical_ds(data_source, asset, quote, timestamp)
+            price, name, url = self.get_historical_ds(data_source, asset, quote, timestamp)
             if price is not None:
                 log.debug("Price on %s, 1 %s=%s %s via %s (%s)",
                           timestamp.strftime('%Y-%m-%d'),
@@ -100,4 +102,4 @@ class PriceData(object):
                           name)
                 break
 
-        return price, name, data_source
+        return price, name, data_source, url

@@ -14,9 +14,10 @@ from .version import __version__
 from .config import config
 from .import_records import ImportRecords
 from .transactions import TransactionHistory
-from .audit import audit_records
+from .audit import AuditRecords
 from .price.valueasset import ValueAsset
 from .tax import TaxCalculator
+from .report import ReportLog, ReportPdf
 
 if sys.version_info[0] >= 3:
     sys.stdout.reconfigure(encoding='utf-8')
@@ -50,12 +51,24 @@ def main():
                         "--skipaudit",
                         action='store_true',
                         help="skip auditing of transactions")
+    parser.add_argument("--summary",
+                        action='store_true',
+                        help="only output the capital gains summary in the tax report")
+    parser.add_argument("-o",
+                        dest='output_filename',
+                        type=str,
+                        help="specify the output filename for the tax report")
+    parser.add_argument("--nopdf",
+                        action='store_true',
+                        help="don't output pdf report, output report to terminal only")
 
     config.args = parser.parse_args()
     config.args.nocache = False
 
     if config.args.debug:
         log.setLevel(logging.DEBUG)
+        logging.getLogger('urllib3').setLevel(logging.WARNING)
+        logging.getLogger('xhtml2pdf').setLevel(logging.WARNING)
         config.output_config(parser.prog)
 
     import_records = ImportRecords()
@@ -78,7 +91,7 @@ def main():
     transaction_records = import_records.get_records()
 
     if not config.args.skipaudit:
-        audit_records(transaction_records)
+        AuditRecords(transaction_records)
 
     value_asset = ValueAsset()
     transaction_history = TransactionHistory(transaction_records, value_asset)
@@ -95,12 +108,22 @@ def main():
     tax.process_income()
 
     if config.args.taxyear:
-        tax.report_capital_gains(config.args.taxyear)
-        tax.report_income(config.args.taxyear)
+        tax.calculate_capital_gains(config.args.taxyear)
+        tax.calculate_income(config.args.taxyear)
     else:
-        # Output for all years
+        # Calculate for all years
         for year in sorted(tax.tax_events):
-            tax.report_capital_gains(year)
-            tax.report_income(year)
+            tax.calculate_capital_gains(year)
+            tax.calculate_income(year)
 
-        tax.report_holdings(value_asset)
+        tax.calculate_holdings(value_asset)
+
+    if config.args.nopdf:
+        ReportLog(tax.tax_report,
+                  value_asset.price_report,
+                  tax.holdings_report)
+    else:
+        ReportPdf(parser.prog,
+                  tax.tax_report,
+                  value_asset.price_report,
+                  tax.holdings_report)
