@@ -57,6 +57,10 @@
         </div>
 
         {% if config.args.taxyear %}
+            {% if audit and not config.args.summary %}
+                {% include "audit.html" %}
+                <div><pdf:nextpage /></div>
+            {% endif %}
             {% set tax_year = config.args.taxyear %}
             <h1>Tax Year - {{tax_year - 1}}/{{tax_year}}</h1>
             {% include "capital_gains.html" %}
@@ -67,6 +71,10 @@
                 {% include "price_data.html" %}
             {% endif %}
         {% else %}
+            {% if audit and not config.args.summary %}
+                {% include "audit.html" %}
+                <div><pdf:nextpage /></div>
+            {% endif %}
             {% for tax_year in tax_report|sort %}
                 <h1>Tax Year - {{tax_year - 1}}/{{tax_year}}</h1>
                 {% include "capital_gains.html" %}
@@ -77,8 +85,8 @@
                     <div><pdf:nextpage /></div>
                 {% endif %}
             {% endfor %}
-            <div><pdf:nextpage /></div>
             {% if not config.args.summary %}
+                <div><pdf:nextpage /></div>
                 <h1>Appendix</h1>
                 {% for tax_year in price_report|sort %}
                     {% include "price_data.html" %}

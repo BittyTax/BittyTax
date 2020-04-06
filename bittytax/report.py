@@ -19,7 +19,7 @@ class ReportPdf(object):
     FILE_EXTENSION = 'pdf'
     TEMPLATE_FILE = 'tax_report.html'
 
-    def __init__(self, progname, tax_report, price_report, holdings_report):
+    def __init__(self, progname, audit, tax_report, price_report, holdings_report):
         self.env = jinja2.Environment(loader=jinja2.PackageLoader('bittytax', 'templates'))
         self.filename = self.get_output_filename(self.FILE_EXTENSION)
 
@@ -32,6 +32,7 @@ class ReportPdf(object):
         html = template.render({'date': datetime.now(),
                                 'author': '{} {}'.format(progname, __version__),
                                 'config': config,
+                                'audit': audit,
                                 'tax_report': tax_report,
                                 'price_report': price_report,
                                 'holdings_report': holdings_report})
@@ -89,18 +90,23 @@ class ReportLog(object):
     MAX_NAME_LEN = 32
     ASSET_WIDTH = MAX_SYMBOL_LEN + MAX_NAME_LEN + 3
 
-    def __init__(self, tax_report, price_report, holdings_report):
-        self.holdings_report = holdings_report
+    def __init__(self, audit, tax_report, price_report, holdings_report):
+        self.audit_report = audit
         self.tax_report = tax_report
         self.price_report = price_report
+        self.holdings_report = holdings_report
 
         if config.args.taxyear:
+            if self.audit and not config.args.summary:
+                self.audit()
             log.info("==TAX YEAR %s/%s==", config.args.taxyear - 1, config.args.taxyear)
             self.capital_gains(config.args.taxyear)
             if not config.args.summary:
                 self.income(config.args.taxyear)
                 self.price_data(config.args.taxyear)
         else:
+            if self.audit and not config.args.summary:
+                self.audit()
             for tax_year in sorted(tax_report):
                 log.info("==TAX YEAR %s/%s==", tax_year - 1, tax_year)
                 self.capital_gains(tax_year)
@@ -112,6 +118,15 @@ class ReportLog(object):
                 for tax_year in sorted(tax_report):
                     self.price_data(tax_year)
                 self.holdings()
+
+    def audit(self):
+        log.info("==FINAL AUDIT BALANCES==")
+        for wallet in sorted(self.audit_report.wallets):
+            for asset in sorted(self.audit_report.wallets[wallet]):
+                log.info("%s:%s=%s",
+                         wallet,
+                         asset,
+                         self.format_quantity(self.audit_report.wallets[wallet][asset]))
 
     def capital_gains(self, tax_year):
         cgains = self.tax_report[tax_year]['CapitalGains']
@@ -235,6 +250,9 @@ class ReportLog(object):
                  "Date".ljust(10),
                  "Price (GBP)".rjust(13),
                  "Price (BTC)".rjust(25))
+
+        if tax_year not in self.price_report:
+            return
 
         for asset in sorted(self.price_report[tax_year]):
             for date in sorted(self.price_report[tax_year][asset]):

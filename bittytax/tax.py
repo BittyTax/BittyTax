@@ -46,7 +46,7 @@ class TaxCalculator(object):
         buy_transactions = {}
         sell_transactions = {}
 
-        log.debug("==POOL SAME DAY TRANSACTIONS==")
+        log.info("==POOL SAME DAY TRANSACTIONS==")
         for t in transactions:
             if isinstance(t, Buy) and t.acquisition:
                 if (t.asset, t.timestamp.date()) not in buy_transactions:
@@ -71,11 +71,11 @@ class TaxCalculator(object):
                     for tp in t.pooled:
                         log.debug("  %s", tp)
 
-            log.debug("Total Transactions(Pooled)=%s",
-                      len(self.buys_ordered + self.sells_ordered + self.other_transactions))
+        log.debug("Total Transactions(Pooled)=%s",
+                  len(self.buys_ordered + self.sells_ordered + self.other_transactions))
 
     def match(self, rule):
-        log.debug("==MATCH %s TRANSACTIONS==", rule.upper())
+        log.info("==MATCH %s TRANSACTIONS==", rule.upper())
         sell_index = buy_index = 0
 
         if not self.buys_ordered:
@@ -137,7 +137,7 @@ class TaxCalculator(object):
             raise Exception
 
     def process_unmatched(self):
-        log.debug("==PROCESS UNMATCHED TRANSACTIONS==")
+        log.info("==PROCESS UNMATCHED TRANSACTIONS==")
         unmatched_transactions = sorted([t for t in self.buys_ordered +
                                          self.sells_ordered +
                                          self.other_transactions if t.matched is False])
@@ -198,12 +198,14 @@ class TaxCalculator(object):
             self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
     def process_income(self):
+        log.info("==PROCESS INCOME==")
         for t in self.transactions:
             if t.t_type in self.INCOME_TYPES:
                 tax_event = TaxEventIncome(t)
                 self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
     def calculate_capital_gains(self, tax_year):
+        log.info("==CALCULATE CAPITAL GAINS %s/%s==", tax_year - 1, tax_year)
         self.tax_report[tax_year] = {}
         self.tax_report[tax_year]['CapitalGains'] = CalculateCapitalGains(tax_year)
 
@@ -215,6 +217,7 @@ class TaxCalculator(object):
         self.tax_report[tax_year]['CapitalGains'].tax_estimate(tax_year)
 
     def calculate_income(self, tax_year):
+        log.info("==CALCULATE INCOME %s/%s==", tax_year - 1, tax_year)
         self.tax_report[tax_year]['Income'] = CalculateIncome()
 
         if tax_year in self.tax_events:
@@ -225,6 +228,7 @@ class TaxCalculator(object):
         self.tax_report[tax_year]['Income'].totals_by_type()
 
     def calculate_holdings(self, value_asset):
+        log.info("==CALCULATE HOLDINGS==")
         holdings = {}
         totals = {'cost': Decimal(0),
                   'value': Decimal(0),

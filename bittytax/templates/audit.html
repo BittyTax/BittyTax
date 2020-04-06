@@ -1,16 +1,17 @@
 <h1>Audit</h1>
-{% for wallet in wallets|sort %}
-    <table repeat="1" width="100%">
+<h2>Final Balances</h2>
+{% for wallet in audit.wallets|sort %}
+    <table repeat="1" width="50%">
         <tr>
             <th align="left">Wallet</th>
             <th align="left">Asset</th>
             <th align="right">Balance</th>
         </tr>
-        {% for asset in wallets[wallet]|sort %}
+        {% for asset in audit.wallets[wallet]|sort %}
             <tr>
                 <td>{{wallet|nowrapfilter}}</td>
                 <td>{{asset}}</td>
-                <td align="right">{{wallets[wallet][asset]|quantityfilter}}</td>
+                <td align="right">{{audit.wallets[wallet][asset]|quantityfilter}}</td>
             </tr>
         {% endfor %}
      </table>

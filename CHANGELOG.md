@@ -4,6 +4,7 @@
 ### Added
 - Conversion tool: Improved exception handling.
 - Accounting tool: Identify if asset values are fixed or from historic price data.
+- Accounting tool: PDF report output.
 ### Changed
 - Accounting tool: Timestamps normalized to local time only for Buy/Sell transactions.
 - Accounting tool: Made fees optional for Buy/Sell transactions.

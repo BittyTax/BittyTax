@@ -14,7 +14,7 @@ class AuditRecords(object):
         self.wallets = {}
         self.totals = {}
 
-        log.debug("==FULL AUDIT TRANSACTION RECORDS==")
+        log.info("==AUDIT TRANSACTION RECORDS==")
         for tr in transaction_records:
             log.debug(tr)
             if tr.buy:
@@ -25,14 +25,6 @@ class AuditRecords(object):
 
             if tr.fee:
                 self._subtract_tokens(tr.wallet, tr.fee.asset, tr.fee.quantity)
-
-        log.info("==FINAL AUDIT BALANCES==")
-        for wallet in sorted(self.wallets):
-            for asset in sorted(self.wallets[wallet]):
-                log.info("%s:%s=%s",
-                         wallet,
-                         asset,
-                         '{:0,f}'.format(self.wallets[wallet][asset].normalize()))
 
         log.debug("==TOTAL BALANCES==")
         for asset in sorted(self.totals):

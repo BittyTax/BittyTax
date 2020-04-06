@@ -15,7 +15,7 @@ class TransactionHistory(object):
         self.value_asset = value_asset
         self.transactions = []
 
-        log.debug("==SPLIT TRANSACTION RECORDS==")
+        log.info("==SPLIT TRANSACTION RECORDS==")
 
         for tr in transaction_records:
             log.debug(tr)
@@ -56,7 +56,7 @@ class TransactionHistory(object):
                 self.transactions.append(tr.fee)
                 log.debug(tr.fee)
 
-        log.debug("Total transactions=%s", len(self.transactions))
+        log.info("Total transactions=%s", len(self.transactions))
 
     def get_all_values(self, tr):
         if tr.buy and tr.buy.acquisition and tr.buy.cost is None:

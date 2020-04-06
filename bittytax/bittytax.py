@@ -90,8 +90,10 @@ def main():
 
     transaction_records = import_records.get_records()
 
-    if not config.args.skipaudit:
-        AuditRecords(transaction_records)
+    if not config.args.skipaudit and not config.args.summary:
+        audit = AuditRecords(transaction_records)
+    else:
+        audit = None
 
     value_asset = ValueAsset()
     transaction_history = TransactionHistory(transaction_records, value_asset)
@@ -105,25 +107,32 @@ def main():
         tax.output_transactions()
 
     tax.process_unmatched()
-    tax.process_income()
+
+    if not config.args.summary:
+        tax.process_income()
 
     if config.args.taxyear:
         tax.calculate_capital_gains(config.args.taxyear)
-        tax.calculate_income(config.args.taxyear)
+        if not config.args.summary:
+            tax.calculate_income(config.args.taxyear)
     else:
         # Calculate for all years
         for year in sorted(tax.tax_events):
             tax.calculate_capital_gains(year)
-            tax.calculate_income(year)
+            if not config.args.summary:
+                tax.calculate_income(year)
 
-        tax.calculate_holdings(value_asset)
+        if not config.args.summary:
+            tax.calculate_holdings(value_asset)
 
     if config.args.nopdf:
-        ReportLog(tax.tax_report,
+        ReportLog(audit,
+                  tax.tax_report,
                   value_asset.price_report,
                   tax.holdings_report)
     else:
         ReportPdf(parser.prog,
+                  audit,
                   tax.tax_report,
                   value_asset.price_report,
                   tax.holdings_report)
