@@ -78,7 +78,7 @@
     </tr>
     <tr>
         <td>Disposal proceeds:</td>
-        {% if cgains.proceeds_warning %}
+        {% if cgains.estimate.proceeds_warning %}
             <td align="right">*{{cgains.totals['proceeds']|valuefilter}}</td>
         {% else %}
             <td align="right">{{cgains.totals['proceeds']|valuefilter}}</td>
@@ -97,8 +97,8 @@
         <td align="right">{{cgains.summary['total_loss']|abs|valuefilter}}</td>
     </tr>
 </table>
-{% if cgains.proceeds_warning %}
-    <p>*Assets sold are more than 4 times the annual allowance ({{(cgains.estimate['.allowance'] * 4)|valuefilter}}), this needs to be reported to HMRC</p>
+{% if cgains.estimate.proceeds_warning %}
+    <p>*Assets sold are more than 4 times the annual allowance ({{(cgains.estimate['allowance'] * 4)|valuefilter}}), this needs to be reported to HMRC</p>
 {% endif %}
 {% if not config.args.summary %}
     <h3>Tax Estimate</h3>

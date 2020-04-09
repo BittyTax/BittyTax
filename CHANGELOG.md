@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+### Fixed
+- Proceeds 4x warning was missing from PDF.
 ### Added
 - Conversion tool: Improved exception handling.
 - Accounting tool: Identify if asset values are fixed or from historic price data.
