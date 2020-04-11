@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## Version [0.3.1] Beta (2020-04-11)
+### Fixed
+- Missing packages in setup.py.
+
 ## Version [0.3.0] Beta (2020-04-11)
 ### Fixed
 - Proceeds 4x warning was missing from PDF.
