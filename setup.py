@@ -47,7 +47,7 @@ setup(
         'Programming Language :: Python :: 3.8',
     ],
     keywords='bittytax cryptoasset cryptocurrency crypto tax',
-    packages=['bittytax', 'bittytax.conv', 'bittytax.price'],
+    packages=['bittytax', 'bittytax.conv', 'bittytax.conv.parsers', 'bittytax.price'],
     package_data={'bittytax': ['templates/*.html']},
     install_requires=[
         'python-dateutil',
