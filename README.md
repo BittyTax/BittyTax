@@ -5,11 +5,11 @@ BittyTax is a collection of command-line tools to help you manage your cryptoass
 
 This tool is designed to be used by someone who is already familiar with cryptoasset taxation rules in the UK. HMRC has published guidance, some useful links are provided in the [Resources](#resources) section at the end.
 
-BittyTax comprises of 3 different tools.
+BittyTax comprises of the following tools.
 
-1. `bittytax` - process transaction records, audit accounts, provide a tax summary for each year and display the current value of your cryptoasset portfolio (see [Accounting Tool](#accounting-tool)) 
+1. `bittytax` - process your transaction records and generate a PDF tax report (see [Accounting Tool](#accounting-tool)) 
 
-2. `bittytax_conv` - converts data files from many different wallets and exchanges into the bittytax transaction record format (see [Conversion Tool](#conversion-tool))
+2. `bittytax_conv` - convert your wallet and exchange files into transaction records (see [Conversion Tool](#conversion-tool))
 
 3. `bittytax_price` - (optional) lookup historic price data for cryptoassets and foreign currencies (see [Price Tool](#price-tool))
 
@@ -183,21 +183,90 @@ Below is a list of some other situations which you might need to record, but whi
 1. **Staking** - Tokens received from Proof of Stake (POS) can be recorded as `Mining` or `Income`.
 
 ## Accounting Tool
-Once you have all of your transaction records stored in an Excel or CSV file you can use `bittytax` to process them.
+Once you have all of your transaction records stored in an Excel or CSV file you can use `bittytax` to process them and generate your report.
 
     bittytax <filename>
 
-There are additional command line arguments which you can use, to see all these use the help command.
+### PDF Report
+By default the report is given the filename `BittyTax_Report.pdf`. You can see an example file [here](https://github.com/BittyTax/BittyTax/blob/master/data/BittyTax_Report.pdf).
 
-    bittytax --help
+If you want to use a different filename or to specify a folder, you can use the `-o` option as shown below.
 
-The `-ty` or `--taxyear` argument tells bittytax to only output a tax summary for the year you specify, by default tax summaries will be produced for all years which contain taxable events.
+    bittytax <filename> -o <output_filename>
+
+The PDF generator can be a bit slow when handling large amounts of data. If you prefer, you can output the report to the terminal window by using the `--nopdf` option.
+
+    bittytax <filename> --nopdf
+
+The report is split into the following sections.
+
+1. [Audit](#audit)
+2. [Tax Report](#tax-report) (per year)
+3. Appendix - [Price Data](#price-data) (per year)
+4. Appendix - [Current Holdings](#current-holdings)
+
+#### Audit
+The imported transaction records are audited by calculating what the final balances should be for each asset in your wallet.
+
+If the balances listed in the report don't match, it could be that your transaction records are incomplete.
+
+If you do get issues, you can use the `-d` or `--debug` option to turn on logging (see [Audit Transaction Records](#audit-transaction-records)).
+
+Although important, the audit can be disabled by using the `-s` or `--skipaudit` option.
+
+#### Tax Report
+By default, tax reports are produced for all years which contain taxable events.
+
+If you only want a report for a specific year you can do this using the `-ty` or `--taxyear` option. 
 
     bittytax <filename> -ty 2020
 
-You can turn on debug using the `-d` or `--debug` command argument, this causes bittytax to produce detailed logging of the transaction records, the audit and tax calculations. 
+Full details of the tax calculations can be seen by turning on the debug output (see [Processing](#processing)).
 
-The accounting tool performs the following functions:
+#### Capital Gains
+Cryptoasset disposals are listed in date order and by asset.
+
+For a "Bed and Breakfast" disposal, the date of the buyback is given in brackets.
+
+If a disposal results in a loss, the negative amount is highlighted in red.
+
+Totals are listed per asset (if more than 1 disposal) as well as the totals for that tax year.
+
+The **Summary** section provides enough information for you to complete the "Other property, assets and gains" section within your self assessment tax return, or to give to your accountant to complete.
+
+If the disposal proceeds exceed more than 4 times the annual tax-free allowance this is shown. HMRC requires you to report this in your self assessment even if the gain was within your annual allowance.
+
+HMRC also requires you to include details of each gain or loss. You can use the `--summary` option in combination with `--taxyear` to generate a PDF report which only includes the capital gains disposals and summary for that specific tax year, this can then be attached to your self assessment.
+
+The **Tax Estimate** section is given purely as an estimate. Capital gains tax figures are calculated at both the basic and higher rate, and take into consideration the full tax-free allowance.  
+
+Obviously you would need to take into account other capital gains/losses in the same year, and use the correct tax rate according to your income. Always consult with a professional accountant before filing.
+
+#### Income
+Income events are listed in date order and by asset, with totals per asset (if more than 1 event).
+
+Totals are also given per Income Type (i.e `Mining` and `Income`), as well as the totals for that tax year.
+
+You should check with an accountant for how this should be reported according to your personal situation.
+
+#### Price Data
+The appendix section contains all the historic price data which bittytax has used in the tax calculations.
+
+This includes both fiat and crypto prices, split by tax year.
+
+It is important to check that the symbol names of your assets have been interpreted correctly, and that the prices look reasonable, otherwise your tax calculations will be incorrect. See [Price Tool](#price-tool) for more information on how price data is retrieved.
+
+Links are provided against each price, pointing to the exact data source API which was used to retrieve the data. 
+
+#### Current Holdings
+The appendix section also contains details of your remaining cryptoasset balances. The cost (including fees), the current valuation, and the calculated gain (or loss) are shown.
+
+By default, empty wallets are excluded, this setting can be changed in the config file, see [Config](#config).
+
+The data source used for the current price is the same used for historic price data.
+
+### Processing
+You can turn on debug using the `-d` or `--debug` option to see full details of how the transaction records are processed.
 
 1. [Import Transaction Records](#import-transaction-records)
 2. [Audit Transaction Records](#audit-transaction-records)
@@ -207,18 +276,15 @@ The accounting tool performs the following functions:
 5. [Match "bed and breakfast" Rule](#match-bed-and-breakfast-rule)
 6. [Process Unmatched (Section 104)](#process-unmatched-section-104)
 7. [Process Income](#process-income)
-8. [Tax Summary Report](#tax-summary-report) (for each year)
-9. [Current Holdings Report](#current-holdings-report)
 
-### Import Transaction Records
-First the transaction records are imported, and validated according to their transaction type, making sure that the correct mandatory and optional fields are included. Empty rows are allowed, they are filtered out during the import.
+#### Import Transaction Records
+First the transaction records are imported and validated according to their transaction type, making sure that the correct mandatory and optional fields are included.
 
-#### Logging
-If you enable debug logging you will see if bittytax has correctly loaded your transaction records from the file.
+In the log, the worksheet name (Excel only) and row number are shown against the raw record data being imported.
 
-As you can see in the example below, the worksheet name (Excel only) and row number are given along with the row data.
+Empty rows are allowed, and filtered out during the import.
 
-Each row is given a unique Transaction ID, these are allocated in chronological order, regardless of the ordering in your file. So the first transaction you ever made will be TID:1.
+Each record is given a unique Transaction ID (TID), these are allocated in chronological order (using the timestamp) regardless of the file ordering.
 
 ```
 INFO -- : ==IMPORT TRANSACTION RECORDS FROM EXCEL FILE: example.xlsx ==
@@ -232,35 +298,19 @@ DEBUG -- : 'Sheet1' Row[8]: ['Gift-Sent', '', '', '', '0.02757', 'BTC', '', '', 
 DEBUG -- : 'Sheet1' Row[9]: ['Trade', '0.41525742', 'BTC', '', '257.53', 'USD', '', '1.29', 'USD', '', 'Bitstamp', '2014-07-23T10:58:00 UTC'] TID:8
 DEBUG -- : 'Sheet1' Row[10]: ['Trade', '0.58474258', 'BTC', '', '362.63', 'USD', '', '1.82', 'USD', '', 'Bitstamp', '2014-07-23T10:58:00 UTC'] TID:9
 ```
-### Audit Transaction Records
-The audit function takes the imported transaction records, and then replays them in chronological order.
+#### Audit Transaction Records
+The audit function takes the transaction records, and then replays them in chronological order.
 
-The simulation of tokens (and also fiat) being moved between your wallets allows you to compare the calculated balances against your real world wallets and exchange balances.
+The simulation of tokens (and also fiat) being moved between wallets allows you to compare the calculated final balances against your real world wallets and exchange balances.
 
-```console
-INFO -- : ==FINAL AUDIT BALANCES==
-INFO -- : Bitstamp:BTC=0
-INFO -- : Bitstamp:USD=0
-INFO -- : Coinfloor:BTC=0
-INFO -- : Coinfloor:GBP=0
-INFO -- : Desktop wallet:BTC=13.11024863
-INFO -- : LocalBitcoins:BTC=0
-INFO -- : LocalBitcoins:GBP=0
-INFO -- : Poloniex:BTC=2.89354264
-INFO -- : Poloniex:ETH=248.60854866
-INFO -- : Poloniex:XRP=19,037.77593453
-```
+Bittytax will raise a warning if a cryptoasset balance goes negative during the audit, this could happen if the time ordering of your transaction records is not accurate.
 
-If they don't match, it could be that your transaction records are incomplete.
+The log shows for each transaction record (TR) which wallets are being updated.
 
-Bittytax will raise a warning if a cryptoasset balance goes negative, this could happen if the time ordering of your transaction records is not accurate.
-
-If you do get issues, you can turn on debug to produce detailed logging of the audit. You can then see what impact each individual transaction record has on your wallets.
-
-In the debug example, you can see that for each transaction record (TR) the lines below show which wallets have been updated. The wallet name and asset name is displayed with its balance, and in brackets the quantity that has been added or subtracted.
+The wallet name and asset name are shown with its balance, and in brackets the quantity that has been added or subtracted.
 
 ```console
-DEBUG -- : ==FULL AUDIT TRANSACTIONS RECORDS==
+INFO -- : == AUDIT TRANSACTION RECORDS==
 ...
 DEBUG -- : TR [TID:8] Trade: 0.41525742 BTC <- 257.53 USD + Fee=1.29 USD 'Bitstamp' 2014-07-23T11:58:00 BST
 DEBUG -- : Bitstamp:BTC=0.41525742 (+0.41525742)
@@ -286,96 +336,95 @@ DEBUG -- : TR [TID:13] Withdrawal: 4.40037953 BTC 'Bitstamp' 2014-07-24T22:01:00
 DEBUG -- : Bitstamp:BTC=0 (-4.40037953)
 ```
 
-Although important, the audit function can be disabled using the `-s` or `--skipaudit` command argument to speed up the tax reporting.
+#### Split Transaction Records
+Before any tax calculations can take place, transaction records need to be split into their constitute parts, in terms of cryptoasset buys and cryptoasset sells, each with their own valuation in GBP.
 
-### Split Transaction Records
-Before any tax calculations can take place, transaction records need to be split into their constitute parts, in terms of cryptoasset Buys and cryptoasset Sells, each with their own valuation in GBP.
+This requires the buy, sell and fee assets in the transaction record first to be given a valuation, that is unless a fixed value has already been specified, or the asset is already in GBP.
 
-This requires the buy, sell and fee assets each to be given valuations, that is unless a fixed value has already been specified, or the asset is already in GBP.
-
-Valuations are calculated via one of the different historic price date sources, see [Price Tool](#price-tool) for how.
+Valuations are calculated via one of the historic price date sources, see [Price Tool](#price-tool) for how.
 
 Note that `Deposit` and `Withdrawal` transactions are not taxable events so no valuation is required.
 
-#### Fee Handling
+In the log, any transaction buys (T-Buy) or sells (T-Sell) that are created by the split are shown below the transaction record (TR). These transactions have unique TIDs allocated sequentially based on the parent transaction ID, i.e. (34.1, 34.2, 34.3, etc).
 
-Each cryptoasset Buy or Sell can include a fee. Its value is populated by the fee specified in the transaction record.
+If historic price data has been used for the valuation, it is indicated by the `~` symbol, fixed values are show as `=`.
 
-If a transaction record involves more than one cryptoasset (i.e. a `Trade` crypto-to-crypto) then the fee's valuation has to be split evenly between the Buy and Sell transactions.
+GBP values are displayed with 2 decimal places, although no actual rounding has taken place. Rounding only happens when a taxable event is recorded.
 
-If the fee asset is also a cryptoasset, then paying the fee counts as a separate disposal. This is recorded by adding an additional Sell transaction as a `Spend`.
+Timestamps are normalised to be in local time (GMT or BST), this is so that tax calculations for the same day will be correct.
 
-Since `Deposit` and `Withdrawal` transactions are not taxable, any additional `Spend` transactions created for these are also flagged as not taxable.
+##### Fee Handling
+Each buy or sell transaction can include a fee. Its value is populated by the fee specified in the transaction record.
 
-#### Logging
-By enabling debug logging you can check that transaction records have been split correctly into Buys and Sells, and that the correct valuations have been given.
+If a transaction record involves more than one cryptoasset (i.e. a `Trade` crypto-to-crypto) then the fee's valuation has to be split evenly between the buy and sell transactions.
 
-Non-taxable transactions are marked with an asterisk * and have no GBP valuation.
+If the fee asset is also a cryptoasset, then paying the fee counts as a separate disposal. This is recorded by adding an additional `Spend` transaction.
 
-All GBP values are displayed to 2 decimal places, although no actual rounding takes place until a taxable event is recorded.
+Since `Deposit` and `Withdrawal` transactions are not taxable, any additional `Spend` transactions created for these are also flagged as non-taxable.
 
-Transaction IDs for Buys and Sells are made up from the parent transaction ID with a unique sub-ID, i.e. (1.1, 1.2, etc).
+Non-taxable transactions are marked with `*` in the log and have no GBP valuation.
 
 ```console
-DEBUG -- : ==SPLIT TRANSACTION RECORDS==
+INFO -- : ==SPLIT TRANSACTION RECORDS==
 ...
+DEBUG -- : TR [TID:2] Trade: 10 BTC <- 870 GBP 'LocalBitcoins' 2013-05-24T20:17:40 UTC
+DEBUG -- : T-Buy [TID:2.1] Trade: 10 BTC (=£870.00 GBP) 'LocalBitcoins' 2013-05-24T21:17:40 BST
+...
+
 DEBUG -- : TR [TID:32] Withdrawal: 7.0002 BTC 'Desktop wallet' 2017-03-24T22:57:44 GMT
-DEBUG -- : T-Sell* [TID:32.1] Withdrawal: 7.0002 BTC + Fee=£0.00 GBP 'Desktop wallet' 2017-03-24T22:57:44 GMT
-DEBUG -- : TR [TID:33] Deposit: 7 BTC 'Poloniex' 2017-03-24T22:57:44 GMT
-DEBUG -- : T-Buy* [TID:33.1] Deposit: 7 BTC + Fee=£0.00 GBP 'Poloniex' 2017-03-24T22:57:44 GMT
-DEBUG -- : TR [TID:34] Trade: 1.00000013 ETH <- 0.03729998 BTC + Fee=0.0015 ETH 'Poloniex' 2017-04-12T20:38:26 BST
+DEBUG -- : T-Sell* [TID:32.1] Withdrawal: 7.0002 BTC 'Desktop wallet' 2017-03-24T22:57:44 GMT
+DEBUG -- : TR [TID:33] Deposit: 7 BTC 'Poloniex' 2017-03-24T22:57:44 UTC
+DEBUG -- : T-Buy* [TID:33.1] Deposit: 7 BTC 'Poloniex' 2017-03-24T22:57:44 GMT
+DEBUG -- : TR [TID:34] Trade: 1.00000013 ETH <- 0.03729998 BTC + Fee=0.0015 ETH 'Poloniex' 2017-04-12T19:38:26 UTC
 DEBUG -- : Price on 2017-04-12, 1 BTC=969.6202 GBP via CoinDesk (Bitcoin)
 DEBUG -- : Price on 2017-04-12, 1 BTC=£969.62 GBP, 0.03729998 BTC=£36.17 GBP
-DEBUG -- : T-Buy [TID:34.1] Trade: 1.00000013 ETH (£36.17 GBP) + Fee=£0.03 GBP 'Poloniex' 2017-04-12T20:38:26 BST
-DEBUG -- : T-Sell [TID:34.2] Trade: 0.03729998 BTC (£36.17 GBP) + Fee=£0.03 GBP 'Poloniex' 2017-04-12T20:38:26 BST
-DEBUG -- : T-Sell [TID:34.3] Spend: 0.0015 ETH (£0.05 GBP) + Fee=£0.00 GBP 'Poloniex' 2017-04-12T20:38:26 BST
+DEBUG -- : T-Buy [TID:34.1] Trade: 1.00000013 ETH (~£36.17 GBP) + Fee=~£0.03 GBP 'Poloniex' 2017-04-12T20:38:26 BST
+DEBUG -- : T-Sell [TID:34.2] Trade: 0.03729998 BTC (~£36.17 GBP) + Fee=~£0.03 GBP 'Poloniex' 2017-04-12T20:38:26 BST
+DEBUG -- : T-Sell [TID:34.3] Spend: 0.0015 ETH (~£0.05 GBP) 'Poloniex' 2017-04-12T20:38:26 BST
+
 ```
 
 ### Pool Same Day
 HMRC stipulates that ["*All shares of the same class in the same company acquired by the same person on the same day and in the same capacity are treated as though they were acquired by a single transaction*"](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560#IDATX33F) this applies in the same way to disposals.
 
-#### Pooling
-Tokens of the same cryptoasset, acquired on the same day, are pooled together into a single Buy transaction, the same applies for tokens disposed of on the same day. These are pooled into a single Sell transaction.
+Tokens of the same cryptoasset, acquired on the same day, are pooled together into a single buy transaction, the same applies for tokens disposed of on the same day. These are pooled into a single sell transaction.
 
 Only taxable transactions (i.e. acquisitions and disposals) are included within these pools.
 
-All timestamps are normalised to be in local time (GMT or BST) so that the same day calculation is correct.
-
-Pooled transactions are indicated by the transaction count at the end, shown within square brackets. The transactions contained within the pool are indented below it.
+Pooled transactions are indicated by a transaction count at the end, shown within square brackets. The transactions contained within the pool are then indented below it.
 
 ```console
-DEBUG -- : ==POOL SAME DAY TRANSACTIONS==
-DEBUG -- : T-Buy [TID:2.1] Trade: 10 BTC (£870.00 GBP) + Fee=£0.00 GBP 'LocalBitcoins' 2013-05-24T21:17:40 BST
-DEBUG -- : T-Sell* [TID:3.1] Withdrawal: 10 BTC + Fee=£0.00 GBP 'LocalBitcoins' 2013-05-24T21:20:49 BST
-DEBUG -- : T-Buy* [TID:4.1] Deposit: 10 BTC + Fee=£0.00 GBP 'Desktop wallet' 2013-05-24T21:20:49 BST
-DEBUG -- : T-Sell [TID:6.1] Spend: 0.002435 BTC (£0.80 GBP) + Fee=£0.00 GBP 'Desktop wallet' 2014-06-26T12:25:02 BST
-DEBUG -- : T-Sell [TID:7.1] Gift-Sent: 0.02757 BTC (£10.14 GBP) + Fee=£0.00 GBP 'Desktop wallet' 2014-07-18T14:12:47 BST
-DEBUG -- : T-Buy [TID:8.1] Trade: 1 BTC (£364.22 GBP) + Fee=£1.83 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [2]
-DEBUG -- :   T-Buy [TID:8.1] Trade: 0.41525742 BTC (£151.25 GBP) + Fee=£0.76 GBP 'Bitstamp' 2014-07-23T11:58:00 BST
-DEBUG -- :   T-Buy [TID:9.1] Trade: 0.58474258 BTC (£212.97 GBP) + Fee=£1.07 GBP 'Bitstamp' 2014-07-23T11:58:00 BST
+INFO -- : ==POOL SAME DAY TRANSACTIONS==
+DEBUG -- : T-Buy [TID:2.1] Trade: 10 BTC (=£870.00 GBP) 'LocalBitcoins' 2013-05-24T21:17:40 BST
+DEBUG -- : T-Sell* [TID:3.1] Withdrawal: 10 BTC 'LocalBitcoins' 2013-05-24T21:20:49 BST
+DEBUG -- : T-Buy* [TID:4.1] Deposit: 10 BTC 'Desktop wallet' 2013-05-24T21:20:49 BST
+DEBUG -- : T-Sell [TID:6.1] Spend: 0.002435 BTC (=£0.80 GBP) 'Desktop wallet' 2014-06-26T12:25:02 BST
+DEBUG -- : T-Sell [TID:7.1] Gift-Sent: 0.02757 BTC (~£10.14 GBP) 'Desktop wallet' 2014-07-18T14:12:47 BST
+DEBUG -- : T-Buy [TID:8.1] Trade: 1 BTC (~£364.22 GBP) + Fee=~£1.83 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [2]
+DEBUG -- :   T-Buy [TID:8.1] Trade: 0.41525742 BTC (~£151.25 GBP) + Fee=~£0.76 GBP 'Bitstamp' 2014-07-23T11:58:00 BST
+DEBUG -- :   T-Buy [TID:9.1] Trade: 0.58474258 BTC (~£212.97 GBP) + Fee=~£1.07 GBP 'Bitstamp' 2014-07-23T11:58:00 BST
 ```
 
 ### Match "same day" Rule
 See ["*The “same day” rule TCGA92/S105(1)*"](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560#IDATX33F).
 
-This tax function matches any Buy and Sell transactions, of the same cryptoasset, that occur on the same day. 
+This tax function matches any buy and sell transactions, of the same cryptoasset, that occur on the same day. 
 
 If the buy and sell quantities do not match, the transaction with the larger quantity will be split into two, and the cost and fee apportioned between them.
 
 This allows a gain, or a loss, to be calculated for the matching transactions, taking into consideration the combined fees. The transaction containing the remainder is then carried forward, and used in further tax calculations.
 
-#### Logging
-With debug enabled you can see which transactions have been "*Same Day*" matched, and where a Buy or Sell has been split.  
+In the log, you can see which transactions have been "*Same Day*" matched, and where a buy or sell has been split.  
 
-Any new transactions created by splits are allocated a new TID containing the next sub-ID in sequence.
+New transactions created by a split are allocated the next TID in sequence.
 
 ```console
-DEBUG -- : ==MATCH SAME DAY TRANSACTIONS==
+INFO -- : ==MATCH SAME DAY TRANSACTIONS==
 ...
-DEBUG -- : T-Sell [TID:34.3] Spend: 0.62207655 ETH (£22.50 GBP) + Fee=£0.00 GBP 'Poloniex' 2017-04-12T20:38:26 BST [4]
-DEBUG -- : T-Buy [TID:34.1] Trade: 249.23062521 ETH (£9,012.71 GBP) + Fee=£11.25 GBP 'Poloniex' 2017-04-12T20:38:26 BST [4] (Same Day)
-DEBUG -- : split: T-Buy [TID:34.4] Trade: 0.62207655 ETH (£22.50 GBP) + Fee=£0.03 GBP 'Poloniex' 2017-04-12T20:38:26 BST [4]
-DEBUG -- : split: T-Buy [TID:34.5] Trade: 248.60854866 ETH (£8,990.22 GBP) + Fee=£11.22 GBP 'Poloniex' 2017-04-12T20:38:26 BST [4]
+DEBUG -- : T-Sell [TID:34.3] Spend: 0.62207655 ETH (~£22.50 GBP) 'Poloniex' 2017-04-12T20:38:26 BST [4]
+DEBUG -- : T-Buy [TID:34.1] Trade: 249.23062521 ETH (~£9,012.71 GBP) + Fee=~£11.25 GBP 'Poloniex' 2017-04-12T20:38:26 BST [4] (Same Day)
+DEBUG -- : split: T-Buy [TID:34.4] Trade: 0.62207655 ETH (~£22.50 GBP) + Fee=~£0.03 GBP 'Poloniex' 2017-04-12T20:38:26 BST [4]
+DEBUG -- : split: T-Buy [TID:34.5] Trade: 248.60854866 ETH (~£8,990.22 GBP) + Fee=~£11.22 GBP 'Poloniex' 2017-04-12T20:38:26 BST [4]
 DEBUG -- :  Gain=£-0.03 (proceeds=£22.50 - cost=£22.50 - fees=£0.03)
 ```
 
@@ -391,16 +440,15 @@ Transactions are sorted by timestamp, and matched in chronological order.
 
 Any matched "same day" transactions are excluded from this rule.
 
-#### Logging
-With debug enabled you can see which transactions have been matched by the "*Bed & Breakfast*" rule, and the number of days between the Sell and Buy back.   
+In the log, you can see which transactions have been matched by the "*Bed & Breakfast*" rule, the number of days between the sell and buyback are also shown.   
 
 ```console
-DEBUG -- : ==MATCH BED & BREAKFAST TRANSACTIONS==
+INFO -- : ==MATCH BED & BREAKFAST TRANSACTIONS==
 ...
-DEBUG -- : T-Sell [TID:18.2] Trade: 5.32294271 BTC (£1,474.69 GBP) + Fee=£1.47 GBP 'Poloniex' 2016-01-27T22:09:19 GMT [5]
-DEBUG -- : T-Buy [TID:23.5] Trade: 5.54195456 BTC (£1,471.32 GBP) + Fee=£1.47 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [9] (Bed & Breakfast, 2 days)
-DEBUG -- : split: T-Buy [TID:23.6] Trade: 5.32294271 BTC (£1,413.17 GBP) + Fee=£1.41 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [9]
-DEBUG -- : split: T-Buy [TID:23.7] Trade: 0.21901185 BTC (£58.14 GBP) + Fee=£0.06 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [9]
+DEBUG -- : T-Sell [TID:18.2] Trade: 5.32294271 BTC (~£1,474.69 GBP) + Fee=~£1.47 GBP 'Poloniex' 2016-01-27T22:09:19 GMT [5]
+DEBUG -- : T-Buy [TID:23.5] Trade: 5.54195456 BTC (~£1,471.32 GBP) + Fee=~£1.47 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [9] (Bed & Breakfast, 2 days)
+DEBUG -- : split: T-Buy [TID:23.6] Trade: 5.32294271 BTC (~£1,413.17 GBP) + Fee=~£1.41 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [9]
+DEBUG -- : split: T-Buy [TID:23.7] Trade: 0.21901185 BTC (~£58.14 GBP) + Fee=~£0.06 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [9]
 DEBUG -- :  Gain=£58.63 (proceeds=£1,474.69 - cost=£1,413.17 - fees=£2.89)
 ```
 
@@ -419,113 +467,46 @@ The gain or loss, is then calculated by subtracting this cost and any fees from 
 
 For non-taxable transactions such as `Withdrawal` and `Deposit`, the tokens are removed, and then re-added to the holding, but at zero cost. 
 
-**NOTE:** It is important that no disposal event happens to a holding between a `Withdrawal` and a `Deposit`. This is because the tokens are removed temporarily, so would impact the cost calculation. The ordering of transactions can be checked in the debug log.
+**NOTE:** It is important that no disposal event happens to a holding between a `Withdrawal` and a `Deposit`. This is because the tokens are removed temporarily, so would impact the cost calculation.
 
-#### Logging
-Before the Section 104 calculations, all the updated transactions are displayed for clarity, this includes any new "split" transactions which have been added by the matching function. This output is sorted by asset and timestamp.
+In the log, before the Section 104 calculations, the updated transactions are listed for clarity, this includes any new "split" transactions which have been added by the matching function.
 
-The transactions which have been matched, and so excluded from the Section 104 holding, are denoted with (M) at the end.
+Transactions which have been matched, and so excluded from the Section 104 holding, are denoted with (M) at the end.
 ```console
 DEBUG -- : ==UPDATED TRANSACTIONS==
-DEBUG -- : T-Buy [TID:2.1] Trade: 10 BTC (£870.00 GBP) + Fee=£0.00 GBP 'LocalBitcoins' 2013-05-24T21:17:40 BST
-DEBUG -- : T-Sell* [TID:3.1] Withdrawal: 10 BTC + Fee=£0.00 GBP 'LocalBitcoins' 2013-05-24T21:20:49 BST
-DEBUG -- : T-Buy* [TID:4.1] Deposit: 10 BTC + Fee=£0.00 GBP 'Desktop wallet' 2013-05-24T21:20:49 BST
-DEBUG -- : T-Sell [TID:6.1] Spend: 0.002435 BTC (£0.80 GBP) + Fee=£0.00 GBP 'Desktop wallet' 2014-06-26T12:25:02 BST (M)
-DEBUG -- : T-Sell [TID:7.1] Gift-Sent: 0.02757 BTC (£10.14 GBP) + Fee=£0.00 GBP 'Desktop wallet' 2014-07-18T14:12:47 BST (M)
-DEBUG -- : T-Buy [TID:8.2] Trade: 0.002435 BTC (£0.89 GBP) + Fee=£0.00 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [2] (M)
-DEBUG -- : T-Buy [TID:8.4] Trade: 0.02757 BTC (£10.04 GBP) + Fee=£0.05 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [2] (M)
-DEBUG -- : T-Buy [TID:8.5] Trade: 0.969995 BTC (£353.29 GBP) + Fee=£1.77 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [2]
+DEBUG -- : T-Buy [TID:2.1] Trade: 10 BTC (=£870.00 GBP) 'LocalBitcoins' 2013-05-24T21:17:40 BST
+DEBUG -- : T-Sell* [TID:3.1] Withdrawal: 10 BTC 'LocalBitcoins' 2013-05-24T21:20:49 BST
+DEBUG -- : T-Buy* [TID:4.1] Deposit: 10 BTC 'Desktop wallet' 2013-05-24T21:20:49 BST
+DEBUG -- : T-Sell [TID:6.1] Spend: 0.002435 BTC (=£0.80 GBP) 'Desktop wallet' 2014-06-26T12:25:02 BST (M)
+DEBUG -- : T-Sell [TID:7.1] Gift-Sent: 0.02757 BTC (~£10.14 GBP) 'Desktop wallet' 2014-07-18T14:12:47 BST (M)
+DEBUG -- : T-Buy [TID:8.2] Trade: 0.002435 BTC (~£0.89 GBP) + Fee=~£0.00 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [2] (M)
+DEBUG -- : T-Buy [TID:8.4] Trade: 0.02757 BTC (~£10.04 GBP) + Fee=~£0.05 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [2] (M)
+DEBUG -- : T-Buy [TID:8.5] Trade: 0.969995 BTC (~£353.29 GBP) + Fee=~£1.77 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [2]
 ```
 
-With debug enabled you can see detailed logging of the unmatched transactions being processed, and the impact it has on the individual holding.
+As the unmatched transactions are processed, the impact it has on the individual holding is shown in the log.
 
-Below each transaction it shows the cryptoasset holding, and by what amount the token, total cost and total fees are being updated.
-
-When a disposal takes place, indicated at the end of the transaction, the gain calculation is then shown below. 
+When a disposal takes place, the gain calculation is then shown below. 
 
 ```console
-DEBUG -- : ==PROCESS UNMATCHED TRANSACTIONS==
+INFO -- : ==PROCESS UNMATCHED TRANSACTIONS==
 ...
-DEBUG -- : T-Buy [TID:18.5] Trade: 843.00981977 ETH (£1,471.74 GBP) + Fee=£1.47 GBP 'Poloniex' 2016-01-27T22:04:21 GMT [5]
+DEBUG -- : T-Buy [TID:18.5] Trade: 843.00981977 ETH (~£1,471.74 GBP) + Fee=~£1.47 GBP 'Poloniex' 2016-01-27T22:04:21 GMT [5]
 DEBUG -- : ETH=843.00981977 (+843.00981977) cost=£1,471.74 GBP (+£1,471.74 GBP) fees=£1.47 GBP (+£1.47 GBP)
-DEBUG -- : T-Sell [TID:23.2] Trade: 843.00981977 ETH (£1,474.27 GBP) + Fee=£1.47 GBP 'Poloniex' 2016-01-29T14:12:31 GMT [9] (Disposal)
+DEBUG -- : T-Sell [TID:23.2] Trade: 843.00981977 ETH (~£1,474.27 GBP) + Fee=~£1.47 GBP 'Poloniex' 2016-01-29T14:12:31 GMT [9] (Disposal)
 DEBUG -- : ETH=0 (-843.00981977) cost=£0.00 GBP (-£1,471.74 GBP) fees=£0.00 GBP (-£1.47 GBP)
 DEBUG -- :  Gain=£-0.42 (proceeds=£1,474.27 - cost=£1,471.74 - fees=£2.95)
 ```
 
 ### Process Income
-This function searches through all the original transactions, and records any that are applicable for income tax. Currently this is only the `Mining` and `Income` transaction types.
-
-These are then output in the tax summary report.
-
-### Tax Summary Report
-Once all the tax calculations are complete, the results are displayed either for all years, or for the tax year you specified via the command argument. 
-
-Cryptoasset disposals are listed in date order. For a "bed and breakfast" disposal, the date of the buyback is shown in brackets.
-
-Enough information is provided for you to complete the "Other property, assets and gains" section within your self assessment tax return, or to give to your accountant to complete.
-
-The capital gains tax figure is shown purely as an estimate, at the 20% rate. Obviously you would need to take into account other capital gains/losses in the same year, and use the correct tax rate according to your income.
-
-The reporting function will raise a warning if the disposal proceeds exceed more than 4 times the annual allowance for that tax year, as you can see in the example report below. HMRC requires you to report this in your self assessment even if the gain was within your annual allowance.
-
-Lastly, all income events are listed in date order for that year, along with the total income and total fees. You should check with an accountant for how this should be reported according to your personal situation.
-
-```console
-INFO -- : ==TAX SUMMARY 2017/2018==
-INFO -- : --CAPITAL GAINS--
-INFO -- : Asset   Date       Disposal Type                                 Quantity          Cost          Fees      Proceeds          Gain
-INFO -- : BTC     12/04/2017 Bed & Breakfast (10/05/2017)                    1.0003     £1,358.61         £1.21       £969.91      £-389.91
-INFO -- : BTC     12/04/2017 Section 104                                 8.29479379     £1,388.01        £13.56     £8,042.80     £6,641.23
-INFO -- : BTC     08/08/2017 Same Day                                          0.24       £637.93         £0.00       £637.93         £0.00
-INFO -- : BTC     08/08/2017 Section 104                                       4.76       £796.52         £2.02    £12,652.31    £11,853.77
-INFO -- : BTC     09/09/2017 Section 104                                 0.99999993       £167.34         £2.86     £3,251.91     £3,081.71
-INFO -- : BTC     24/12/2017 Bed & Breakfast (02/01/2018)                         2    £21,692.50        £60.44    £20,147.00    £-1,605.94
-INFO -- : ETH     12/04/2017 Same Day                                    0.62207655        £22.50         £0.03        £22.50        £-0.03
-INFO -- : XRP     09/09/2017 Same Day                                   30.22974602         £4.88         £0.00         £4.88         £0.00
-INFO -- : XRP     01/04/2018 Bed & Breakfast (05/04/2018)              914.84163064       £146.59         £0.18       £312.16       £165.39
-INFO -- : XRP     01/04/2018 Section 104                             1,085.15836936       £175.10         £0.13       £370.28       £195.05
-INFO -- : Number of disposals=10
-INFO -- : Disposal proceeds=£46,411.68
-WARNING -- : Assets sold are more than 4 times the annual allowance (£45,200.00), this needs to be reported to HMRC
-INFO -- : Allowable costs=£26,470.41
-INFO -- : Gains in the year, before losses=£21,937.15
-INFO -- : Losses in the year=£1,995.88
-INFO -- : --TAX ESTIMATE--
-INFO -- : Taxable Gain=£8,641.27 (-£11,300.00 tax-free allowance)
-INFO -- : Capital Gains Tax=£1,728.25 (20%)
-INFO -- : --INCOME--
-INFO -- : Asset   Date       Income Type                                   Quantity        Amount          Fees
-INFO -- : BTC     10/05/2017 Income                                          1.0003     £1,358.61         £0.00
-INFO -- : BTC     02/01/2018 Mining                                            12.5   £135,578.11         £0.00
-INFO -- : Total income=£136,936.72
-INFO -- : Total fees=£0.00
-```
-
-### Current Holdings Report
-The current holdings report lists all your remaining cryptoasset balances, the cost (including fees) and their current valuation.
-
-By default, empty wallets are excluded, this setting can be changed in the config file, see [Config](#config).
-
-The data source used for the current price is the same as used for historic prices, see [Price Tool](#price-tool).
-
-```console
-INFO -- : ==CURRENT HOLDINGS==
-INFO -- : Asset                    Quantity          Cost         Value  Data Source
-INFO -- : BTC                   16.00379127   £114,261.62   £101,210.84  CoinDesk (Bitcoin)
-INFO -- : ETH                  248.60854866     £9,012.71    £50,217.50  CryptoCompare (Ethereum)
-INFO -- : XRP               19,037.77593453     £3,076.55     £6,009.08  CryptoCompare (XRP)
-INFO -- : Total cost=£126,350.88
-INFO -- : Total value=£157,437.42
-
-```
+This function searches through all the original transactions, and records any that are applicable for income tax. Currently this is only `Mining` and `Income` transaction types.
 
 ## Conversion Tool
 The bittytax conversion tool `bittytax_conv` takes all of the data files exported from your wallets and exchanges, normalises these into the transaction record format required by bittytax, and consolidates them into a single Excel spreadsheet for you to review, make edits, and add any missing records.
 
 Don't worry if you don't have Microsoft Excel installed, these spreadsheets also work with [OpenOffice](https://www.openoffice.org) or [LibreOffice](https://www.libreoffice.org).
 
-Each converted file appears within it's own worksheet, data files of the same format are aggregated together. The transaction records and the original raw data appear side by side, sorted by timestamp, making it easier for you to review and to provide traceability.
+Each converted file appears within its own worksheet, data files of the same format are aggregated together. The transaction records and the original raw data appear side by side, sorted by timestamp, making it easier for you to review and to provide traceability.
 
 The converter takes care of all the cell formatting to ensure that all decimal places are displayed correctly, and if numbers exceed 15-digits of precision (an Excel limitation) they are stored as text to prevent any truncation.
 
@@ -799,7 +780,6 @@ Ideas for the project roadmap, let me know what you would fine most useful, or a
 
 ### Accounting Tool
 - BittyTax integration with Excel. The command line interface is not for everyone, by integrating with Excel (or OpenOffice) this would greatly improve the user experience.
-- Create a PDF file for the tax summary report which can be attached to your self assessment.
 - Add export function for QuickBooks (QBXML format), to include transactions records with exchange rate data added.
 - Tax rules for other countries
 
