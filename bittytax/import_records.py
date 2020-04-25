@@ -29,9 +29,9 @@ class ImportRecords(object):
         for worksheet in workbook.sheets():
             for row_num in range(1, worksheet.nrows):
                 row = [self.convert_cell(worksheet.cell(row_num, cell_num), workbook)
-                       for cell_num in range(0, len(TransactionRow.HEADER))]
+                       for cell_num in range(0, worksheet.ncols)]
 
-                t_row = TransactionRow(row, row_num+1, worksheet.name)
+                t_row = TransactionRow(row[:len(TransactionRow.HEADER)], row_num+1, worksheet.name)
                 try:
                     t_row.parse()
                 except TransactionParserError as e:
@@ -132,7 +132,7 @@ class TransactionRow(object):
         self.failure = None
 
     def parse(self):
-        if all(not self.row[i] for i in range(len(self.HEADER))):
+        if all(not self.row[i] for i in range(len(self.row))):
             # Skip empty rows
             return
 
