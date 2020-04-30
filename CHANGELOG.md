@@ -3,6 +3,7 @@
 ## [Unreleased]
 ### Fixed
 - Exception if transaction records input file contains less than the expected 12 columns. ([#5](https://github.com/BittyTax/BittyTax/issues/5))
+- Historic or fixed fee indicator is incorrect when transaction is pooled. ([#7](https://github.com/BittyTax/BittyTax/issues/7))
 
 ## Version [0.3.2] Beta (2020-04-11)
 ### Fixed

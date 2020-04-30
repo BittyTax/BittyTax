@@ -234,6 +234,9 @@ class Buy(TransactionBase):
         if other.cost_fixed != self.cost_fixed:
             self.cost_fixed = False
 
+        if other.fee_fixed != self.fee_fixed:
+            self.fee_fixed = False
+
         self.pooled.append(other)
         return self
 
@@ -332,6 +335,9 @@ class Sell(TransactionBase):
 
         if other.proceeds_fixed != self.proceeds_fixed:
             self.proceeds_fixed = False
+
+        if other.fee_fixed != self.fee_fixed:
+            self.fee_fixed = False
 
         self.pooled.append(other)
         return self
