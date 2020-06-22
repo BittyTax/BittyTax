@@ -324,7 +324,8 @@ class CalculateCapitalGains(object):
                            2017: {'allowance': 11100, 'basic_rate': 10, 'higher_rate': 20},
                            2018: {'allowance': 11300, 'basic_rate': 10, 'higher_rate': 20},
                            2019: {'allowance': 11700, 'basic_rate': 10, 'higher_rate': 20},
-                           2020: {'allowance': 12000, 'basic_rate': 10, 'higher_rate': 20}}
+                           2020: {'allowance': 12000, 'basic_rate': 10, 'higher_rate': 20},
+                           2021: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20}}
 
     def __init__(self, tax_year):
         self.totals = {'cost': Decimal(0),
