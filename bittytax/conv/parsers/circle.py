@@ -38,6 +38,13 @@ def parse_circle(data_row, parser):
                                                                                     config.CCY \
                                                                                 else None,
                                                  wallet=WALLET)
+    elif in_row[2] == "fork":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
+                                                 data_row.timestamp,
+                                                 buy_quantity=in_row[7].strip('£').split(' ')[0],
+                                                 buy_asset=in_row[8],
+                                                 buy_value=0,
+                                                 wallet=WALLET)
     else:
         raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
 
