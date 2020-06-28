@@ -8,26 +8,30 @@ from ..dataparser import DataParser
 
 WALLET = "Bitfinex"
 
+PRECISION = Decimal('0.00000000')
+
 def parse_bitfinex_trades(data_row, _):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[6], dayfirst=True)
 
     if Decimal(in_row[2]) > 0:
+        sell_quantity = Decimal(in_row[3]) * Decimal(in_row[2])
+
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[2],
                                                  buy_asset=in_row[1].split('/')[0],
-                                                 sell_quantity=Decimal(in_row[3]) * \
-                                                                       Decimal(in_row[2]),
+                                                 sell_quantity=sell_quantity.quantize(PRECISION),
                                                  sell_asset=in_row[1].split('/')[1],
                                                  fee_quantity=abs(Decimal(in_row[4])),
                                                  fee_asset=in_row[5],
                                                  wallet=WALLET)
     else:
+        buy_quantity = Decimal(in_row[3]) * abs(Decimal(in_row[2]))
+
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=Decimal(in_row[3]) * \
-                                                                      abs(Decimal(in_row[2])),
+                                                 buy_quantity=buy_quantity.quantize(PRECISION),
                                                  buy_asset=in_row[1].split('/')[1],
                                                  sell_quantity=abs(Decimal(in_row[2])),
                                                  sell_asset=in_row[1].split('/')[0],
