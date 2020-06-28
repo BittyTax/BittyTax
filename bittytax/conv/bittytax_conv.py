@@ -93,12 +93,10 @@ def main():
             parser.exit("{}: error: username cannot be identified in data file: {}, "
                         "please specify usernames in the {} file"
                         .format(parser.prog, filename, config.BITTYTAX_CONFIG))
-        except FileNotFoundError:
-            log.warning("File not found: %s", filename)
-        except IsADirectoryError:
-            log.warning("File is a directory: %s", filename)
         except DataFormatUnrecognised:
             log.warning("Data file format unrecognised: %s", filename)
+        except IOError:
+            log.warning("File could not be read: %s", filename)
 
     if DataFile.data_files:
         if config.args.format == config.FORMAT_EXCEL:
