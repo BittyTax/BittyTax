@@ -75,10 +75,14 @@ def main():
 
     if config.args.filename:
         try:
-            import_records.import_excel(config.args.filename)
-        except xlrd.XLRDError:
-            with io.open(config.args.filename, newline='', encoding='utf-8') as csv_file:
-                import_records.import_csv(csv_file)
+            try:
+                import_records.import_excel(config.args.filename)
+            except xlrd.XLRDError:
+                with io.open(config.args.filename, newline='', encoding='utf-8') as csv_file:
+                    import_records.import_csv(csv_file)
+        except IOError:
+            parser.exit("{}: error: file could not be read: {}"
+                        .format(parser.prog, config.args.filename))
     else:
         if sys.version_info[0] < 3:
             import_records.import_csv(codecs.getreader('utf-8')(sys.stdin))

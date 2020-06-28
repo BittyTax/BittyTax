@@ -9,6 +9,7 @@
 - Trezor Parser: wallets without labelling. ([#10](https://github.com/BittyTax/BittyTax/issues/10))
 - Bitfinex Parser: calculations rounded to 8 decimal places. ([#14](https://github.com/BittyTax/BittyTax/issues/14))
 - Conversion tool: python2 raised exception if file format was unrecognised or file missing. ([#9](https://github.com/BittyTax/BittyTax/issues/9))
+- Accounting tool: handle exception if input file is missing. ([#15](https://github.com/BittyTax/BittyTax/issues/15))
 ### Added
 - Conversion tool: added parser for HandCash wallet.
 ### Changed
