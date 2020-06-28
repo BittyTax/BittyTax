@@ -7,6 +7,8 @@
 - Tax-free allowance for 2021 missing. ([#13](https://github.com/BittyTax/BittyTax/issues/13))
 - Circle Parser: added "fork" transaction type. ([#11](https://github.com/BittyTax/BittyTax/issues/11))
 - Trezor Parser: wallets without labelling. ([#10](https://github.com/BittyTax/BittyTax/issues/10))
+### Added
+- Conversion tool: added parser for HandCash wallet.
 ### Changed
 - Trezor Parser: fees are now included separately.
 

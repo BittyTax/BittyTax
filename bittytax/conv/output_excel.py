@@ -94,6 +94,7 @@ class Worksheet(object):
                  TransactionOutRecord.TYPE_GIFT_SENT,
                  TransactionOutRecord.TYPE_CHARITY_SENT)
     SHEETNAME_MAX_LEN = 31
+    MAX_COL_WIDTH = 30
 
     names = {}
 
@@ -224,6 +225,9 @@ class Worksheet(object):
         self._autofit_calc(col_num, len(self.output.DATE_FORMAT))
 
     def _autofit_calc(self, col_num, width):
+        if width > self.MAX_COL_WIDTH:
+            width = self.MAX_COL_WIDTH
+
         if col_num in self.col_width:
             if width > self.col_width[col_num]:
                 self.col_width[col_num] = width
