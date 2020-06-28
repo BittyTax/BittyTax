@@ -6,6 +6,9 @@
 - Historic or fixed fee indicator is incorrect when transaction is pooled. ([#7](https://github.com/BittyTax/BittyTax/issues/7))
 - Tax-free allowance for 2021 missing. ([#13](https://github.com/BittyTax/BittyTax/issues/13))
 - Circle Parser: added "fork" transaction type. ([#11](https://github.com/BittyTax/BittyTax/issues/11))
+- Trezor Parser: wallets without labelling. ([#10](https://github.com/BittyTax/BittyTax/issues/10))
+### Changed
+- Trezor Parser: fees are now included separately.
 
 ## Version [0.3.2] Beta (2020-04-11)
 ### Fixed
