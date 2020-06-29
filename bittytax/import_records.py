@@ -55,7 +55,10 @@ class ImportRecords(object):
             # repr is required to ensure no precision is lost
             value = repr(cell.value)
         else:
-            value = str(cell.value)
+            if sys.version_info[0] >= 3:
+                value = str(cell.value)
+            else:
+                value = cell.value.encode('utf-8')
 
         return value
 
