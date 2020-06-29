@@ -1,6 +1,8 @@
 # Change Log
 
 ## [Unreleased]
+
+## Version [0.3.3] Beta (2020-06-29)
 ### Fixed
 - Exception if transaction records input file contains less than the expected 12 columns. ([#5](https://github.com/BittyTax/BittyTax/issues/5))
 - Historic or fixed fee indicator is incorrect when transaction is pooled. ([#7](https://github.com/BittyTax/BittyTax/issues/7))
@@ -116,7 +118,8 @@ This is the initial beta release. Although it has been throughly tested, it's po
 - Exchange data files supported: Bitstamp, Bittrex, ChangeTip, Circle, Coinbase, Coinbase Pro, Coinfloor, Cryptopia, Cryptsy, Gatehub, OKEx, Poloniex, TradeSatoshi, Uphold.
 - Explorer data files supported: Etherscan.
 
-[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/BittyTax/BittyTax/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/BittyTax/BittyTax/compare/v0.3.0...v0.3.2
 [0.3.0]: https://github.com/BittyTax/BittyTax/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/BittyTax/BittyTax/compare/v0.2.0...v0.2.1
