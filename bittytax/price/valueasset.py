@@ -28,7 +28,7 @@ class ValueAsset(object):
                       timestamp.strftime('%Y-%m-%d'),
                       asset,
                       config.sym(), '{:0,.2f}'.format(asset_price_ccy), config.CCY,
-                      '{:0,f}'.format(quantity),
+                      '{:0,f}'.format(quantity.normalize()),
                       asset,
                       config.sym(), '{:0,.2f}'.format(value), config.CCY)
             return value, False
@@ -48,7 +48,9 @@ class ValueAsset(object):
         asset_price_ccy = None
 
         if timestamp.date() >= datetime.now().date():
-            raise Exception("Date is not in the past: " + timestamp.strftime('%Y-%m-%d'))
+            log.warning("Price for %s at %s, no historic price available, using latest price",
+                        asset, timestamp.strftime('%Y-%m-%d'))
+            return self.get_latest_price(asset)
 
         if asset == "BTC" or asset in config.fiat_list:
             asset_price_ccy, name, data_source, url = self.price_data.get_historical(asset,

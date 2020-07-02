@@ -1,4 +1,6 @@
 # Change Log
+### Changed
+- Accounting tool: use latest price when a historic price is not available.
 
 ## [Unreleased]
 
