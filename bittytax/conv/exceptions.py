@@ -10,28 +10,28 @@ class DataParserError(Exception):
 
 class UnexpectedTypeError(DataParserError):
     def __str__(self):
-        return 'Unrecognised {}: \'{}\''.format(self.col_name, self.value)
+        return "Unrecognised %s: \'%s\'" % (self.col_name, self.value)
 
 class MissingValueError(DataParserError):
     def __str__(self):
-        return 'Missing value for \'{}\''.format(self.col_name)
+        return "Missing value for \'%s\'" % self.col_name
 
 class MissingComponentError(DataParserError):
     def __str__(self):
-        return 'Missing component data for {}: \'{}\''.format(self.col_name, self.value)
+        return "Missing component data for %s: \'%s\'" % (self.col_name, self.value)
 
 class UnexpectedTradingPairError(DataParserError):
     def __str__(self):
-        return 'Unrecognised trading pair for {}: \'{}\''.format(self.col_name, self.value)
+        return "Unrecognised trading pair for %s: \'%s\'" % (self.col_name, self.value)
 
 class UnknownCryptoassetError(Exception):
     def __str__(self):
-        return 'Cryptoasset cannot be identified'
+        return "Cryptoasset cannot be identified"
 
 class UnknownUsernameError(Exception):
     def __str__(self):
-        return 'Username cannot be identified'
+        return "Username cannot be identified"
 
 class DataFormatUnrecognised(Exception):
     def __str__(self):
-        return 'Data file format unrecognised'
+        return "Data file format unrecognised"

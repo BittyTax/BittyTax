@@ -1,17 +1,14 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
 import os
-import platform
 import pkg_resources
 
+from colorama import Fore, Back
 import yaml
 import dateutil.tz
 
 from .version import __version__
-
-log = logging.getLogger()
 
 class Config(object):
     TZ_INFOS = {'BST': dateutil.tz.gettz('Europe/London'),
@@ -35,8 +32,8 @@ class Config(object):
     TRADE_ASSET_TYPE_SELL = 1
     TRADE_ASSET_TYPE_PRIORITY = 2
 
-    DATA_SOURCE_FIAT = ["ExchangeRatesAPI", "RatesAPI"]
-    DATA_SOURCE_CRYPTO = ["CryptoCompare", "CoinGecko"]
+    DATA_SOURCE_FIAT = ['ExchangeRatesAPI', 'RatesAPI']
+    DATA_SOURCE_CRYPTO = ['CryptoCompare', 'CoinGecko']
 
     DEFAULT_CONFIG = {
         'fiat_list': FIAT_LIST,
@@ -64,11 +61,12 @@ class Config(object):
 
         try:
             with open(os.path.join(Config.BITTYTAX_PATH,
-                                   Config.BITTYTAX_CONFIG), "rb") as config_file:
+                                   Config.BITTYTAX_CONFIG), 'rb') as config_file:
                 self.config = yaml.safe_load(config_file)
         except:
-            self.log.warning("Config file cannot be loaded: %s",
-                             os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG))
+            print("%sWARNING%s Config file cannot be loaded: %s" % (
+                Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW,
+                os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG)))
             self.config = {}
 
         for name, default in self.DEFAULT_CONFIG.items():
@@ -83,18 +81,13 @@ class Config(object):
         except KeyError:
             return getattr(self.args, name)
 
-    def output_config(self, progname):
-        log.debug("BITTYTAX: %s v%s", progname, __version__)
-        log.debug("PYTHON: v%s SYSTEM: %s RELEASE: %s",
-                  platform.python_version(), platform.system(), platform.release())
-
+    def output_config(self):
         for name in sorted(self.DEFAULT_CONFIG):
-            log.debug("CONFIG: %s = %s", name, self.config[name])
+            print("%sconfig: %s = %s" % (Fore.GREEN, name, self.config[name]))
 
     def sym(self):
         if self.CCY == 'GBP':
             return u'\xA3' # £
-        else:
-            raise ValueError("Currency not supported")
+        raise ValueError("Currency not supported")
 
 config = Config()

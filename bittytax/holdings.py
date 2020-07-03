@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
-
 from decimal import Decimal
 
-from .config import config
+from colorama import Fore
 
-log = logging.getLogger()
+from .config import config
 
 class Holdings(object):
     def __init__(self, asset):
@@ -22,14 +20,19 @@ class Holdings(object):
         self.fees += fees
 
         if config.args.debug:
-            log.debug("%s=%s (+%s) cost=%s%s %s (+%s%s %s) fees=%s%s %s (+%s%s %s)",
-                      self.asset,
-                      '{:0,f}'.format(self.quantity.normalize()),
-                      '{:0,f}'.format(quantity.normalize()),
-                      config.sym(), '{:0,.2f}'.format(self.cost), config.CCY,
-                      config.sym(), '{:0,.2f}'.format(cost), config.CCY,
-                      config.sym(), '{:0,.2f}'.format(self.fees), config.CCY,
-                      config.sym(), '{:0,.2f}'.format(fees), config.CCY)
+            print("%ssection104: %s=%s (+%s) cost=%s %s (+%s %s) fees=%s %s (+%s %s}" % (
+                Fore.YELLOW,
+                self.asset,
+                '{:0,f}'.format(self.quantity.normalize()),
+                '{:0,f}'.format(quantity.normalize()),
+                config.sym() + '{:0,.2f}'.format(self.cost),
+                config.CCY,
+                config.sym() + '{:0,.2f}'.format(cost),
+                config.CCY,
+                config.sym() + '{:0,.2f}'.format(self.fees),
+                config.CCY,
+                config.sym() + '{:0,.2f}'.format(fees),
+                config.CCY))
 
     def subtract_tokens(self, quantity, cost, fees):
         self.quantity -= quantity
@@ -37,11 +40,16 @@ class Holdings(object):
         self.fees -= fees
 
         if config.args.debug:
-            log.debug("%s=%s (-%s) cost=%s%s %s (-%s%s %s) fees=%s%s %s (-%s%s %s)",
-                      self.asset,
-                      '{:0,f}'.format(self.quantity.normalize()),
-                      '{:0,f}'.format(quantity.normalize()),
-                      config.sym(), '{:0,.2f}'.format(self.cost), config.CCY,
-                      config.sym(), '{:0,.2f}'.format(cost), config.CCY,
-                      config.sym(), '{:0,.2f}'.format(self.fees), config.CCY,
-                      config.sym(), '{:0,.2f}'.format(fees), config.CCY)
+            print("%ssection104: %s=%s (-%s) cost=%s %s (-%s %s) fees=%s %s (-%s %s}" % (
+                Fore.YELLOW,
+                self.asset,
+                '{:0,f}'.format(self.quantity.normalize()),
+                '{:0,f}'.format(quantity.normalize()),
+                config.sym() + '{:0,.2f}'.format(self.cost),
+                config.CCY,
+                config.sym() + '{:0,.2f}'.format(cost),
+                config.CCY,
+                config.sym() + '{:0,.2f}'.format(self.fees),
+                config.CCY,
+                config.sym() + '{:0,.2f}'.format(fees),
+                config.CCY))

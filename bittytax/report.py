@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
 import os
+import threading
+import time
+import itertools
+import sys
 from datetime import datetime
 
+from colorama import Fore, Back, Style
 import jinja2
 from xhtml2pdf import pisa
 import dateutil.parser
 
 from .version import __version__
 from .config import config
-
-log = logging.getLogger()
 
 class ReportPdf(object):
     DEFAULT_FILENAME = 'BittyTax_Report'
@@ -37,13 +39,16 @@ class ReportPdf(object):
                                 'price_report': price_report,
                                 'holdings_report': holdings_report})
 
-        log.info("Generating PDF report...")
-        pdf_file = open(self.filename, 'w+b')
-        status = pisa.CreatePDF(html, dest=pdf_file)
-        pdf_file.close()
+        with ProgressSpinner():
+            pdf_file = open(self.filename, 'w+b')
+            status = pisa.CreatePDF(html, dest=pdf_file)
+            pdf_file.close()
 
         if not status.err:
-            log.info("PDF tax report file created: %s", self.filename)
+            print("%sPDF tax report created: %s%s" % (Fore.WHITE, Fore.YELLOW, self.filename))
+        else:
+            print("%sERROR%s Failed to create PDF tax report", (
+                Back.RED+Fore.BLACK, Back.RESET+Fore.RED))
 
     @staticmethod
     def datefilter(date):
@@ -78,10 +83,10 @@ class ReportPdf(object):
 
         filepath, file_extension = os.path.splitext(filepath)
         i = 2
-        new_fname = '{}-{}{}'.format(filepath, i, file_extension)
+        new_fname = '%s-%s%s' % (filepath, i, file_extension)
         while os.path.exists(new_fname):
             i += 1
-            new_fname = '{}-{}{}'.format(filepath, i, file_extension)
+            new_fname = '%s-%s%s' % (filepath, i, file_extension)
 
         return new_fname
 
@@ -96,215 +101,311 @@ class ReportLog(object):
         self.price_report = price_report
         self.holdings_report = holdings_report
 
+        print("%stax report output:" % Fore.WHITE)
         if config.args.taxyear:
             if self.audit and not config.args.summary:
                 self.audit()
-            log.info("==TAX YEAR %s/%s==", config.args.taxyear - 1, config.args.taxyear)
-            self.capital_gains(config.args.taxyear)
+
+            print("\n%sTax Year - %d/%d%s" % (
+                Fore.CYAN+Style.BRIGHT, config.args.taxyear - 1, config.args.taxyear), Style.NORMAL)
             if not config.args.summary:
                 self.income(config.args.taxyear)
                 self.price_data(config.args.taxyear)
         else:
             if self.audit and not config.args.summary:
                 self.audit()
+
             for tax_year in sorted(tax_report):
-                log.info("==TAX YEAR %s/%s==", tax_year - 1, tax_year)
+                print("\n%sTax Year - %d/%d%s" % (
+                    Fore.CYAN+Style.BRIGHT, tax_year - 1, tax_year, Style.NORMAL))
                 self.capital_gains(tax_year)
                 if not config.args.summary:
                     self.income(tax_year)
 
             if not config.args.summary:
-                log.info("==APPENDIX==")
+                print("\n%sAppendix" % Fore.CYAN)
                 for tax_year in sorted(tax_report):
                     self.price_data(tax_year)
                 self.holdings()
 
     def audit(self):
-        log.info("==FINAL AUDIT BALANCES==")
-        for wallet in sorted(self.audit_report.wallets):
+        print("\n%sAudit%s" % (Fore.CYAN+Style.BRIGHT, Style.NORMAL))
+        print("%sFinal Balances" % Fore.CYAN)
+        for wallet in sorted(self.audit_report.wallets, key=str.lower):
+            print("\n%s%-30s %s %25s" % (
+                Fore.YELLOW,
+                'Wallet',
+                'Asset'.ljust(self.MAX_SYMBOL_LEN),
+                'Balance'))
+
             for asset in sorted(self.audit_report.wallets[wallet]):
-                log.info("%s:%s=%s",
-                         wallet,
-                         asset,
-                         self.format_quantity(self.audit_report.wallets[wallet][asset]))
+                print("%s%-30s %s %25s" % (
+                    Fore.WHITE,
+                    wallet,
+                    asset.ljust(self.MAX_SYMBOL_LEN),
+                    self.format_quantity(self.audit_report.wallets[wallet][asset])))
 
     def capital_gains(self, tax_year):
         cgains = self.tax_report[tax_year]['CapitalGains']
 
-        log.info("--CAPITAL GAINS--")
-        header = "%s %s %s %s %s %s %s %s" % ("Asset".ljust(self.MAX_SYMBOL_LEN),
-                                              "Date".ljust(10),
-                                              "Disposal Type".ljust(28),
-                                              "Quantity".rjust(25),
-                                              "Cost".rjust(13),
-                                              "Fees".rjust(13),
-                                              "Proceeds".rjust(13),
-                                              "Gain".rjust(13))
-        log.info(header)
-
+        print("%sCapital Gains" % Fore.CYAN)
+        header = "%s %-10s %-28s %25s %13s %13s %13s %13s" % ('Asset'.ljust(self.MAX_SYMBOL_LEN),
+                                                              'Date',
+                                                              'Disposal Type',
+                                                              'Quantity',
+                                                              'Cost',
+                                                              'Fees',
+                                                              'Proceeds',
+                                                              'Gain')
         for asset in sorted(cgains.assets):
+            disposals = quantity = cost = fees = proceeds = gain = 0
+            print('\n%s%s' % (Fore.YELLOW, header))
             for te in cgains.assets[asset]:
-                log.info("%s %s %s %s %s %s %s %s",
-                         te.asset.ljust(self.MAX_SYMBOL_LEN),
-                         self.format_date(te.date),
-                         te.format_disposal().ljust(28),
-                         self.format_quantity(te.quantity).rjust(25),
-                         self.format_value(te.cost).rjust(13),
-                         self.format_value(te.fees).rjust(13),
-                         self.format_value(te.proceeds).rjust(13),
-                         self.format_value(te.gain).rjust(13))
+                disposals += 1
+                quantity += te.quantity
+                cost += te.cost
+                fees += te.fees
+                proceeds += te.proceeds
+                gain += te.gain
+                print("%s%s %-10s %-28s %25s %13s %13s %13s %s%13s" % (
+                    Fore.WHITE,
+                    te.asset.ljust(self.MAX_SYMBOL_LEN),
+                    self.format_date(te.date),
+                    te.format_disposal(),
+                    self.format_quantity(te.quantity),
+                    self.format_value(te.cost),
+                    self.format_value(te.fees),
+                    self.format_value(te.proceeds),
+                    Fore.RED if te.gain < 0 else Fore.WHITE,
+                    self.format_value(te.gain)))
 
-        log.info("%s", '-' * len(header))
-        log.info("%s %s %s %s %s %s %s %s",
-                 "Total".ljust(self.MAX_SYMBOL_LEN),
-                 ' ' * 10,
-                 ' ' * 28,
-                 ' ' * 25,
-                 self.format_value(cgains.totals['cost']).rjust(13),
-                 self.format_value(cgains.totals['fees']).rjust(13),
-                 self.format_value(cgains.totals['proceeds']).rjust(13),
-                 self.format_value(cgains.totals['gain']).rjust(13))
+            if disposals > 1:
+                print("%s%s %-10s %-28s %25s %13s %13s %13s %s%13s" % (
+                    Fore.YELLOW,
+                    'Total'.ljust(self.MAX_SYMBOL_LEN),
+                    '',
+                    '',
+                    self.format_quantity(quantity),
+                    self.format_value(cost),
+                    self.format_value(fees),
+                    self.format_value(proceeds),
+                    Fore.RED if gain < 0 else Fore.YELLOW,
+                    self.format_value(gain)))
 
-        log.info("-TAX SUMMARY-")
-        log.info("Number of disposals=%s", cgains.summary['disposals'])
-        log.info("Disposal proceeds=%s",
-                 self.format_value(cgains.totals['proceeds']))
+        print("%s%s" % (Fore.YELLOW, '_' * len(header)))
+        print("%s%s %-10s %-28s %25s %13s %13s %13s %s%13s%s" % (
+            Fore.YELLOW+Style.BRIGHT,
+            'Total'.ljust(self.MAX_SYMBOL_LEN),
+            '',
+            '',
+            '',
+            self.format_value(cgains.totals['cost']),
+            self.format_value(cgains.totals['fees']),
+            self.format_value(cgains.totals['proceeds']),
+            Fore.RED if cgains.totals['gain'] < 0 else Fore.YELLOW,
+            self.format_value(cgains.totals['gain']),
+            Style.NORMAL))
+
+        print("\n%sSummary\n" % Fore.CYAN)
+        print("%s%-35s %13d" % (Fore.WHITE, "Number of disposals:", cgains.summary['disposals']))
+        if cgains.estimate['proceeds_warning']:
+            print("%s%-35s %s" % (
+                Fore.WHITE, "Disposal proceeds:",
+                ('*' + self.format_value(cgains.totals['proceeds'])).rjust(13). \
+                        replace('*', Fore.YELLOW + '*' + Fore.WHITE)))
+        else:
+            print("%s%-35s %13s" % (
+                Fore.WHITE, "Disposal proceeds:",
+                self.format_value(cgains.totals['proceeds'])))
+
+        print("%s%-35s %13s" % (
+            Fore.WHITE, "Allowable costs (including the",
+            self.format_value(cgains.totals['cost'] + cgains.totals['fees'])))
+        print("%spurchase price):" % Fore.WHITE)
+        print("%s%-35s %13s" % (
+            Fore.WHITE, "Gains in the year, before losses:",
+            self.format_value(cgains.summary['total_gain'])))
+        print("%s%-35s %13s" % (
+            Fore.WHITE, "Losses in the year:",
+            self.format_value(abs(cgains.summary['total_loss']))))
 
         if cgains.estimate['proceeds_warning']:
-            log.warning("Assets sold are more than 4 times the annual allowance (%s), "
-                        "this needs to be reported to HMRC",
-                        self.format_value(cgains.estimate['allowance'] * 4))
-
-        log.info("Allowable costs=%s",
-                 self.format_value(cgains.totals['cost'] + cgains.totals['fees']))
-        log.info("Gains in the year, before losses=%s",
-                 self.format_value(cgains.summary['total_gain']))
-        log.info("Losses in the year=%s",
-                 self.format_value(abs(cgains.summary['total_loss'])))
+            print("%s*Assets sold are more than 4 times the annual allowance (%s), "
+                  "this needs to be reported to HMRC" % (
+                      Fore.YELLOW, self.format_value(cgains.estimate['allowance'] * 4)))
 
         if not config.args.summary:
-            log.info("-TAX ESTIMATE-")
+            print("\n%sTax Estimate\n" % Fore.CYAN)
+            print("%sThe figures below are only an estimate, they do not take into consideration "
+                  "other gains and losses in the same tax year, always consult with a professional "
+                  "accountant before filing.\n" % Fore.CYAN)
             if cgains.totals['gain'] > 0:
-                log.info("Taxable Gain=%s (%s of the tax-fee allowance %s used)",
-                         self.format_value(cgains.estimate['taxable_gain']),
-                         self.format_value(cgains.estimate['allowance_used']),
-                         self.format_value(cgains.estimate['allowance']))
+                print("%s%s %13s" % (
+                    Fore.WHITE,
+                    "Taxable Gain*:".ljust(35).replace('*', Fore.YELLOW + '*' + Fore.WHITE),
+                    self.format_value(cgains.estimate['taxable_gain'])))
             else:
-                log.info("Taxable Gain=%s",
-                         self.format_value(cgains.estimate['taxable_gain']))
-            log.info("Capital Gains Tax (Basic rate)=%s",
-                     self.format_value(cgains.estimate['cgt_basic']))
-            log.info("Capital Gains Tax (Higher rate)=%s",
-                     self.format_value(cgains.estimate['cgt_higher']))
+                print("%s%-35s %13s" % (
+                    Fore.WHITE,
+                    "Taxable Gain:",
+                    self.format_value(cgains.estimate['taxable_gain'])))
+
+            print("%s%-35s %13s" % (
+                Fore.WHITE, "Capital Gains Tax (Basic rate):",
+                self.format_value(cgains.estimate['cgt_basic'])))
+            print("%s%-35s %13s" % (
+                Fore.WHITE, "Capital Gains Tax (Higher rate):",
+                self.format_value(cgains.estimate['cgt_higher'])))
+
+            if cgains.estimate['allowance_used']:
+                print("%s*%s of the tax-free allowance (%s) used" % (
+                    Fore.YELLOW,
+                    self.format_value(cgains.estimate['allowance_used']),
+                    self.format_value(cgains.estimate['allowance'])))
 
     def income(self, tax_year):
         income = self.tax_report[tax_year]['Income']
 
-        log.info("--INCOME--")
-        header = "%s %s %s %s %s %s" % ("Asset".ljust(self.MAX_SYMBOL_LEN),
-                                        "Date".ljust(10),
-                                        "Income Type".ljust(28),
-                                        "Quantity".rjust(25),
-                                        "Amount".rjust(13),
-                                        "Fees".rjust(13))
-        log.info(header)
-
+        print("\n%sIncome\n" % Fore.CYAN)
+        header = "%s %-10s %-28s %-25s %13s %13s" % ('Asset'.ljust(self.MAX_SYMBOL_LEN),
+                                                     'Date',
+                                                     'Income Type',
+                                                     'Quantity',
+                                                     'Amount',
+                                                     'Fees')
+        print("%s%s" % (Fore.YELLOW, header))
         for asset in sorted(income.assets):
+            events = quantity = amount = fees = 0
             for te in income.assets[asset]:
-                log.info("%s %s %s %s %s %s",
-                         te.asset.ljust(self.MAX_SYMBOL_LEN),
-                         self.format_date(te.date),
-                         te.type.ljust(28),
-                         self.format_quantity(te.quantity).rjust(25),
-                         self.format_value(te.amount).rjust(13),
-                         self.format_value(te.fees).rjust(13))
+                events += 1
+                quantity += te.quantity
+                amount += te.amount
+                fees += te.fees
+                print("%s%s %-10s %-28s %-25s %13s %13s" % (
+                    Fore.WHITE,
+                    te.asset.ljust(self.MAX_SYMBOL_LEN),
+                    self.format_date(te.date),
+                    te.type,
+                    self.format_quantity(te.quantity),
+                    self.format_value(te.amount),
+                    self.format_value(te.fees)))
 
-        log.info("%s %s %s %s %s",
-                 "Income Type".ljust(self.MAX_SYMBOL_LEN + 11),
-                 ' ' * 28,
-                 ' ' * 25,
-                 "Amount".rjust(13),
-                 "Fees".rjust(13))
+            if events > 1:
+                print("%s%s %-10s %-28s %-25s %13s %13s\n" % (
+                    Fore.YELLOW,
+                    'Total'.ljust(self.MAX_SYMBOL_LEN),
+                    '',
+                    '',
+                    self.format_quantity(quantity),
+                    self.format_value(amount),
+                    self.format_value(fees)))
+
+        print("%s%s %-28s %-25s %13s %13s" % (
+            Fore.YELLOW,
+            'Income Type'.ljust(self.MAX_SYMBOL_LEN + 11),
+            '',
+            '',
+            'Amount',
+            'Fees'))
 
         for i_type in sorted(income.type_totals):
-            log.info("%s %s %s %s %s",
-                     i_type.ljust(self.MAX_SYMBOL_LEN + 11),
-                     ' ' * 28,
-                     ' ' * 25,
-                     self.format_value(income.type_totals[i_type]['amount']).rjust(13),
-                     self.format_value(income.type_totals[i_type]['fees']).rjust(13))
+            print("%s%s %-28s %-25s %13s %13s" % (
+                Fore.WHITE,
+                i_type.ljust(self.MAX_SYMBOL_LEN + 11),
+                '',
+                '',
+                self.format_value(income.type_totals[i_type]['amount']),
+                self.format_value(income.type_totals[i_type]['fees'])))
 
-        log.info("%s", '-' * len(header))
-        log.info("%s %s %s %s %s",
-                 "Total".ljust(self.MAX_SYMBOL_LEN + 11),
-                 ' ' * 28,
-                 ' ' * 25,
-                 self.format_value(income.totals['amount']).rjust(13),
-                 self.format_value(income.totals['fees']).rjust(13))
+        print("%s%s" % (Fore.YELLOW, '_' * len(header)))
+        print("%s%s %-28s %-25s %13s %13s%s" % (
+            Fore.YELLOW+Style.BRIGHT,
+            'Total'.ljust(self.MAX_SYMBOL_LEN + 11),
+            '',
+            '',
+            self.format_value(income.totals['amount']),
+            self.format_value(income.totals['fees']),
+            Style.NORMAL))
 
     def price_data(self, tax_year):
-        log.info("--PRICE DATA %s/%s--", tax_year - 1, tax_year)
-        log.info("%s %s %s %s %s",
-                 "Asset".ljust(self.ASSET_WIDTH),
-                 "Data Source".ljust(16),
-                 "Date".ljust(10),
-                 "Price (GBP)".rjust(13),
-                 "Price (BTC)".rjust(25))
+        print("\n%sPrice Data - %d/%d\n" % (Fore.CYAN, tax_year - 1, tax_year))
+        print("%s%s %-16s %-10s  %13s %25s" % (
+            Fore.YELLOW,
+            'Asset'.ljust(self.ASSET_WIDTH+2),
+            'Data Source',
+            'Date',
+            'Price (GBP)',
+            'Price (BTC)'))
 
         if tax_year not in self.price_report:
             return
 
+        price_missing_flag = False
         for asset in sorted(self.price_report[tax_year]):
             for date in sorted(self.price_report[tax_year][asset]):
                 price_data = self.price_report[tax_year][asset][date]
                 if price_data['price_ccy'] is not None:
-                    log.info("1 %s %s %s %s %s",
-                             self.format_asset(asset, price_data['name']).ljust(self.ASSET_WIDTH),
-                             price_data['data_source'].ljust(16),
-                             self.format_date(date),
-                             self.format_value(price_data['price_ccy']).rjust(13),
-                             self.format_quantity(price_data['price_btc']).rjust(25))
+                    print("%s1 %s %-16s %-10s  %13s %25s" % (
+                        Fore.WHITE,
+                        self.format_asset(asset, price_data['name']).ljust(self.ASSET_WIDTH),
+                        price_data['data_source'],
+                        self.format_date(date),
+                        self.format_value(price_data['price_ccy']),
+                        self.format_quantity(price_data['price_btc'])))
                 else:
-                    log.info("1 %s %s %s %s",
-                             self.format_asset(asset, price_data['name']).ljust(self.ASSET_WIDTH),
-                             ' ' * 16,
-                             self.format_date(date),
-                             self.format_value(price_data['price_ccy']).rjust(13))
+                    price_missing_flag = True
+                    print("%s1 %s %-16s %-10s %s%13s %25s" % (
+                        Fore.WHITE,
+                        self.format_asset(asset, price_data['name']).ljust(self.ASSET_WIDTH),
+                        '',
+                        self.format_date(date),
+                        Fore.BLUE,
+                        'Not available*',
+                        ''))
+
+        if price_missing_flag:
+            print("%s*Price of %s used" % (Fore.BLUE, self.format_value(0)))
 
     def holdings(self):
-        log.info("==CURRENT HOLDINGS==")
-        header = "%s %s %s %s %s" % ("Asset".ljust(self.ASSET_WIDTH),
-                                     "Quantity".rjust(25),
-                                     "Cost + Fees".rjust(16),
-                                     "Value".rjust(16),
-                                     "Gain".rjust(16))
-        log.info(header)
-
+        print("\n%sCurrent Holdings\n" % Fore.CYAN)
+        header = "%s %25s %16s %16s %16s" % ('Asset'.ljust(self.ASSET_WIDTH),
+                                             'Quantity',
+                                             'Cost + Fees',
+                                             'Value',
+                                             'Gain')
+        print("%s%s" % (Fore.YELLOW, header))
         for h in sorted(self.holdings_report['holdings']):
             holding = self.holdings_report['holdings'][h]
             if holding['value'] is not None:
-                log.info("%s %s %s %s %s",
-                         self.format_asset(holding['asset'],
-                                           holding['name']).ljust(self.ASSET_WIDTH),
-                         self.format_quantity(holding['quantity']).rjust(25),
-                         self.format_value(holding['cost']).rjust(16),
-                         self.format_value(holding['value']).rjust(16),
-                         self.format_value(holding['gain']).rjust(16))
+                print("%s%s %25s %16s %16s %s%16s" % (
+                    Fore.WHITE,
+                    self.format_asset(holding['asset'],
+                                      holding['name']).ljust(self.ASSET_WIDTH),
+                    self.format_quantity(holding['quantity']),
+                    self.format_value(holding['cost']),
+                    self.format_value(holding['value']),
+                    Fore.RED if holding['gain'] < 0 else Fore.WHITE,
+                    self.format_value(holding['gain'])))
             else:
-                log.info("%s %s %s %s",
-                         self.format_asset(holding['asset'],
-                                           holding['name']).ljust(self.ASSET_WIDTH),
-                         self.format_quantity(holding['quantity']).rjust(25),
-                         self.format_value(holding['cost']).rjust(16),
-                         self.format_value(holding['value']).rjust(16))
+                print("%s%s %25s %16s %s%16s %16s" % (
+                    Fore.WHITE,
+                    self.format_asset(holding['asset'],
+                                      holding['name']).ljust(self.ASSET_WIDTH),
+                    self.format_quantity(holding['quantity']),
+                    self.format_value(holding['cost']),
+                    Fore.BLUE,
+                    'Not available',
+                    ''))
 
-        log.info("%s", '-' * len(header))
-        log.info("%s %s %s %s %s",
-                 "Total".ljust(self.ASSET_WIDTH),
-                 ' ' * 25,
-                 self.format_value(self.holdings_report['totals']['cost']).rjust(16),
-                 self.format_value(self.holdings_report['totals']['value']).rjust(16),
-                 self.format_value(self.holdings_report['totals']['gain']).rjust(16))
+        print("%s%s" % (Fore.YELLOW, '_' * len(header)))
+        print("%s%s %25s %16s %16s %s%16s" % (
+            Fore.YELLOW+Style.BRIGHT,
+            'Total'.ljust(self.ASSET_WIDTH),
+            '',
+            self.format_value(self.holdings_report['totals']['cost']),
+            self.format_value(self.holdings_report['totals']['value']),
+            Fore.RED if self.holdings_report['totals']['gain'] < 0 else Fore.YELLOW,
+            self.format_value(self.holdings_report['totals']['gain'])))
 
     @staticmethod
     def format_date(date):
@@ -321,12 +422,34 @@ class ReportLog(object):
 
     @staticmethod
     def format_value(value):
-        if value is not None:
-            return config.sym() + '{:0,.2f}'.format(value + 0)
-        return 'NOT AVAILABLE'
+        return config.sym() + '{:0,.2f}'.format(value + 0)
 
     @staticmethod
     def format_asset(asset, name):
         if name is not None:
-            return '{} ({})'.format(asset, name)
+            return "%s (%s)" % (asset, name)
         return asset
+
+class ProgressSpinner:
+    def __init__(self):
+        self.spinner = itertools.cycle(['-', '\\', '|', '/'])
+        self.busy = False
+
+    def do_spinner(self):
+        while self.busy:
+            sys.stdout.write(next(self.spinner))
+            sys.stdout.flush()
+            time.sleep(0.1)
+            sys.stdout.write('\b')
+            sys.stdout.flush()
+
+    def __enter__(self):
+        if sys.stdout.isatty():
+            self.busy = True
+            sys.stdout.write("%sgenerating PDF report%s:" % (Fore.CYAN, Fore.GREEN))
+            threading.Thread(target=self.do_spinner).start()
+
+    def __exit__(self, exc_type, exc_val, exc_traceback):
+        if sys.stdout.isatty():
+            self.busy = False
+            sys.stdout.write('\r')

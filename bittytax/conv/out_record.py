@@ -17,10 +17,10 @@ class TransactionOutRecord(object):
     TYPE_TRADE = TransactionRecord.TYPE_TRADE
 
     def __init__(self, t_type, timestamp,
-                 buy_quantity=None, buy_asset="", buy_value=None,
-                 sell_quantity=None, sell_asset="", sell_value=None,
-                 fee_quantity=None, fee_asset="", fee_value=None,
-                 wallet=""):
+                 buy_quantity=None, buy_asset='', buy_value=None,
+                 sell_quantity=None, sell_asset='', sell_value=None,
+                 fee_quantity=None, fee_asset='', fee_value=None,
+                 wallet=''):
 
         self.t_type = t_type
         self.buy_quantity = Decimal(buy_quantity) if buy_quantity is not None else None
@@ -38,6 +38,5 @@ class TransactionOutRecord(object):
     @staticmethod
     def format_quantity(quantity):
         if quantity is None:
-            return '-'
-
+            return ''
         return '{:0,f}'.format(quantity.normalize())
