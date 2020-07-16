@@ -124,8 +124,8 @@ class TaxCalculator(object):
                     s_remainder = s.split_sell(b.quantity)
                     self.sells_ordered.insert(sell_index + 1, s_remainder)
                     if config.args.debug:
-                        print("%smatch:  split: %s" % (Fore.YELLOW, s.__str__(quantity_bold=True)))
-                        print("%smatch:  split: %s" % (Fore.YELLOW, s_remainder))
+                        print("%smatch:   split: %s" % (Fore.YELLOW, s.__str__(quantity_bold=True)))
+                        print("%smatch:   split: %s" % (Fore.YELLOW, s_remainder))
                     pbar.total += 1
 
                 s.matched = b.matched = True
@@ -134,7 +134,7 @@ class TaxCalculator(object):
                                                  (s.fee_value or Decimal(0)))
                 self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
                 if config.args.debug:
-                    print("%smatch: %s" % (Fore.CYAN, tax_event))
+                    print("%smatch:   %s" % (Fore.CYAN, tax_event))
 
                 # Find next sell
                 sell_index += 1
@@ -236,7 +236,7 @@ class TaxCalculator(object):
                                              None, t, cost, fees + (t.fee_value or Decimal(0)))
             self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
             if config.args.debug:
-                print("%ssection104: %s" % (Fore.CYAN, tax_event))
+                print("%ssection104:   %s" % (Fore.CYAN, tax_event))
 
     def process_income(self):
         if config.args.debug:
@@ -348,7 +348,7 @@ class TaxEventCapitalGains(TaxEvent):
         return self.disposal_type
 
     def __str__(self):
-        return "disposal(%s) gain=%s (proceeds=%s - cost=%s - fees=%s)" % (
+        return "Disposal(%s) gain=%s (proceeds=%s - cost=%s - fees=%s)" % (
             self.disposal_type.lower(),
             config.sym() + '{:0,.2f}'.format(self.gain),
             config.sym() + '{:0,.2f}'.format(self.proceeds),

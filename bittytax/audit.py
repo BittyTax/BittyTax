@@ -51,7 +51,7 @@ class AuditRecords(object):
                     Fore.YELLOW,
                     asset,
                     Style.BRIGHT,
-                    self.totals[asset].normalize(),
+                    '{:0,f}'.format(self.totals[asset].normalize()),
                     Style.NORMAL))
 
     def _add_tokens(self, wallet, asset, quantity):
@@ -69,7 +69,7 @@ class AuditRecords(object):
         self.totals[asset] += quantity
 
         if config.args.debug:
-            print("%saudit: %s:%s=%s (+%s)" % (
+            print("%saudit:   %s:%s=%s (+%s)" % (
                 Fore.GREEN,
                 wallet,
                 asset,
@@ -91,7 +91,7 @@ class AuditRecords(object):
         self.totals[asset] -= quantity
 
         if config.args.debug:
-            print("%saudit: %s:%s=%s (-%s)" %(
+            print("%saudit:   %s:%s=%s (-%s)" %(
                 Fore.GREEN,
                 wallet,
                 asset,

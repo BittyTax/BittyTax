@@ -55,17 +55,17 @@ class TransactionHistory(object):
                 tr.buy.set_tid()
                 self.transactions.append(tr.buy)
                 if config.args.debug:
-                    print("%ssplit: %s" % (Fore.GREEN, tr.buy))
+                    print("%ssplit:   %s" % (Fore.GREEN, tr.buy))
             if tr.sell and tr.sell.asset not in config.fiat_list:
                 tr.sell.set_tid()
                 self.transactions.append(tr.sell)
                 if config.args.debug:
-                    print("%ssplit: %s" % (Fore.GREEN, tr.sell))
+                    print("%ssplit:   %s" % (Fore.GREEN, tr.sell))
             if tr.fee and tr.fee.asset not in config.fiat_list:
                 tr.fee.set_tid()
                 self.transactions.append(tr.fee)
                 if config.args.debug:
-                    print("%ssplit: %s" % (Fore.GREEN, tr.fee))
+                    print("%ssplit:   %s" % (Fore.GREEN, tr.fee))
 
         if config.args.debug:
             print("%ssplit: total transactions=%d" % (Fore.CYAN, len(self.transactions)))
@@ -164,8 +164,8 @@ class TransactionBase(object):
             return ''
         return '{:0,f}'.format(self.quantity.normalize())
 
-    def _format_match_status(self):
-        return " (matched)" if self.matched else ''
+    def _format_matched(self):
+        return '//' if self.matched else ''
 
     def _format_pooled(self, bold=False):
         if self.pooled:
@@ -284,7 +284,8 @@ class Buy(TransactionBase):
         return ''
 
     def __str__(self, pooled_bold=False, quantity_bold=False):
-        return "%s%s %s%s %s %s%s%s%s '%s' %s [TID:%s]%s%s" % (
+        return "%s%s%s %s%s %s %s%s%s%s '%s' %s [TID:%s]%s" % (
+            self._format_matched(),
             type(self).__name__.upper(),
             '*' if not self.acquisition else '',
             self.t_type,
@@ -297,8 +298,7 @@ class Buy(TransactionBase):
             self.wallet,
             self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
             self._format_tid(),
-            self._format_pooled(pooled_bold),
-            self._format_match_status())
+            self._format_pooled(pooled_bold))
 
 class Sell(TransactionBase):
     TYPE_WITHDRAWAL = TransactionRecord.TYPE_WITHDRAWAL
@@ -379,7 +379,8 @@ class Sell(TransactionBase):
         return ''
 
     def __str__(self, pooled_bold=False, quantity_bold=False):
-        return "%s%s %s%s %s %s%s%s%s '%s' %s [TID:%s]%s%s" % (
+        return "%s%s%s %s%s %s %s%s%s%s '%s' %s [TID:%s]%s" % (
+            self._format_matched(),
             type(self).__name__.upper(),
             '*' if not self.disposal else '',
             self.t_type,
@@ -392,5 +393,4 @@ class Sell(TransactionBase):
             self.wallet,
             self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
             self._format_tid(),
-            self._format_pooled(pooled_bold),
-            self._format_match_status())
+            self._format_pooled(pooled_bold))

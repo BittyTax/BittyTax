@@ -103,16 +103,18 @@ class ReportLog(object):
 
         print("%stax report output:" % Fore.WHITE)
         if config.args.taxyear:
-            if self.audit and not config.args.summary:
+            if not config.args.skipaudit and not config.args.summary:
                 self.audit()
 
             print("\n%sTax Year - %d/%d%s" % (
-                Fore.CYAN+Style.BRIGHT, config.args.taxyear - 1, config.args.taxyear), Style.NORMAL)
+                Fore.CYAN+Style.BRIGHT, config.args.taxyear - 1, config.args.taxyear, Style.NORMAL))
+            self.capital_gains(config.args.taxyear)
             if not config.args.summary:
                 self.income(config.args.taxyear)
+                print("\n%sAppendix%s" % (Fore.CYAN+Style.BRIGHT, Style.NORMAL))
                 self.price_data(config.args.taxyear)
         else:
-            if self.audit and not config.args.summary:
+            if not config.args.skipaudit and not config.args.summary:
                 self.audit()
 
             for tax_year in sorted(tax_report):
@@ -123,9 +125,10 @@ class ReportLog(object):
                     self.income(tax_year)
 
             if not config.args.summary:
-                print("\n%sAppendix" % Fore.CYAN)
+                print("\n%sAppendix%s" % (Fore.CYAN+Style.BRIGHT, Style.NORMAL))
                 for tax_year in sorted(tax_report):
                     self.price_data(tax_year)
+                    print('')
                 self.holdings()
 
     def audit(self):
@@ -328,7 +331,7 @@ class ReportLog(object):
             Style.NORMAL))
 
     def price_data(self, tax_year):
-        print("\n%sPrice Data - %d/%d\n" % (Fore.CYAN, tax_year - 1, tax_year))
+        print("%sPrice Data - %d/%d\n" % (Fore.CYAN, tax_year - 1, tax_year))
         print("%s%s %-16s %-10s  %13s %25s" % (
             Fore.YELLOW,
             'Asset'.ljust(self.ASSET_WIDTH+2),
@@ -367,7 +370,7 @@ class ReportLog(object):
             print("%s*Price of %s used" % (Fore.BLUE, self.format_value(0)))
 
     def holdings(self):
-        print("\n%sCurrent Holdings\n" % Fore.CYAN)
+        print("%sCurrent Holdings\n" % Fore.CYAN)
         header = "%s %25s %16s %16s %16s" % ('Asset'.ljust(self.ASSET_WIDTH),
                                              'Quantity',
                                              'Cost + Fees',
@@ -446,7 +449,7 @@ class ProgressSpinner:
     def __enter__(self):
         if sys.stdout.isatty():
             self.busy = True
-            sys.stdout.write("%sgenerating PDF report%s:" % (Fore.CYAN, Fore.GREEN))
+            sys.stdout.write("%sgenerating PDF report%s: " % (Fore.CYAN, Fore.GREEN))
             threading.Thread(target=self.do_spinner).start()
 
     def __exit__(self, exc_type, exc_val, exc_traceback):
