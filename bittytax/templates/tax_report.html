@@ -58,6 +58,7 @@
 
         {% if config.args.taxyear %}
             {% if audit and not config.args.summary %}
+                <h1>Audit</h1>
                 {% include "audit.html" %}
                 <div><pdf:nextpage /></div>
             {% endif %}
@@ -72,6 +73,7 @@
             {% endif %}
         {% else %}
             {% if audit and not config.args.summary %}
+                <h1>Audit</h1>
                 {% include "audit.html" %}
                 <div><pdf:nextpage /></div>
             {% endif %}
