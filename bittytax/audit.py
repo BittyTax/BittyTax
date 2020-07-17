@@ -1,22 +1,28 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
-
+import sys
 from decimal import Decimal
 
-from .config import config
+from colorama import Fore, Back, Style
+from tqdm import tqdm
 
-log = logging.getLogger()
+from .config import config
 
 class AuditRecords(object):
     def __init__(self, transaction_records):
         self.wallets = {}
         self.totals = {}
 
-        log.info("==AUDIT TRANSACTION RECORDS==")
-        for tr in transaction_records:
-            log.debug(tr)
+        if config.args.debug:
+            print("%saudit transaction records" % Fore.CYAN)
+
+        for tr in tqdm(transaction_records,
+                       unit='tr',
+                       desc="%saudit transaction records%s" % (Fore.CYAN, Fore.GREEN),
+                       disable=bool(config.args.debug or not sys.stdout.isatty())):
+            if config.args.debug:
+                print("%saudit: TR %s" % (Fore.MAGENTA, tr))
             if tr.buy:
                 self._add_tokens(tr.wallet, tr.buy.asset, tr.buy.quantity)
 
@@ -26,11 +32,26 @@ class AuditRecords(object):
             if tr.fee:
                 self._subtract_tokens(tr.wallet, tr.fee.asset, tr.fee.quantity)
 
-        log.debug("==TOTAL BALANCES==")
-        for asset in sorted(self.totals):
-            log.debug("%s=%s",
-                      asset,
-                      '{:0,f}'.format(self.totals[asset].normalize()))
+        if config.args.debug:
+            print("%saudit: final balances by wallet" % Fore.CYAN)
+            for wallet in sorted(self.wallets):
+                for asset in sorted(self.wallets[wallet]):
+                    print("%saudit: %s:%s=%s%s%s" % (
+                        Fore.YELLOW,
+                        wallet,
+                        asset,
+                        Style.BRIGHT,
+                        '{:0,f}'.format(self.wallets[wallet][asset].normalize()),
+                        Style.NORMAL))
+
+            print("%saudit: final balances by asset" % Fore.CYAN)
+            for asset in sorted(self.totals):
+                print("%saudit: %s=%s%s%s" % (
+                    Fore.YELLOW,
+                    asset,
+                    Style.BRIGHT,
+                    '{:0,f}'.format(self.totals[asset].normalize()),
+                    Style.NORMAL))
 
     def _add_tokens(self, wallet, asset, quantity):
         if wallet not in self.wallets:
@@ -46,11 +67,13 @@ class AuditRecords(object):
 
         self.totals[asset] += quantity
 
-        log.debug("%s:%s=%s (+%s)",
-                  wallet,
-                  asset,
-                  '{:0,f}'.format(self.wallets[wallet][asset].normalize()),
-                  '{:0,f}'.format(quantity.normalize()))
+        if config.args.debug:
+            print("%saudit:   %s:%s=%s (+%s)" % (
+                Fore.GREEN,
+                wallet,
+                asset,
+                '{:0,f}'.format(self.wallets[wallet][asset].normalize()),
+                '{:0,f}'.format(quantity.normalize())))
 
     def _subtract_tokens(self, wallet, asset, quantity):
         if wallet not in self.wallets:
@@ -66,14 +89,15 @@ class AuditRecords(object):
 
         self.totals[asset] -= quantity
 
-        log.debug("%s:%s=%s (-%s)",
-                  wallet,
-                  asset,
-                  '{:0,f}'.format(self.wallets[wallet][asset].normalize()),
-                  '{:0,f}'.format(quantity.normalize()))
+        if config.args.debug:
+            print("%saudit:   %s:%s=%s (-%s)" %(
+                Fore.GREEN,
+                wallet,
+                asset,
+                '{:0,f}'.format(self.wallets[wallet][asset].normalize()),
+                '{:0,f}'.format(quantity.normalize())))
 
         if self.wallets[wallet][asset] < 0 and asset not in config.fiat_list:
-            log.warning("Balance at %s:%s is negative %s",
-                        wallet,
-                        asset,
-                        '{:0,f}'.format(self.wallets[wallet][asset].normalize()))
+            tqdm.write("%sWARNING%s Balance at %s:%s is negative %s" % (
+                Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW,
+                wallet, asset, '{:0,f}'.format(self.wallets[wallet][asset].normalize())))

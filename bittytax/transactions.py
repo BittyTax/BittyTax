@@ -1,24 +1,31 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
+import sys
 import copy
 from decimal import Decimal
 
+from colorama import Fore, Style
+from tqdm import tqdm
+
 from .config import config
 from .record import TransactionRecord
-
-log = logging.getLogger()
 
 class TransactionHistory(object):
     def __init__(self, transaction_records, value_asset):
         self.value_asset = value_asset
         self.transactions = []
 
-        log.info("==SPLIT TRANSACTION RECORDS==")
+        if config.args.debug:
+            print("%ssplit transaction records" % Fore.CYAN)
 
-        for tr in transaction_records:
-            log.debug(tr)
+        for tr in tqdm(transaction_records,
+                       unit='tr',
+                       desc="%ssplit transaction records%s" % (Fore.CYAN, Fore.GREEN),
+                       disable=bool(config.args.debug or not sys.stdout.isatty())):
+            if config.args.debug:
+                print("%ssplit: TR %s" % (Fore.MAGENTA, tr))
+
             self.get_all_values(tr)
 
             # Attribute the fee value to the buy, the sell or both
@@ -46,17 +53,21 @@ class TransactionHistory(object):
             if tr.buy and tr.buy.asset not in config.fiat_list:
                 tr.buy.set_tid()
                 self.transactions.append(tr.buy)
-                log.debug(tr.buy)
+                if config.args.debug:
+                    print("%ssplit:   %s" % (Fore.GREEN, tr.buy))
             if tr.sell and tr.sell.asset not in config.fiat_list:
                 tr.sell.set_tid()
                 self.transactions.append(tr.sell)
-                log.debug(tr.sell)
+                if config.args.debug:
+                    print("%ssplit:   %s" % (Fore.GREEN, tr.sell))
             if tr.fee and tr.fee.asset not in config.fiat_list:
                 tr.fee.set_tid()
                 self.transactions.append(tr.fee)
-                log.debug(tr.fee)
+                if config.args.debug:
+                    print("%ssplit:   %s" % (Fore.GREEN, tr.fee))
 
-        log.info("Total transactions=%s", len(self.transactions))
+        if config.args.debug:
+            print("%ssplit: total transactions=%d" % (Fore.CYAN, len(self.transactions)))
 
     def get_all_values(self, tr):
         if tr.buy and tr.buy.acquisition and tr.buy.cost is None:
@@ -145,27 +156,30 @@ class TransactionBase(object):
         self.tid = self.t_record.set_tid()
 
     def _format_tid(self):
-        return str(self.tid[0]) + "." + str(self.tid[1])
+        return "%s.%s" % (self.tid[0], self.tid[1])
 
     def _format_quantity(self):
         if self.quantity is None:
-            return '-'
+            return ''
         return '{:0,f}'.format(self.quantity.normalize())
 
-    def _format_match_status(self):
-        return " (M)" if self.matched else ""
+    def _format_matched(self):
+        return '//' if self.matched else ''
 
-    def _format_pooled(self):
+    def _format_pooled(self, bold=False):
         if self.pooled:
-            return " [" + str(len(self.pooled)) + "]"
+            return " %s[%s]%s" % (
+                Style.BRIGHT if bold else '',
+                len(self.pooled),
+                Style.NORMAL if bold else '')
         return ''
 
     def _format_fee(self):
         if self.fee_value is not None:
-            if self.fee_fixed:
-                return ' + Fee=' + config.sym() + '{:0,.2f} {}'.format(self.fee_value, config.CCY)
-            else:
-                return ' + Fee=~' + config.sym() + '{:0,.2f} {}'.format(self.fee_value, config.CCY)
+            return " + fee=%s%s %s" % (
+                '' if self.fee_fixed else '~',
+                config.sym() + '{:0,.2f}'.format(self.fee_value),
+                config.CCY)
 
         return ''
 
@@ -258,39 +272,32 @@ class Buy(TransactionBase):
 
         remainder.quantity = remainder.quantity - sell_quantity
         remainder.set_tid()
-
-        log.debug("split: %s", self)
-        log.debug("split: %s", remainder)
-
         return remainder
 
     def _format_cost(self):
         if self.cost is not None:
-            if self.cost_fixed:
-                return ' (=' + config.sym() + '{:0,.2f} {})'.format(self.cost, config.CCY)
-            else:
-                return ' (~' + config.sym() + '{:0,.2f} {})'.format(self.cost, config.CCY)
+            return " (%s%s %s)" % (
+                '=' if self.cost_fixed else '~',
+                config.sym() + '{:0,.2f}'.format(self.cost),
+                config.CCY)
         return ''
 
-    def _format_acquisition(self):
-        if not self.acquisition:
-            return '*'
-        return ''
-
-    def __str__(self):
-        return "T-" + \
-               type(self).__name__ + \
-               self._format_acquisition() + " " + \
-               "[TID:" + self._format_tid() + "] " + \
-               self.t_type + ": " + \
-               self._format_quantity() + " " + \
-               self.asset + \
-               self._format_cost() + \
-               self._format_fee() + " '" + \
-               self.wallet + "' " + \
-               self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z') + \
-               self._format_pooled() + \
-               self._format_match_status()
+    def __str__(self, pooled_bold=False, quantity_bold=False):
+        return "%s%s%s %s%s %s %s%s%s%s '%s' %s [TID:%s]%s" % (
+            self._format_matched(),
+            type(self).__name__.upper(),
+            '*' if not self.acquisition else '',
+            self.t_type,
+            Style.BRIGHT if quantity_bold else '',
+            self._format_quantity(),
+            self.asset,
+            Style.NORMAL if quantity_bold else '',
+            self._format_cost(),
+            self._format_fee(),
+            self.wallet,
+            self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+            self._format_tid(),
+            self._format_pooled(pooled_bold))
 
 class Sell(TransactionBase):
     TYPE_WITHDRAWAL = TransactionRecord.TYPE_WITHDRAWAL
@@ -360,36 +367,29 @@ class Sell(TransactionBase):
 
         remainder.quantity = remainder.quantity - buy_quantity
         remainder.set_tid()
-
-        log.debug("split: %s", self)
-        log.debug("split: %s", remainder)
-
         return remainder
 
     def _format_proceeds(self):
         if self.proceeds is not None:
-            if self.proceeds_fixed:
-                return ' (=' + config.sym() + '{:0,.2f} {})'.format(self.proceeds, config.CCY)
-            else:
-                return ' (~' + config.sym() + '{:0,.2f} {})'.format(self.proceeds, config.CCY)
+            return " (%s%s %s)" % (
+                '=' if self.proceeds_fixed else '~',
+                config.sym() + '{:0,.2f}'.format(self.proceeds),
+                config.CCY)
         return ''
 
-    def _format_disposal(self):
-        if not self.disposal:
-            return '*'
-        return ''
-
-    def __str__(self):
-        return "T-" + \
-               type(self).__name__ + \
-               self._format_disposal() + " " + \
-               "[TID:" + self._format_tid() + "] " + \
-               self.t_type + ": " + \
-               self._format_quantity() + " " + \
-               self.asset + \
-               self._format_proceeds() + \
-               self._format_fee() + " '" + \
-               self.wallet + "' " + \
-               self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z') + \
-               self._format_pooled() + \
-               self._format_match_status()
+    def __str__(self, pooled_bold=False, quantity_bold=False):
+        return "%s%s%s %s%s %s %s%s%s%s '%s' %s [TID:%s]%s" % (
+            self._format_matched(),
+            type(self).__name__.upper(),
+            '*' if not self.disposal else '',
+            self.t_type,
+            Style.BRIGHT if quantity_bold else '',
+            self._format_quantity(),
+            self.asset,
+            Style.NORMAL if quantity_bold else '',
+            self._format_proceeds(),
+            self._format_fee(),
+            self.wallet,
+            self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+            self._format_tid(),
+            self._format_pooled(pooled_bold))

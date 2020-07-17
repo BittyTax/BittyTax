@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
 from decimal import Decimal
 
 from ..out_record import TransactionOutRecord
@@ -10,8 +9,6 @@ from ..exceptions import DataParserError, UnexpectedTypeError, \
                          MissingValueError, MissingComponentError
 
 WALLET = "Gatehub"
-
-log = logging.getLogger()
 
 def parse_gatehub(data_rows, parser):
     for data_row in data_rows:

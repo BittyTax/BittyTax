@@ -1,19 +1,17 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
 import csv
 import sys
 import io
 
+from colorama import Fore, Back
 import xlrd
 
 from ..config import config
 from .dataparser import DataParser
 from .datarow import DataRow
 from .exceptions import DataFormatUnrecognised
-
-log = logging.getLogger()
 
 class DataFile(object):
     FORMAT_EXCEL = 'Excel'
@@ -37,10 +35,11 @@ class DataFile(object):
 
         failures = [data_row for data_row in self.data_rows if data_row.failure is not None]
         if failures:
-            log.warning("Parser failure for %s file: %s", file_format, filename)
+            sys.stderr.write("%sWARNING%s Parser failure for %s file: %s\n" % (
+                Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, file_format, filename))
             for data_row in failures:
-                log.warning("Row[%s]: %s",
-                            parser.in_header_row_num + data_row.line_num, data_row.failure)
+                sys.stderr.write("%srow[%s]: %s\n" % (
+                    Fore.RED, parser.in_header_row_num + data_row.line_num, data_row.failure))
 
     def __eq__(self, other):
         return (self.parser.row_handler, self.parser.all_handler) == \
@@ -64,14 +63,16 @@ class DataFile(object):
     @classmethod
     def read_excel(cls, filename):
         workbook = xlrd.open_workbook(filename)
-        log.debug("EXCEL")
+        if config.args.debug:
+            sys.stderr.write("%sconv: EXCEL\n" % Fore.CYAN)
 
         sheet = workbook.sheet_by_index(0)
         reader = cls.get_cell_values(sheet.get_rows(), workbook)
         parser = cls.get_parser(reader)
 
         if parser is not None:
-            log.info("File: %s matched as \"%s\"", filename, parser.worksheet_name)
+            sys.stderr.write("%sfile: %s%s %smatched as %s\"%s\"\n" % (
+                Fore.WHITE, Fore.YELLOW, filename, Fore.WHITE, Fore.CYAN, parser.worksheet_name))
             data_file = DataFile(cls.FORMAT_EXCEL, filename, parser, reader)
             cls.consolidate_datafiles(data_file)
         else:
@@ -94,7 +95,10 @@ class DataFile(object):
             # repr is required to ensure no precision is lost
             value = repr(cell.value)
         else:
-            value = str(cell.value)
+            if sys.version_info[0] >= 3:
+                value = str(cell.value)
+            else:
+                value = cell.value.encode('utf-8')
 
         return value
 
@@ -102,7 +106,8 @@ class DataFile(object):
     def read_csv(cls, filename):
         with io.open(filename, newline='', encoding='utf-8-sig') as csv_file:
             for delimiter in cls.CSV_DELIMITERS:
-                log.debug("CSV, delimiter='%s'", delimiter)
+                if config.args.debug:
+                    sys.stderr.write("%sconv: CSV delimiter='%s'\n" % (Fore.CYAN, delimiter))
 
                 if sys.version_info[0] < 3:
                     # special handling required for utf-8 encoded csv files
@@ -112,7 +117,9 @@ class DataFile(object):
 
                 parser = cls.get_parser(reader)
                 if parser is not None:
-                    log.info("File: %s matched as \"%s\"", filename, parser.worksheet_name)
+                    sys.stderr.write("%sfile: %s%s %smatched as %s\"%s\"\n" % (
+                        Fore.WHITE, Fore.YELLOW, filename, Fore.WHITE,
+                        Fore.CYAN, parser.worksheet_name))
                     data_file = DataFile(cls.FORMAT_CSV, filename, parser, reader)
                     cls.consolidate_datafiles(data_file)
                     break

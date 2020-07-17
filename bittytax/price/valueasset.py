@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
 from decimal import Decimal
 from datetime import datetime
+
+from colorama import Fore, Back, Style
+from tqdm import tqdm
 
 from ..version import __version__
 from ..config import config
 from ..tax import which_tax_year
 from .pricedata import PriceData
-
-log = logging.getLogger()
 
 class ValueAsset(object):
     def __init__(self):
@@ -24,17 +24,24 @@ class ValueAsset(object):
         asset_price_ccy, _, _ = self.get_historical_price(asset, timestamp)
         if asset_price_ccy is not None:
             value = asset_price_ccy * quantity
-            log.debug("Price on %s, 1 %s=%s%s %s, %s %s=%s%s %s",
-                      timestamp.strftime('%Y-%m-%d'),
-                      asset,
-                      config.sym(), '{:0,.2f}'.format(asset_price_ccy), config.CCY,
-                      '{:0,f}'.format(quantity.normalize()),
-                      asset,
-                      config.sym(), '{:0,.2f}'.format(value), config.CCY)
+            if config.args.debug:
+                print("%sprice: %s, 1 %s=%s %s, %s %s=%s%s %s%s" % (
+                    Fore.YELLOW,
+                    timestamp.strftime('%Y-%m-%d'),
+                    asset,
+                    config.sym() + '{:0,.2f}'.format(asset_price_ccy),
+                    config.CCY,
+                    '{:0,f}'.format(quantity.normalize()),
+                    asset,
+                    Style.BRIGHT,
+                    config.sym() + '{:0,.2f}'.format(value),
+                    config.CCY,
+                    Style.NORMAL))
             return value, False
         else:
-            log.debug("Price at %s for %s is not available",
-                      timestamp.strftime('%Y-%m-%d'), asset)
+            tqdm.write("%sWARNING%s Price for %s on %s is not available, using price of %s" % (
+                Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW,
+                asset, timestamp.strftime('%Y-%m-%d'), config.sym() + '{:0,.2f}'.format(0)))
             return Decimal(0), False
 
     def get_current_value(self, asset, quantity):
@@ -48,24 +55,25 @@ class ValueAsset(object):
         asset_price_ccy = None
 
         if timestamp.date() >= datetime.now().date():
-            log.warning("Price for %s at %s, no historic price available, using latest price",
-                        asset, timestamp.strftime('%Y-%m-%d'))
+            tqdm.write("%sWARNING%s Price for %s on %s, no historic price available, "
+                       "using latest price" % (Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW,
+                                               asset, timestamp.strftime('%Y-%m-%d')))
             return self.get_latest_price(asset)
 
-        if asset == "BTC" or asset in config.fiat_list:
+        if asset == 'BTC' or asset in config.fiat_list:
             asset_price_ccy, name, data_source, url = self.price_data.get_historical(asset,
                                                                                      config.CCY,
                                                                                      timestamp)
             self.price_report_cache(asset, timestamp, name, data_source, url, asset_price_ccy)
         else:
-            btc_price_ccy, name, data_source, url = self.price_data.get_historical("BTC",
+            btc_price_ccy, name, data_source, url = self.price_data.get_historical('BTC',
                                                                                    config.CCY,
                                                                                    timestamp)
-            self.price_report_cache("BTC", timestamp, name, data_source, url, btc_price_ccy)
+            self.price_report_cache('BTC', timestamp, name, data_source, url, btc_price_ccy)
 
             if btc_price_ccy is not None:
                 asset_price_btc, name, data_source, url = self.price_data.get_historical(asset,
-                                                                                         "BTC",
+                                                                                         'BTC',
                                                                                          timestamp)
                 if asset_price_btc is not None:
                     asset_price_ccy = btc_price_ccy * asset_price_btc
@@ -78,13 +86,13 @@ class ValueAsset(object):
     def get_latest_price(self, asset):
         asset_price_ccy = None
 
-        if asset == "BTC" or asset in config.fiat_list:
+        if asset == 'BTC' or asset in config.fiat_list:
             asset_price_ccy, name, data_source = self.price_data.get_latest(asset, config.CCY)
         else:
-            btc_price_ccy, _, _ = self.price_data.get_latest("BTC", config.CCY)
+            btc_price_ccy, _, _ = self.price_data.get_latest('BTC', config.CCY)
 
             if btc_price_ccy is not None:
-                asset_price_btc, name, data_source = self.price_data.get_latest(asset, "BTC")
+                asset_price_btc, name, data_source = self.price_data.get_latest(asset, 'BTC')
                 if asset_price_btc is not None:
                     asset_price_ccy = btc_price_ccy * asset_price_btc
 

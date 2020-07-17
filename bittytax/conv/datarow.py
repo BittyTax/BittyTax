@@ -2,15 +2,12 @@
 # (c) Nano Nano Ltd 2019
 
 import datetime
-import logging
 
 from .parsers import *
 from ..config import config
 from .exceptions import UnknownCryptoassetError, DataParserError
 
 DEFAULT_TIMESTAMP = datetime.datetime(datetime.MINYEAR, 1, 1, tzinfo=config.TZ_UTC)
-
-log = logging.getLogger()
 
 class DataRow(object):
     def __init__(self, line_num, in_row):

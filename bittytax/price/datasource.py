@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
 import os
 import atexit
 import json
 from decimal import Decimal
 from datetime import datetime, timedelta
 
+from colorama import Fore, Back
 import dateutil.parser
 import requests
 
@@ -17,10 +17,8 @@ from ..config import config
 CRYPTOCOMPARE_MAX_DAYS = 2000
 COINPAPRIKA_MAX_DAYS = 5000
 
-log = logging.getLogger()
-
 class DataSourceBase(object):
-    USER_AGENT = 'BittyTax/v{}'.format(__version__)
+    USER_AGENT = 'BittyTax/v%s' % __version__
     TIME_OUT = 20
 
     def __init__(self):
@@ -28,7 +26,8 @@ class DataSourceBase(object):
         self.prices = self.load_prices()
 
         for pair in sorted(self.prices):
-            log.debug("PRICE DATA: %s (%s) loaded", self.name(), pair)
+            if config.args.debug:
+                print("%sprice: %s (%s) data cache loaded" % (Fore.YELLOW, self.name(), pair))
 
         atexit.register(self.dump_prices)
 
@@ -36,7 +35,9 @@ class DataSourceBase(object):
         return self.__class__.__name__
 
     def get_json(self, url):
-        log.debug(url)
+        if config.args.debug:
+            print("%sprice: GET %s" % (Fore.YELLOW, url))
+
         response = requests.get(url, headers={'User-Agent': self.USER_AGENT}, timeout=self.TIME_OUT)
 
         if response.status_code in [429, 502, 503, 504]:
@@ -65,14 +66,15 @@ class DataSourceBase(object):
 
     def load_prices(self):
         try:
-            with open(os.path.join(config.CACHE_DIR, self.name() + '.json'), "r") as price_cache:
+            with open(os.path.join(config.CACHE_DIR, self.name() + '.json'), 'r') as price_cache:
                 json_prices = json.load(price_cache)
                 return {pair: {date: {'price': self.str_to_decimal(price['price']),
                                       'url': price['url']}
                                for date, price in json_prices[pair].items()}
                         for pair in json_prices}
         except:
-            log.warning("Price data for %s cannot be loaded", self.name())
+            print("%sWARNING%s Data cached for %s could not be loaded" % (
+                Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, self.name()))
             return {}
 
     def dump_prices(self):
@@ -117,13 +119,13 @@ class ExchangeRatesAPI(DataSourceBase):
         self.assets = {c: 'Fiat' for c in currencies}
 
     def get_latest(self, asset, quote):
-        url = 'https://api.exchangeratesapi.io/latest?base={}&symbols={}'.format(asset, quote)
+        url = "https://api.exchangeratesapi.io/latest?base=%s&symbols=%s" % (asset, quote)
         json_resp = self.get_json(url)
         return Decimal(repr(json_resp['rates'][quote])) if quote in json_resp['rates'] else None
 
     def get_historical(self, asset, quote, timestamp):
-        url = 'https://api.exchangeratesapi.io/{}' \
-              '?base={}&symbols={}'.format(timestamp.strftime('%Y-%m-%d'), asset, quote)
+        url = "https://api.exchangeratesapi.io/%s?base=%s&symbols=%s" % (
+            timestamp.strftime('%Y-%m-%d'), asset, quote)
         json_resp = self.get_json(url)
         pair = self.pair(asset, quote)
         # Date returned in response might not be date requested due to weekends/holidays
@@ -148,14 +150,13 @@ class RatesAPI(DataSourceBase):
 
     def get_latest(self, asset, quote):
         json_resp = self.get_json(
-            'https://api.ratesapi.io/api/latest'
-            '?base={}&symbols={}'.format(asset, quote)
+            "https://api.ratesapi.io/api/latest?base=%s&symbols=%s" % (asset, quote)
         )
         return Decimal(repr(json_resp['rates'][quote])) if quote in json_resp['rates'] else None
 
     def get_historical(self, asset, quote, timestamp):
-        url = 'https://api.ratesapi.io/api/{}' \
-              '?base={}&symbols={}'.format(timestamp.strftime('%Y-%m-%d'), asset, quote)
+        url = "https://api.ratesapi.io/api/%s?base=%s&symbols=%s" % (
+            timestamp.strftime('%Y-%m-%d'), asset, quote)
         json_resp = self.get_json(url)
         pair = self.pair(asset, quote)
         # Date returned in response might not be date requested due to weekends/holidays
@@ -170,17 +171,17 @@ class RatesAPI(DataSourceBase):
 class CoinDesk(DataSourceBase):
     def __init__(self):
         super(CoinDesk, self).__init__()
-        self.assets = {"BTC": "Bitcoin"}
+        self.assets = {'BTC': 'Bitcoin'}
 
     def get_latest(self, _, quote):
-        json_resp = self.get_json('https://api.coindesk.com/v1/bpi/currentprice.json')
+        json_resp = self.get_json("https://api.coindesk.com/v1/bpi/currentprice.json")
         return Decimal(repr(json_resp['bpi'][quote]['rate_float'])) \
                 if quote in json_resp['bpi'] else None
 
     def get_historical(self, asset, quote, timestamp):
-        url = 'https://api.coindesk.com/v1/bpi/historical/close.json' \
-              '?start={}&end={}&currency={}'.format(timestamp.strftime('%Y-%m-%d'), \
-                                                    datetime.now().strftime('%Y-%m-%d'), quote)
+        url = "https://api.coindesk.com/v1/bpi/historical/close.json" \
+              "?start=%s&end=%s&currency=%s" % (
+                  timestamp.strftime('%Y-%m-%d'), datetime.now().strftime('%Y-%m-%d'), quote)
         json_resp = self.get_json(url)
         pair = self.pair(asset, quote)
         self.update_prices(pair,
@@ -192,21 +193,19 @@ class CoinDesk(DataSourceBase):
 class CryptoCompare(DataSourceBase):
     def __init__(self):
         super(CryptoCompare, self).__init__()
-        json_resp = self.get_json('https://min-api.cryptocompare.com/data/all/coinlist')
+        json_resp = self.get_json("https://min-api.cryptocompare.com/data/all/coinlist")
         self.assets = {c[1]['Symbol']: c[1]['CoinName'] for c in json_resp['Data'].items()}
 
     def get_latest(self, asset, quote):
-        json_resp = self.get_json(
-            'https://min-api.cryptocompare.com/data/price'
-            '?extraParams={}&fsym={}&tsyms={}'.format(self.USER_AGENT, asset, quote))
+        json_resp = self.get_json("https://min-api.cryptocompare.com/data/price" \
+            "?extraParams=%s&fsym=%s&tsyms=%s" % (self.USER_AGENT, asset, quote))
         return Decimal(repr(json_resp[quote])) if quote in json_resp else None
 
     def get_historical(self, asset, quote, timestamp):
-        url = 'https://min-api.cryptocompare.com/data/histoday' \
-              '?aggregate=1&extraParams={}' \
-              '&fsym={}&tsym={}&limit={}&tryConversion=false&toTs={}'.format(
+        url = "https://min-api.cryptocompare.com/data/histoday?aggregate=1&extraParams=%s" \
+              "&fsym=%s&tsym=%s&limit=%s&tryConversion=false&toTs=%d" % (
                   self.USER_AGENT, asset, quote, CRYPTOCOMPARE_MAX_DAYS,
-                  str(self.epoch_time(timestamp + timedelta(days=CRYPTOCOMPARE_MAX_DAYS))))
+                  self.epoch_time(timestamp + timedelta(days=CRYPTOCOMPARE_MAX_DAYS)))
 
         json_resp = self.get_json(url)
         pair = self.pair(asset, quote)
@@ -220,20 +219,19 @@ class CryptoCompare(DataSourceBase):
 class CoinGecko(DataSourceBase):
     def __init__(self):
         super(CoinGecko, self).__init__()
-        json_resp = self.get_json('https://api.coingecko.com/api/v3/coins/list')
+        json_resp = self.get_json("https://api.coingecko.com/api/v3/coins/list")
         self.assets = {c['symbol'].upper(): c['name'] for c in json_resp}
         self.ids = {c['symbol'].upper(): c['id'] for c in json_resp}
 
     def get_latest(self, asset, quote):
-        json_resp = self.get_json(
-            'https://api.coingecko.com/api/v3/coins/{}'
-            '?localization=false&community_data=false&developer_data=false'.format(self.ids[asset]))
+        json_resp = self.get_json("https://api.coingecko.com/api/v3/coins/%s" \
+            "?localization=false&community_data=false&developer_data=false" % self.ids[asset])
         return Decimal(repr(json_resp['market_data']['current_price'][quote.lower()])) \
                 if quote.lower() in json_resp['market_data']['current_price'] else None
 
     def get_historical(self, asset, quote, timestamp):
-        url = 'https://api.coingecko.com/api/v3/coins/{}/market_chart' \
-              '?vs_currency={}&days=max'.format(self.ids[asset], quote)
+        url = "https://api.coingecko.com/api/v3/coins/%s/market_chart?vs_currency=%s&days=max" % (
+            self.ids[asset], quote)
         json_resp = self.get_json(url)
         pair = self.pair(asset, quote)
         self.update_prices(pair,
@@ -246,14 +244,13 @@ class CoinGecko(DataSourceBase):
 class CoinPaprika(DataSourceBase):
     def __init__(self):
         super(CoinPaprika, self).__init__()
-        json_resp = self.get_json('https://api.coinpaprika.com/v1/coins')
+        json_resp = self.get_json("https://api.coinpaprika.com/v1/coins")
         self.assets = {c['symbol']: c['name'] for c in json_resp}
         self.ids = {c['symbol']: c['id'] for c in json_resp}
 
     def get_latest(self, asset, quote):
-        json_resp = self.get_json(
-            'https://api.coinpaprika.com/v1/tickers/{}'
-            '?quotes={}'.format(self.ids[asset], quote))
+        json_resp = self.get_json("https://api.coinpaprika.com/v1/tickers/%s?quotes=%s" % (
+            (self.ids[asset], quote)))
         return Decimal(repr(json_resp['quotes'][quote]['price'])) \
                 if quote in json_resp['quotes'] else None
 
@@ -262,10 +259,10 @@ class CoinPaprika(DataSourceBase):
         if quote not in ('USD', 'BTC'):
             return None
 
-        url = 'https://api.coinpaprika.com/v1/tickers/{}/historical' \
-              '?start={}&limit={}&quote={}&interval=1d'.format(self.ids[asset],
-                                                               timestamp.strftime('%Y-%m-%d'),
-                                                               COINPAPRIKA_MAX_DAYS, quote)
+        url = "https://api.coinpaprika.com/v1/tickers/%s/historical" \
+              "?start=%s&limit=%s&quote=%s&interval=1d" % (
+                  self.ids[asset], timestamp.strftime('%Y-%m-%d'), COINPAPRIKA_MAX_DAYS, quote)
+
         pair = self.pair(asset, quote)
         json_resp = self.get_json(url)
         pair = self.pair(asset, quote)

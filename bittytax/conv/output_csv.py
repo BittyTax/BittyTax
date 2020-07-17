@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
 import csv
 import sys
 import os
 
+from colorama import Fore, Back
+
 from ..config import config
 from .out_record import TransactionOutRecord
-
-log = logging.getLogger()
 
 class OutputBase(object):
     DEFAULT_FILENAME = 'BittyTax_Records'
@@ -55,10 +54,10 @@ class OutputBase(object):
 
         filepath, file_extension = os.path.splitext(filepath)
         i = 2
-        new_fname = '{}-{}{}'.format(filepath, i, file_extension)
+        new_fname = '%s-%s%s' % (filepath, i, file_extension)
         while os.path.exists(new_fname):
             i += 1
-            new_fname = '{}-{}{}'.format(filepath, i, file_extension)
+            new_fname = '%s-%s%s' % (filepath, i, file_extension)
 
         return new_fname
 
@@ -86,9 +85,10 @@ class OutputCsv(OutputBase):
                     writer = csv.writer(csv_file, lineterminator='\n')
                     self.write_rows(writer)
 
-            log.info("Output CSV file created: %s", filename)
+            sys.stderr.write("%soutput CSV file created: %s%s\n" % (
+                Fore.WHITE, Fore.YELLOW, filename))
         else:
-            if sys.version_info[0] >= 3:
+            if sys.version_info[0] > 3:
                 sys.stdout.reconfigure(encoding='utf-8')
 
             writer = csv.writer(sys.stdout, lineterminator='\n')
@@ -129,19 +129,21 @@ class OutputCsv(OutputBase):
     def _to_bittytax_csv(tr):
         if tr.buy_quantity is not None and \
                 len(tr.buy_quantity.normalize().as_tuple().digits) > OutputBase.EXCEL_PRECISION:
-            log.warning("%d-digit precision exceeded for Buy Quantity: %s",
-                        OutputBase.EXCEL_PRECISION, tr.format_quantity(tr.buy_quantity))
+            sys.stderr.write("%sWARNING%s %d-digit precision exceeded for Buy Quantity: %s%s\n" % (
+                Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, OutputBase.EXCEL_PRECISION,
+                tr.format_quantity(tr.buy_quantity), Fore.RESET))
 
         if tr.sell_quantity is not None and \
                 len(tr.sell_quantity.normalize().as_tuple().digits) > OutputBase.EXCEL_PRECISION:
-            log.warning("%d-digit precision exceeded for Sell Quantity: %s",
-                        OutputBase.EXCEL_PRECISION, tr.format_quantity(tr.sell_quantity))
+            sys.stderr.write("%sWARNING%s %d-digit precision exceeded for Sell Quantity: %s%s\n" % (
+                Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, OutputBase.EXCEL_PRECISION,
+                tr.format_quantity(tr.sell_quantity), Fore.RESET))
 
         if tr.fee_quantity is not None and \
                 len(tr.fee_quantity.normalize().as_tuple().digits) > OutputBase.EXCEL_PRECISION:
-            log.warning("%d-digit precision exceeded for Fee Quantity: %s",
-                        OutputBase.EXCEL_PRECISION, tr.format_quantity(tr.fee_quantity))
-
+            sys.stderr.write("%sWARNING%s %d-digit precision exceeded for Fee Quantity: %s%s\n" % (
+                Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, OutputBase.EXCEL_PRECISION,
+                tr.format_quantity(tr.fee_quantity), Fore.RESET))
         return [tr.t_type,
                 '{0:f}'.format(tr.buy_quantity.normalize()) if tr.buy_quantity is not None \
                                                             else None,
