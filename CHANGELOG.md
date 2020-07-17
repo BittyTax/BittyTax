@@ -1,8 +1,11 @@
 # Change Log
+## [Unreleased]
+### Added
+- Accounting tool: colour output and progress bars/spinner.
+- Conversion tool: colour output
+- Price tool: colour output
 ### Changed
 - Accounting tool: use latest price when a historic price is not available.
-
-## [Unreleased]
 
 ## Version [0.3.3] Beta (2020-06-29)
 ### Fixed
