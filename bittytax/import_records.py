@@ -32,7 +32,6 @@ class ImportRecords(object):
                 print("%simporting '%s' rows" % (Fore.CYAN, worksheet.name))
 
             for row_num in trange(0, worksheet.nrows,
-                                  file=sys.__stdout__,
                                   unit=' row',
                                   desc="%simporting '%s' rows%s" % (
                                       Fore.CYAN, worksheet.name, Fore.GREEN),
@@ -91,7 +90,6 @@ class ImportRecords(object):
             reader = csv.reader(import_file)
 
         for row in tqdm(reader,
-                        file=sys.__stdout__,
                         unit=' row',
                         desc="%simporting%s" % (Fore.CYAN, Fore.GREEN),
                         disable=bool(config.args.debug or not sys.stdout.isatty())):

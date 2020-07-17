@@ -51,7 +51,6 @@ class TaxCalculator(object):
             print("%spool same day transactions" % Fore.CYAN)
 
         for t in tqdm(transactions,
-                      file=sys.__stdout__,
                       unit='t',
                       desc="%spool same day%s" % (Fore.CYAN, Fore.GREEN),
                       disable=bool(config.args.debug or not sys.stdout.isatty())):
@@ -92,7 +91,6 @@ class TaxCalculator(object):
             print("%smatch %s transactions" % (Fore.CYAN, rule.lower()))
 
         pbar = tqdm(total=len(self.sells_ordered),
-                    file=sys.__stdout__,
                     unit='t',
                     desc="%smatch %s transactions%s" % (Fore.CYAN, rule.lower(), Fore.GREEN),
                     disable=bool(config.args.debug or not sys.stdout.isatty()))
@@ -181,7 +179,6 @@ class TaxCalculator(object):
             print("%sprocess unmatched transactions" % Fore.CYAN)
 
         for t in tqdm(unmatched_transactions,
-                      file=sys.__stdout__,
                       unit='t',
                       desc="%sprocess unmatched%s" % (Fore.CYAN, Fore.GREEN),
                       disable=bool(config.args.debug or not sys.stdout.isatty())):
@@ -243,7 +240,6 @@ class TaxCalculator(object):
             print("%sprocess income" % Fore.CYAN)
 
         for t in tqdm(self.transactions,
-                      file=sys.__stdout__,
                       unit='t',
                       desc="%sprocess income%s" % (Fore.CYAN, Fore.GREEN),
                       disable=bool(config.args.debug or not sys.stdout.isatty())):
@@ -282,7 +278,6 @@ class TaxCalculator(object):
             print("%scalculating holdings" % Fore.CYAN)
 
         for h in tqdm(self.holdings,
-                      file=sys.__stdout__,
                       unit='h',
                       desc="%scalculating holdings%s" % (Fore.CYAN, Fore.GREEN),
                       disable=bool(config.args.debug or not sys.stdout.isatty())):

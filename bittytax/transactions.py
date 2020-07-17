@@ -20,7 +20,6 @@ class TransactionHistory(object):
             print("%ssplit transaction records" % Fore.CYAN)
 
         for tr in tqdm(transaction_records,
-                       file=sys.__stdout__,
                        unit='tr',
                        desc="%ssplit transaction records%s" % (Fore.CYAN, Fore.GREEN),
                        disable=bool(config.args.debug or not sys.stdout.isatty())):
