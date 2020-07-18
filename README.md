@@ -287,16 +287,19 @@ Empty rows are allowed, and filtered out during the import.
 Each record is given a unique Transaction ID (TID), these are allocated in chronological order (using the timestamp) regardless of the file ordering.
 
 ```
-INFO -- : ==IMPORT TRANSACTION RECORDS FROM EXCEL FILE: example.xlsx ==
-DEBUG -- : 'Sheet1' Row[2]: ['Deposit', '870.0', 'GBP', '', '', '', '', '', '', '', 'LocalBitcoins', '2013-05-24T20:16:46 UTC'] TID:1
-DEBUG -- : 'Sheet1' Row[3]: ['Trade', '10.0', 'BTC', '', '870.0', 'GBP', '', '', '', '', 'LocalBitcoins', '2013-05-24T20:17:40 UTC'] TID:2
-DEBUG -- : 'Sheet1' Row[4]: ['Withdrawal', '', '', '', '10.0', 'BTC', '', '', '', '', 'LocalBitcoins', '2013-05-24T20:20:49 UTC'] TID:3
-DEBUG -- : 'Sheet1' Row[5]: ['Deposit', '10.0', 'BTC', '', '', '', '', '', '', '', 'Desktop wallet', '2013-05-24T21:20:49 BST'] TID:4
-DEBUG -- : 'Sheet1' Row[6]: ['Deposit', '2693.8', 'USD', '', '', '', '', '', '', '', 'Bitstamp', '2014-05-29T08:33:00 UTC'] TID:5
-DEBUG -- : 'Sheet1' Row[7]: ['Spend', '', '', '', '0.002435', 'BTC', '0.8', '', '', '', 'Desktop wallet', '2014-06-26T12:25:02 BST'] TID:6
-DEBUG -- : 'Sheet1' Row[8]: ['Gift-Sent', '', '', '', '0.02757', 'BTC', '', '', '', '', 'Desktop wallet', '2014-07-18T14:12:47 BST'] TID:7
-DEBUG -- : 'Sheet1' Row[9]: ['Trade', '0.41525742', 'BTC', '', '257.53', 'USD', '', '1.29', 'USD', '', 'Bitstamp', '2014-07-23T10:58:00 UTC'] TID:8
-DEBUG -- : 'Sheet1' Row[10]: ['Trade', '0.58474258', 'BTC', '', '362.63', 'USD', '', '1.82', 'USD', '', 'Bitstamp', '2014-07-23T10:58:00 UTC'] TID:9
+Excel file: example.xlsx
+importing 'Sheet1' rows
+...
+import: 'Sheet1' row[2] ['Deposit', '870.0', 'GBP', '', '', '', '', '', '', '', 'LocalBitcoins', '2013-05-24T20:16:46 UTC'] [TID:1]
+import: 'Sheet1' row[3] ['Trade', '10.0', 'BTC', '', '870.0', 'GBP', '', '', '', '', 'LocalBitcoins', '2013-05-24T20:17:40 UTC'] [TID:2]
+import: 'Sheet1' row[4] ['Withdrawal', '', '', '', '10.0', 'BTC', '', '', '', '', 'LocalBitcoins', '2013-05-24T20:20:49 UTC'] [TID:3]
+import: 'Sheet1' row[5] ['Deposit', '10.0', 'BTC', '', '', '', '', '', '', '', 'Desktop wallet', '2013-05-24T21:20:49 BST'] [TID:4]
+import: 'Sheet1' row[6] ['Deposit', '2693.8', 'USD', '', '', '', '', '', '', '', 'Bitstamp', '2014-05-29T08:33:00 UTC'] [TID:5]
+import: 'Sheet1' row[7] ['Spend', '', '', '', '0.002435', 'BTC', '0.8', '', '', '', 'Desktop wallet', '2014-06-26T12:25:02 BST'] [TID:6]
+import: 'Sheet1' row[8] ['Gift-Sent', '', '', '', '0.02757', 'BTC', '', '', '', '', 'Desktop wallet', '2014-07-18T14:12:47 BST'] [TID:7]
+import: 'Sheet1' row[9] ['Trade', '0.41525742', 'BTC', '', '257.53', 'USD', '', '1.29', 'USD', '', 'Bitstamp', '2014-07-23T10:58:00 UTC'] [TID:8]
+import: 'Sheet1' row[10] ['Trade', '0.58474258', 'BTC', '', '362.63', 'USD', '', '1.82', 'USD', '', 'Bitstamp', '2014-07-23T10:58:00 UTC'] [TID:9]
+
 ```
 #### Audit Transaction Records
 The audit function takes the transaction records, and then replays them in chronological order.
@@ -310,30 +313,30 @@ The log shows for each transaction record (TR) which wallets are being updated.
 The wallet name and asset name are shown with its balance, and in brackets the quantity that has been added or subtracted.
 
 ```console
-INFO -- : == AUDIT TRANSACTION RECORDS==
+audit transaction records
 ...
-DEBUG -- : TR [TID:8] Trade: 0.41525742 BTC <- 257.53 USD + Fee=1.29 USD 'Bitstamp' 2014-07-23T11:58:00 BST
-DEBUG -- : Bitstamp:BTC=0.41525742 (+0.41525742)
-DEBUG -- : Bitstamp:USD=2,436.27 (-257.53)
-DEBUG -- : Bitstamp:USD=2,434.98 (-1.29)
-DEBUG -- : TR [TID:9] Trade: 0.58474258 BTC <- 362.63 USD + Fee=1.82 USD 'Bitstamp' 2014-07-23T11:58:00 BST
-DEBUG -- : Bitstamp:BTC=1 (+0.58474258)
-DEBUG -- : Bitstamp:USD=2,072.35 (-362.63)
-DEBUG -- : Bitstamp:USD=2,070.53 (-1.82)
-DEBUG -- : TR [TID:10] Trade: 0.86 BTC <- 521.16 USD + Fee=2.51 USD 'Bitstamp' 2014-07-24T14:08:00 BST
-DEBUG -- : Bitstamp:BTC=1.86 (+0.86)
-DEBUG -- : Bitstamp:USD=1,549.37 (-521.16)
-DEBUG -- : Bitstamp:USD=1,546.86 (-2.51)
-DEBUG -- : TR [TID:11] Trade: 0.9 BTC <- 545.7 USD + Fee=2.51 USD 'Bitstamp' 2014-07-24T14:08:00 BST
-DEBUG -- : Bitstamp:BTC=2.76 (+0.9)
-DEBUG -- : Bitstamp:USD=1,001.16 (-545.7)
-DEBUG -- : Bitstamp:USD=998.65 (-2.51)
-DEBUG -- : TR [TID:12] Trade: 1.64037953 BTC <- 994.07 USD + Fee=4.58 USD 'Bitstamp' 2014-07-24T14:09:00 BST
-DEBUG -- : Bitstamp:BTC=4.40037953 (+1.64037953)
-DEBUG -- : Bitstamp:USD=4.58 (-994.07)
-DEBUG -- : Bitstamp:USD=0 (-4.58)
-DEBUG -- : TR [TID:13] Withdrawal: 4.40037953 BTC 'Bitstamp' 2014-07-24T22:01:00 BST
-DEBUG -- : Bitstamp:BTC=0 (-4.40037953)
+audit: TR Trade 0.41525742 BTC <- 257.53 USD + fee=1.29 USD 'Bitstamp' 2014-07-23T10:58:00 UTC [TID:8]
+audit:   Bitstamp:BTC=0.41525742 (+0.41525742)
+audit:   Bitstamp:USD=2,436.27 (-257.53)
+audit:   Bitstamp:USD=2,434.98 (-1.29)
+audit: TR Trade 0.58474258 BTC <- 362.63 USD + fee=1.82 USD 'Bitstamp' 2014-07-23T10:58:00 UTC [TID:9]
+audit:   Bitstamp:BTC=1 (+0.58474258)
+audit:   Bitstamp:USD=2,072.35 (-362.63)
+audit:   Bitstamp:USD=2,070.53 (-1.82)
+audit: TR Trade 0.86 BTC <- 521.16 USD + fee=2.51 USD 'Bitstamp' 2014-07-24T13:08:00 UTC [TID:10]
+audit:   Bitstamp:BTC=1.86 (+0.86)
+audit:   Bitstamp:USD=1,549.37 (-521.16)
+audit:   Bitstamp:USD=1,546.86 (-2.51)
+audit: TR Trade 0.9 BTC <- 545.7 USD + fee=2.51 USD 'Bitstamp' 2014-07-24T13:08:00 UTC [TID:11]
+audit:   Bitstamp:BTC=2.76 (+0.9)
+audit:   Bitstamp:USD=1,001.16 (-545.7)
+audit:   Bitstamp:USD=998.65 (-2.51)
+audit: TR Trade 1.64037953 BTC <- 994.07 USD + fee=4.58 USD 'Bitstamp' 2014-07-24T13:09:00 UTC [TID:12]
+audit:   Bitstamp:BTC=4.40037953 (+1.64037953)
+audit:   Bitstamp:USD=4.58 (-994.07)
+audit:   Bitstamp:USD=0 (-4.58)
+audit: TR Withdrawal 4.40037953 BTC 'Bitstamp' 2014-07-24T21:01:00 UTC [TID:13]
+audit:   Bitstamp:BTC=0 (-4.40037953)
 ```
 
 #### Split Transaction Records
@@ -365,22 +368,21 @@ Since `Deposit` and `Withdrawal` transactions are not taxable, any additional `S
 Non-taxable transactions are marked with `*` in the log and have no GBP valuation.
 
 ```console
-INFO -- : ==SPLIT TRANSACTION RECORDS==
+split transaction records
 ...
-DEBUG -- : TR [TID:2] Trade: 10 BTC <- 870 GBP 'LocalBitcoins' 2013-05-24T20:17:40 UTC
-DEBUG -- : T-Buy [TID:2.1] Trade: 10 BTC (=£870.00 GBP) 'LocalBitcoins' 2013-05-24T21:17:40 BST
+split: TR Trade 10 BTC <- 870 GBP 'LocalBitcoins' 2013-05-24T20:17:40 UTC [TID:2]
+split:   BUY Trade 10 BTC (=£870.00 GBP) 'LocalBitcoins' 2013-05-24T21:17:40 BST [TID:2.1]
 ...
-
-DEBUG -- : TR [TID:32] Withdrawal: 7.0002 BTC 'Desktop wallet' 2017-03-24T22:57:44 GMT
-DEBUG -- : T-Sell* [TID:32.1] Withdrawal: 7.0002 BTC 'Desktop wallet' 2017-03-24T22:57:44 GMT
-DEBUG -- : TR [TID:33] Deposit: 7 BTC 'Poloniex' 2017-03-24T22:57:44 UTC
-DEBUG -- : T-Buy* [TID:33.1] Deposit: 7 BTC 'Poloniex' 2017-03-24T22:57:44 GMT
-DEBUG -- : TR [TID:34] Trade: 1.00000013 ETH <- 0.03729998 BTC + Fee=0.0015 ETH 'Poloniex' 2017-04-12T19:38:26 UTC
-DEBUG -- : Price on 2017-04-12, 1 BTC=969.6202 GBP via CoinDesk (Bitcoin)
-DEBUG -- : Price on 2017-04-12, 1 BTC=£969.62 GBP, 0.03729998 BTC=£36.17 GBP
-DEBUG -- : T-Buy [TID:34.1] Trade: 1.00000013 ETH (~£36.17 GBP) + Fee=~£0.03 GBP 'Poloniex' 2017-04-12T20:38:26 BST
-DEBUG -- : T-Sell [TID:34.2] Trade: 0.03729998 BTC (~£36.17 GBP) + Fee=~£0.03 GBP 'Poloniex' 2017-04-12T20:38:26 BST
-DEBUG -- : T-Sell [TID:34.3] Spend: 0.0015 ETH (~£0.05 GBP) 'Poloniex' 2017-04-12T20:38:26 BST
+split: TR Withdrawal 7.0002 BTC 'Desktop wallet' 2017-03-24T22:57:44 GMT [TID:32]
+split:   SELL* Withdrawal 7.0002 BTC 'Desktop wallet' 2017-03-24T22:57:44 GMT [TID:32.1]
+split: TR Deposit 7 BTC 'Poloniex' 2017-03-24T22:57:44 UTC [TID:33]
+split:   BUY* Deposit 7 BTC 'Poloniex' 2017-03-24T22:57:44 GMT [TID:33.1]
+split: TR Trade 1.00000013 ETH <- 0.03729998 BTC + fee=0.0015 ETH 'Poloniex' 2017-04-12T19:38:26 UTC [TID:34]
+price: 2017-04-12, 1 BTC=969.6202 GBP via CoinDesk (Bitcoin)
+price: 2017-04-12, 1 BTC=£969.62 GBP, 0.03729998 BTC=£36.17 GBP
+split:   BUY Trade 1.00000013 ETH (~£36.17 GBP) + fee=~£0.03 GBP 'Poloniex' 2017-04-12T20:38:26 BST [TID:34.1]
+split:   SELL Trade 0.03729998 BTC (~£36.17 GBP) + fee=~£0.03 GBP 'Poloniex' 2017-04-12T20:38:26 BST [TID:34.2]
+split:   SELL Spend 0.0015 ETH (~£0.05 GBP) 'Poloniex' 2017-04-12T20:38:26 BST [TID:34.3]
 
 ```
 
@@ -394,15 +396,15 @@ Only taxable transactions (i.e. acquisitions and disposals) are included within 
 Pooled transactions are indicated by a transaction count at the end, shown within square brackets. The transactions contained within the pool are then indented below it.
 
 ```console
-INFO -- : ==POOL SAME DAY TRANSACTIONS==
-DEBUG -- : T-Buy [TID:2.1] Trade: 10 BTC (=£870.00 GBP) 'LocalBitcoins' 2013-05-24T21:17:40 BST
-DEBUG -- : T-Sell* [TID:3.1] Withdrawal: 10 BTC 'LocalBitcoins' 2013-05-24T21:20:49 BST
-DEBUG -- : T-Buy* [TID:4.1] Deposit: 10 BTC 'Desktop wallet' 2013-05-24T21:20:49 BST
-DEBUG -- : T-Sell [TID:6.1] Spend: 0.002435 BTC (=£0.80 GBP) 'Desktop wallet' 2014-06-26T12:25:02 BST
-DEBUG -- : T-Sell [TID:7.1] Gift-Sent: 0.02757 BTC (~£10.14 GBP) 'Desktop wallet' 2014-07-18T14:12:47 BST
-DEBUG -- : T-Buy [TID:8.1] Trade: 1 BTC (~£364.22 GBP) + Fee=~£1.83 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [2]
-DEBUG -- :   T-Buy [TID:8.1] Trade: 0.41525742 BTC (~£151.25 GBP) + Fee=~£0.76 GBP 'Bitstamp' 2014-07-23T11:58:00 BST
-DEBUG -- :   T-Buy [TID:9.1] Trade: 0.58474258 BTC (~£212.97 GBP) + Fee=~£1.07 GBP 'Bitstamp' 2014-07-23T11:58:00 BST
+pool same day transactions
+pool: BUY Trade 10 BTC (=£870.00 GBP) 'LocalBitcoins' 2013-05-24T21:17:40 BST [TID:2.1]
+pool: SELL* Withdrawal 10 BTC 'LocalBitcoins' 2013-05-24T21:20:49 BST [TID:3.1]
+pool: BUY* Deposit 10 BTC 'Desktop wallet' 2013-05-24T21:20:49 BST [TID:4.1]
+pool: SELL Spend 0.002435 BTC (=£0.80 GBP) 'Desktop wallet' 2014-06-26T12:25:02 BST [TID:6.1]
+pool: SELL Gift-Sent 0.02757 BTC (~£10.14 GBP) 'Desktop wallet' 2014-07-18T14:12:47 BST [TID:7.1]
+pool: BUY Trade 1 BTC (~£364.22 GBP) + fee=~£1.83 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [TID:8.1] [2]
+pool:   (BUY Trade 0.41525742 BTC (~£151.25 GBP) + fee=~£0.76 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [TID:8.1])
+pool:   (BUY Trade 0.58474258 BTC (~£212.97 GBP) + fee=~£1.07 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [TID:9.1])
 ```
 
 ### Match "same day" Rule
@@ -419,13 +421,13 @@ In the log, you can see which transactions have been "*Same Day*" matched, and w
 New transactions created by a split are allocated the next TID in sequence.
 
 ```console
-INFO -- : ==MATCH SAME DAY TRANSACTIONS==
+match same day transactions
 ...
-DEBUG -- : T-Sell [TID:34.3] Spend: 0.62207655 ETH (~£22.50 GBP) 'Poloniex' 2017-04-12T20:38:26 BST [4]
-DEBUG -- : T-Buy [TID:34.1] Trade: 249.23062521 ETH (~£9,012.71 GBP) + Fee=~£11.25 GBP 'Poloniex' 2017-04-12T20:38:26 BST [4] (Same Day)
-DEBUG -- : split: T-Buy [TID:34.4] Trade: 0.62207655 ETH (~£22.50 GBP) + Fee=~£0.03 GBP 'Poloniex' 2017-04-12T20:38:26 BST [4]
-DEBUG -- : split: T-Buy [TID:34.5] Trade: 248.60854866 ETH (~£8,990.22 GBP) + Fee=~£11.22 GBP 'Poloniex' 2017-04-12T20:38:26 BST [4]
-DEBUG -- :  Gain=£-0.03 (proceeds=£22.50 - cost=£22.50 - fees=£0.03)
+match: SELL Spend 0.62207655 ETH (~£22.50 GBP) 'Poloniex' 2017-04-12T20:38:26 BST [TID:34.3] [4]
+match: BUY Trade 249.23062521 ETH (~£9,012.71 GBP) + fee=~£11.25 GBP 'Poloniex' 2017-04-12T20:38:26 BST [TID:34.1] [4]
+match:   split: BUY Trade 0.62207655 ETH (~£22.50 GBP) + fee=~£0.03 GBP 'Poloniex' 2017-04-12T20:38:26 BST [TID:34.4] [4]
+match:   split: BUY Trade 248.60854866 ETH (~£8,990.22 GBP) + fee=~£11.22 GBP 'Poloniex' 2017-04-12T20:38:26 BST [TID:34.5] [4]
+match:   Disposal(same day) gain=£-0.03 (proceeds=£22.50 - cost=£22.50 - fees=£0.03)
 ```
 
 ### Match "bed and breakfast" Rule
@@ -443,13 +445,13 @@ Any matched "same day" transactions are excluded from this rule.
 In the log, you can see which transactions have been matched by the "*Bed & Breakfast*" rule. The number of days between the sell and buyback are also shown.   
 
 ```console
-INFO -- : ==MATCH BED & BREAKFAST TRANSACTIONS==
+match bed & breakfast transactions
 ...
-DEBUG -- : T-Sell [TID:18.2] Trade: 5.32294271 BTC (~£1,474.69 GBP) + Fee=~£1.47 GBP 'Poloniex' 2016-01-27T22:09:19 GMT [5]
-DEBUG -- : T-Buy [TID:23.5] Trade: 5.54195456 BTC (~£1,471.32 GBP) + Fee=~£1.47 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [9] (Bed & Breakfast, 2 days)
-DEBUG -- : split: T-Buy [TID:23.6] Trade: 5.32294271 BTC (~£1,413.17 GBP) + Fee=~£1.41 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [9]
-DEBUG -- : split: T-Buy [TID:23.7] Trade: 0.21901185 BTC (~£58.14 GBP) + Fee=~£0.06 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [9]
-DEBUG -- :  Gain=£58.63 (proceeds=£1,474.69 - cost=£1,413.17 - fees=£2.89)
+match: SELL Trade 5.32294271 BTC (~£1,474.69 GBP) + fee=~£1.47 GBP 'Poloniex' 2016-01-27T22:09:19 GMT [TID:18.2] [5]
+match: BUY Trade 5.54195456 BTC (~£1,471.32 GBP) + fee=~£1.47 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [TID:23.5] [9]
+match:   split: BUY Trade 5.32294271 BTC (~£1,413.17 GBP) + fee=~£1.41 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [TID:23.6] [9]
+match:   split: BUY Trade 0.21901185 BTC (~£58.14 GBP) + fee=~£0.06 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [TID:23.7] [9]
+match:   Disposal(bed & breakfast) gain=£58.63 (proceeds=£1,474.69 - cost=£1,413.17 - fees=£2.89)
 ```
 
 ### Process Unmatched (Section 104)
@@ -471,17 +473,17 @@ For non-taxable transactions such as `Withdrawal` and `Deposit`, the tokens are 
 
 In the log, before the Section 104 calculations, the updated transactions are listed for clarity. This includes any new "split" transactions which have been added by the matching function.
 
-Transactions which have been matched, and so excluded from the Section 104 holding, are denoted with (M) at the end.
+Transactions which have been matched, and so excluded from the Section 104 holding, are denoted with // at the start.
 ```console
-DEBUG -- : ==UPDATED TRANSACTIONS==
-DEBUG -- : T-Buy [TID:2.1] Trade: 10 BTC (=£870.00 GBP) 'LocalBitcoins' 2013-05-24T21:17:40 BST
-DEBUG -- : T-Sell* [TID:3.1] Withdrawal: 10 BTC 'LocalBitcoins' 2013-05-24T21:20:49 BST
-DEBUG -- : T-Buy* [TID:4.1] Deposit: 10 BTC 'Desktop wallet' 2013-05-24T21:20:49 BST
-DEBUG -- : T-Sell [TID:6.1] Spend: 0.002435 BTC (=£0.80 GBP) 'Desktop wallet' 2014-06-26T12:25:02 BST (M)
-DEBUG -- : T-Sell [TID:7.1] Gift-Sent: 0.02757 BTC (~£10.14 GBP) 'Desktop wallet' 2014-07-18T14:12:47 BST (M)
-DEBUG -- : T-Buy [TID:8.2] Trade: 0.002435 BTC (~£0.89 GBP) + Fee=~£0.00 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [2] (M)
-DEBUG -- : T-Buy [TID:8.4] Trade: 0.02757 BTC (~£10.04 GBP) + Fee=~£0.05 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [2] (M)
-DEBUG -- : T-Buy [TID:8.5] Trade: 0.969995 BTC (~£353.29 GBP) + Fee=~£1.77 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [2]
+updated transactions
+updated: BUY Trade 10 BTC (=£870.00 GBP) 'LocalBitcoins' 2013-05-24T21:17:40 BST [TID:2.1]
+updated: SELL* Withdrawal 10 BTC 'LocalBitcoins' 2013-05-24T21:20:49 BST [TID:3.1]
+updated: BUY* Deposit 10 BTC 'Desktop wallet' 2013-05-24T21:20:49 BST [TID:4.1]
+updated: //SELL Spend 0.002435 BTC (=£0.80 GBP) 'Desktop wallet' 2014-06-26T12:25:02 BST [TID:6.1]
+updated: //SELL Gift-Sent 0.02757 BTC (~£10.14 GBP) 'Desktop wallet' 2014-07-18T14:12:47 BST [TID:7.1]
+updated: //BUY Trade 0.002435 BTC (~£0.89 GBP) + fee=~£0.00 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [TID:8.2] [2]
+updated: //BUY Trade 0.02757 BTC (~£10.04 GBP) + fee=~£0.05 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [TID:8.4] [2]
+updated: BUY Trade 0.969995 BTC (~£353.29 GBP) + fee=~£1.77 GBP 'Bitstamp' 2014-07-23T11:58:00 BST [TID:8.5] [2]
 ```
 
 As the unmatched transactions are processed, the impact it has on the individual holding is shown in the log.
@@ -489,13 +491,13 @@ As the unmatched transactions are processed, the impact it has on the individual
 When a disposal takes place, the gain calculation is then shown below. 
 
 ```console
-INFO -- : ==PROCESS UNMATCHED TRANSACTIONS==
+process unmatched transactions
 ...
-DEBUG -- : T-Buy [TID:18.5] Trade: 843.00981977 ETH (~£1,471.74 GBP) + Fee=~£1.47 GBP 'Poloniex' 2016-01-27T22:04:21 GMT [5]
-DEBUG -- : ETH=843.00981977 (+843.00981977) cost=£1,471.74 GBP (+£1,471.74 GBP) fees=£1.47 GBP (+£1.47 GBP)
-DEBUG -- : T-Sell [TID:23.2] Trade: 843.00981977 ETH (~£1,474.27 GBP) + Fee=~£1.47 GBP 'Poloniex' 2016-01-29T14:12:31 GMT [9] (Disposal)
-DEBUG -- : ETH=0 (-843.00981977) cost=£0.00 GBP (-£1,471.74 GBP) fees=£0.00 GBP (-£1.47 GBP)
-DEBUG -- :  Gain=£-0.42 (proceeds=£1,474.27 - cost=£1,471.74 - fees=£2.95)
+section104: BUY Trade 843.00981977 ETH (~£1,471.74 GBP) + fee=~£1.47 GBP 'Poloniex' 2016-01-27T22:04:21 GMT [TID:18.5] [5]
+section104:   ETH=843.00981977 (+843.00981977) cost=£1,471.74 GBP (+£1,471.74 GBP) fees=£1.47 GBP (+£1.47 GBP}
+section104: SELL Trade 843.00981977 ETH (~£1,474.27 GBP) + fee=~£1.47 GBP 'Poloniex' 2016-01-29T14:12:31 GMT [TID:23.2] [9]
+section104:   ETH=0 (-843.00981977) cost=£0.00 GBP (-£1,471.74 GBP) fees=£0.00 GBP (-£1.47 GBP}
+section104:   Disposal(section 104) gain=£-0.42 (proceeds=£1,474.27 - cost=£1,471.74 - fees=£2.95)
 ```
 
 ### Process Income
@@ -636,7 +638,7 @@ If the lookup is successful not only will the price be displayed in the terminal
 
 ```console
 $ bittytax_price ETH
-INFO -- : 1 ETH=£124.93 GBP via CryptoCompare (Ethereum)
+1 ETH=£185.51 GBP via CryptoCompare (Ethereum)
 ```
 
 Since there is no standardisation of cryptoasset symbols, it's possible that the same symbol has two different meanings across different data sources. For example, BTCP is Bitcoin Private on CryptoCompare but Bitcoin Pro on CoinGecko.
@@ -651,8 +653,8 @@ Another useful function of the price tool is to calculate the historic price of 
 
 ```console
 $ bittytax_price BTC 2014-06-24 -q 0.002435
-INFO -- : 1 BTC=£338.59 GBP via CoinDesk (Bitcoin)
-INFO -- : 0.002435 BTC=£0.82 GBP
+1 BTC=£338.59 GBP via CoinDesk (Bitcoin)
+0.002435 BTC=£0.82 GBP
 ```
 
 ### Notes:

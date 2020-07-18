@@ -1,9 +1,11 @@
 # Change Log
 ## [Unreleased]
+
+## Version [0.4.0] Beta (2020-07-18)
 ### Added
 - Accounting tool: colour output and progress bars/spinner.
-- Conversion tool: colour output
-- Price tool: colour output
+- Conversion tool: colour output.
+- Price tool: colour output.
 ### Changed
 - Accounting tool: use latest price when a historic price is not available.
 
@@ -123,7 +125,8 @@ This is the initial beta release. Although it has been throughly tested, it's po
 - Exchange data files supported: Bitstamp, Bittrex, ChangeTip, Circle, Coinbase, Coinbase Pro, Coinfloor, Cryptopia, Cryptsy, Gatehub, OKEx, Poloniex, TradeSatoshi, Uphold.
 - Explorer data files supported: Etherscan.
 
-[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/BittyTax/BittyTax/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/BittyTax/BittyTax/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/BittyTax/BittyTax/compare/v0.3.0...v0.3.2
 [0.3.0]: https://github.com/BittyTax/BittyTax/compare/v0.2.1...v0.3.0
