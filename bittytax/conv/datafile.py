@@ -38,8 +38,10 @@ class DataFile(object):
             sys.stderr.write("%sWARNING%s Parser failure for %s file: %s\n" % (
                 Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, file_format, filename))
             for data_row in failures:
-                sys.stderr.write("%srow[%s]: %s\n" % (
-                    Fore.RED, parser.in_header_row_num + data_row.line_num, data_row.failure))
+                sys.stderr.write("%srow[%s] [%s]\n" % (
+                    Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row))
+                sys.stderr.write("%sERROR%s %s\n" % (
+                    Back.RED+Fore.BLACK, Back.RESET+Fore.RED, data_row.failure))
 
     def __eq__(self, other):
         return (self.parser.row_handler, self.parser.all_handler) == \

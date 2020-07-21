@@ -2,6 +2,9 @@
 ## [Unreleased]
 ### Added
 - Conversion tool: added parser for Interactive Investor stocks and shares.
+### Changed
+- Conversion tool: colour highlight element in row for parser failures.
+- Accounting tool: colour highlight element in row for import failures.
 
 ## Version [0.4.0] Beta (2020-07-18)
 ### Added

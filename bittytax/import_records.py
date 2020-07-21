@@ -356,13 +356,20 @@ class TransactionRow(object):
             tid_str = ''
 
         if self.worksheet_name:
-            return "'%s' row[%s] [%s]%s" % (
-                self.worksheet_name,
-                self.row_num,
-                '\'{0}\''.format('\', \''.join(self.row)),
-                tid_str)
+            worksheet_str = "'%s' " % self.worksheet_name
+        else:
+            worksheet_str = ''
 
-        return "row[%s] [%s]%s" % (
+        if self.failure is not None:
+            row_str = ', '.join(["%s'%s'%s" % (Back.RED, data, Back.RESET)
+                                 if self.failure.col_num == num
+                                 else "'%s'" % data
+                                 for num, data in enumerate(self.row)])
+        else:
+            row_str = "'%s'" % '\', \''.join(self.row)
+
+        return "%srow[%s] [%s]%s" % (
+            worksheet_str,
             self.row_num,
-            '\'{0}\''.format('\', \''.join(self.row)),
+            row_str,
             tid_str)

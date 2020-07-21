@@ -3,6 +3,8 @@
 
 import datetime
 
+from colorama import Back
+
 from .parsers import *
 from ..config import config
 from .exceptions import UnknownCryptoassetError, DataParserError
@@ -35,3 +37,11 @@ class DataRow(object):
     @staticmethod
     def parse_all(data_rows, parser):
         parser.all_handler(data_rows, parser)
+
+    def __str__(self):
+        if self.failure is not None:
+            return ', '.join(["%s'%s'%s" % (Back.RED, data, Back.RESET)
+                              if self.failure.col_num == num
+                              else "'%s'" % data
+                              for num, data in enumerate(self.in_row)])
+        return "'%s'" % '\', \''.join(self.in_row)
