@@ -15,6 +15,7 @@ from . import etherscan
 from . import gatehub
 from . import handcash
 from . import hitbtc
+from . import ii
 from . import kucoin
 from . import ledgerlive
 from . import okex

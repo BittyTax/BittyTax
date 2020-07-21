@@ -1,5 +1,7 @@
 # Change Log
 ## [Unreleased]
+### Added
+- Conversion tool: added parser for Interactive Investor stocks and shares.
 
 ## Version [0.4.0] Beta (2020-07-18)
 ### Added
