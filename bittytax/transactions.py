@@ -92,12 +92,20 @@ class TransactionHistory(object):
         if tr.fee and tr.fee.disposal and tr.fee.proceeds is None:
             if tr.fee.asset not in config.fiat_list:
                 if tr.buy and tr.buy.asset == tr.fee.asset:
-                    price = tr.buy.cost / tr.buy.quantity if tr.buy.cost else Decimal(0)
-                    tr.fee.proceeds = tr.fee.quantity * price
+                    if tr.buy.cost and tr.buy.quantity:
+                        price = tr.buy.cost / tr.buy.quantity
+                        tr.fee.proceeds = tr.fee.quantity * price
+                    else:
+                        tr.fee.proceeds = Decimal(0)
+
                     tr.fee.proceeds_fixed = tr.buy.cost_fixed
                 elif tr.sell and tr.sell.asset == tr.fee.asset:
-                    price = tr.sell.proceeds / tr.sell.quantity if tr.sell.proceeds else Decimal(0)
-                    tr.fee.proceeds = tr.fee.quantity * price
+                    if tr.sell.proceeds and tr.sell.quantity:
+                        price = tr.sell.proceeds / tr.sell.quantity
+                        tr.fee.proceeds = tr.fee.quantity * price
+                    else:
+                        tr.fee.proceeds = Decimal(0)
+
                     tr.fee.proceeds_fixed = tr.sell.proceeds_fixed
                 else:
                     # Must be a 3rd cryptoasset
