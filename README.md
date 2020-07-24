@@ -348,7 +348,7 @@ Valuations are calculated via one of the historic price date sources, see [Price
 
 Note that `Deposit` and `Withdrawal` transactions are not taxable events so no valuation is required.
 
-In the log, any transaction buys (T-Buy) or sells (T-Sell) that are created by the split are shown below the transaction record (TR). These transactions have unique TIDs allocated sequentially based on the parent transaction ID, i.e. (34.1, 34.2, 34.3, etc).
+In the log, any transaction buys (BUY) or sells (SELL) that are created by the split are shown below the transaction record (TR). These transactions have unique TIDs allocated sequentially based on the parent transaction ID, i.e. (34.1, 34.2, 34.3, etc).
 
 If historic price data has been used for the valuation, it is indicated by the `~` symbol, fixed values are show as `=`.
 
@@ -393,7 +393,7 @@ Tokens of the same cryptoasset acquired on the same day are pooled together into
 
 Only taxable transactions (i.e. acquisitions and disposals) are included within these pools.
 
-Pooled transactions are indicated by a transaction count at the end, shown within square brackets. The transactions contained within the pool are then indented below it.
+Pooled transactions are indicated by a transaction count at the end, shown within square brackets. The transactions contained within the pool are then indented below it, and shown with brackets.
 
 ```console
 pool same day transactions
@@ -416,7 +416,7 @@ If the buy and sell quantities do not match, the transaction with the larger qua
 
 This allows a gain or a loss to be calculated for the matching transactions, taking into consideration the combined fees. The transaction containing the remainder is then carried forward, and used in further tax calculations.
 
-In the log, you can see which transactions have been "*Same Day*" matched, and where a buy or sell has been split.  
+In the log, you can see which transactions have been "*same day*" matched, and where a buy or sell has been split.
 
 New transactions created by a split are allocated the next TID in sequence.
 
@@ -442,7 +442,7 @@ Transactions are sorted by timestamp, and matched in chronological order.
 
 Any matched "same day" transactions are excluded from this rule.
 
-In the log, you can see which transactions have been matched by the "*Bed & Breakfast*" rule. The number of days between the sell and buyback are also shown.   
+In the log, you can see which transactions have been matched by the "*bed & breakfast*" rule. The number of days between the sell and buyback are also shown.
 
 ```console
 match bed & breakfast transactions
