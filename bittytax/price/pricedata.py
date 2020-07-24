@@ -90,7 +90,7 @@ class PriceData(object):
         return price, name, data_source
 
     def get_historical(self, asset, quote, timestamp):
-        price = name = data_source = None
+        price = name = data_source = url = None
         for data_source in self.data_source_priority(asset):
             price, name, url = self.get_historical_ds(data_source, asset, quote, timestamp)
             if price is not None:

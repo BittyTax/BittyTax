@@ -2,6 +2,7 @@
 ## [Unreleased]
 ### Fixed
 - Prevent a division by zero when calculating the fee proceeds.
+- Exception UnboundLocalError: local variable 'url' referenced before assignment.
 ### Added
 - Conversion tool: added parser for Interactive Investor stocks and shares.
 ### Changed
