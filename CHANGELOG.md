@@ -3,6 +3,7 @@
 ### Fixed
 - Prevent a division by zero when calculating the fee proceeds.
 - Exception UnboundLocalError: local variable 'url' referenced before assignment.
+- Tax year end was excluding 5th April.
 ### Added
 - Conversion tool: added parser for Interactive Investor stocks and shares.
 ### Changed
