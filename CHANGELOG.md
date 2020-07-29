@@ -1,5 +1,7 @@
 # Change Log
 ## [Unreleased]
+### Added
+- Conversion tool: added parser for CoinTracking.info accounting data.
 
 ## Version [0.4.1] Beta (2020-07-25)
 ### Fixed
