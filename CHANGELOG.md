@@ -1,6 +1,57 @@
 # Change Log
-
 ## [Unreleased]
+
+## Version [0.4.1] Beta (2020-07-25)
+### Fixed
+- Prevent a division by zero when calculating the fee proceeds.
+- Exception UnboundLocalError: local variable 'url' referenced before assignment.
+- Tax year end was excluding 5th April.
+### Added
+- Conversion tool: added parser for Interactive Investor stocks and shares.
+### Changed
+- Conversion tool: colour highlight element in row for parser failures.
+- Accounting tool: colour highlight element in row for import failures.
+
+## Version [0.4.0] Beta (2020-07-18)
+### Added
+- Accounting tool: colour output and progress bars/spinner.
+- Conversion tool: colour output.
+- Price tool: colour output.
+### Changed
+- Accounting tool: use latest price when a historic price is not available.
+
+## Version [0.3.3] Beta (2020-06-29)
+### Fixed
+- Exception if transaction records input file contains less than the expected 12 columns. ([#5](https://github.com/BittyTax/BittyTax/issues/5))
+- Historic or fixed fee indicator is incorrect when transaction is pooled. ([#7](https://github.com/BittyTax/BittyTax/issues/7))
+- Tax-free allowance for 2021 missing. ([#13](https://github.com/BittyTax/BittyTax/issues/13))
+- Circle Parser: added "fork" transaction type. ([#11](https://github.com/BittyTax/BittyTax/issues/11))
+- Trezor Parser: wallets without labelling. ([#10](https://github.com/BittyTax/BittyTax/issues/10))
+- Bitfinex Parser: calculations rounded to 8 decimal places. ([#14](https://github.com/BittyTax/BittyTax/issues/14))
+- Conversion tool: python2 raised exception if file format was unrecognised or file missing. ([#9](https://github.com/BittyTax/BittyTax/issues/9))
+- Accounting tool: handle exception if input file is missing. ([#15](https://github.com/BittyTax/BittyTax/issues/15))
+- Accounting tool: python2 handle utf-8 characters in Excel file.
+### Added
+- Conversion tool: added parser for HandCash wallet.
+### Changed
+- Trezor Parser: fees are now included separately.
+
+## Version [0.3.2] Beta (2020-04-11)
+### Fixed
+- Missing packages in setup.py.
+
+## Version [0.3.0] Beta (2020-04-11)
+### Fixed
+- Proceeds 4x warning was missing from PDF.
+### Added
+- Conversion tool: Improved exception handling.
+- Accounting tool: Identify if asset values are fixed or from historic price data.
+- Accounting tool: PDF report output.
+### Changed
+- Accounting tool: Timestamps normalized to local time only for Buy/Sell transactions.
+- Accounting tool: Made fees optional for Buy/Sell transactions.
+
+## Version [0.2.1] Beta (2020-03-07)
 ### Fixed
 - Tax summary: Gains in the year should exclude losses.
 - Bittrex parser: Adjust quantity for partially filled orders.
@@ -85,7 +136,13 @@ This is the initial beta release. Although it has been throughly tested, it's po
 - Exchange data files supported: Bitstamp, Bittrex, ChangeTip, Circle, Coinbase, Coinbase Pro, Coinfloor, Cryptopia, Cryptsy, Gatehub, OKEx, Poloniex, TradeSatoshi, Uphold.
 - Explorer data files supported: Etherscan.
 
-[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/BittyTax/BittyTax/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/BittyTax/BittyTax/compare/v0.3.3...v0.4.0
+[0.3.3]: https://github.com/BittyTax/BittyTax/compare/v0.3.2...v0.3.3
+[0.3.2]: https://github.com/BittyTax/BittyTax/compare/v0.3.0...v0.3.2
+[0.3.0]: https://github.com/BittyTax/BittyTax/compare/v0.2.1...v0.3.0
+[0.2.1]: https://github.com/BittyTax/BittyTax/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/BittyTax/BittyTax/compare/v0.1.4...v0.2.0
 [0.1.4]: https://github.com/BittyTax/BittyTax/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/BittyTax/BittyTax/compare/v0.1.2...v0.1.3

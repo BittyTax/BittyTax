@@ -2,15 +2,14 @@
 # (c) Nano Nano Ltd 2019
 
 import datetime
-import logging
+
+from colorama import Back
 
 from .parsers import *
 from ..config import config
 from .exceptions import UnknownCryptoassetError, DataParserError
 
 DEFAULT_TIMESTAMP = datetime.datetime(datetime.MINYEAR, 1, 1, tzinfo=config.TZ_UTC)
-
-log = logging.getLogger()
 
 class DataRow(object):
     def __init__(self, line_num, in_row):
@@ -38,3 +37,11 @@ class DataRow(object):
     @staticmethod
     def parse_all(data_rows, parser):
         parser.all_handler(data_rows, parser)
+
+    def __str__(self):
+        if self.failure is not None:
+            return ', '.join(["%s'%s'%s" % (Back.RED, data, Back.RESET)
+                              if self.failure.col_num == num
+                              else "'%s'" % data
+                              for num, data in enumerate(self.in_row)])
+        return "'%s'" % '\', \''.join(self.in_row)

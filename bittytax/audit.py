@@ -1,75 +1,103 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
+import sys
+from decimal import Decimal
+
+from colorama import Fore, Back, Style
+from tqdm import tqdm
 
 from .config import config
 
-log = logging.getLogger()
+class AuditRecords(object):
+    def __init__(self, transaction_records):
+        self.wallets = {}
+        self.totals = {}
 
-class Wallet(object):
-    wallets = {}
+        if config.args.debug:
+            print("%saudit transaction records" % Fore.CYAN)
 
-    @classmethod
-    def add_tokens(cls, wallet, asset, quantity):
-        if (wallet, asset) not in cls.wallets:
-            cls.wallets[(wallet, asset)] = Wallet(wallet, asset)
+        for tr in tqdm(transaction_records,
+                       unit='tr',
+                       desc="%saudit transaction records%s" % (Fore.CYAN, Fore.GREEN),
+                       disable=bool(config.args.debug or not sys.stdout.isatty())):
+            if config.args.debug:
+                print("%saudit: TR %s" % (Fore.MAGENTA, tr))
+            if tr.buy:
+                self._add_tokens(tr.wallet, tr.buy.asset, tr.buy.quantity)
 
-        cls.wallets[(wallet, asset)].add(quantity)
+            if tr.sell:
+                self._subtract_tokens(tr.wallet, tr.sell.asset, tr.sell.quantity)
 
-    @classmethod
-    def subtract_tokens(cls, wallet, asset, quantity):
-        if (wallet, asset) not in cls.wallets:
-            cls.wallets[(wallet, asset)] = Wallet(wallet, asset)
+            if tr.fee:
+                self._subtract_tokens(tr.wallet, tr.fee.asset, tr.fee.quantity)
 
-        cls.wallets[(wallet, asset)].subtract(quantity)
+        if config.args.debug:
+            print("%saudit: final balances by wallet" % Fore.CYAN)
+            for wallet in sorted(self.wallets):
+                for asset in sorted(self.wallets[wallet]):
+                    print("%saudit: %s:%s=%s%s%s" % (
+                        Fore.YELLOW,
+                        wallet,
+                        asset,
+                        Style.BRIGHT,
+                        '{:0,f}'.format(self.wallets[wallet][asset].normalize()),
+                        Style.NORMAL))
 
-    def __init__(self, wallet, asset):
-        self.wallet = wallet
-        self.asset = asset
-        self.balance = 0
+            print("%saudit: final balances by asset" % Fore.CYAN)
+            for asset in sorted(self.totals):
+                print("%saudit: %s=%s%s%s" % (
+                    Fore.YELLOW,
+                    asset,
+                    Style.BRIGHT,
+                    '{:0,f}'.format(self.totals[asset].normalize()),
+                    Style.NORMAL))
 
-    def _format_balance(self):
-        return '{:0,f}'.format(self.balance.normalize())
+    def _add_tokens(self, wallet, asset, quantity):
+        if wallet not in self.wallets:
+            self.wallets[wallet] = {}
 
-    def _format_wallet_name(self):
-        return self.wallet + ":" + self.asset
+        if asset not in self.wallets[wallet]:
+            self.wallets[wallet][asset] = Decimal(0)
 
-    def add(self, quantity):
-        self.balance += quantity
-        log.debug("%s=%s (+%s)",
-                  self._format_wallet_name(),
-                  self._format_balance(),
-                  '{:0,f}'.format(quantity.normalize()))
+        self.wallets[wallet][asset] += quantity
 
-    def subtract(self, quantity):
-        self.balance -= quantity
-        log.debug("%s=%s (-%s)",
-                  self._format_wallet_name(),
-                  self._format_balance(),
-                  '{:0,f}'.format(quantity.normalize()))
+        if asset not in self.totals:
+            self.totals[asset] = Decimal(0)
 
-        if self.balance < 0 and self.asset not in config.fiat_list:
-            log.warning("Balance at %s is negative %s",
-                        self._format_wallet_name(),
-                        self._format_balance())
+        self.totals[asset] += quantity
 
-    def __str__(self):
-        return self._format_wallet_name() + "=" + self._format_balance()
+        if config.args.debug:
+            print("%saudit:   %s:%s=%s (+%s)" % (
+                Fore.GREEN,
+                wallet,
+                asset,
+                '{:0,f}'.format(self.wallets[wallet][asset].normalize()),
+                '{:0,f}'.format(quantity.normalize())))
 
-def audit_records(transaction_records):
-    log.debug("==FULL AUDIT TRANSACTION RECORDS==")
-    for tr in transaction_records:
-        log.debug(tr)
-        if tr.buy:
-            Wallet.add_tokens(tr.wallet, tr.buy.asset, tr.buy.quantity)
+    def _subtract_tokens(self, wallet, asset, quantity):
+        if wallet not in self.wallets:
+            self.wallets[wallet] = {}
 
-        if tr.sell:
-            Wallet.subtract_tokens(tr.wallet, tr.sell.asset, tr.sell.quantity)
+        if asset not in self.wallets[wallet]:
+            self.wallets[wallet][asset] = Decimal(0)
 
-        if tr.fee:
-            Wallet.subtract_tokens(tr.wallet, tr.fee.asset, tr.fee.quantity)
+        self.wallets[wallet][asset] -= quantity
 
-    log.info("==FINAL AUDIT BALANCES==")
-    for w in sorted(Wallet.wallets):
-        log.info(Wallet.wallets[w])
+        if asset not in self.totals:
+            self.totals[asset] = Decimal(0)
+
+        self.totals[asset] -= quantity
+
+        if config.args.debug:
+            print("%saudit:   %s:%s=%s (-%s)" %(
+                Fore.GREEN,
+                wallet,
+                asset,
+                '{:0,f}'.format(self.wallets[wallet][asset].normalize()),
+                '{:0,f}'.format(quantity.normalize())))
+
+        if self.wallets[wallet][asset] < 0 and asset not in config.fiat_list:
+            tqdm.write("%sWARNING%s Balance at %s:%s is negative %s" % (
+                Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW,
+                wallet, asset, '{:0,f}'.format(self.wallets[wallet][asset].normalize())))

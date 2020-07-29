@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
 import datetime
+import sys
 
+from colorama import Fore
 import dateutil.parser
 import dateutil.tz
 
@@ -11,14 +12,12 @@ from ..config import config
 
 TERM_WIDTH = 69
 
-log = logging.getLogger()
-
 class DataParser(object):
-    TYPE_WALLET = "Wallets"
-    TYPE_EXCHANGE = "Exchanges"
-    TYPE_EXPLORER = "Explorers"
-    TYPE_SHARES = "Stocks & Shares"
-    TYPE_ACCOUNTING = "Accounting"
+    TYPE_WALLET = 'Wallets'
+    TYPE_EXCHANGE = 'Exchanges'
+    TYPE_EXPLORER = 'Explorers'
+    TYPE_ACCOUNTING = 'Accounting'
+    TYPE_SHARES = 'Stocks & Shares'
 
     LIST_ORDER = (TYPE_WALLET, TYPE_EXCHANGE, TYPE_EXPLORER, TYPE_ACCOUNTING, TYPE_SHARES)
 
@@ -80,7 +79,10 @@ class DataParser(object):
 
     @classmethod
     def match_header(cls, row, row_num):
-        log.debug("Row[%s] TRY: %s", row_num+1, cls.format_row(row))
+        if config.args.debug:
+            sys.stderr.write("%sconv: row[%s] TRY: %s\n" % (
+                Fore.YELLOW, row_num+1, cls.format_row(row)))
+
         parsers_reduced = [p for p in cls.parsers if len(p.header) == len(row)]
         for parser in parsers_reduced:
             match = False
@@ -95,20 +97,22 @@ class DataParser(object):
                     break
 
             if match:
-                log.debug("Row[%s] MATCHED: %s '%s'",
-                          row_num+1, cls.format_row(parser.header), parser.name)
+                if config.args.debug:
+                    sys.stderr.write("%sconv: row[%s] MATCHED: %s as '%s'\n" % (
+                        Fore.CYAN, row_num+1, cls.format_row(parser.header), parser.name))
                 parser.in_header = row
                 parser.in_header_row_num = row_num + 1
                 return parser
             else:
-                log.debug("Row[%s] NO MATCH: %s '%s'",
-                          row_num+1, cls.format_row(parser.header), parser.name)
+                if config.args.debug:
+                    sys.stderr.write("%sconv: row[%s] NO MATCH: %s '%s'\n" % (
+                        Fore.BLUE, row_num+1, cls.format_row(parser.header), parser.name))
 
         raise KeyError
 
     @classmethod
     def format_parsers(cls):
-        txt = ""
+        txt = ''
         for p_type in cls.LIST_ORDER:
             txt += ' ' * 2 + p_type + ':\n'
             prev_name = None
@@ -130,6 +134,6 @@ class DataParser(object):
             elif col is None:
                 row_out.append('*')
             else:
-                row_out.append('\'{}\''.format(col))
+                row_out.append('\'%s\'' %col)
 
         return '[' + ', '.join(row_out) + ']'

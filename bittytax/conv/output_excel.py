@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
 import sys
 import platform
 import re
 
+from colorama import Fore
 import xlsxwriter
 from xlsxwriter.utility import xl_rowcol_to_cell
 
@@ -14,9 +14,7 @@ from ..config import config
 from .out_record import TransactionOutRecord
 from .output_csv import OutputBase
 
-log = logging.getLogger()
-
-if platform.system() == "Darwin":
+if platform.system() == 'Darwin':
     # Default size for MacOS
     FONT_SIZE = 12
 else:
@@ -35,7 +33,7 @@ class OutputExcel(OutputBase):
         self.workbook = xlsxwriter.Workbook(self.filename)
         self.workbook.set_size(1800, 1200)
         self.workbook.set_properties({'title': self.TITLE,
-                                      'author': '{} {}'.format(progname, __version__),
+                                      'author': '%s v%s' % (progname, __version__),
                                       'comments': self.PROJECT_URL})
 
         self.format_out_header = self.workbook.add_format({'font_size': FONT_SIZE,
@@ -81,7 +79,8 @@ class OutputExcel(OutputBase):
             worksheet.autofit()
 
         self.workbook.close()
-        log.info("Output EXCEL file created: %s", self.filename)
+        sys.stderr.write("%soutput EXCEL file created: %s%s\n" % (
+            Fore.WHITE, Fore.YELLOW, self.filename))
 
 class Worksheet(object):
     BUY_LIST = (TransactionOutRecord.TYPE_DEPOSIT,
@@ -94,6 +93,7 @@ class Worksheet(object):
                  TransactionOutRecord.TYPE_GIFT_SENT,
                  TransactionOutRecord.TYPE_CHARITY_SENT)
     SHEETNAME_MAX_LEN = 31
+    MAX_COL_WIDTH = 30
 
     names = {}
 
@@ -125,11 +125,11 @@ class Worksheet(object):
             sheet_name = name
         else:
             self.names[name.lower()] += 1
-            sheet_name = '{}({})'.format(name, self.names[name.lower()])
+            sheet_name = '%s(%s)' % (name, self.names[name.lower()])
             if len(sheet_name) > self.SHEETNAME_MAX_LEN:
-                sheet_name = '{}({})'.format(name[:len(name) -
-                                                  (len(sheet_name) - self.SHEETNAME_MAX_LEN)],
-                                             self.names[name.lower()])
+                sheet_name = '%s(%s)' % (name[:len(name) - (len(sheet_name)
+                                                            - self.SHEETNAME_MAX_LEN)],
+                                         self.names[name.lower()])
 
         return sheet_name
 
@@ -224,6 +224,9 @@ class Worksheet(object):
         self._autofit_calc(col_num, len(self.output.DATE_FORMAT))
 
     def _autofit_calc(self, col_num, width):
+        if width > self.MAX_COL_WIDTH:
+            width = self.MAX_COL_WIDTH
+
         if col_num in self.col_width:
             if width > self.col_width[col_num]:
                 self.col_width[col_num] = width

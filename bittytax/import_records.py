@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
 import sys
 import csv
 from decimal import Decimal, InvalidOperation
 
+from colorama import Fore, Back
+from tqdm import tqdm, trange
 import dateutil.parser
 import xlrd
 
@@ -16,32 +17,47 @@ from .exceptions import TransactionParserError, UnexpectedTransactionTypeError, 
                         TimestampParserError, DataValueError, MissingDataError, \
                         UnexpectedDataError
 
-log = logging.getLogger()
-
 class ImportRecords(object):
     def __init__(self):
         self.t_rows = []
+        self.success_cnt = 0
+        self.failure_cnt = 0
 
     def import_excel(self, filename):
         workbook = xlrd.open_workbook(filename)
-        log.info("==IMPORT TRANSACTION RECORDS FROM EXCEL FILE: %s ==", filename)
+        print("%sExcel file: %s%s" % (Fore.WHITE, Fore.YELLOW, filename))
 
         for worksheet in workbook.sheets():
-            for row_num in range(1, worksheet.nrows):
-                row = [self.convert_cell(worksheet.cell(row_num, cell_num), workbook)
-                       for cell_num in range(0, len(TransactionRow.HEADER))]
+            if config.args.debug:
+                print("%simporting '%s' rows" % (Fore.CYAN, worksheet.name))
 
-                t_row = TransactionRow(row, row_num+1, worksheet.name)
+            for row_num in trange(0, worksheet.nrows,
+                                  unit=' row',
+                                  desc="%simporting '%s' rows%s" % (
+                                      Fore.CYAN, worksheet.name, Fore.GREEN),
+                                  disable=bool(config.args.debug or not sys.stdout.isatty())):
+                if row_num == 0:
+                    # skip headers
+                    continue
+
+                row = [self.convert_cell(worksheet.cell(row_num, cell_num), workbook)
+                       for cell_num in range(0, worksheet.ncols)]
+
+                t_row = TransactionRow(row[:len(TransactionRow.HEADER)], row_num+1, worksheet.name)
                 try:
                     t_row.parse()
                 except TransactionParserError as e:
                     t_row.failure = e
 
+                if config.args.debug or t_row.failure:
+                    tqdm.write("%simport: %s" % (Fore.YELLOW, t_row))
+
                 if t_row.failure:
-                    log.error("%s", t_row)
-                    log.error("%s", t_row.failure)
+                    tqdm.write("%sERROR%s %s" % (
+                        Back.RED+Fore.BLACK, Back.RESET+Fore.RED, t_row.failure))
 
                 self.t_rows.append(t_row)
+                self.update_cnts(t_row)
 
         workbook.release_resources()
         del workbook
@@ -55,12 +71,17 @@ class ImportRecords(object):
             # repr is required to ensure no precision is lost
             value = repr(cell.value)
         else:
-            value = str(cell.value)
+            if sys.version_info[0] >= 3:
+                value = str(cell.value)
+            else:
+                value = cell.value.encode('utf-8')
 
         return value
 
     def import_csv(self, import_file):
-        log.info("==IMPORT TRANSACTION RECORDS FROM CSV FILE: %s ==", import_file.name)
+        print("%sCSV file: %s%s" % (Fore.WHITE, Fore.YELLOW, import_file.name))
+        if config.args.debug:
+            print("%simporting rows" % Fore.CYAN)
 
         if sys.version_info[0] < 3:
             # Special handling required for utf-8 encoded csv files
@@ -68,27 +89,40 @@ class ImportRecords(object):
         else:
             reader = csv.reader(import_file)
 
-        next(reader, None) # skip headers
-        for row in reader:
+        for row in tqdm(reader,
+                        unit=' row',
+                        desc="%simporting%s" % (Fore.CYAN, Fore.GREEN),
+                        disable=bool(config.args.debug or not sys.stdout.isatty())):
+            if reader.line_num == 1:
+                # skip headers
+                continue
+
             t_row = TransactionRow(row[:len(TransactionRow.HEADER)], reader.line_num)
             try:
                 t_row.parse()
             except TransactionParserError as e:
                 t_row.failure = e
 
+            if config.args.debug or t_row.failure:
+                tqdm.write("%simport: %s" % (Fore.YELLOW, t_row))
+
             if t_row.failure:
-                log.error("%s", t_row)
-                log.error("%s", t_row.failure)
+                tqdm.write("%sERROR%s %s" % (
+                    Back.RED+Fore.BLACK, Back.RESET+Fore.RED, t_row.failure))
 
             self.t_rows.append(t_row)
+            self.update_cnts(t_row)
 
     @staticmethod
     def utf_8_encoder(unicode_csv_data):
         for line in unicode_csv_data:
             yield line.encode('utf-8')
 
-    def failures(self):
-        return bool([t_row for t_row in self.t_rows if t_row.failure is not None])
+    def update_cnts(self, t_row):
+        if t_row.failure is not None:
+            self.failure_cnt += 1
+        elif t_row.t_record is not None:
+            self.success_cnt += 1
 
     def get_records(self):
         transaction_records = [t_row.t_record for t_row in self.t_rows if t_row.t_record]
@@ -97,10 +131,10 @@ class ImportRecords(object):
         for t_record in transaction_records:
             t_record.set_tid()
 
-        for t_row in self.t_rows:
-            log.debug("%s", t_row)
+        if config.args.debug:
+            for t_row in self.t_rows:
+                print("%simport: %s" % (Fore.YELLOW, t_row))
 
-        log.info("Total transaction records=%s", len(transaction_records))
         return transaction_records
 
 class TransactionRow(object):
@@ -132,7 +166,7 @@ class TransactionRow(object):
         self.failure = None
 
     def parse(self):
-        if all(not self.row[i] for i in range(len(self.HEADER))):
+        if all(not self.row[i] for i in range(len(self.row))):
             # Skip empty rows
             return
 
@@ -179,9 +213,6 @@ class TransactionRow(object):
         if timestamp.tzinfo is None:
             # Default to UTC if no timezone is specified
             timestamp = timestamp.replace(tzinfo=config.TZ_UTC)
-
-        # Convert to local time
-        timestamp = timestamp.astimezone(config.TZ_LOCAL)
 
         return timestamp
 
@@ -320,16 +351,25 @@ class TransactionRow(object):
 
     def __str__(self):
         if self.t_record and self.t_record.tid:
-            tid_str = " TID:" + str(self.t_record.tid[0])
+            tid_str = " %s[TID:%s]" % (Fore.MAGENTA, self.t_record.tid[0])
         else:
-            tid_str = ""
+            tid_str = ''
 
         if self.worksheet_name:
-            return "'" + self.worksheet_name + \
-                   "' Row[" + str(self.row_num) + "]: " + \
-                   '[' + '\'{0}\''.format('\', \''.join(self.row)) + ']' + \
-                   tid_str
+            worksheet_str = "'%s' " % self.worksheet_name
+        else:
+            worksheet_str = ''
 
-        return "Row[" + str(self.row_num) + "]: " + \
-               '[' + '\'{0}\''.format('\', \''.join(self.row)) + ']' + \
-               tid_str
+        if self.failure is not None:
+            row_str = ', '.join(["%s'%s'%s" % (Back.RED, data, Back.RESET)
+                                 if self.failure.col_num == num
+                                 else "'%s'" % data
+                                 for num, data in enumerate(self.row)])
+        else:
+            row_str = "'%s'" % '\', \''.join(self.row)
+
+        return "%srow[%s] [%s]%s" % (
+            worksheet_str,
+            self.row_num,
+            row_str,
+            tid_str)

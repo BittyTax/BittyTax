@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
 import os
+
+from colorama import Fore
 
 from ..version import __version__
 from ..config import config
 from .datasource import ExchangeRatesAPI, RatesAPI, CoinDesk, CryptoCompare, CoinGecko, CoinPaprika
-
-log = logging.getLogger()
 
 class PriceData(object):
     def __init__(self):
@@ -25,7 +24,7 @@ class PriceData(object):
             try:
                 self.data_sources[data_source] = globals()[data_source]()
             except KeyError:
-                raise ValueError("Data source: %s not recognised" % [data_source])
+                raise ValueError("data source: %s not recognised" % [data_source])
 
     @staticmethod
     def data_source_priority(asset):
@@ -44,7 +43,7 @@ class PriceData(object):
 
             return None, None
         else:
-            raise ValueError("Data source: %s not recognised" % [data_source])
+            raise ValueError("data source: %s not recognised" % [data_source])
 
     def get_historical_ds(self, data_source, asset, quote, timestamp):
         if data_source in self.data_sources:
@@ -56,48 +55,54 @@ class PriceData(object):
                     # check cache first
                     if pair in self.data_sources[data_source].prices and \
                        date in self.data_sources[data_source].prices[pair]:
-                        return self.data_sources[data_source].prices[pair][date], \
-                               self.data_sources[data_source].assets[asset]
+                        return self.data_sources[data_source].prices[pair][date]['price'], \
+                               self.data_sources[data_source].assets[asset], \
+                               self.data_sources[data_source].prices[pair][date]['url']
 
                 self.data_sources[data_source].get_historical(asset, quote, timestamp)
                 if pair in self.data_sources[data_source].prices and \
                    date in self.data_sources[data_source].prices[pair]:
-                    return self.data_sources[data_source].prices[pair][date], \
-                           self.data_sources[data_source].assets[asset]
+                    return self.data_sources[data_source].prices[pair][date]['price'], \
+                           self.data_sources[data_source].assets[asset], \
+                           self.data_sources[data_source].prices[pair][date]['url']
                 else:
-                    return None, self.data_sources[data_source].assets[asset]
+                    return None, self.data_sources[data_source].assets[asset], None
             else:
-                return None, None
+                return None, None, None
         else:
-            raise ValueError("Data source: %s not recognised" % [data_source])
+            raise ValueError("data source: %s not recognised" % [data_source])
 
     def get_latest(self, asset, quote):
         price = name = data_source = None
         for data_source in self.data_source_priority(asset):
             price, name = self.get_latest_ds(data_source, asset, quote)
             if price is not None:
-                log.debug("Price (latest), 1 %s=%s %s via %s (%s)",
-                          asset,
-                          '{:0,f}'.format(price.normalize()),
-                          quote,
-                          data_source,
-                          name)
+                if config.args.debug:
+                    print("%sprice: <latest>, 1 %s=%s %s via %s (%s)" % (
+                        Fore.YELLOW,
+                        asset,
+                        '{:0,f}'.format(price.normalize()),
+                        quote,
+                        data_source,
+                        name))
                 break
 
         return price, name, data_source
 
     def get_historical(self, asset, quote, timestamp):
-        price = name = data_source = None
+        price = name = data_source = url = None
         for data_source in self.data_source_priority(asset):
-            price, name = self.get_historical_ds(data_source, asset, quote, timestamp)
+            price, name, url = self.get_historical_ds(data_source, asset, quote, timestamp)
             if price is not None:
-                log.debug("Price on %s, 1 %s=%s %s via %s (%s)",
-                          timestamp.strftime('%Y-%m-%d'),
-                          asset,
-                          '{:0,f}'.format(price.normalize()),
-                          quote,
-                          data_source,
-                          name)
+                if config.args.debug:
+                    print("%sprice: %s, 1 %s=%s %s via %s (%s)" % (
+                        Fore.YELLOW,
+                        timestamp.strftime('%Y-%m-%d'),
+                        asset,
+                        '{:0,f}'.format(price.normalize()),
+                        quote,
+                        data_source,
+                        name))
                 break
 
-        return price, name, data_source
+        return price, name, data_source, url

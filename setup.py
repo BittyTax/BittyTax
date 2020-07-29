@@ -2,7 +2,7 @@ import os
 import re
 import io
 
-from setuptools import setup, find_packages
+from setuptools import setup
 
 BITTYTAX_PATH = os.path.expanduser('~/.bittytax')
 VERSION_FILE = 'bittytax/version.py'
@@ -43,16 +43,22 @@ setup(
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
     keywords='bittytax cryptoasset cryptocurrency crypto tax',
-    packages=find_packages('.'),
+    packages=['bittytax', 'bittytax.conv', 'bittytax.conv.parsers', 'bittytax.price'],
+    package_data={'bittytax': ['templates/*.html']},
     install_requires=[
         'python-dateutil',
         'requests',
         'pyyaml',
         'xlrd',
         'xlsxwriter',
+        'jinja2',
+        'xhtml2pdf',
+        'colorama',
+        'tqdm>=4.11.2,<4.25.0',
     ],
     entry_points={
         'console_scripts': [

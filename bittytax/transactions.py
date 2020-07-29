@@ -1,102 +1,133 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import logging
+import sys
 import copy
 from decimal import Decimal
 
+from colorama import Fore, Style
+from tqdm import tqdm
+
 from .config import config
 from .record import TransactionRecord
-
-log = logging.getLogger()
 
 class TransactionHistory(object):
     def __init__(self, transaction_records, value_asset):
         self.value_asset = value_asset
         self.transactions = []
 
-        log.debug("==SPLIT TRANSACTION RECORDS==")
+        if config.args.debug:
+            print("%ssplit transaction records" % Fore.CYAN)
 
-        for tr in transaction_records:
-            log.debug(tr)
+        for tr in tqdm(transaction_records,
+                       unit='tr',
+                       desc="%ssplit transaction records%s" % (Fore.CYAN, Fore.GREEN),
+                       disable=bool(config.args.debug or not sys.stdout.isatty())):
+            if config.args.debug:
+                print("%ssplit: TR %s" % (Fore.MAGENTA, tr))
+
             self.get_all_values(tr)
 
             # Attribute the fee value to the buy, the sell or both
-            if tr.fee and tr.fee.disposal and tr.fee.proceeds:
+            if tr.fee and tr.fee.disposal and tr.fee.proceeds is not None:
                 if tr.buy and tr.sell:
                     if tr.buy.asset in config.fiat_list:
                         tr.sell.fee_value = tr.fee.proceeds
+                        tr.sell.fee_fixed = tr.fee.proceeds_fixed
                     elif tr.sell.asset in config.fiat_list:
                         tr.buy.fee_value = tr.fee.proceeds
+                        tr.buy.fee_fixed = tr.fee.proceeds_fixed
                     else:
                         # Split fee between both
                         tr.buy.fee_value = tr.fee.proceeds / 2
+                        tr.buy.fee_fixed = tr.fee.proceeds_fixed
                         tr.sell.fee_value = tr.fee.proceeds - tr.buy.fee_value
+                        tr.sell.fee_fixed = tr.fee.proceeds_fixed
                 elif tr.buy:
                     tr.buy.fee_value = tr.fee.proceeds
+                    tr.buy.fee_fixed = tr.fee.proceeds_fixed
                 elif tr.sell:
                     tr.sell.fee_value = tr.fee.proceeds
+                    tr.sell.fee_fixed = tr.fee.proceeds_fixed
 
             if tr.buy and tr.buy.asset not in config.fiat_list:
                 tr.buy.set_tid()
                 self.transactions.append(tr.buy)
-                log.debug(tr.buy)
+                if config.args.debug:
+                    print("%ssplit:   %s" % (Fore.GREEN, tr.buy))
             if tr.sell and tr.sell.asset not in config.fiat_list:
                 tr.sell.set_tid()
                 self.transactions.append(tr.sell)
-                log.debug(tr.sell)
+                if config.args.debug:
+                    print("%ssplit:   %s" % (Fore.GREEN, tr.sell))
             if tr.fee and tr.fee.asset not in config.fiat_list:
                 tr.fee.set_tid()
                 self.transactions.append(tr.fee)
-                log.debug(tr.fee)
+                if config.args.debug:
+                    print("%ssplit:   %s" % (Fore.GREEN, tr.fee))
 
-        log.debug("Total transactions=%s", len(self.transactions))
+        if config.args.debug:
+            print("%ssplit: total transactions=%d" % (Fore.CYAN, len(self.transactions)))
 
     def get_all_values(self, tr):
         if tr.buy and tr.buy.acquisition and tr.buy.cost is None:
             if tr.sell:
-                tr.buy.cost = self.which_asset_value(tr)
+                (tr.buy.cost,
+                 tr.buy.cost_fixed) = self.which_asset_value(tr)
             else:
-                tr.buy.cost = self.value_asset.get_value(tr.buy.asset,
-                                                         tr.timestamp,
-                                                         tr.buy.quantity)
+                (tr.buy.cost,
+                 tr.buy.cost_fixed) = self.value_asset.get_value(tr.buy.asset,
+                                                                 tr.buy.timestamp,
+                                                                 tr.buy.quantity)
 
         if tr.sell and tr.sell.disposal and tr.sell.proceeds is None:
             if tr.buy:
                 tr.sell.proceeds = tr.buy.cost
+                tr.sell.proceeds_fixed = tr.buy.cost_fixed
             else:
-                tr.sell.proceeds = self.value_asset.get_value(tr.sell.asset,
-                                                              tr.timestamp,
-                                                              tr.sell.quantity)
-
+                (tr.sell.proceeds,
+                 tr.sell.proceeds_fixed) = self.value_asset.get_value(tr.sell.asset,
+                                                                      tr.sell.timestamp,
+                                                                      tr.sell.quantity)
         if tr.fee and tr.fee.disposal and tr.fee.proceeds is None:
             if tr.fee.asset not in config.fiat_list:
                 if tr.buy and tr.buy.asset == tr.fee.asset:
-                    price = tr.buy.cost / tr.buy.quantity if tr.buy.cost else Decimal(0)
-                    tr.fee.proceeds = tr.fee.quantity * price
+                    if tr.buy.cost and tr.buy.quantity:
+                        price = tr.buy.cost / tr.buy.quantity
+                        tr.fee.proceeds = tr.fee.quantity * price
+                    else:
+                        tr.fee.proceeds = Decimal(0)
+
+                    tr.fee.proceeds_fixed = tr.buy.cost_fixed
                 elif tr.sell and tr.sell.asset == tr.fee.asset:
-                    price = tr.sell.proceeds / tr.sell.quantity if tr.sell.proceeds else Decimal(0)
-                    tr.fee.proceeds = tr.fee.quantity * price
+                    if tr.sell.proceeds and tr.sell.quantity:
+                        price = tr.sell.proceeds / tr.sell.quantity
+                        tr.fee.proceeds = tr.fee.quantity * price
+                    else:
+                        tr.fee.proceeds = Decimal(0)
+
+                    tr.fee.proceeds_fixed = tr.sell.proceeds_fixed
                 else:
                     # Must be a 3rd cryptoasset
-                    tr.fee.proceeds = self.value_asset.get_value(tr.fee.asset,
-                                                                 tr.timestamp,
-                                                                 tr.fee.quantity)
+                    (tr.fee.proceeds,
+                     tr.fee.proceeds_fixed) = self.value_asset.get_value(tr.fee.asset,
+                                                                         tr.fee.timestamp,
+                                                                         tr.fee.quantity)
             else:
                 # Fee paid in fiat
-                tr.fee.proceeds = self.value_asset.get_value(tr.fee.asset,
-                                                             tr.timestamp,
-                                                             tr.fee.quantity)
-
+                (tr.fee.proceeds,
+                 tr.fee.proceeds_fixed) = self.value_asset.get_value(tr.fee.asset,
+                                                                     tr.fee.timestamp,
+                                                                     tr.fee.quantity)
     def which_asset_value(self, tr):
         if config.trade_asset_type == config.TRADE_ASSET_TYPE_BUY:
-            value = self.value_asset.get_value(tr.buy.asset,
-                                               tr.timestamp,
-                                               tr.buy.quantity)
+            value, fixed = self.value_asset.get_value(tr.buy.asset,
+                                                      tr.buy.timestamp,
+                                                      tr.buy.quantity)
         elif config.trade_asset_type == config.TRADE_ASSET_TYPE_SELL:
-            value = self.value_asset.get_value(tr.sell.asset,
-                                               tr.timestamp,
-                                               tr.sell.quantity)
+            value, fixed = self.value_asset.get_value(tr.sell.asset,
+                                                      tr.sell.timestamp,
+                                                      tr.sell.quantity)
         else:
             pos_sell_asset = pos_buy_asset = len(config.asset_priority) + 1
 
@@ -106,14 +137,14 @@ class TransactionHistory(object):
                 pos_buy_asset = config.asset_priority.index(tr.buy.asset)
 
             if pos_sell_asset <= pos_buy_asset:
-                value = self.value_asset.get_value(tr.sell.asset,
-                                                   tr.timestamp,
-                                                   tr.sell.quantity)
+                value, fixed = self.value_asset.get_value(tr.sell.asset,
+                                                          tr.sell.timestamp,
+                                                          tr.sell.quantity)
             else:
-                value = self.value_asset.get_value(tr.buy.asset,
-                                                   tr.timestamp,
-                                                   tr.buy.quantity)
-        return value
+                value, fixed = self.value_asset.get_value(tr.buy.asset,
+                                                          tr.buy.timestamp,
+                                                          tr.buy.quantity)
+        return value, fixed
 
 class TransactionBase(object):
     def __init__(self, t_type, asset, quantity):
@@ -122,7 +153,8 @@ class TransactionBase(object):
         self.t_type = t_type
         self.asset = asset
         self.quantity = quantity
-        self.fee_value = Decimal(0)
+        self.fee_value = None
+        self.fee_fixed = True
         self.wallet = None
         self.timestamp = None
         self.matched = False
@@ -132,23 +164,32 @@ class TransactionBase(object):
         self.tid = self.t_record.set_tid()
 
     def _format_tid(self):
-        return str(self.tid[0]) + "." + str(self.tid[1])
+        return "%s.%s" % (self.tid[0], self.tid[1])
 
     def _format_quantity(self):
         if self.quantity is None:
-            return '-'
+            return ''
         return '{:0,f}'.format(self.quantity.normalize())
 
-    def _format_match_status(self):
-        return " (M)" if self.matched else ""
+    def _format_matched(self):
+        return '//' if self.matched else ''
 
-    def _format_pooled(self):
+    def _format_pooled(self, bold=False):
         if self.pooled:
-            return " [" + str(len(self.pooled)) + "]"
+            return " %s[%s]%s" % (
+                Style.BRIGHT if bold else '',
+                len(self.pooled),
+                Style.NORMAL if bold else '')
         return ''
 
     def _format_fee(self):
-        return ' + Fee=' + config.sym() + '{:0,.2f} {}'.format(self.fee_value, config.CCY)
+        if self.fee_value is not None:
+            return " + fee=%s%s %s" % (
+                '' if self.fee_fixed else '~',
+                config.sym() + '{:0,.2f}'.format(self.fee_value),
+                config.CCY)
+
+        return ''
 
     def __eq__(self, other):
         return (self.asset, self.timestamp) == (other.asset, other.timestamp)
@@ -183,6 +224,11 @@ class Buy(TransactionBase):
     def __init__(self, t_type, buy_quantity, buy_asset, buy_value):
         super(Buy, self).__init__(t_type, buy_asset, buy_quantity)
         self.cost = buy_value
+        if self.cost is not None:
+            self.cost_fixed = True
+        else:
+            self.cost_fixed = False
+
         self.acquisition = bool(self.t_type in self.ACQUISITION_TYPES)
 
     def __iadd__(self, other):
@@ -194,7 +240,11 @@ class Buy(TransactionBase):
             raise Exception
         self.quantity += other.quantity
         self.cost += other.cost
-        self.fee_value += other.fee_value
+
+        if self.fee_value is not None and other.fee_value is not None:
+            self.fee_value += other.fee_value
+        elif self.fee_value is None and other.fee_value is not None:
+            self.fee_value = other.fee_value
 
         if other.timestamp < self.timestamp:
             # Keep timestamp of earliest transaction
@@ -203,6 +253,12 @@ class Buy(TransactionBase):
         if other.wallet != self.wallet:
             self.wallet = "<pooled>"
 
+        if other.cost_fixed != self.cost_fixed:
+            self.cost_fixed = False
+
+        if other.fee_fixed != self.fee_fixed:
+            self.fee_fixed = False
+
         self.pooled.append(other)
         return self
 
@@ -210,44 +266,46 @@ class Buy(TransactionBase):
         remainder = copy.deepcopy(self)
 
         self.cost = self.cost * (sell_quantity / self.quantity)
-        self.fee_value = self.fee_value * (sell_quantity / self.quantity)
+
+        if self.fee_value:
+            self.fee_value = self.fee_value * (sell_quantity / self.quantity)
+
         self.quantity = sell_quantity
         self.set_tid()
 
         remainder.cost = remainder.cost - self.cost
-        remainder.fee_value = remainder.fee_value - self.fee_value
+
+        if self.fee_value:
+            remainder.fee_value = remainder.fee_value - self.fee_value
+
         remainder.quantity = remainder.quantity - sell_quantity
         remainder.set_tid()
-
-        log.debug("split: %s", self)
-        log.debug("split: %s", remainder)
-
         return remainder
 
     def _format_cost(self):
         if self.cost is not None:
-            return ' (' + config.sym() + '{:0,.2f} {})'.format(self.cost, config.CCY)
+            return " (%s%s %s)" % (
+                '=' if self.cost_fixed else '~',
+                config.sym() + '{:0,.2f}'.format(self.cost),
+                config.CCY)
         return ''
 
-    def _format_acquisition(self):
-        if not self.acquisition:
-            return '*'
-        return ''
-
-    def __str__(self):
-        return "T-" + \
-               type(self).__name__ + \
-               self._format_acquisition() + " " + \
-               "[TID:" + self._format_tid() + "] " + \
-               self.t_type + ": " + \
-               self._format_quantity() + " " + \
-               self.asset + \
-               self._format_cost() + \
-               self._format_fee() + " '" + \
-               self.wallet + "' " + \
-               self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z') + \
-               self._format_pooled() + \
-               self._format_match_status()
+    def __str__(self, pooled_bold=False, quantity_bold=False):
+        return "%s%s%s %s%s %s %s%s%s%s '%s' %s [TID:%s]%s" % (
+            self._format_matched(),
+            type(self).__name__.upper(),
+            '*' if not self.acquisition else '',
+            self.t_type,
+            Style.BRIGHT if quantity_bold else '',
+            self._format_quantity(),
+            self.asset,
+            Style.NORMAL if quantity_bold else '',
+            self._format_cost(),
+            self._format_fee(),
+            self.wallet,
+            self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+            self._format_tid(),
+            self._format_pooled(pooled_bold))
 
 class Sell(TransactionBase):
     TYPE_WITHDRAWAL = TransactionRecord.TYPE_WITHDRAWAL
@@ -261,6 +319,11 @@ class Sell(TransactionBase):
     def __init__(self, t_type, sell_quantity, sell_asset, sell_value):
         super(Sell, self).__init__(t_type, sell_asset, sell_quantity)
         self.proceeds = sell_value
+        if self.proceeds is not None:
+            self.proceeds_fixed = True
+        else:
+            self.proceeds_fixed = False
+
         self.disposal = bool(self.t_type in self.DISPOSAL_TYPES)
 
     def __iadd__(self, other):
@@ -272,7 +335,11 @@ class Sell(TransactionBase):
             raise Exception
         self.quantity += other.quantity
         self.proceeds += other.proceeds
-        self.fee_value += other.fee_value
+
+        if self.fee_value is not None and other.fee_value is not None:
+            self.fee_value += other.fee_value
+        elif self.fee_value is None and other.fee_value is not None:
+            self.fee_value = other.fee_value
 
         if other.timestamp > self.timestamp:
             # Keep timestamp of latest transaction
@@ -281,6 +348,12 @@ class Sell(TransactionBase):
         if other.wallet != self.wallet:
             self.wallet = "<pooled>"
 
+        if other.proceeds_fixed != self.proceeds_fixed:
+            self.proceeds_fixed = False
+
+        if other.fee_fixed != self.fee_fixed:
+            self.fee_fixed = False
+
         self.pooled.append(other)
         return self
 
@@ -288,41 +361,43 @@ class Sell(TransactionBase):
         remainder = copy.deepcopy(self)
 
         self.proceeds = self.proceeds * (buy_quantity / self.quantity)
-        self.fee_value = self.fee_value * (buy_quantity / self.quantity)
+
+        if self.fee_value:
+            self.fee_value = self.fee_value * (buy_quantity / self.quantity)
+
         self.quantity = buy_quantity
         self.set_tid()
 
         remainder.proceeds = remainder.proceeds - self.proceeds
-        remainder.fee_value = remainder.fee_value - self.fee_value
+
+        if self.fee_value:
+            remainder.fee_value = remainder.fee_value - self.fee_value
+
         remainder.quantity = remainder.quantity - buy_quantity
         remainder.set_tid()
-
-        log.debug("split: %s", self)
-        log.debug("split: %s", remainder)
-
         return remainder
 
     def _format_proceeds(self):
         if self.proceeds is not None:
-            return ' (' + config.sym() + '{:0,.2f} {})'.format(self.proceeds, config.CCY)
+            return " (%s%s %s)" % (
+                '=' if self.proceeds_fixed else '~',
+                config.sym() + '{:0,.2f}'.format(self.proceeds),
+                config.CCY)
         return ''
 
-    def _format_disposal(self):
-        if not self.disposal:
-            return '*'
-        return ''
-
-    def __str__(self):
-        return "T-" + \
-               type(self).__name__ + \
-               self._format_disposal() + " " + \
-               "[TID:" + self._format_tid() + "] " + \
-               self.t_type + ": " + \
-               self._format_quantity() + " " + \
-               self.asset + \
-               self._format_proceeds() + \
-               self._format_fee() + " '" + \
-               self.wallet + "' " + \
-               self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z') + \
-               self._format_pooled() + \
-               self._format_match_status()
+    def __str__(self, pooled_bold=False, quantity_bold=False):
+        return "%s%s%s %s%s %s %s%s%s%s '%s' %s [TID:%s]%s" % (
+            self._format_matched(),
+            type(self).__name__.upper(),
+            '*' if not self.disposal else '',
+            self.t_type,
+            Style.BRIGHT if quantity_bold else '',
+            self._format_quantity(),
+            self.asset,
+            Style.NORMAL if quantity_bold else '',
+            self._format_proceeds(),
+            self._format_fee(),
+            self.wallet,
+            self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+            self._format_tid(),
+            self._format_pooled(pooled_bold))
