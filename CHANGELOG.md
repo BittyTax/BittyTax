@@ -4,6 +4,8 @@
 - Cell conversion of imported Excel data safer for python 2.
 ### Added
 - Conversion tool: added parser for CoinTracking.info accounting data.
+### Changed
+- Sort wallet names in audit debug as case-insensitive.
 
 ## Version [0.4.1] Beta (2020-07-25)
 ### Fixed

@@ -34,7 +34,7 @@ class AuditRecords(object):
 
         if config.args.debug:
             print("%saudit: final balances by wallet" % Fore.CYAN)
-            for wallet in sorted(self.wallets):
+            for wallet in sorted(self.wallets, key=str.lower):
                 for asset in sorted(self.wallets[wallet]):
                     print("%saudit: %s:%s=%s%s%s" % (
                         Fore.YELLOW,
