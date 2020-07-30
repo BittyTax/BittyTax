@@ -1,5 +1,7 @@
 # Change Log
 ## [Unreleased]
+### Fixed
+- Cell conversion of imported Excel data safer for python 2.
 ### Added
 - Conversion tool: added parser for CoinTracking.info accounting data.
 
@@ -30,9 +32,9 @@
 - Circle Parser: added "fork" transaction type. ([#11](https://github.com/BittyTax/BittyTax/issues/11))
 - Trezor Parser: wallets without labelling. ([#10](https://github.com/BittyTax/BittyTax/issues/10))
 - Bitfinex Parser: calculations rounded to 8 decimal places. ([#14](https://github.com/BittyTax/BittyTax/issues/14))
-- Conversion tool: python2 raised exception if file format was unrecognised or file missing. ([#9](https://github.com/BittyTax/BittyTax/issues/9))
+- Conversion tool: python 2 raised exception if file format was unrecognised or file missing. ([#9](https://github.com/BittyTax/BittyTax/issues/9))
 - Accounting tool: handle exception if input file is missing. ([#15](https://github.com/BittyTax/BittyTax/issues/15))
-- Accounting tool: python2 handle utf-8 characters in Excel file.
+- Accounting tool: python 2 handle utf-8 characters in Excel file.
 ### Added
 - Conversion tool: added parser for HandCash wallet.
 ### Changed
