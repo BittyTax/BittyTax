@@ -14,6 +14,7 @@ from . import cryptsy
 from . import electrum
 from . import etherscan
 from . import gatehub
+from . import gravity
 from . import handcash
 from . import hitbtc
 from . import ii

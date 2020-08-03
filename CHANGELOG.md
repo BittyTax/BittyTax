@@ -4,6 +4,7 @@
 - Cell conversion of imported Excel data safer for python 2.
 ### Added
 - Conversion tool: added parser for CoinTracking.info accounting data.
+- Conversion tool: added parser for Gravity (Bitstocks) exchange.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 
