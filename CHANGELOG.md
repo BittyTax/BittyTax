@@ -5,6 +5,7 @@
 ### Added
 - Conversion tool: added parser for CoinTracking.info accounting data.
 - Conversion tool: added parser for Gravity (Bitstocks) exchange.
+- Asset tool: new tool to list/search which assets have price data available.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 

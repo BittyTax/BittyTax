@@ -65,6 +65,7 @@ setup(
             'bittytax = bittytax.bittytax:main',
             'bittytax_conv = bittytax.conv.bittytax_conv:main',
             'bittytax_price = bittytax.price.bittytax_price:main',
+            'bittytax_asset = bittytax.price.bittytax_asset:main',
         ],
     },
     include_package_data=True,
