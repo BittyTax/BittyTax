@@ -10,7 +10,7 @@ from ..exceptions import UnknownUsernameError
 
 WALLET = "ChangeTip"
 
-def parse_changetip(data_row, _):
+def parse_changetip(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[3])
 

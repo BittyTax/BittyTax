@@ -10,7 +10,7 @@ from ..exceptions import DataParserError, UnexpectedTypeError, \
 
 WALLET = "Gatehub"
 
-def parse_gatehub(data_rows, parser):
+def parse_gatehub(data_rows, parser, _filename):
     for data_row in data_rows:
         if data_row.parsed:
             continue

@@ -15,7 +15,8 @@ from .dataparser import DataParser
 from .datafile import DataFile
 from .output_csv import OutputCsv
 from .output_excel import OutputExcel
-from .exceptions import UnknownCryptoassetError, UnknownUsernameError, DataFormatUnrecognised
+from .exceptions import UnknownCryptoassetError, UnknownUsernameError, UnknownAddressError, \
+                        DataFormatUnrecognised
 
 if sys.stderr.encoding != 'UTF-8':
     if sys.version_info[0] < 3:
@@ -97,6 +98,10 @@ def main():
             parser.exit("%s: error: username cannot be identified in data file: %s, "
                         "please specify usernames in the %s file" % (
                             parser.prog, filename, config.BITTYTAX_CONFIG))
+        except UnknownAddressError:
+            sys.stderr.write(Fore.RESET)
+            parser.exit("%s: error: cryptoasset address cannot be identified from filename: %s" % (
+                parser.prog, filename))
         except DataFormatUnrecognised:
             sys.stderr.write("%sWARNING%s File format is unrecognised: %s\n" % (
                 Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, filename))

@@ -10,7 +10,7 @@ from ..exceptions import DataParserError, UnexpectedTypeError
 WALLET = "Gravity"
 SYSTEM_ACCOUNT = "00000000-0000-0000-0000-000000000000"
 
-def parse_gravity(data_rows, parser):
+def parse_gravity(data_rows, parser, _filename):
     for data_row in data_rows:
         if data_row.parsed:
             continue

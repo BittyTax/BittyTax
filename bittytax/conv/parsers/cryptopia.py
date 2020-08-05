@@ -9,7 +9,7 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Cryptopia"
 
-def parse_cryptopia_deposits(data_row, _):
+def parse_cryptopia_deposits(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[7])
 
@@ -19,7 +19,7 @@ def parse_cryptopia_deposits(data_row, _):
                                              buy_asset=in_row[1],
                                              wallet=WALLET)
 
-def parse_cryptopia_withdrawals(data_row, _):
+def parse_cryptopia_withdrawals(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[7])
 
@@ -31,7 +31,7 @@ def parse_cryptopia_withdrawals(data_row, _):
                                              fee_asset=in_row[1],
                                              wallet=WALLET)
 
-def parse_cryptopia_trades(data_row, parser):
+def parse_cryptopia_trades(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[7])
 

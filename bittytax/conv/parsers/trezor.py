@@ -10,7 +10,7 @@ from ..exceptions import UnknownCryptoassetError, UnexpectedTypeError
 
 WALLET = "Trezor"
 
-def parse_trezor(data_row, parser):
+def parse_trezor(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0] + 'T' + in_row[1])
 
@@ -37,7 +37,7 @@ def parse_trezor(data_row, parser):
     else:
         raise UnexpectedTypeError(5, parser.in_header[5], in_row[5])
 
-def parse_trezor2(data_row, parser):
+def parse_trezor2(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0] + 'T' + in_row[1])
 

@@ -8,7 +8,7 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Circle"
 
-def parse_circle(data_row, parser):
+def parse_circle(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 

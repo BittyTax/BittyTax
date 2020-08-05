@@ -9,7 +9,7 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "HandCash"
 
-def parse_handcash(data_row, parser):
+def parse_handcash(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[9])
 

@@ -6,6 +6,7 @@
 - Conversion tool: added parser for CoinTracking.info accounting data.
 - Conversion tool: added parser for Gravity (Bitstocks) exchange.
 - Asset tool: new tool to list/search which assets have price data available.
+- Etherscan parser: added ERC-20 tokens and ERC-721 NFTs exports.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 

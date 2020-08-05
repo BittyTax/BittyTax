@@ -9,7 +9,7 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Bittrex"
 
-def parse_bittrex_trades2(data_row, parser):
+def parse_bittrex_trades2(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[14])
 
@@ -38,7 +38,7 @@ def parse_bittrex_trades2(data_row, parser):
     else:
         raise UnexpectedTypeError(3, parser.in_header[3], in_row[3])
 
-def parse_bittrex_trades(data_row, parser):
+def parse_bittrex_trades(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[8])
 
@@ -65,7 +65,7 @@ def parse_bittrex_trades(data_row, parser):
     else:
         raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
 
-def parse_bittrex_deposits2(data_row, _):
+def parse_bittrex_deposits2(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[4])
 
@@ -75,7 +75,7 @@ def parse_bittrex_deposits2(data_row, _):
                                              buy_asset=in_row[1],
                                              wallet=WALLET)
 
-def parse_bittrex_deposits(data_row, _):
+def parse_bittrex_deposits(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[4])
 
@@ -85,7 +85,7 @@ def parse_bittrex_deposits(data_row, _):
                                              buy_asset=in_row[2],
                                              wallet=WALLET)
 
-def parse_bittrex_withdrawals(data_row, _):
+def parse_bittrex_withdrawals(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[4])
 

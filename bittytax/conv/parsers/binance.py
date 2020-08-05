@@ -11,7 +11,7 @@ WALLET = "Binance"
 QUOTE_ASSETS = ['BNB', 'BTC', 'BUSD', 'ETH', 'EUR', 'GBP', 'NGN', 'PAX', 'RUB', 'TRX',
                 'TUSD', 'USDC', 'USDS', 'USDT', 'XRP']
 
-def parse_binance_trades(data_row, parser):
+def parse_binance_trades(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 
@@ -42,7 +42,7 @@ def parse_binance_trades(data_row, parser):
     else:
         raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
 
-def parse_binance_deposits_withdrawals(data_row, _):
+def parse_binance_deposits_withdrawals(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 

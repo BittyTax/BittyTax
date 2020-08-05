@@ -28,10 +28,10 @@ class DataFile(object):
 
         if parser.row_handler:
             for data_row in self.data_rows:
-                data_row.parse(parser)
+                data_row.parse(parser, filename)
         else:
             # all rows handled together
-            DataRow.parse_all(self.data_rows, parser)
+            DataRow.parse_all(self.data_rows, parser, filename)
 
         failures = [data_row for data_row in self.data_rows if data_row.failure is not None]
         if failures:

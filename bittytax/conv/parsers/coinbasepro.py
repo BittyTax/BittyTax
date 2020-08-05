@@ -9,7 +9,7 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Coinbase Pro"
 
-def parse_coinbase_pro_deposits_withdrawals(data_row, parser):
+def parse_coinbase_pro_deposits_withdrawals(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[1])
 
@@ -31,7 +31,7 @@ def parse_coinbase_pro_deposits_withdrawals(data_row, parser):
     else:
         raise UnexpectedTypeError(0, parser.in_header[0], in_row[0])
 
-def parse_coinbase_pro_trades(data_row, parser):
+def parse_coinbase_pro_trades(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[3])
 

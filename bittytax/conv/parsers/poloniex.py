@@ -11,7 +11,7 @@ WALLET = "Poloniex"
 
 PRECISION = Decimal('0.00000000')
 
-def parse_poloniex_trades(data_row, parser):
+def parse_poloniex_trades(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 
@@ -46,7 +46,7 @@ def parse_poloniex_trades(data_row, parser):
     else:
         raise UnexpectedTypeError(3, parser.in_header[3], in_row[3])
 
-def parse_poloniex_deposits_withdrawals(data_row, _):
+def parse_poloniex_deposits_withdrawals(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 
@@ -63,7 +63,7 @@ def parse_poloniex_deposits_withdrawals(data_row, _):
                                                  buy_asset=in_row[1],
                                                  wallet=WALLET)
 
-def parse_poloniex_withdrawals(data_row, _):
+def parse_poloniex_withdrawals(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 

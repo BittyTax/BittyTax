@@ -20,11 +20,9 @@ class DataRow(object):
         self.parsed = False
         self.failure = None
 
-    def parse(self, parser):
+    def parse(self, parser, filename):
         try:
-            parser.row_handler(self, parser)
-        except UnknownCryptoassetError:
-            raise
+            parser.row_handler(self, parser, filename)
         except DataParserError as e:
             self.failure = e
 
@@ -35,8 +33,8 @@ class DataRow(object):
         return hash(self.in_row)
 
     @staticmethod
-    def parse_all(data_rows, parser):
-        parser.all_handler(data_rows, parser)
+    def parse_all(data_rows, parser, filename):
+        parser.all_handler(data_rows, parser, filename)
 
     def __str__(self):
         if self.failure is not None:

@@ -10,7 +10,7 @@ from ..exceptions import UnexpectedTypeError
 WALLET = "Coinbase"
 DUPLICATE = "Duplicate"
 
-def parse_coinbase_transfers(data_row, parser):
+def parse_coinbase_transfers(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 
@@ -53,7 +53,7 @@ def parse_coinbase_transfers(data_row, parser):
     else:
         raise UnexpectedTypeError(1, parser.in_header[1], in_row[1])
 
-def parse_coinbase_transactions(data_row, _):
+def parse_coinbase_transactions(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 

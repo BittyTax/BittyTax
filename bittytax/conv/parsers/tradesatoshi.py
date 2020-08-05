@@ -9,7 +9,7 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "TradeSatoshi"
 
-def parse_tradesatoshi_deposits2(data_row, _):
+def parse_tradesatoshi_deposits2(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 
@@ -19,7 +19,7 @@ def parse_tradesatoshi_deposits2(data_row, _):
                                              buy_asset=in_row[2],
                                              wallet=WALLET)
 
-def parse_tradesatoshi_deposits(data_row, _):
+def parse_tradesatoshi_deposits(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[7])
 
@@ -29,7 +29,7 @@ def parse_tradesatoshi_deposits(data_row, _):
                                              buy_asset=in_row[2],
                                              wallet=WALLET)
 
-def parse_tradesatoshi_withdrawals2(data_row, _):
+def parse_tradesatoshi_withdrawals2(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 
@@ -39,7 +39,7 @@ def parse_tradesatoshi_withdrawals2(data_row, _):
                                              sell_asset=in_row[2],
                                              wallet=WALLET)
 
-def parse_tradesatoshi_withdrawals(data_row, _):
+def parse_tradesatoshi_withdrawals(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[10])
 
@@ -52,7 +52,7 @@ def parse_tradesatoshi_withdrawals(data_row, _):
                                              fee_asset=in_row[2],
                                              wallet=WALLET)
 
-def parse_tradesatoshi_trades(data_row, parser):
+def parse_tradesatoshi_trades(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[6])
 

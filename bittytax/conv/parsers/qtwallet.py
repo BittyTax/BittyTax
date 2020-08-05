@@ -11,7 +11,7 @@ from ..exceptions import UnknownCryptoassetError, UnexpectedTypeError
 
 WALLET = "Qt Wallet"
 
-def parse_qt_wallet(data_row, parser):
+def parse_qt_wallet(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[1], tz='Europe/London')
 

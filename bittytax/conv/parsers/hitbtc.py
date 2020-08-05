@@ -9,7 +9,7 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "HitBTC"
 
-def parse_hitbtc_trades(data_row, parser):
+def parse_hitbtc_trades(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 
@@ -38,7 +38,7 @@ def parse_hitbtc_trades(data_row, parser):
     else:
         raise UnexpectedTypeError(4, parser.in_header[4], in_row[4])
 
-def parse_hitbtc_deposits_withdrawals(data_row, _):
+def parse_hitbtc_deposits_withdrawals(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 

@@ -10,7 +10,7 @@ from ..exceptions import UnknownCryptoassetError
 
 WALLET = "Electrum"
 
-def parse_electrum(data_row, _):
+def parse_electrum(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[4])
 

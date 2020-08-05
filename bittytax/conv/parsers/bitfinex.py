@@ -10,7 +10,7 @@ WALLET = "Bitfinex"
 
 PRECISION = Decimal('0.00000000')
 
-def parse_bitfinex_trades(data_row, _):
+def parse_bitfinex_trades(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[6], dayfirst=True)
 
@@ -39,7 +39,7 @@ def parse_bitfinex_trades(data_row, _):
                                                  fee_asset=in_row[5],
                                                  wallet=WALLET)
 
-def parse_bitfinex_deposits_withdrawals(data_row, _):
+def parse_bitfinex_deposits_withdrawals(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[1], dayfirst=True)
 
