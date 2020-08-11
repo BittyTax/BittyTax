@@ -13,6 +13,7 @@ import dateutil.parser
 from ..version import __version__
 from ..config import config
 from .valueasset import ValueAsset
+from .exceptions import UnexpectedDataSourceError
 
 if sys.stdout.encoding != 'UTF-8':
     if sys.version_info[0] < 3:
@@ -62,12 +63,26 @@ def main():
     if asset == config.CCY:
         return
 
-    if config.args.date:
-        timestamp = dateutil.parser.parse(config.args.date)
-        timestamp = timestamp.replace(tzinfo=config.TZ_LOCAL)
-        price_ccy, name, data_source = value_asset.get_historical_price(asset, timestamp)
-    else:
-        price_ccy, name, data_source = value_asset.get_latest_price(asset)
+    try:
+        if config.args.date:
+            try:
+                timestamp = dateutil.parser.parse(config.args.date)
+            except ValueError as e:
+                if sys.version_info[0] < 3:
+                    err_msg = ' '.join(e)
+                else:
+                    err_msg = ' '.join(e.args)
+
+                parser.exit("%sERROR%s Invalid date: %s" % (
+                    Back.RED+Fore.BLACK, Back.RESET+Fore.RED, err_msg))
+
+            timestamp = timestamp.replace(tzinfo=config.TZ_LOCAL)
+            price_ccy, name, data_source = value_asset.get_historical_price(asset, timestamp)
+        else:
+            price_ccy, name, data_source = value_asset.get_latest_price(asset)
+    except UnexpectedDataSourceError as e:
+        parser.exit("%sERROR%s %s" % (
+            Back.RED+Fore.BLACK, Back.RESET+Fore.RED, e))
 
     if price_ccy is not None:
         print("%s1 %s=%s %s %svia %s (%s)" % (

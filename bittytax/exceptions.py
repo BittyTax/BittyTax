@@ -31,3 +31,7 @@ class UnexpectedDataError(TransactionParserError):
 class MissingDataError(TransactionParserError):
     def __str__(self):
         return "Missing data for %s" % self.col_name
+
+class ImportFailureError(Exception):
+    def __str__(self):
+        return "Import failure"

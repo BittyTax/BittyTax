@@ -9,6 +9,9 @@
 - Etherscan parser: added ERC-20 tokens and ERC-721 NFTs exports.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
+- Data source names in config are now case-insensitive.
+- Accounting/Price tool: display error message if data source name unrecognised.
+- Price tool: display error message if date is invalid.
 
 ## Version [0.4.1] Beta (2020-07-25)
 ### Fixed

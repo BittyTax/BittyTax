@@ -17,8 +17,10 @@ from .import_records import ImportRecords
 from .transactions import TransactionHistory
 from .audit import AuditRecords
 from .price.valueasset import ValueAsset
+from .price.exceptions import UnexpectedDataSourceError
 from .tax import TaxCalculator
 from .report import ReportLog, ReportPdf
+from .exceptions import ImportFailureError
 
 if sys.stdout.encoding != 'UTF-8':
     if sys.version_info[0] < 3:
@@ -70,18 +72,48 @@ def main():
         print("%ssystem: %s, release: %s" % (Fore.GREEN, platform.system(), platform.release()))
         config.output_config()
 
+    try:
+        transaction_records = do_import(config.args.filename)
+    except IOError:
+        parser.exit("%sERROR%s File could not be read: %s" % (
+            Back.RED+Fore.BLACK, Back.RESET+Fore.RED, config.args.filename))
+    except ImportFailureError:
+        parser.exit()
+
+    if not config.args.skipaudit and not config.args.summary:
+        audit = AuditRecords(transaction_records)
+    else:
+        audit = None
+
+    try:
+        tax, value_asset = do_tax(transaction_records,
+                                  config.args.taxyear,
+                                  config.args.summary)
+    except UnexpectedDataSourceError as e:
+        parser.exit("%sERROR%s %s" % (
+            Back.RED+Fore.BLACK, Back.RESET+Fore.RED, e))
+
+    if config.args.nopdf:
+        ReportLog(audit,
+                  tax.tax_report,
+                  value_asset.price_report,
+                  tax.holdings_report)
+    else:
+        ReportPdf(parser.prog,
+                  audit,
+                  tax.tax_report,
+                  value_asset.price_report,
+                  tax.holdings_report)
+
+def do_import(filename):
     import_records = ImportRecords()
 
-    if config.args.filename:
+    if filename:
         try:
-            try:
-                import_records.import_excel(config.args.filename)
-            except xlrd.XLRDError:
-                with io.open(config.args.filename, newline='', encoding='utf-8') as csv_file:
-                    import_records.import_csv(csv_file)
-        except IOError:
-            parser.exit("%sERROR%s File could not be read: %s" % (
-                Back.RED+Fore.BLACK, Back.RESET+Fore.RED, config.args.filename))
+            import_records.import_excel(filename)
+        except xlrd.XLRDError:
+            with io.open(filename, newline='', encoding='utf-8') as csv_file:
+                import_records.import_csv(csv_file)
     else:
         if sys.version_info[0] < 3:
             import_records.import_csv(codecs.getreader('utf-8')(sys.stdin))
@@ -93,15 +125,11 @@ def main():
         import_records.success_cnt, import_records.failure_cnt))
 
     if import_records.failure_cnt > 0:
-        parser.exit()
+        raise ImportFailureError
 
-    transaction_records = import_records.get_records()
+    return import_records.get_records()
 
-    if not config.args.skipaudit and not config.args.summary:
-        audit = AuditRecords(transaction_records)
-    else:
-        audit = None
-
+def do_tax(transaction_records, tax_year, summary):
     value_asset = ValueAsset()
     transaction_history = TransactionHistory(transaction_records, value_asset)
 
@@ -115,35 +143,25 @@ def main():
 
     tax.process_unmatched()
 
-    if not config.args.summary:
+    if not summary:
         tax.process_income()
 
-    if config.args.taxyear:
+    if tax_year:
         print("%scalculating tax year %d-%d" % (
-            Fore.CYAN, config.args.taxyear - 1, config.args.taxyear))
-        tax.calculate_capital_gains(config.args.taxyear)
-        if not config.args.summary:
-            tax.calculate_income(config.args.taxyear)
+            Fore.CYAN, tax_year - 1, tax_year))
+        tax.calculate_capital_gains(tax_year)
+        if not summary:
+            tax.calculate_income(tax_year)
     else:
         # Calculate for all years
         for year in sorted(tax.tax_events):
             print("%scalculating tax year %d-%d" % (
                 Fore.CYAN, year - 1, year))
             tax.calculate_capital_gains(year)
-            if not config.args.summary:
+            if not summary:
                 tax.calculate_income(year)
 
-        if not config.args.summary:
+        if not summary:
             tax.calculate_holdings(value_asset)
 
-    if config.args.nopdf:
-        ReportLog(audit,
-                  tax.tax_report,
-                  value_asset.price_report,
-                  tax.holdings_report)
-    else:
-        ReportPdf(parser.prog,
-                  audit,
-                  tax.tax_report,
-                  value_asset.price_report,
-                  tax.holdings_report)
+    return tax, value_asset
