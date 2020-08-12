@@ -72,7 +72,6 @@ class PriceData(object):
             raise UnexpectedDataSourceError(data_source)
 
     def get_latest(self, asset, quote):
-        price = name = data_source = None
         for data_source in self.data_source_priority(asset):
             price, name = self.get_latest_ds(data_source, asset, quote)
             if price is not None:
@@ -84,12 +83,11 @@ class PriceData(object):
                         quote,
                         self.data_sources[data_source.upper()].name(),
                         name))
-                break
+                return price, name, self.data_sources[data_source.upper()].name()
 
-        return price, name, self.data_sources[data_source.upper()].name()
+        return None, None, None
 
     def get_historical(self, asset, quote, timestamp):
-        price = name = data_source = url = None
         for data_source in self.data_source_priority(asset):
             price, name, url = self.get_historical_ds(data_source, asset, quote, timestamp)
             if price is not None:
@@ -102,6 +100,6 @@ class PriceData(object):
                         quote,
                         self.data_sources[data_source.upper()].name(),
                         name))
-                break
+                return price, name, self.data_sources[data_source.upper()].name(), url
 
-        return price, name, self.data_sources[data_source.upper()].name(), url
+        return None, None, None, None
