@@ -67,7 +67,9 @@ def main():
         if config.args.date:
             try:
                 timestamp = dateutil.parser.parse(config.args.date)
-            except ValueError as e:
+                timestamp = timestamp.replace(tzinfo=config.TZ_UTC)
+                print("%s" % timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'))
+            except ValueError:
                 if sys.version_info[0] < 3:
                     err_msg = ' '.join(e)
                 else:
