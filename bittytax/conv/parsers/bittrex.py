@@ -11,7 +11,7 @@ WALLET = "Bittrex"
 
 def parse_bittrex_trades2(data_row, parser, _filename):
     in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[14])
+    data_row.timestamp = DataParser.parse_timestamp(in_row[2])
 
     if in_row[3] == "LIMIT_BUY":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
@@ -40,7 +40,7 @@ def parse_bittrex_trades2(data_row, parser, _filename):
 
 def parse_bittrex_trades(data_row, parser, _filename):
     in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[8])
+    data_row.timestamp = DataParser.parse_timestamp(in_row[7])
 
     if in_row[2] == "LIMIT_BUY":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
@@ -96,6 +96,14 @@ def parse_bittrex_withdrawals(data_row, _parser, _filename):
                                              fee_quantity=in_row[7],
                                              fee_asset=in_row[1],
                                              wallet=WALLET)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Bittrex Trades",
+           ['Uuid', 'Exchange', 'TimeStamp', 'OrderType', 'Limit', 'Quantity', 'QuantityRemaining',
+            'Commission', 'Price', 'PricePerUnit', 'IsConditional', 'Condition', 'ConditionTarget',
+            'ImmediateOrCancel', 'Closed', 'TimeInForceTypeId', 'TimeInForce'],
+           worksheet_name="Bittrex T",
+           row_handler=parse_bittrex_trades2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bittrex Trades",
