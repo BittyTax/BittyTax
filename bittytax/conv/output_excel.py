@@ -32,6 +32,7 @@ class OutputExcel(OutputBase):
         self.filename = self.get_output_filename(self.FILE_EXTENSION)
         self.workbook = xlsxwriter.Workbook(self.filename)
         self.workbook.set_size(1800, 1200)
+        self.workbook.formats[0].set_font_size(FONT_SIZE)
         self.workbook.set_properties({'title': self.TITLE,
                                       'author': '%s v%s' % (progname, __version__),
                                       'comments': self.PROJECT_URL})
