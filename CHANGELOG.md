@@ -2,6 +2,7 @@
 ## [Unreleased]
 ### Fixed
 - Cell conversion of imported Excel data safer for python 2.
+- Circle parser: filter out other currency symbols '£€$'.
 ### Added
 - Conversion tool: added parser for CoinTracking.info accounting data.
 - Conversion tool: added parser for Gravity (Bitstocks) exchange.
@@ -62,14 +63,14 @@
 - Accounting tool: Identify if asset values are fixed or from historic price data.
 - Accounting tool: PDF report output.
 ### Changed
-- Accounting tool: Timestamps normalized to local time only for Buy/Sell transactions.
+- Accounting tool: Timestamps normalised to local time only for Buy/Sell transactions.
 - Accounting tool: Made fees optional for Buy/Sell transactions.
 
 ## Version [0.2.1] Beta (2020-03-07)
 ### Fixed
 - Tax summary: Gains in the year should exclude losses.
 - Bittrex parser: Adjust quantity for partially filled orders.
-### Addded
+### Added
 - HitBTC exchange data files.
 - KuCoin trades data file.
 - Improved fee handling, including 3rd asset fees.
@@ -81,7 +82,7 @@
 - Bitfinex parser: wallet name typo.
 - Conversion tool: use repr when parsing numbers in excel files to ensure no precision is lost.
 - Coinbase: updated with new TransactionsReport header.
-- Gatehub parser: exchange transactions with missing component incorrecly handled when --append option used.
+- Gatehub parser: exchange transactions with missing component incorrectly handled when --append option used.
 ### Added
 - Audit: output transaction record in debug.
 - Bittrex: new data file format for deposits and withdrawals added.
