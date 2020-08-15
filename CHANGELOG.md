@@ -9,6 +9,7 @@
 - Asset tool: new tool to list/search which assets have price data available.
 - Etherscan parser: added ERC-20 tokens and ERC-721 NFTs exports.
 - Bittrex parser: new data file format added.
+- Coinbase Pro parser: new "Account Statement" data file format added.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 - Data source names in config are now case-insensitive.
