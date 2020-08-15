@@ -3,12 +3,57 @@
 
 from decimal import Decimal
 
+from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError
 
 WALLET = "Coinbase"
 DUPLICATE = "Duplicate"
+
+def parse_coinbase(data_row, parser, _filename):
+    in_row = data_row.in_row
+    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+
+    if in_row[1] == "Receive":
+        if "Coinbase Referral" in in_row[8]:
+            t_type = TransactionOutRecord.TYPE_GIFT_RECEIVED
+        else:
+            t_type = TransactionOutRecord.TYPE_DEPOSIT
+
+        data_row.t_record = TransactionOutRecord(t_type,
+                                                 data_row.timestamp,
+                                                 buy_quantity=in_row[3],
+                                                 buy_asset=in_row[2],
+                                                 wallet=WALLET)
+    elif in_row[1] == "Send":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                 data_row.timestamp,
+                                                 sell_quantity=in_row[3],
+                                                 sell_asset=in_row[2],
+                                                 wallet=WALLET)
+    elif in_row[1] == "Buy":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                 data_row.timestamp,
+                                                 buy_quantity=in_row[3],
+                                                 buy_asset=in_row[2],
+                                                 sell_quantity=in_row[5],
+                                                 sell_asset=config.CCY,
+                                                 fee_quantity=in_row[7],
+                                                 fee_asset=config.CCY,
+                                                 wallet=WALLET)
+    elif in_row[1] == "Sell":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                 data_row.timestamp,
+                                                 buy_quantity=in_row[5],
+                                                 buy_asset=config.CCY,
+                                                 sell_quantity=in_row[3],
+                                                 sell_asset=in_row[2],
+                                                 fee_quantity=in_row[7],
+                                                 fee_asset=config.CCY,
+                                                 wallet=WALLET)
+    else:
+        raise UnexpectedTypeError(1, parser.in_header[1], in_row[1])
 
 def parse_coinbase_transfers(data_row, parser, _filename):
     in_row = data_row.in_row
@@ -149,6 +194,14 @@ def parse_coinbase_transactions(data_row, _parser, _filename):
                                                      buy_quantity=in_row[2],
                                                      buy_asset=in_row[3],
                                                      wallet=WALLET)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Coinbase",
+           ['Timestamp', 'Transaction Type', 'Asset', 'Quantity Transacted',
+            'GBP Spot Price at Transaction', 'GBP Subtotal', 'GBP Total (inclusive of fees)',
+            'GBP Fees', 'Notes'],
+           worksheet_name="Coinbase",
+           row_handler=parse_coinbase)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Coinbase Transfers",

@@ -148,7 +148,7 @@ class DataFile(object):
     def get_parser(reader):
         parser = None
         # header might not be on first line
-        for row in range(5):
+        for row in range(8):
             try:
                 parser = DataParser.match_header(next(reader), row)
             except KeyError:
