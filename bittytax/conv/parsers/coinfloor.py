@@ -15,21 +15,21 @@ def parse_coinfloor_trades(data_row, parser, _filename):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[3],
-                                                 buy_asset=in_row[1],
+                                                 buy_asset=in_row[1].replace('XBT', 'BTC'),
                                                  sell_quantity=in_row[5],
-                                                 sell_asset=in_row[2],
+                                                 sell_asset=in_row[2].replace('XBT', 'BTC'),
                                                  fee_quantity=in_row[6],
-                                                 fee_asset=in_row[2],
+                                                 fee_asset=in_row[2].replace('XBT', 'BTC'),
                                                  wallet=WALLET)
     elif in_row[7] == "Sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[5],
-                                                 buy_asset=in_row[2],
+                                                 buy_asset=in_row[2].replace('XBT', 'BTC'),
                                                  sell_quantity=in_row[3],
-                                                 sell_asset=in_row[1],
+                                                 sell_asset=in_row[1].replace('XBT', 'BTC'),
                                                  fee_quantity=in_row[6],
-                                                 fee_asset=in_row[2],
+                                                 fee_asset=in_row[2].replace('XBT', 'BTC'),
                                                  wallet=WALLET)
     else:
         raise UnexpectedTypeError(7, parser.in_header[7], in_row[7])
@@ -63,5 +63,11 @@ DataParser(DataParser.TYPE_EXCHANGE,
 DataParser(DataParser.TYPE_EXCHANGE,
            "Coinfloor Deposits/Withdrawals",
            ['Date & Time', 'Amount', 'Asset', 'Type'],
+           worksheet_name="Coinfloor D,W",
+           row_handler=parse_coinfloor_deposits_withdrawals)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Coinfloor Deposits/Withdrawals",
+           ['Date & Time', 'Amount', 'Asset', 'Type', 'Address', 'Transaction Hash'],
            worksheet_name="Coinfloor D,W",
            row_handler=parse_coinfloor_deposits_withdrawals)
