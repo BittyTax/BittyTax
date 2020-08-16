@@ -58,7 +58,7 @@ setup(
         'jinja2',
         'xhtml2pdf',
         'colorama',
-        'tqdm>=4.11.2,<4.25.0',
+        'tqdm',
     ],
     entry_points={
         'console_scripts': [

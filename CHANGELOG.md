@@ -5,6 +5,7 @@
 - Circle parser: filter out other currency symbols '£€$'.
 - Cryptsy parser: sell/buy quantities already had fee included.
 - Cryptopia parser: calculations rounded to 8 decimal places.
+- Tqdm workaround (https://github.com/tqdm/tqdm/issues/777).
 ### Added
 - Conversion tool: added parser for CoinTracking.info accounting data.
 - Conversion tool: added parser for Gravity (Bitstocks) exchange.
