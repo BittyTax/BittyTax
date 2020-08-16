@@ -3,6 +3,7 @@
 ### Fixed
 - Cell conversion of imported Excel data safer for python 2.
 - Circle parser: filter out other currency symbols '£€$'.
+- Cryptsy parser: sell/buy quantities already had fee included.
 ### Added
 - Conversion tool: added parser for CoinTracking.info accounting data.
 - Conversion tool: added parser for Gravity (Bitstocks) exchange.

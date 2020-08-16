@@ -5,7 +5,7 @@ from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError
 
-WALLET = "Crypsty"
+WALLET = "Cryptsy"
 
 def parse_cryptsy(data_row, parser, _filename):
     in_row = data_row.in_row
@@ -16,7 +16,7 @@ def parse_cryptsy(data_row, parser, _filename):
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[4],
                                                  buy_asset=in_row[2].split('/')[0],
-                                                 sell_quantity=in_row[7],
+                                                 sell_quantity=in_row[5],
                                                  sell_asset=in_row[2].split('/')[1],
                                                  fee_quantity=in_row[6],
                                                  fee_asset=in_row[2].split('/')[1],
@@ -24,7 +24,7 @@ def parse_cryptsy(data_row, parser, _filename):
     elif in_row[1] == "Sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[7],
+                                                 buy_quantity=in_row[5],
                                                  buy_asset=in_row[2].split('/')[1],
                                                  sell_quantity=in_row[4],
                                                  sell_asset=in_row[2].split('/')[0],
