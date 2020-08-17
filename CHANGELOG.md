@@ -17,6 +17,7 @@
 - Coinbase parser: new "Transaction history" data file format added.
 - Coinfloor parser: new "Deposit and Withdrawal" data file format added.
 - Ledger Live parser: new data file format added.
+- GateHub parser: new data file format added.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 - Data source names in config are now case-insensitive.

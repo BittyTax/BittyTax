@@ -8,7 +8,7 @@ from ..dataparser import DataParser
 from ..exceptions import DataParserError, UnexpectedTypeError, \
                          MissingValueError, MissingComponentError
 
-WALLET = "Gatehub"
+WALLET = "GateHub"
 
 def parse_gatehub(data_rows, parser, _filename):
     for data_row in data_rows:
@@ -47,7 +47,7 @@ def parse_gatehub_row(data_rows, parser, data_row):
             buy_asset = in_row[4]
 
         fee_quantity, fee_asset = find_same_tx(data_rows, in_row[1],
-                                               "ripple_network_fee")
+                                               "network_fee")
     elif in_row[2] == "exchange":
         t_type = TransactionOutRecord.TYPE_TRADE
         if Decimal(in_row[3]) < 0:
@@ -67,8 +67,8 @@ def parse_gatehub_row(data_rows, parser, data_row):
             raise MissingComponentError(1, parser.in_header[1], in_row[1])
 
         fee_quantity, fee_asset = find_same_tx(data_rows, in_row[1],
-                                               "ripple_network_fee")
-    elif in_row[2] == "ripple_network_fee":
+                                               "network_fee")
+    elif "network_fee" in in_row[2]:
         # Fees which are not associated with a payment or exchange are added
         # as a Spend
         t_type = TransactionOutRecord.TYPE_SPEND
@@ -94,7 +94,7 @@ def find_same_tx(data_rows, tx_hash, tx_type):
     data_rows = [data_row for data_row in data_rows
                  if data_row.in_row[1] == tx_hash and not data_row.parsed]
     for data_row in data_rows:
-        if tx_type == data_row.in_row[2]:
+        if tx_type in data_row.in_row[2]:
             quantity = abs(Decimal(data_row.in_row[3]))
             asset = data_row.in_row[4]
             data_row.timestamp = DataParser.parse_timestamp(data_row.in_row[0])
@@ -104,7 +104,7 @@ def find_same_tx(data_rows, tx_hash, tx_type):
     return quantity, asset
 
 DataParser(DataParser.TYPE_EXCHANGE,
-           "GateHub (Ripple)",
+           "GateHub (XRP)",
            ['Time', 'TX hash', 'Type', 'Amount', 'Currency', 'Currency Issuer Address',
             'Currency Issuer Name', 'Balance'],
            worksheet_name="Gatehub",
