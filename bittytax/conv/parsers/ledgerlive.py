@@ -22,8 +22,7 @@ def parse_ledger_live(data_row, parser, _filename):
                                                  fee_quantity=Decimal(in_row[4]),
                                                  fee_asset=in_row[1],
                                                  wallet=WALLET)
-
-    if in_row[2] == "OUT":
+    elif in_row[2] == "OUT":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=Decimal(in_row[3]) - \
@@ -34,6 +33,13 @@ def parse_ledger_live(data_row, parser, _filename):
                                                  wallet=WALLET)
     else:
         raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
+
+DataParser(DataParser.TYPE_WALLET,
+           "Ledger Live",
+           ['Operation Date', 'Currency Ticker', 'Operation Type', 'Operation Amount',
+            'Operation Fees', 'Operation Hash', 'Account Name', 'Account xpub'],
+           worksheet_name="Ledger",
+           row_handler=parse_ledger_live)
 
 DataParser(DataParser.TYPE_WALLET,
            "Ledger Live",

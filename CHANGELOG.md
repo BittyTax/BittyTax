@@ -6,6 +6,7 @@
 - Cryptsy parser: sell/buy quantities already had fee included.
 - Cryptopia parser: calculations rounded to 8 decimal places.
 - Tqdm workaround (https://github.com/tqdm/tqdm/issues/777).
+- Ledger Live parser: unrecognised operation type 'IN'.
 ### Added
 - Conversion tool: added parser for CoinTracking.info accounting data.
 - Conversion tool: added parser for Gravity (Bitstocks) exchange.
@@ -15,6 +16,7 @@
 - Coinbase Pro parser: new "Account Statement" data file format added.
 - Coinbase parser: new "Transaction history" data file format added.
 - Coinfloor parser: new "Deposit and Withdrawal" data file format added.
+- Ledger Live parser: new data file format added.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 - Data source names in config are now case-insensitive.
