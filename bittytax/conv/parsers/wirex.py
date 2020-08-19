@@ -13,7 +13,8 @@ def parse_wirex(data_row, parser, _filename):
 
     if in_row[1] == "Create":
         return
-    elif in_row[1] == "In":
+
+    if in_row[1] == "In":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[3].split(' ')[0],
