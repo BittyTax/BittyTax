@@ -65,8 +65,12 @@ class DataSourceBase(object):
         self.prices[pair].update(prices)
 
     def load_prices(self):
+        filename = os.path.join(config.CACHE_DIR, self.name() + '.json')
+        if not os.path.exists(filename):
+            return {}
+
         try:
-            with open(os.path.join(config.CACHE_DIR, self.name() + '.json'), 'r') as price_cache:
+            with open(filename, 'r') as price_cache:
                 json_prices = json.load(price_cache)
                 return {pair: {date: {'price': self.str_to_decimal(price['price']),
                                       'url': price['url']}

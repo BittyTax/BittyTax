@@ -25,6 +25,7 @@
 - Accounting/Price tool: display error message if data source name unrecognised.
 - Price tool: display error message if date is invalid.
 - Conversion tool: set default font size in Excel workbook.
+- Accounting/Price tool: don't display warning if the price data cache file does not exist.
 
 ## Version [0.4.1] Beta (2020-07-25)
 ### Fixed
