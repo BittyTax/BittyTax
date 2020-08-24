@@ -27,28 +27,33 @@ def parse_qt_wallet(data_row, parser, _filename):
         return
 
     if in_row[2] == "Received with":
-        t_type = TransactionOutRecord.TYPE_DEPOSIT
-    elif in_row[2] == "Sent to":
-        t_type = TransactionOutRecord.TYPE_WITHDRAWAL
-    elif in_row[2] == "Mined":
-        t_type = TransactionOutRecord.TYPE_MINING
-    elif in_row[2] == "Payment to yourself":
-        t_type = TransactionOutRecord.TYPE_WITHDRAWAL
-    else:
-        raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
-
-    if Decimal(in_row[5]) > 0:
-        data_row.t_record = TransactionOutRecord(t_type,
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[5],
                                                  buy_asset=symbol,
                                                  wallet=WALLET)
-    else:
-        data_row.t_record = TransactionOutRecord(t_type,
+    elif in_row[2] == "Sent to":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=abs(Decimal(in_row[5])),
                                                  sell_asset=symbol,
                                                  wallet=WALLET)
+    elif in_row[2] == "Mined":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_MINING,
+                                                 data_row.timestamp,
+                                                 buy_quantity=in_row[5],
+                                                 buy_asset=symbol,
+                                                 wallet=WALLET)
+    elif in_row[2] == "Payment to yourself":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                 data_row.timestamp,
+                                                 sell_quantity=Decimal(0),
+                                                 sell_asset=symbol,
+                                                 fee_quantity=abs(Decimal(in_row[5])),
+                                                 fee_asset=symbol,
+                                                 wallet=WALLET)
+    else:
+        raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
 
 DataParser(DataParser.TYPE_WALLET,
            "Qt Wallet (i.e. Bitcoin Core, etc)",

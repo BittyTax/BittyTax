@@ -28,6 +28,7 @@
 - Price tool: display error message if date is invalid.
 - Conversion tool: set default font size in Excel workbook.
 - Accounting/Price tool: don't display warning if the price data cache file does not exist.
+- Qt Wallet parser: "payment to yourself" becomes withdrawal with just fee.
 
 ## Version [0.4.1] Beta (2020-07-25)
 ### Fixed
