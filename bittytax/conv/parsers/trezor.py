@@ -33,13 +33,21 @@ def parse_trezor(data_row, parser, filename):
                                                  fee_quantity=Decimal(in_row[7])-Decimal(in_row[6]),
                                                  fee_asset=symbol,
                                                  wallet=WALLET)
-    elif in_row[5] == "OUT" or in_row[5] == "SELF":
+    elif in_row[5] == "OUT":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=in_row[6],
                                                  sell_asset=symbol,
                                                  fee_quantity=abs(Decimal(in_row[7]))
                                                  -Decimal(in_row[6]),
+                                                 fee_asset=symbol,
+                                                 wallet=WALLET)
+    elif in_row[5] == "SELF":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                 data_row.timestamp,
+                                                 sell_quantity=Decimal(0),
+                                                 sell_asset=symbol,
+                                                 fee_quantity=abs(Decimal(in_row[7])),
                                                  fee_asset=symbol,
                                                  wallet=WALLET)
     else:
@@ -67,13 +75,21 @@ def parse_trezor2(data_row, parser, filename):
                                                  fee_quantity=Decimal(in_row[6])-Decimal(in_row[5]),
                                                  fee_asset=symbol,
                                                  wallet=WALLET)
-    elif in_row[4] == "OUT" or in_row[4] == "SELF":
+    elif in_row[4] == "OUT":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=in_row[5],
                                                  sell_asset=symbol,
                                                  fee_quantity=abs(Decimal(in_row[6]))
                                                  -Decimal(in_row[5]),
+                                                 fee_asset=symbol,
+                                                 wallet=WALLET)
+    elif in_row[4] == "SELF":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                 data_row.timestamp,
+                                                 sell_quantity=Decimal(0),
+                                                 sell_asset=symbol,
+                                                 fee_quantity=abs(Decimal(in_row[6])),
                                                  fee_asset=symbol,
                                                  wallet=WALLET)
     else:
