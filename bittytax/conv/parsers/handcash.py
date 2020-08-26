@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2020
 
+import json
 from decimal import Decimal
 
 from ..out_record import TransactionOutRecord
@@ -13,14 +14,25 @@ def parse_handcash(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[9])
 
+    participants = json.loads(in_row[8])
     if in_row[0] == "receive":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+        if participants[0]["type"] == "user":
+            t_type = TransactionOutRecord.TYPE_GIFT_RECEIVED
+        else:
+            t_type = TransactionOutRecord.TYPE_DEPOSIT
+
+        data_row.t_record = TransactionOutRecord(t_type,
                                                  data_row.timestamp,
                                                  buy_quantity=Decimal(in_row[5]) / 100000000,
                                                  buy_asset="BSV",
                                                  wallet=WALLET)
     elif in_row[0] == "send":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+        if participants[0]["type"] == "user":
+            t_type = TransactionOutRecord.TYPE_GIFT_SENT
+        else:
+            t_type = TransactionOutRecord.TYPE_WITHDRAWAL
+
+        data_row.t_record = TransactionOutRecord(t_type,
                                                  data_row.timestamp,
                                                  sell_quantity=Decimal(in_row[5]) / 100000000,
                                                  sell_asset="BSV",
