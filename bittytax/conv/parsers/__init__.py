@@ -17,6 +17,7 @@ from . import gatehub
 from . import gravity
 from . import handcash
 from . import hitbtc
+from . import hotbit
 from . import ii
 from . import kucoin
 from . import ledgerlive
