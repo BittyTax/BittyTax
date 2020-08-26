@@ -12,6 +12,7 @@ from . import cointracking
 from . import cryptopia
 from . import cryptsy
 from . import electrum
+from . import energyweb
 from . import etherscan
 from . import gatehub
 from . import gravity

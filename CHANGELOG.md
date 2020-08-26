@@ -24,6 +24,7 @@
 - Electrum parser: new data file format added (ElectrumSV).
 - Conversion tool: added parser for Hotbit exchange.
 - Conversion tool: added parser for Liquid exchange.
+- Conversion tool: added parser for Energy Web explorer.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 - Data source names in config are now case-insensitive.
