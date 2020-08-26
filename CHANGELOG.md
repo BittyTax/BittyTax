@@ -22,7 +22,8 @@
 - GateHub parser: new data file format added.
 - Trezor parser: try and get symbol name from filename.
 - Electrum parser: new data file format added (ElectrumSV).
-- Conversion tool: added parser for HotBit exchange.
+- Conversion tool: added parser for Hotbit exchange.
+- Conversion tool: added parser for Liquid exchange.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 - Data source names in config are now case-insensitive.

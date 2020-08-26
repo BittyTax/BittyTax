@@ -21,6 +21,7 @@ from . import hotbit
 from . import ii
 from . import kucoin
 from . import ledgerlive
+from . import liquid
 from . import okex
 from . import poloniex
 from . import qtwallet
