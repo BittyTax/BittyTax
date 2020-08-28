@@ -15,12 +15,15 @@ def parse_qt_wallet(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[1], tz='Europe/London')
 
-    if parser.args[0].group(2):
-        symbol = parser.args[0].group(2)
-    elif config.args.cryptoasset:
-        symbol = config.args.cryptoasset
+    amount, symbol = get_amount(in_row[5])
+
+    if not config.args.cryptoasset:
+        if parser.args[0].group(2):
+            symbol = parser.args[0].group(2)
+        elif not symbol:
+            raise UnknownCryptoassetError
     else:
-        raise UnknownCryptoassetError
+        symbol = config.args.cryptoasset
 
     if in_row[0] == "false" and not config.args.unconfirmed:
         # skip unconfirmed transactions
@@ -29,19 +32,19 @@ def parse_qt_wallet(data_row, parser, _filename):
     if in_row[2] == "Received with":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[5],
+                                                 buy_quantity=amount,
                                                  buy_asset=symbol,
                                                  wallet=WALLET)
     elif in_row[2] == "Sent to":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=abs(Decimal(in_row[5])),
+                                                 sell_quantity=amount,
                                                  sell_asset=symbol,
                                                  wallet=WALLET)
     elif in_row[2] == "Mined":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_MINING,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[5],
+                                                 buy_quantity=amount,
                                                  buy_asset=symbol,
                                                  wallet=WALLET)
     elif in_row[2] == "Payment to yourself":
@@ -49,11 +52,20 @@ def parse_qt_wallet(data_row, parser, _filename):
                                                  data_row.timestamp,
                                                  sell_quantity=Decimal(0),
                                                  sell_asset=symbol,
-                                                 fee_quantity=abs(Decimal(in_row[5])),
+                                                 fee_quantity=amount,
                                                  fee_asset=symbol,
                                                  wallet=WALLET)
     else:
         raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
+
+def get_amount(amount):
+    match = re.match(r"^(-?\d+\.\d+) (\w{3,4})$", amount)
+
+    if match:
+        amount = match.group(1)
+        symbol = match.group(2)
+        return abs(Decimal(amount)), symbol
+    return abs(Decimal(amount)), None
 
 DataParser(DataParser.TYPE_WALLET,
            "Qt Wallet (i.e. Bitcoin Core, etc)",

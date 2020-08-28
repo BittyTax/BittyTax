@@ -34,6 +34,8 @@
 - Accounting/Price tool: don't display warning if the price data cache file does not exist.
 - Qt Wallet parser: "payment to yourself" becomes withdrawal with just fee.
 - HandCash parser: identify transactions to other users as gifts.
+- Qt Wallet parser: get symbol name from "Amount" if available.
+- Qt Wallet parser: -ca option takes precedence over any symbol name found in the data file.
 
 ## Version [0.4.1] Beta (2020-07-25)
 ### Fixed
