@@ -55,6 +55,12 @@ def parse_qt_wallet(data_row, parser, _filename):
                                                  fee_quantity=amount,
                                                  fee_asset=symbol,
                                                  wallet=WALLET)
+    elif in_row[2] == "Name operation":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
+                                                 data_row.timestamp,
+                                                 sell_quantity=amount,
+                                                 sell_asset=symbol,
+                                                 wallet=WALLET)
     else:
         raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
 
