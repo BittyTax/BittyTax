@@ -30,7 +30,7 @@ setup(
     url=GITHUB_REPO,
     download_url=GITHUB_REPO + '/archive/v{}.zip'.format(get_version()),
     author='Scott Green/Nano Nano Ltd',
-    author_email='scott@bitty.tax',
+    author_email='bittytax@nanonano.co.uk',
     license='AGPLv3',
     classifiers=[
         'Development Status :: 4 - Beta',
