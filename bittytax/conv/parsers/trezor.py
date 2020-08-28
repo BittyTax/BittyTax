@@ -16,10 +16,10 @@ def parse_trezor(data_row, parser, filename):
     data_row.timestamp = DataParser.parse_timestamp(in_row[0] + 'T' + in_row[1])
 
     if not config.args.cryptoasset:
-        symbol = re.match(r".+_(\w{3,4})\.csv$", filename)
+        match = re.match(r".+_(\w{3,4})\.csv$", filename)
 
-        if symbol:
-            symbol = symbol.group(1).upper()
+        if match:
+            symbol = match.group(1).upper()
         else:
             raise UnknownCryptoassetError
     else:
@@ -58,10 +58,10 @@ def parse_trezor2(data_row, parser, filename):
     data_row.timestamp = DataParser.parse_timestamp(in_row[0] + 'T' + in_row[1])
 
     if not config.args.cryptoasset:
-        symbol = re.match(r".+_(\w{3,4})\.csv$", filename)
+        match = re.match(r".+_(\w{3,4})\.csv$", filename)
 
-        if symbol:
-            symbol = symbol.group(1).upper()
+        if match:
+            symbol = match.group(1).upper()
         else:
             raise UnknownCryptoassetError
     else:
