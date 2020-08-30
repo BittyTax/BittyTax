@@ -12,7 +12,7 @@ WALLET = "Electrum"
 
 def parse_electrum2(data_row, _parser, _filename):
     in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[3])
+    data_row.timestamp = DataParser.parse_timestamp(in_row[3], tz='Europe/London')
 
     if not config.args.cryptoasset:
         raise UnknownCryptoassetError
@@ -32,7 +32,7 @@ def parse_electrum2(data_row, _parser, _filename):
 
 def parse_electrum(data_row, _parser, _filename):
     in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[4])
+    data_row.timestamp = DataParser.parse_timestamp(in_row[4], tz='Europe/London')
 
     if not config.args.cryptoasset:
         raise UnknownCryptoassetError

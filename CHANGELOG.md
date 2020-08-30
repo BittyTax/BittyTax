@@ -9,6 +9,7 @@
 - Ledger Live parser: unrecognised operation type 'IN'.
 - TradeSatoshi parser: calculations rounded to 8 decimal places.
 - Trezor parser: "self" payment exception.
+- Electrum paser: timestamp is in local time.
 ### Added
 - Conversion tool: added parser for CoinTracking.info accounting data.
 - Conversion tool: added parser for Gravity (Bitstocks) exchange.
