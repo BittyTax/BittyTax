@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import sys
 import re
 from decimal import Decimal
+
+from colorama import Fore, Back
 
 from ...config import config
 from ..out_record import TransactionOutRecord
@@ -26,7 +29,11 @@ def parse_qt_wallet(data_row, parser, _filename):
         symbol = config.args.cryptoasset
 
     if in_row[0] == "false" and not config.args.unconfirmed:
-        # skip unconfirmed transactions
+        sys.stderr.write("%srow[%s] [%s]\n" % (
+            Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row))
+        sys.stderr.write("%sWARNING%s Skipping unconfirmed transaction, "
+                         "use the [-uc] option to include it\n" % (
+                             Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW))
         return
 
     if in_row[2] == "Received with":

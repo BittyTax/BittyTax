@@ -9,7 +9,7 @@
 - Ledger Live parser: unrecognised operation type 'IN'.
 - TradeSatoshi parser: calculations rounded to 8 decimal places.
 - Trezor parser: "self" payment exception.
-- Electrum paser: timestamp is in local time.
+- Electrum parser: timestamp is in local time.
 ### Added
 - Conversion tool: added parser for CoinTracking.info accounting data.
 - Conversion tool: added parser for Gravity (Bitstocks) exchange.
@@ -27,6 +27,7 @@
 - Conversion tool: added parser for Liquid exchange.
 - Conversion tool: added parser for Energy Web explorer.
 - Qt Wallet parser: recognise Namecoin operations.
+- Qt Wallet parser: warning when skipping unconfirmed transactions.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 - Data source names in config are now case-insensitive.
