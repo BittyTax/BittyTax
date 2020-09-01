@@ -9,8 +9,6 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Energy Web"
 
-DECIMAL_PLACES = 1000000000000000000
-
 def parse_energy_web(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[2])
@@ -18,15 +16,15 @@ def parse_energy_web(data_row, parser, _filename):
     if in_row[6] == "IN":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=Decimal(in_row[7]) / DECIMAL_PLACES,
+                                                 buy_quantity=Decimal(in_row[7]) / 10 ** 18,
                                                  buy_asset="EWT",
                                                  wallet=WALLET)
     elif in_row[6] == "OUT":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=Decimal(in_row[7]) / DECIMAL_PLACES,
+                                                 sell_quantity=Decimal(in_row[7]) / 10 ** 18,
                                                  sell_asset="EWT",
-                                                 fee_quantity=Decimal(in_row[8]) / DECIMAL_PLACES,
+                                                 fee_quantity=Decimal(in_row[8]) / 10 ** 18,
                                                  fee_asset="EWT",
                                                  wallet=WALLET)
     else:

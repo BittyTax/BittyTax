@@ -18,13 +18,13 @@ def parse_changetip(data_row, _parser, _filename):
         if in_row[2] in config.usernames:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                      data_row.timestamp,
-                                                     buy_quantity=Decimal(in_row[4]) / 100000000,
+                                                     buy_quantity=Decimal(in_row[4]) / 10 ** 8,
                                                      buy_asset="BTC",
                                                      wallet=WALLET)
         elif in_row[1] in config.usernames:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_SENT,
                                                      data_row.timestamp,
-                                                     sell_quantity=Decimal(in_row[4]) / 100000000,
+                                                     sell_quantity=Decimal(in_row[4]) / 10 ** 8,
                                                      sell_asset="BTC",
                                                      wallet=WALLET)
         else:
