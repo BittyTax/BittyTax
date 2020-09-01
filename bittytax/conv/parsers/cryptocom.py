@@ -48,7 +48,7 @@ def parse_crypto_com(data_row, parser, _filename):
                                                  sell_value=get_value(in_row),
                                                  wallet=WALLET)
     elif in_row[9] in ("referral_bonus", "referral_card_cashback", "reimbursement",
-                       "gift_card_reward"):
+                       "gift_card_reward", "transfer_cashback", "dust_conversion_credited"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[3],
@@ -56,21 +56,22 @@ def parse_crypto_com(data_row, parser, _filename):
                                                  buy_value=get_value(in_row),
                                                  wallet=WALLET)
 
-    elif in_row[9] == "card_cashback_reverted":
+    elif in_row[9] in ("card_cashback_reverted", "reimbursement_reverted"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_SENT,
                                                  data_row.timestamp,
                                                  sell_quantity=abs(Decimal(in_row[3])),
                                                  sell_asset=in_row[2],
                                                  sell_value=get_value(in_row),
                                                  wallet=WALLET)
-    elif in_row[9] == "crypto_payment":
+    elif in_row[9] in ("crypto_payment", "crypto_purchase", "card_top_up",
+                       "dust_conversion_debited"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
                                                  data_row.timestamp,
                                                  sell_quantity=abs(Decimal(in_row[3])),
                                                  sell_asset=in_row[2],
                                                  sell_value=get_value(in_row),
                                                  wallet=WALLET)
-    elif in_row[9] == "crypto_to_exchange_transfer":
+    elif in_row[9] in ("crypto_withdrawal", "crypto_to_exchange_transfer"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=abs(Decimal(in_row[3])),
@@ -84,11 +85,11 @@ def parse_crypto_com(data_row, parser, _filename):
                                                  buy_asset=in_row[2],
                                                  buy_value=get_value(in_row),
                                                  wallet=WALLET)
-    elif in_row[9] in ("dust_conversion_credited", "dust_conversion_debited"):
-        # TBD
-        return
     elif in_row[9] in ("crypto_earn_program_created", "crypto_earn_program_withdrawn",
-                       "lockup_lock", "lockup_swap_debited"):
+                       "lockup_lock", "lockup_swap_debited", "lockup_upgrade",
+                       "dynamic_coin_swap_credited", "dynamic_coin_swap_debited",
+                       "interest_swap_debited", "interest_swap_credited",
+                       "crypto_wallet_swap_debited", "crypto_wallet_swap_credited"):
         return
     else:
         raise UnexpectedTypeError(9, parser.in_header[9], in_row[9])
