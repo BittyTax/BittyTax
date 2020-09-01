@@ -88,8 +88,10 @@ def parse_crypto_com(data_row, parser, _filename):
     elif in_row[9] in ("crypto_earn_program_created", "crypto_earn_program_withdrawn",
                        "lockup_lock", "lockup_swap_debited", "lockup_upgrade",
                        "dynamic_coin_swap_credited", "dynamic_coin_swap_debited",
+                       "dynamic_coin_swap_bonus_exchange_deposit",
                        "interest_swap_debited", "interest_swap_credited",
-                       "crypto_wallet_swap_debited", "crypto_wallet_swap_credited"):
+                       "crypto_wallet_swap_debited", "crypto_wallet_swap_credited",
+                       "admin_wallet_credited"):
         return
     else:
         raise UnexpectedTypeError(9, parser.in_header[9], in_row[9])
