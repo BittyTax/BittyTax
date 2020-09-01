@@ -37,8 +37,8 @@ def parse_crypto_com(data_row, parser, _filename):
                                                  buy_asset=in_row[2],
                                                  buy_value=get_value(in_row),
                                                  wallet=WALLET)
-    elif in_row[9] in ("viban_purchase", "crypto_exchange", "van_purchase",
-                       "crypto_viban_exchange"):
+    elif in_row[9] in ("viban_purchase", "crypto_purchase", "van_purchase",
+                       "crypto_viban_exchange", "crypto_exchange"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[5],
@@ -63,8 +63,7 @@ def parse_crypto_com(data_row, parser, _filename):
                                                  sell_asset=in_row[2],
                                                  sell_value=get_value(in_row),
                                                  wallet=WALLET)
-    elif in_row[9] in ("crypto_payment", "crypto_purchase", "card_top_up",
-                       "dust_conversion_debited"):
+    elif in_row[9] in ("crypto_payment", "card_top_up", "dust_conversion_debited"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
                                                  data_row.timestamp,
                                                  sell_quantity=abs(Decimal(in_row[3])),
@@ -86,11 +85,12 @@ def parse_crypto_com(data_row, parser, _filename):
                                                  buy_value=get_value(in_row),
                                                  wallet=WALLET)
     elif in_row[9] in ("crypto_earn_program_created", "crypto_earn_program_withdrawn",
-                       "lockup_lock", "lockup_swap_debited", "lockup_upgrade",
+                       "lockup_lock", "lockup_upgrade",
+                       "lockup_swap_credited", "lockup_swap_debited",
                        "dynamic_coin_swap_credited", "dynamic_coin_swap_debited",
                        "dynamic_coin_swap_bonus_exchange_deposit",
-                       "interest_swap_debited", "interest_swap_credited",
-                       "crypto_wallet_swap_debited", "crypto_wallet_swap_credited",
+                       "interest_swap_credited", "interest_swap_debited",
+                       "crypto_wallet_swap_credited", "crypto_wallet_swap_debited",
                        "admin_wallet_credited"):
         return
     else:
