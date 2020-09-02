@@ -10,6 +10,7 @@
 - TradeSatoshi parser: calculations rounded to 8 decimal places.
 - Trezor parser: "self" payment exception.
 - Electrum parser: timestamp is in local time.
+- KeyError: 'bpi' exception. ([#21](https://github.com/BittyTax/BittyTax/issues/21))
 ### Added
 - Conversion tool: added parser for CoinTracking.info accounting data.
 - Conversion tool: added parser for Gravity (Bitstocks) exchange.
