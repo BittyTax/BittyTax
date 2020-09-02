@@ -29,7 +29,7 @@ def parse_qt_wallet(data_row, parser, _filename):
         symbol = config.args.cryptoasset
 
     if in_row[0] == "false" and not config.args.unconfirmed:
-        sys.stderr.write("%srow[%s] [%s]\n" % (
+        sys.stderr.write("%srow[%s] %s\n" % (
             Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row))
         sys.stderr.write("%sWARNING%s Skipping unconfirmed transaction, "
                          "use the [-uc] option to include it\n" % (
