@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import sys
 from decimal import Decimal
 
+from colorama import Fore
 import dateutil.tz
 
+from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import DataParserError, UnexpectedTypeError
@@ -15,6 +18,12 @@ TZ_INFOS = {'CST': dateutil.tz.gettz('Asia/Shanghai')}
 def parse_okex_trades(data_rows, parser, _filename):
     for buy_row, sell_row in zip(data_rows[0::2], data_rows[1::2]):
         try:
+            if config.args.debug:
+                sys.stderr.write("%sconv: row[%s] %s\n" % (
+                    Fore.YELLOW, parser.in_header_row_num + buy_row.line_num, buy_row))
+                sys.stderr.write("%sconv: row[%s] %s\n" % (
+                    Fore.YELLOW, parser.in_header_row_num + sell_row.line_num, sell_row))
+
             parse_okex_trades_row(buy_row, sell_row, parser)
         except DataParserError as e:
             buy_row.failure = e
