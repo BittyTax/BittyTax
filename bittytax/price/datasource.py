@@ -139,7 +139,6 @@ class ExchangeRatesAPI(DataSourceBase):
                                         if quote in json_resp['rates'] else None,
                                'url': url}},
                            timestamp)
-        return self.prices[pair]
 
 class RatesAPI(DataSourceBase):
     def __init__(self):
@@ -170,7 +169,6 @@ class RatesAPI(DataSourceBase):
                                         if quote in json_resp['rates'] else None,
                                'url': url}},
                            timestamp)
-        return self.prices[pair]
 
 class CoinDesk(DataSourceBase):
     def __init__(self):
@@ -188,11 +186,11 @@ class CoinDesk(DataSourceBase):
                   timestamp.strftime('%Y-%m-%d'), datetime.now().strftime('%Y-%m-%d'), quote)
         json_resp = self.get_json(url)
         pair = self.pair(asset, quote)
-        self.update_prices(pair,
-                           {k: {
-                               'price': Decimal(repr(v)) if v else None,
-                               'url': url} for k, v in json_resp['bpi'].items()}, timestamp)
-        return self.prices[pair]
+        if 'bpi' in json_resp:
+            self.update_prices(pair,
+                               {k: {
+                                   'price': Decimal(repr(v)) if v else None,
+                                   'url': url} for k, v in json_resp['bpi'].items()}, timestamp)
 
 class CryptoCompare(DataSourceBase):
     def __init__(self):
@@ -218,7 +216,6 @@ class CryptoCompare(DataSourceBase):
                            {datetime.fromtimestamp(d['time']).strftime('%Y-%m-%d'): {
                                'price': Decimal(repr(d['close'])) if d['close'] else None,
                                'url': url} for d in json_resp['Data']}, timestamp)
-        return self.prices[pair]
 
 class CoinGecko(DataSourceBase):
     def __init__(self):
@@ -243,7 +240,6 @@ class CoinGecko(DataSourceBase):
                                'price': Decimal(repr(p[1])) if p[1] else None,
                                'url': url} for p in json_resp['prices']},
                            timestamp)
-        return self.prices[pair]
 
 class CoinPaprika(DataSourceBase):
     def __init__(self):
@@ -261,7 +257,7 @@ class CoinPaprika(DataSourceBase):
     def get_historical(self, asset, quote, timestamp):
         # Historic prices only available in USD or BTC
         if quote not in ('USD', 'BTC'):
-            return None
+            return
 
         url = "https://api.coinpaprika.com/v1/tickers/%s/historical" \
               "?start=%s&limit=%s&quote=%s&interval=1d" % (
@@ -275,4 +271,3 @@ class CoinPaprika(DataSourceBase):
                                'price': Decimal(repr(p['price'])) if p['price'] else None,
                                'url': url} for p in json_resp},
                            timestamp)
-        return self.prices[pair]
