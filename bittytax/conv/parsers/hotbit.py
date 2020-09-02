@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2020
 
+import sys
 import copy
 
+from colorama import Fore
+
+from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import DataParserError, UnexpectedTypeError
@@ -11,6 +15,10 @@ WALLET = "Hotbit"
 
 def parse_hotbit_trades(data_rows, parser, _filename):
     for row_index, data_row in enumerate(data_rows):
+        if config.args.debug:
+            sys.stderr.write("%sconv: row[%s] %s\n" % (
+                Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row))
+
         if data_row.parsed:
             continue
 

@@ -28,6 +28,10 @@ class DataFile(object):
 
         if parser.row_handler:
             for data_row in self.data_rows:
+                if config.args.debug:
+                    sys.stderr.write("%sconv: row[%s] %s\n" % (
+                        Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row))
+
                 data_row.parse(parser, filename)
         else:
             # all rows handled together

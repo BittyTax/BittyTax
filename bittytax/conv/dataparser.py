@@ -80,7 +80,7 @@ class DataParser(object):
     @classmethod
     def match_header(cls, row, row_num):
         if config.args.debug:
-            sys.stderr.write("%sconv: row[%s] TRY: %s\n" % (
+            sys.stderr.write("%sheader: row[%s] TRY: %s\n" % (
                 Fore.YELLOW, row_num+1, cls.format_row(row)))
 
         parsers_reduced = [p for p in cls.parsers if len(p.header) == len(row)]
@@ -98,14 +98,14 @@ class DataParser(object):
 
             if match:
                 if config.args.debug:
-                    sys.stderr.write("%sconv: row[%s] MATCHED: %s as '%s'\n" % (
+                    sys.stderr.write("%sheader: row[%s] MATCHED: %s as '%s'\n" % (
                         Fore.CYAN, row_num+1, cls.format_row(parser.header), parser.name))
                 parser.in_header = row
                 parser.in_header_row_num = row_num + 1
                 return parser
             else:
                 if config.args.debug:
-                    sys.stderr.write("%sconv: row[%s] NO MATCH: %s '%s'\n" % (
+                    sys.stderr.write("%sheader: row[%s] NO MATCH: %s '%s'\n" % (
                         Fore.BLUE, row_num+1, cls.format_row(parser.header), parser.name))
 
         raise KeyError
