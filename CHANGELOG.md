@@ -11,6 +11,7 @@
 - Trezor parser: "self" payment exception.
 - Electrum parser: timestamp is in local time.
 - KeyError: 'bpi' exception. ([#21](https://github.com/BittyTax/BittyTax/issues/21))
+- Python 3.x compatibility. ([#20](https://github.com/BittyTax/BittyTax/issues/20))
 ### Added
 - Conversion tool: added parser for CoinTracking.info accounting data.
 - Conversion tool: added parser for Gravity (Bitstocks) exchange.
