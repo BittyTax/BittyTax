@@ -109,6 +109,20 @@ def parse_crypto_com(data_row, parser, _filename):
                        "interest_swap_credited", "interest_swap_debited",
                        "crypto_wallet_swap_credited", "crypto_wallet_swap_debited"):
         return
+    elif in_row[9] == "":
+        # Could be a fiat transaction
+        if "Deposit" in in_row[1]:
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                                     data_row.timestamp,
+                                                     buy_quantity=in_row[3],
+                                                     buy_asset=in_row[2],
+                                                     wallet=WALLET)
+        elif "Withdrawal" in in_row[1]:
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                     data_row.timestamp,
+                                                     sell_quantity=abs(Decimal(in_row[3])),
+                                                     sell_asset=in_row[2],
+                                                     wallet=WALLET)
     else:
         raise UnexpectedTypeError(9, parser.in_header[9], in_row[9])
 
