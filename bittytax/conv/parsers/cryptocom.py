@@ -65,7 +65,7 @@ def parse_crypto_com(data_row, parser, _filename):
                                                      sell_asset=in_row[2],
                                                      wallet=WALLET)
     elif in_row[9] in ("referral_bonus", "referral_card_cashback", "reimbursement",
-                       "gift_card_reward", "transfer_cashback"):
+                       "gift_card_reward", "transfer_cashback", "admin_wallet_credited"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[3],
@@ -107,8 +107,7 @@ def parse_crypto_com(data_row, parser, _filename):
                        "dynamic_coin_swap_credited", "dynamic_coin_swap_debited",
                        "dynamic_coin_swap_bonus_exchange_deposit",
                        "interest_swap_credited", "interest_swap_debited",
-                       "crypto_wallet_swap_credited", "crypto_wallet_swap_debited",
-                       "admin_wallet_credited"):
+                       "crypto_wallet_swap_credited", "crypto_wallet_swap_debited"):
         return
     else:
         raise UnexpectedTypeError(9, parser.in_header[9], in_row[9])
