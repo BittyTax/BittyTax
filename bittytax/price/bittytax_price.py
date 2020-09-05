@@ -7,7 +7,8 @@ import codecs
 import platform
 from decimal import Decimal
 
-from colorama import init, Fore, Back
+import colorama
+from colorama import Fore, Back
 import dateutil.parser
 
 from ..version import __version__
@@ -24,7 +25,7 @@ if sys.stdout.encoding != 'UTF-8':
         sys.stdout = codecs.getwriter('utf-8')(sys.stdout)
 
 def main():
-    init()
+    colorama.init()
     parser = argparse.ArgumentParser()
     parser.add_argument('asset',
                         type=str,

@@ -6,7 +6,8 @@ import sys
 import codecs
 import platform
 
-from colorama import init, Fore, Back
+import colorama
+from colorama import Fore, Back
 
 from ..version import __version__
 from ..config import config
@@ -22,7 +23,7 @@ if sys.stdout.encoding != 'UTF-8':
         sys.stdout = codecs.getwriter('utf-8')(sys.stdout)
 
 def main():
-    init()
+    colorama.init()
     parser = argparse.ArgumentParser()
     parser.add_argument('asset',
                         type=str,

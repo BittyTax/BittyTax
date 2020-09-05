@@ -6,7 +6,8 @@ import sys
 import codecs
 import platform
 
-from colorama import init, Fore, Back
+import colorama
+from colorama import Fore, Back
 import xlrd
 
 from ..version import __version__
@@ -27,7 +28,7 @@ if sys.stderr.encoding != 'UTF-8':
         sys.stderr = codecs.getwriter('utf-8')(sys.stderr)
 
 def main():
-    init()
+    colorama.init()
     parser = argparse.ArgumentParser(epilog="supported data file formats:\n" +
                                      DataParser.format_parsers(),
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
