@@ -27,6 +27,7 @@ class TaxCalculator(object):
     DISPOSAL_SAME_DAY = 'Same Day'
     DISPOSAL_BED_AND_BREAKFAST = 'Bed & Breakfast'
     DISPOSAL_SECTION_104 = 'Section 104'
+    DISPOSAL_NO_GAIN_NO_LOSS = 'No Gain/No Loss'
 
     INCOME_TYPES = (Buy.TYPE_MINING, Buy.TYPE_INCOME)
 
@@ -229,8 +230,16 @@ class TaxCalculator(object):
         self.holdings[t.asset].subtract_tokens(t.quantity, cost, fees)
 
         if t.disposal:
-            tax_event = TaxEventCapitalGains(self.DISPOSAL_SECTION_104,
-                                             None, t, cost, fees + (t.fee_value or Decimal(0)))
+            if t.t_type == Sell.TYPE_GIFT_SPOUSE:
+                # Change proceeds to make sure it balances
+                t.proceeds = cost + fees + (t.fee_value or Decimal(0))
+                t.proceeds_fixed = True
+                tax_event = TaxEventCapitalGains(self.DISPOSAL_NO_GAIN_NO_LOSS,
+                                                 None, t, cost, fees + (t.fee_value or Decimal(0)))
+            else:
+                tax_event = TaxEventCapitalGains(self.DISPOSAL_SECTION_104,
+                                                 None, t, cost, fees + (t.fee_value or Decimal(0)))
+
             self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
             if config.args.debug:
                 print("%ssection104:   %s" % (Fore.CYAN, tax_event))

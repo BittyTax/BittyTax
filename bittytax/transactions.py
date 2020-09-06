@@ -311,10 +311,11 @@ class Sell(TransactionBase):
     TYPE_WITHDRAWAL = TransactionRecord.TYPE_WITHDRAWAL
     TYPE_SPEND = TransactionRecord.TYPE_SPEND
     TYPE_GIFT_SENT = TransactionRecord.TYPE_GIFT_SENT
+    TYPE_GIFT_SPOUSE = TransactionRecord.TYPE_GIFT_SPOUSE
     TYPE_CHARITY_SENT = TransactionRecord.TYPE_CHARITY_SENT
     TYPE_TRADE = TransactionRecord.TYPE_TRADE
 
-    DISPOSAL_TYPES = {TYPE_SPEND, TYPE_GIFT_SENT, TYPE_CHARITY_SENT, TYPE_TRADE}
+    DISPOSAL_TYPES = {TYPE_SPEND, TYPE_GIFT_SENT, TYPE_GIFT_SPOUSE, TYPE_CHARITY_SENT, TYPE_TRADE}
 
     def __init__(self, t_type, sell_quantity, sell_asset, sell_value):
         super(Sell, self).__init__(t_type, sell_asset, sell_quantity)
