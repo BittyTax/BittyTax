@@ -60,7 +60,7 @@ class TaxCalculator(object):
                     buy_transactions[(t.asset, t.timestamp.date())] = t
                 else:
                     buy_transactions[(t.asset, t.timestamp.date())] += t
-            elif isinstance(t, Sell) and t.disposal:
+            elif isinstance(t, Sell) and t.disposal and not t.t_type == t.TYPE_GIFT_SPOUSE:
                 if (t.asset, t.timestamp.date()) not in sell_transactions:
                     sell_transactions[(t.asset, t.timestamp.date())] = t
                 else:

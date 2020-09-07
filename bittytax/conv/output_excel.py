@@ -92,6 +92,7 @@ class Worksheet(object):
     SELL_LIST = (TransactionOutRecord.TYPE_WITHDRAWAL,
                  TransactionOutRecord.TYPE_SPEND,
                  TransactionOutRecord.TYPE_GIFT_SENT,
+                 TransactionOutRecord.TYPE_GIFT_SPOUSE,
                  TransactionOutRecord.TYPE_CHARITY_SENT)
     SHEETNAME_MAX_LEN = 31
     MAX_COL_WIDTH = 30

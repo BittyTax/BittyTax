@@ -13,6 +13,7 @@ class TransactionOutRecord(object):
     TYPE_WITHDRAWAL = TransactionRecord.TYPE_WITHDRAWAL
     TYPE_SPEND = TransactionRecord.TYPE_SPEND
     TYPE_GIFT_SENT = TransactionRecord.TYPE_GIFT_SENT
+    TYPE_GIFT_SPOUSE = TransactionRecord.TYPE_GIFT_SPOUSE
     TYPE_CHARITY_SENT = TransactionRecord.TYPE_CHARITY_SENT
     TYPE_TRADE = TransactionRecord.TYPE_TRADE
 

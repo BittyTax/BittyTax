@@ -22,6 +22,7 @@ class TransactionRecord(object):
                  TYPE_WITHDRAWAL,
                  TYPE_SPEND,
                  TYPE_GIFT_SENT,
+                 TYPE_GIFT_SPOUSE,
                  TYPE_CHARITY_SENT,
                  TYPE_TRADE)
 
