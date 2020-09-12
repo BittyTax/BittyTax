@@ -32,6 +32,8 @@
 - Qt Wallet parser: warning when skipping unconfirmed transactions.
 - Conversion tool: added extra debug.
 - Uphold parser: new data file format added.
+- Poloniex parser: new "trades" data file format added.
+- Poloniex parser: new "distributions" data file format added.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 - Data source names in config are now case-insensitive.

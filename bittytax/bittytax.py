@@ -150,7 +150,7 @@ def do_tax(transaction_records, tax_year, summary):
         tax.process_income()
 
     if tax_year:
-        print("%scalculating tax year %d-%d" % (
+        print("%scalculating tax year %d/%d" % (
             Fore.CYAN, tax_year - 1, tax_year))
         tax.calculate_capital_gains(tax_year)
         if not summary:
@@ -158,7 +158,7 @@ def do_tax(transaction_records, tax_year, summary):
     else:
         # Calculate for all years
         for year in sorted(tax.tax_events):
-            print("%scalculating tax year %d-%d" % (
+            print("%scalculating tax year %d/%d" % (
                 Fore.CYAN, year - 1, year))
             tax.calculate_capital_gains(year)
             if not summary:
