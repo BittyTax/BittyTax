@@ -77,6 +77,7 @@ class OutputExcel(OutputBase):
             for i, data_row in enumerate(data_rows):
                 worksheet.add_row(data_row, i + 1)
 
+            worksheet.make_table(len(data_rows))
             worksheet.autofit()
 
         self.workbook.close()
@@ -237,3 +238,9 @@ class Worksheet(object):
     def autofit(self):
         for col_num in self.col_width:
             self.worksheet.set_column(col_num, col_num, self.col_width[col_num])
+
+    def make_table(self, rows):
+        self.worksheet.add_table(0, 0, rows, max(self.col_width, key=int),
+                                 {'header_row': False,
+                                  'autofilter': False,
+                                  'style': 'Table Style Medium 13'})
