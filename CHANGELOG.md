@@ -35,6 +35,7 @@
 - Poloniex parser: new "trades" data file format added.
 - Poloniex parser: new "distributions" data file format added.
 - Conversion tool: added colour bands to Excel output file.
+- Binance parser: new "deposit" and "withdrawal" data file formats added.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 - Data source names in config are now case-insensitive.
