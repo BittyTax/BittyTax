@@ -65,7 +65,10 @@ class OutputCsv(OutputBase):
     FILE_EXTENSION = 'csv'
     RECAP_TYPE_MAPPING = {TransactionOutRecord.TYPE_DEPOSIT: 'Deposit',
                           TransactionOutRecord.TYPE_MINING: 'Mining',
+                          TransactionOutRecord.TYPE_STAKING: 'Income',
                           TransactionOutRecord.TYPE_INCOME: 'Income',
+                          TransactionOutRecord.TYPE_INTEREST: 'Income',
+                          TransactionOutRecord.TYPE_DIVIDEND: 'Income',
                           TransactionOutRecord.TYPE_GIFT_RECEIVED: 'Gift',
                           TransactionOutRecord.TYPE_WITHDRAWAL: 'Withdrawal',
                           TransactionOutRecord.TYPE_SPEND: 'Purchase',

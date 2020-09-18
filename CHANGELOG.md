@@ -23,6 +23,7 @@
 - Trezor parser: try and get symbol name from filename.
 - Electrum parser: new data file format added (ElectrumSV).
 - Conversion tool: added extra debug.
+- Accounting tool: new transaction types added (Staking, Interest, Dividend).
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 - Data source names in config are now case-insensitive.

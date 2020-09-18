@@ -6,7 +6,10 @@ from .config import config
 class TransactionRecord(object):
     TYPE_DEPOSIT = 'Deposit'
     TYPE_MINING = 'Mining'
+    TYPE_STAKING = 'Staking'
     TYPE_INCOME = 'Income'
+    TYPE_INTEREST = 'Interest'
+    TYPE_DIVIDEND = 'Dividend'
     TYPE_GIFT_RECEIVED = 'Gift-Received'
     TYPE_WITHDRAWAL = 'Withdrawal'
     TYPE_SPEND = 'Spend'
@@ -16,7 +19,10 @@ class TransactionRecord(object):
 
     ALL_TYPES = (TYPE_DEPOSIT,
                  TYPE_MINING,
+                 TYPE_STAKING,
                  TYPE_INCOME,
+                 TYPE_INTEREST,
+                 TYPE_DIVIDEND,
                  TYPE_GIFT_RECEIVED,
                  TYPE_WITHDRAWAL,
                  TYPE_SPEND,
