@@ -28,7 +28,8 @@ class TaxCalculator(object):
     DISPOSAL_BED_AND_BREAKFAST = 'Bed & Breakfast'
     DISPOSAL_SECTION_104 = 'Section 104'
 
-    INCOME_TYPES = (Buy.TYPE_MINING, Buy.TYPE_INCOME)
+    INCOME_TYPES = (Buy.TYPE_MINING, Buy.TYPE_STAKING, Buy.TYPE_INCOME, Buy.TYPE_INTEREST,
+                    Buy.TYPE_DIVIDEND)
 
     def __init__(self, transactions):
         self.transactions = transactions

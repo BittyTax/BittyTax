@@ -215,11 +215,15 @@ class TransactionBase(object):
 class Buy(TransactionBase):
     TYPE_DEPOSIT = TransactionRecord.TYPE_DEPOSIT
     TYPE_MINING = TransactionRecord.TYPE_MINING
+    TYPE_STAKING = TransactionRecord.TYPE_STAKING
     TYPE_INCOME = TransactionRecord.TYPE_INCOME
+    TYPE_INTEREST = TransactionRecord.TYPE_INTEREST
+    TYPE_DIVIDEND = TransactionRecord.TYPE_DIVIDEND
     TYPE_GIFT_RECEIVED = TransactionRecord.TYPE_GIFT_RECEIVED
     TYPE_TRADE = TransactionRecord.TYPE_TRADE
 
-    ACQUISITION_TYPES = {TYPE_MINING, TYPE_INCOME, TYPE_GIFT_RECEIVED, TYPE_TRADE}
+    ACQUISITION_TYPES = {TYPE_MINING, TYPE_STAKING, TYPE_INCOME, TYPE_INTEREST,
+                         TYPE_DIVIDEND, TYPE_GIFT_RECEIVED, TYPE_TRADE}
 
     def __init__(self, t_type, buy_quantity, buy_asset, buy_value):
         super(Buy, self).__init__(t_type, buy_asset, buy_quantity)

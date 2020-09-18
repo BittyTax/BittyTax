@@ -87,7 +87,10 @@ class OutputExcel(OutputBase):
 class Worksheet(object):
     BUY_LIST = (TransactionOutRecord.TYPE_DEPOSIT,
                 TransactionOutRecord.TYPE_MINING,
+                TransactionOutRecord.TYPE_STAKING,
                 TransactionOutRecord.TYPE_INCOME,
+                TransactionOutRecord.TYPE_INTEREST,
+                TransactionOutRecord.TYPE_DIVIDEND,
                 TransactionOutRecord.TYPE_GIFT_RECEIVED)
 
     SELL_LIST = (TransactionOutRecord.TYPE_WITHDRAWAL,
