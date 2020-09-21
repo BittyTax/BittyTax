@@ -79,6 +79,13 @@ DataParser(DataParser.TYPE_EXCHANGE,
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Binance Deposits/Withdrawals",
+           ['Date(UTC)', 'Coin', 'Amount', 'TransactionFee', 'Address', 'TXID', 'SourceAddress',
+            'PaymentID', 'Status'],
+           worksheet_name="Binance D,W",
+           row_handler=parse_binance_deposits_withdrawals)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Binance Deposits/Withdrawals",
            ['Date', 'Coin', 'Amount', 'TransactionFee', 'Address', 'TXID', 'SourceAddress',
             'PaymentID', 'Status'],
            worksheet_name="Binance D,W",

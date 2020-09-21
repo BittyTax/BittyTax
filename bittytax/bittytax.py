@@ -8,7 +8,8 @@ import sys
 import codecs
 import platform
 
-from colorama import init, Fore, Back
+import colorama
+from colorama import Fore, Back
 import xlrd
 
 from .version import __version__
@@ -23,13 +24,15 @@ from .report import ReportLog, ReportPdf
 from .exceptions import ImportFailureError
 
 if sys.stdout.encoding != 'UTF-8':
-    if sys.version_info[0] < 3:
-        sys.stdout = codecs.getwriter('utf-8')(sys.stdout)
-    else:
+    if sys.version_info[:2] >= (3, 7):
         sys.stdout.reconfigure(encoding='utf-8')
+    elif sys.version_info[:2] >= (3, 1):
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
+    else:
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout)
 
 def main():
-    init()
+    colorama.init()
     parser = argparse.ArgumentParser()
     parser.add_argument('filename',
                         type=str,
@@ -147,7 +150,7 @@ def do_tax(transaction_records, tax_year, summary):
         tax.process_income()
 
     if tax_year:
-        print("%scalculating tax year %d-%d" % (
+        print("%scalculating tax year %d/%d" % (
             Fore.CYAN, tax_year - 1, tax_year))
         tax.calculate_capital_gains(tax_year)
         if not summary:
@@ -155,7 +158,7 @@ def do_tax(transaction_records, tax_year, summary):
     else:
         # Calculate for all years
         for year in sorted(tax.tax_events):
-            print("%scalculating tax year %d-%d" % (
+            print("%scalculating tax year %d/%d" % (
                 Fore.CYAN, year - 1, year))
             tax.calculate_capital_gains(year)
             if not summary:

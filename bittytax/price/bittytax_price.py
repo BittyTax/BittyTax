@@ -7,7 +7,8 @@ import codecs
 import platform
 from decimal import Decimal
 
-from colorama import init, Fore, Back
+import colorama
+from colorama import Fore, Back
 import dateutil.parser
 
 from ..version import __version__
@@ -16,13 +17,15 @@ from .valueasset import ValueAsset
 from .exceptions import UnexpectedDataSourceError
 
 if sys.stdout.encoding != 'UTF-8':
-    if sys.version_info[0] < 3:
-        sys.stdout = codecs.getwriter('utf-8')(sys.stdout)
-    else:
+    if sys.version_info[:2] >= (3, 7):
         sys.stdout.reconfigure(encoding='utf-8')
+    elif sys.version_info[:2] >= (3, 1):
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
+    else:
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout)
 
 def main():
-    init()
+    colorama.init()
     parser = argparse.ArgumentParser()
     parser.add_argument('asset',
                         type=str,

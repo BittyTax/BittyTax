@@ -23,7 +23,7 @@ def parse_handcash(data_row, parser, _filename):
 
         data_row.t_record = TransactionOutRecord(t_type,
                                                  data_row.timestamp,
-                                                 buy_quantity=Decimal(in_row[5]) / 100000000,
+                                                 buy_quantity=Decimal(in_row[5]) / 10 ** 8,
                                                  buy_asset="BSV",
                                                  wallet=WALLET)
     elif in_row[0] == "send":
@@ -34,9 +34,9 @@ def parse_handcash(data_row, parser, _filename):
 
         data_row.t_record = TransactionOutRecord(t_type,
                                                  data_row.timestamp,
-                                                 sell_quantity=Decimal(in_row[5]) / 100000000,
+                                                 sell_quantity=Decimal(in_row[5]) / 10 ** 8,
                                                  sell_asset="BSV",
-                                                 fee_quantity=Decimal(in_row[4]) / 100000000,
+                                                 fee_quantity=Decimal(in_row[4]) / 10 ** 8,
                                                  fee_asset="BSV",
                                                  wallet=WALLET)
     else:

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-from decimal import Decimal, ROUND_UP
+from decimal import Decimal, ROUND_DOWN
 
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
@@ -16,9 +16,8 @@ def parse_poloniex_trades(data_row, parser, _filename):
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 
     if in_row[3] == "Buy":
-        fee_quantity = Decimal(in_row[5]) - Decimal(in_row[5]) * \
-                (Decimal(in_row[7].replace('%', '')) / Decimal(100))
-        fee_quantity = fee_quantity.quantize(PRECISION, rounding=ROUND_UP)
+        fee_quantity = Decimal(in_row[5]) * (Decimal(in_row[7].replace('%', '')) / Decimal(100))
+        fee_quantity = fee_quantity.quantize(PRECISION, rounding=ROUND_DOWN)
 
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
@@ -26,13 +25,12 @@ def parse_poloniex_trades(data_row, parser, _filename):
                                                  buy_asset=in_row[1].split('/')[0],
                                                  sell_quantity=in_row[6],
                                                  sell_asset=in_row[1].split('/')[1],
-                                                 fee_quantity=Decimal(in_row[5]) - fee_quantity,
+                                                 fee_quantity=fee_quantity,
                                                  fee_asset=in_row[1].split('/')[0],
                                                  wallet=WALLET)
     elif in_row[3] == "Sell":
-        fee_quantity = Decimal(in_row[6]) - Decimal(in_row[6]) * \
-                (Decimal(in_row[7].replace('%', '')) / Decimal(100))
-        fee_quantity = fee_quantity.quantize(PRECISION, rounding=ROUND_UP)
+        fee_quantity = Decimal(in_row[6]) * (Decimal(in_row[7].replace('%', '')) / Decimal(100))
+        fee_quantity = fee_quantity.quantize(PRECISION, rounding=ROUND_DOWN)
 
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
@@ -40,7 +38,7 @@ def parse_poloniex_trades(data_row, parser, _filename):
                                                  buy_asset=in_row[1].split('/')[1],
                                                  sell_quantity=in_row[5],
                                                  sell_asset=in_row[1].split('/')[0],
-                                                 fee_quantity=Decimal(in_row[6]) - fee_quantity,
+                                                 fee_quantity=fee_quantity,
                                                  fee_asset=in_row[1].split('/')[1],
                                                  wallet=WALLET)
     else:
@@ -50,7 +48,8 @@ def parse_poloniex_deposits_withdrawals(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 
-    if "COMPLETE:" in in_row[4]:
+    if "COMPLETE: " in in_row[4]:
+        # Legacy format also contained Withdrawals
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=in_row[2],
@@ -75,6 +74,23 @@ def parse_poloniex_withdrawals(data_row, _parser, _filename):
                                              fee_asset=in_row[1],
                                              wallet=WALLET)
 
+def parse_poloniex_distributions(data_row, _parser, _filename):
+    in_row = data_row.in_row
+    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+
+    data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
+                                             data_row.timestamp,
+                                             buy_quantity=in_row[2],
+                                             buy_asset=in_row[1],
+                                             wallet=WALLET)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Poloniex Trades",
+           ['Date', 'Market', 'Category', 'Type', 'Price', 'Amount', 'Total', 'Fee', 'Order Number',
+            'Base Total Less Fee', 'Quote Total Less Fee', 'Fee Currency', 'Fee Total'],
+           worksheet_name="Poloniex T",
+           row_handler=parse_poloniex_trades)
+
 DataParser(DataParser.TYPE_EXCHANGE,
            "Poloniex Trades",
            ['Date', 'Market', 'Category', 'Type', 'Price', 'Amount', 'Total', 'Fee', 'Order Number',
@@ -83,9 +99,9 @@ DataParser(DataParser.TYPE_EXCHANGE,
            row_handler=parse_poloniex_trades)
 
 DataParser(DataParser.TYPE_EXCHANGE,
-           "Poloniex Deposits/Withdrawals",
+           "Poloniex Deposits",
            ['Date', 'Currency', 'Amount', 'Address', 'Status'],
-           worksheet_name="Poloniex D,W",
+           worksheet_name="Poloniex D",
            row_handler=parse_poloniex_deposits_withdrawals)
 
 DataParser(DataParser.TYPE_EXCHANGE,
@@ -93,3 +109,9 @@ DataParser(DataParser.TYPE_EXCHANGE,
            ['Date', 'Currency', 'Amount', 'Fee Deducted', 'Amount - Fee', 'Address', 'Status'],
            worksheet_name="Poloniex W",
            row_handler=parse_poloniex_withdrawals)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Poloniex Distributions",
+           ['date', 'currency', 'amount', 'wallet'],
+           worksheet_name="Poloniex D",
+           row_handler=parse_poloniex_distributions)

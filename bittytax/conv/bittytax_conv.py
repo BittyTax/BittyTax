@@ -6,7 +6,8 @@ import sys
 import codecs
 import platform
 
-from colorama import init, Fore, Back
+import colorama
+from colorama import Fore, Back
 import xlrd
 
 from ..version import __version__
@@ -19,13 +20,15 @@ from .exceptions import UnknownCryptoassetError, UnknownUsernameError, UnknownAd
                         DataFormatUnrecognised
 
 if sys.stderr.encoding != 'UTF-8':
-    if sys.version_info[0] < 3:
-        sys.stderr = codecs.getwriter('utf-8')(sys.stderr)
-    else:
+    if sys.version_info[:2] >= (3, 7):
         sys.stderr.reconfigure(encoding='utf-8')
+    elif sys.version_info[:2] >= (3, 1):
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
+    else:
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr)
 
 def main():
-    init()
+    colorama.init()
     parser = argparse.ArgumentParser(epilog="supported data file formats:\n" +
                                      DataParser.format_parsers(),
                                      formatter_class=argparse.RawDescriptionHelpFormatter)

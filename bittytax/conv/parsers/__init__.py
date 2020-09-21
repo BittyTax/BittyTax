@@ -13,14 +13,17 @@ from . import cryptocom
 from . import cryptopia
 from . import cryptsy
 from . import electrum
+from . import energyweb
 from . import etherscan
 from . import gatehub
 from . import gravity
 from . import handcash
 from . import hitbtc
+from . import hotbit
 from . import ii
 from . import kucoin
 from . import ledgerlive
+from . import liquid
 from . import okex
 from . import poloniex
 from . import qtwallet

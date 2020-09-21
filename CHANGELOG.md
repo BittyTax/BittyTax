@@ -9,6 +9,9 @@
 - Ledger Live parser: unrecognised operation type 'IN'.
 - TradeSatoshi parser: calculations rounded to 8 decimal places.
 - Trezor parser: "self" payment exception.
+- Electrum parser: timestamp is in local time.
+- KeyError: 'bpi' exception. ([#21](https://github.com/BittyTax/BittyTax/issues/21))
+- Python 3.x compatibility. ([#20](https://github.com/BittyTax/BittyTax/issues/20))
 ### Added
 - Conversion tool: added parser for CoinTracking.info accounting data.
 - Conversion tool: added parser for Gravity (Bitstocks) exchange.
@@ -22,8 +25,19 @@
 - GateHub parser: new data file format added.
 - Trezor parser: try and get symbol name from filename.
 - Electrum parser: new data file format added (ElectrumSV).
+- Conversion tool: added parser for Hotbit exchange.
+- Conversion tool: added parser for Liquid exchange.
+- Conversion tool: added parser for Energy Web explorer.
+- Qt Wallet parser: recognise Namecoin operations.
+- Qt Wallet parser: warning when skipping unconfirmed transactions.
 - Conversion tool: added extra debug.
+- Uphold parser: new data file format added.
+- Poloniex parser: new "trades" data file format added.
+- Poloniex parser: new "distributions" data file format added.
+- Conversion tool: added colour bands to Excel output file.
+- Binance parser: new "deposit" and "withdrawal" data file formats added.
 - Accounting tool: new transaction types added (Staking, Interest, Dividend).
+- Conversion tool: added parser for Crypto.com app.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 - Data source names in config are now case-insensitive.
@@ -33,6 +47,8 @@
 - Accounting/Price tool: don't display warning if the price data cache file does not exist.
 - Qt Wallet parser: "payment to yourself" becomes withdrawal with just fee.
 - HandCash parser: identify transactions to other users as gifts.
+- Qt Wallet parser: get symbol name from "Amount" if available.
+- Qt Wallet parser: -ca option takes precedence over any symbol name found in the data file.
 
 ## Version [0.4.1] Beta (2020-07-25)
 ### Fixed
