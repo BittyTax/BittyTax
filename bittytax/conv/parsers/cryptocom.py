@@ -31,7 +31,7 @@ def parse_crypto_com(data_row, parser, _filename):
                                                      wallet=WALLET)
     elif in_row[9] in ("crypto_earn_interest_paid", "mco_stake_reward",
                        "crypto_earn_extra_interest_paid"):
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INCOME,
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INTEREST,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[3],
                                                  buy_asset=in_row[2],
