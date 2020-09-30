@@ -5,6 +5,7 @@ import argparse
 import sys
 import codecs
 import platform
+import re
 from decimal import Decimal
 
 import colorama
@@ -32,7 +33,7 @@ def main():
                         nargs=1,
                         help="symbol of cryptoasset or fiat currency (i.e. BTC/LTC/ETH or EUR/USD)")
     parser.add_argument('date',
-                        type=str,
+                        type=validate_date,
                         nargs='?',
                         help="date (YYYY-MM-DD)")
     parser.add_argument('-v',
@@ -61,26 +62,13 @@ def main():
 
     value_asset = ValueAsset()
     asset = config.args.asset[0]
-    timestamp = None
 
     if asset == config.CCY:
         return
 
     try:
         if config.args.date:
-            try:
-                timestamp = dateutil.parser.parse(config.args.date)
-            except ValueError as e:
-                if sys.version_info[0] < 3:
-                    err_msg = ' '.join(e)
-                else:
-                    err_msg = ' '.join(e.args)
-
-                parser.exit("%sERROR%s Invalid date: %s" % (
-                    Back.RED+Fore.BLACK, Back.RESET+Fore.RED, err_msg))
-
-            timestamp = timestamp.replace(tzinfo=config.TZ_LOCAL)
-            price_ccy, name, data_source = value_asset.get_historical_price(asset, timestamp)
+            price_ccy, name, data_source = value_asset.get_historical_price(asset, config.args.date)
         else:
             price_ccy, name, data_source = value_asset.get_latest_price(asset)
     except UnexpectedDataSourceError as e:
@@ -106,13 +94,24 @@ def main():
                 config.CCY))
     else:
         if name is not None:
-            if timestamp:
+            if config.args.date:
                 parser.exit("%sWARNING%s Price for %s on %s is not available" % (
                     Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW,
-                    asset, timestamp.strftime('%Y-%m-%d')))
+                    asset, config.args.date.strftime('%Y-%m-%d')))
             else:
                 parser.exit("%sWARNING%s Current price for %s is not available" % (
                     Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, asset))
         else:
             parser.exit("%sWARNING%s Prices for %s are not supported" % (
                 Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, asset))
+
+def validate_date(value):
+    if not re.match(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$", value):
+        raise argparse.ArgumentTypeError("date format is not valid, use YYYY-MM-DD")
+
+    try:
+        date = dateutil.parser.parse(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError("date is not valid")
+
+    return date.replace(tzinfo=config.TZ_LOCAL)
