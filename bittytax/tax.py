@@ -363,7 +363,8 @@ class TaxEventIncome(TaxEvent):
             self.fees = Decimal(0)
 
 class CalculateCapitalGains(object):
-    CG_DATA_INDIVIDUALS = {2010: {'allowance': 10100, 'basic_rate': 18, 'higher_rate': 18},
+    CG_DATA_INDIVIDUALS = {2009: {'allowance': 9600, 'basic_rate': 18, 'higher_rate': 18},
+                           2010: {'allowance': 10100, 'basic_rate': 18, 'higher_rate': 18},
                            2011: {'allowance': 10100, 'basic_rate': 18, 'higher_rate': 28},
                            2012: {'allowance': 10600, 'basic_rate': 18, 'higher_rate': 28},
                            2013: {'allowance': 10600, 'basic_rate': 18, 'higher_rate': 28},

@@ -39,6 +39,7 @@
 - Accounting tool: new transaction types added (Staking, Interest, Dividend).
 - Conversion tool: added parser for Crypto.com app.
 - Accounting tool: added disclaimer to footer of PDF.
+- Accounting tool: validate tax year argument.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 - Data source names in config are now case-insensitive.

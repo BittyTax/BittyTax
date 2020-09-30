@@ -19,7 +19,7 @@ from .transactions import TransactionHistory
 from .audit import AuditRecords
 from .price.valueasset import ValueAsset
 from .price.exceptions import UnexpectedDataSourceError
-from .tax import TaxCalculator
+from .tax import TaxCalculator, CalculateCapitalGains as CCG
 from .report import ReportLog, ReportPdf
 from .exceptions import ImportFailureError
 
@@ -49,12 +49,14 @@ def main():
                         help="enabled debug logging")
     parser.add_argument('-ty',
                         '--taxyear',
-                        type=int,
-                        help="tax year")
+                        type=validate_year,
+                        help="tax year must be in the range (%s-%s)" % (
+                            min(CCG.CG_DATA_INDIVIDUALS),
+                            max(CCG.CG_DATA_INDIVIDUALS)))
     parser.add_argument('-s',
                         '--skipaudit',
                         action='store_true',
-                        help="skip auditing of transactions")
+                        help="skip auditing of transaction records")
     parser.add_argument('--summary',
                         action='store_true',
                         help="only output the capital gains summary in the tax report")
@@ -64,7 +66,7 @@ def main():
                         help="specify the output filename for the tax report")
     parser.add_argument('--nopdf',
                         action='store_true',
-                        help="don't output pdf report, output report to terminal only")
+                        help="don't output PDF report, output report to terminal only")
 
     config.args = parser.parse_args()
     config.args.nocache = False
@@ -107,6 +109,17 @@ def main():
                   tax.tax_report,
                   value_asset.price_report,
                   tax.holdings_report)
+
+def validate_year(value):
+    year = int(value)
+    if year not in CCG.CG_DATA_INDIVIDUALS:
+        raise argparse.ArgumentTypeError("tax year %d is not supported, "
+                                         "must be in the range (%s-%s)" % (
+            year,
+            min(CCG.CG_DATA_INDIVIDUALS),
+            max(CCG.CG_DATA_INDIVIDUALS)))
+
+    return year
 
 def do_import(filename):
     import_records = ImportRecords()
@@ -160,9 +173,13 @@ def do_tax(transaction_records, tax_year, summary):
         for year in sorted(tax.tax_events):
             print("%scalculating tax year %d/%d" % (
                 Fore.CYAN, year - 1, year))
-            tax.calculate_capital_gains(year)
-            if not summary:
-                tax.calculate_income(year)
+            if year in CCG.CG_DATA_INDIVIDUALS:
+                tax.calculate_capital_gains(year)
+                if not summary:
+                    tax.calculate_income(year)
+            else:
+                print("%sWARNING%s Tax year %s is not supported" % (
+                    Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, year))
 
         if not summary:
             tax.calculate_holdings(value_asset)
