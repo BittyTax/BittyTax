@@ -14,6 +14,7 @@ class TransactionRecord(object):
     TYPE_WITHDRAWAL = 'Withdrawal'
     TYPE_SPEND = 'Spend'
     TYPE_GIFT_SENT = 'Gift-Sent'
+    TYPE_GIFT_SPOUSE = 'Gift-Spouse'
     TYPE_CHARITY_SENT = 'Charity-Sent'
     TYPE_TRADE = 'Trade'
 
@@ -27,6 +28,7 @@ class TransactionRecord(object):
                  TYPE_WITHDRAWAL,
                  TYPE_SPEND,
                  TYPE_GIFT_SENT,
+                 TYPE_GIFT_SPOUSE,
                  TYPE_CHARITY_SENT,
                  TYPE_TRADE)
 

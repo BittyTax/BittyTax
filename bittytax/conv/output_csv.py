@@ -73,6 +73,7 @@ class OutputCsv(OutputBase):
                           TransactionOutRecord.TYPE_WITHDRAWAL: 'Withdrawal',
                           TransactionOutRecord.TYPE_SPEND: 'Purchase',
                           TransactionOutRecord.TYPE_GIFT_SENT: 'Gift',
+                          TransactionOutRecord.TYPE_GIFT_SPOUSE: 'Gift',
                           TransactionOutRecord.TYPE_CHARITY_SENT: 'Donation',
                           TransactionOutRecord.TYPE_TRADE: 'Trade'}
     def write_csv(self):

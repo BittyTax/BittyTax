@@ -154,6 +154,7 @@ class TransactionRow(object):
     SELL_TYPES = (TransactionRecord.TYPE_WITHDRAWAL,
                   TransactionRecord.TYPE_SPEND,
                   TransactionRecord.TYPE_GIFT_SENT,
+                  TransactionRecord.TYPE_GIFT_SPOUSE,
                   TransactionRecord.TYPE_CHARITY_SENT)
 
     TRANSFER_TYPES = (TransactionRecord.TYPE_DEPOSIT,

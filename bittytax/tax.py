@@ -27,6 +27,7 @@ class TaxCalculator(object):
     DISPOSAL_SAME_DAY = 'Same Day'
     DISPOSAL_BED_AND_BREAKFAST = 'Bed & Breakfast'
     DISPOSAL_SECTION_104 = 'Section 104'
+    DISPOSAL_NO_GAIN_NO_LOSS = 'No Gain/No Loss'
 
     INCOME_TYPES = (Buy.TYPE_MINING, Buy.TYPE_STAKING, Buy.TYPE_INCOME, Buy.TYPE_INTEREST,
                     Buy.TYPE_DIVIDEND)
@@ -60,7 +61,7 @@ class TaxCalculator(object):
                     buy_transactions[(t.asset, t.timestamp.date())] = t
                 else:
                     buy_transactions[(t.asset, t.timestamp.date())] += t
-            elif isinstance(t, Sell) and t.disposal:
+            elif isinstance(t, Sell) and t.disposal and t.t_type != t.TYPE_GIFT_SPOUSE:
                 if (t.asset, t.timestamp.date()) not in sell_transactions:
                     sell_transactions[(t.asset, t.timestamp.date())] = t
                 else:
@@ -230,8 +231,16 @@ class TaxCalculator(object):
         self.holdings[t.asset].subtract_tokens(t.quantity, cost, fees)
 
         if t.disposal:
-            tax_event = TaxEventCapitalGains(self.DISPOSAL_SECTION_104,
-                                             None, t, cost, fees + (t.fee_value or Decimal(0)))
+            if t.t_type == Sell.TYPE_GIFT_SPOUSE:
+                # Change proceeds to make sure it balances
+                t.proceeds = cost + fees + (t.fee_value or Decimal(0))
+                t.proceeds_fixed = True
+                tax_event = TaxEventCapitalGains(self.DISPOSAL_NO_GAIN_NO_LOSS,
+                                                 None, t, cost, fees + (t.fee_value or Decimal(0)))
+            else:
+                tax_event = TaxEventCapitalGains(self.DISPOSAL_SECTION_104,
+                                                 None, t, cost, fees + (t.fee_value or Decimal(0)))
+
             self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
             if config.args.debug:
                 print("%ssection104:   %s" % (Fore.CYAN, tax_event))
