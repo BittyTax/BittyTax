@@ -31,6 +31,16 @@
 - Qt Wallet parser: recognise Namecoin operations.
 - Qt Wallet parser: warning when skipping unconfirmed transactions.
 - Conversion tool: added extra debug.
+- Uphold parser: new data file format added.
+- Poloniex parser: new "trades" data file format added.
+- Poloniex parser: new "distributions" data file format added.
+- Conversion tool: added colour bands to Excel output file.
+- Binance parser: new "deposit" and "withdrawal" data file formats added.
+- Accounting tool: new transaction types added (Staking, Interest, Dividend).
+- Conversion tool: added parser for Crypto.com app.
+- Accounting tool: added disclaimer to footer of PDF.
+- Accounting tool: validate tax year argument.
+- Price tool: added data source (-ds) argument.
 - Accounting tool: new transaction type Gift-Spouse added.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.

@@ -29,7 +29,8 @@ class TaxCalculator(object):
     DISPOSAL_SECTION_104 = 'Section 104'
     DISPOSAL_NO_GAIN_NO_LOSS = 'No Gain/No Loss'
 
-    INCOME_TYPES = (Buy.TYPE_MINING, Buy.TYPE_INCOME)
+    INCOME_TYPES = (Buy.TYPE_MINING, Buy.TYPE_STAKING, Buy.TYPE_INCOME, Buy.TYPE_INTEREST,
+                    Buy.TYPE_DIVIDEND)
 
     def __init__(self, transactions):
         self.transactions = transactions
@@ -371,7 +372,8 @@ class TaxEventIncome(TaxEvent):
             self.fees = Decimal(0)
 
 class CalculateCapitalGains(object):
-    CG_DATA_INDIVIDUALS = {2010: {'allowance': 10100, 'basic_rate': 18, 'higher_rate': 18},
+    CG_DATA_INDIVIDUALS = {2009: {'allowance': 9600, 'basic_rate': 18, 'higher_rate': 18},
+                           2010: {'allowance': 10100, 'basic_rate': 18, 'higher_rate': 18},
                            2011: {'allowance': 10100, 'basic_rate': 18, 'higher_rate': 28},
                            2012: {'allowance': 10600, 'basic_rate': 18, 'higher_rate': 28},
                            2013: {'allowance': 10600, 'basic_rate': 18, 'higher_rate': 28},

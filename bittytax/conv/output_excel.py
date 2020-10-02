@@ -77,6 +77,7 @@ class OutputExcel(OutputBase):
             for i, data_row in enumerate(data_rows):
                 worksheet.add_row(data_row, i + 1)
 
+            worksheet.make_table(len(data_rows), data_file.parser.worksheet_name)
             worksheet.autofit()
 
         self.workbook.close()
@@ -86,7 +87,10 @@ class OutputExcel(OutputBase):
 class Worksheet(object):
     BUY_LIST = (TransactionOutRecord.TYPE_DEPOSIT,
                 TransactionOutRecord.TYPE_MINING,
+                TransactionOutRecord.TYPE_STAKING,
                 TransactionOutRecord.TYPE_INCOME,
+                TransactionOutRecord.TYPE_INTEREST,
+                TransactionOutRecord.TYPE_DIVIDEND,
                 TransactionOutRecord.TYPE_GIFT_RECEIVED)
 
     SELL_LIST = (TransactionOutRecord.TYPE_WITHDRAWAL,
@@ -97,43 +101,67 @@ class Worksheet(object):
     SHEETNAME_MAX_LEN = 31
     MAX_COL_WIDTH = 30
 
-    names = {}
+    sheet_names = {}
+    table_names = {}
 
     def __init__(self, output, data_file):
         self.output = output
         self.worksheet = output.workbook.add_worksheet(self._sheet_name( \
                                                        data_file.parser.worksheet_name))
         self.col_width = {}
+        self.columns = self._make_columns(data_file.parser.in_header)
 
-        #Add headings row
         self.worksheet.freeze_panes(1, len(self.output.BITTYTAX_OUT_HEADER))
-
-        for col_num, col_name in enumerate(self.output.BITTYTAX_OUT_HEADER +
-                                           data_file.parser.in_header):
-            if col_num < len(self.output.BITTYTAX_OUT_HEADER):
-                self.worksheet.write(0, col_num, col_name, self.output.format_out_header)
-            else:
-                self.worksheet.write(0, col_num, col_name, self.output.format_in_header)
-
-            self._autofit_calc(col_num, len(col_name))
 
     def _sheet_name(self, parser_name):
         # Remove special characters
         name = re.sub(r'[/\\\?\*\[\]:]', '', parser_name)
         name = name[:self.SHEETNAME_MAX_LEN] if len(name) > self.SHEETNAME_MAX_LEN else name
 
-        if name.lower() not in self.names:
-            self.names[name.lower()] = 1
+        if name.lower() not in self.sheet_names:
+            self.sheet_names[name.lower()] = 1
             sheet_name = name
         else:
-            self.names[name.lower()] += 1
-            sheet_name = '%s(%s)' % (name, self.names[name.lower()])
+            self.sheet_names[name.lower()] += 1
+            sheet_name = '%s(%s)' % (name, self.sheet_names[name.lower()])
             if len(sheet_name) > self.SHEETNAME_MAX_LEN:
                 sheet_name = '%s(%s)' % (name[:len(name) - (len(sheet_name)
                                                             - self.SHEETNAME_MAX_LEN)],
-                                         self.names[name.lower()])
+                                         self.sheet_names[name.lower()])
 
         return sheet_name
+
+    def _table_name(self, parser_name):
+        # Remove characters which are not allowed
+        name = parser_name.replace(' ', '_')
+        name = re.sub(r'[^a-zA-Z0-9\._]', '', name)
+
+        if name.lower() not in self.table_names:
+            self.table_names[name.lower()] = 1
+        else:
+            self.table_names[name.lower()] += 1
+            name += str(self.table_names[name.lower()])
+
+        return name
+
+    def _make_columns(self, in_header):
+        col_names = {}
+        columns = []
+        for col_num, col_name in enumerate(self.output.BITTYTAX_OUT_HEADER + in_header):
+            if col_name.lower() not in col_names:
+                col_names[col_name.lower()] = 1
+            else:
+                col_names[col_name.lower()] += 1
+                col_name += str(col_names[col_name.lower()])
+
+            if col_num < len(self.output.BITTYTAX_OUT_HEADER):
+                columns.append({'header': col_name, 'header_format': self.output.format_out_header})
+            else:
+                columns.append({'header': col_name, 'header_format': self.output.format_in_header})
+
+            self._autofit_calc(col_num, len(col_name))
+
+        return columns
 
     def add_row(self, data_row, row_num):
         self.worksheet.set_row(row_num, None, self.output.format_out_data)
@@ -238,3 +266,10 @@ class Worksheet(object):
     def autofit(self):
         for col_num in self.col_width:
             self.worksheet.set_column(col_num, col_num, self.col_width[col_num])
+
+    def make_table(self, rows, parser_name):
+        self.worksheet.add_table(0, 0, rows, len(self.columns) - 1,
+                                 {'autofilter': False,
+                                  'style': 'Table Style Medium 13',
+                                  'columns': self.columns,
+                                  'name': self._table_name(parser_name)})

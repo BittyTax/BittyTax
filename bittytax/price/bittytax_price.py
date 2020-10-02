@@ -5,6 +5,7 @@ import argparse
 import sys
 import codecs
 import platform
+import re
 from decimal import Decimal
 
 import colorama
@@ -13,6 +14,7 @@ import dateutil.parser
 
 from ..version import __version__
 from ..config import config
+from .datasource import DataSourceBase
 from .valueasset import ValueAsset
 from .exceptions import UnexpectedDataSourceError
 
@@ -32,9 +34,9 @@ def main():
                         nargs=1,
                         help="symbol of cryptoasset or fiat currency (i.e. BTC/LTC/ETH or EUR/USD)")
     parser.add_argument('date',
-                        type=str,
+                        type=validate_date,
                         nargs='?',
-                        help="date (YYYY-MM-DD)")
+                        help="date (YYYY-MM-DD or DD/MM/YYYY)")
     parser.add_argument('-v',
                         '--version',
                         action='version',
@@ -47,6 +49,12 @@ def main():
                         '--quantity',
                         type=Decimal,
                         help="quantity to price")
+    parser.add_argument('-ds',
+                        choices=sorted([ds.__name__.upper()
+                                        for ds in DataSourceBase.__subclasses__()]),
+                        dest='datasource',
+                        type=str.upper,
+                        help="specify the data source to use")
     parser.add_argument('-nc',
                         '--nocache',
                         action='store_true', help="bypass cache for historical data")
@@ -59,30 +67,18 @@ def main():
         print("%ssystem: %s, release: %s" % (Fore.GREEN, platform.system(), platform.release()))
         config.output_config()
 
-    value_asset = ValueAsset()
+    value_asset = ValueAsset(config.args.datasource)
     asset = config.args.asset[0]
-    timestamp = None
 
     if asset == config.CCY:
         return
 
     try:
         if config.args.date:
-            try:
-                timestamp = dateutil.parser.parse(config.args.date)
-            except ValueError as e:
-                if sys.version_info[0] < 3:
-                    err_msg = ' '.join(e)
-                else:
-                    err_msg = ' '.join(e.args)
-
-                parser.exit("%sERROR%s Invalid date: %s" % (
-                    Back.RED+Fore.BLACK, Back.RESET+Fore.RED, err_msg))
-
-            timestamp = timestamp.replace(tzinfo=config.TZ_LOCAL)
-            price_ccy, name, data_source = value_asset.get_historical_price(asset, timestamp)
+            price_ccy, name, data_source = value_asset.get_historical_price(asset, config.args.date)
         else:
             price_ccy, name, data_source = value_asset.get_latest_price(asset)
+
     except UnexpectedDataSourceError as e:
         parser.exit("%sERROR%s %s" % (
             Back.RED+Fore.BLACK, Back.RESET+Fore.RED, e))
@@ -106,13 +102,31 @@ def main():
                 config.CCY))
     else:
         if name is not None:
-            if timestamp:
+            if config.args.date:
                 parser.exit("%sWARNING%s Price for %s on %s is not available" % (
                     Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW,
-                    asset, timestamp.strftime('%Y-%m-%d')))
+                    asset, config.args.date.strftime('%Y-%m-%d')))
             else:
                 parser.exit("%sWARNING%s Current price for %s is not available" % (
                     Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, asset))
         else:
             parser.exit("%sWARNING%s Prices for %s are not supported" % (
                 Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, asset))
+
+def validate_date(value):
+    match = re.match(r"^([0-9]{4}-[0-9]{2}-[0-9]{2})|([0-9]{2}\/[0-9]{2}\/[0-9]{4})$", value)
+
+    if not match:
+        raise argparse.ArgumentTypeError("date format is not valid, use YYYY-MM-DD or DD/MM/YYYY")
+    else:
+        if match.group(1):
+            dayfirst = False
+        else:
+            dayfirst = True
+
+    try:
+        date = dateutil.parser.parse(value, dayfirst=dayfirst)
+    except ValueError:
+        raise argparse.ArgumentTypeError("date is not valid")
+
+    return date.replace(tzinfo=config.TZ_LOCAL)
