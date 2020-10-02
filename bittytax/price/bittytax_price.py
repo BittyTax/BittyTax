@@ -14,6 +14,7 @@ import dateutil.parser
 
 from ..version import __version__
 from ..config import config
+from .datasource import DataSourceBase
 from .valueasset import ValueAsset
 from .exceptions import UnexpectedDataSourceError
 
@@ -35,7 +36,7 @@ def main():
     parser.add_argument('date',
                         type=validate_date,
                         nargs='?',
-                        help="date (YYYY-MM-DD)")
+                        help="date (YYYY-MM-DD or DD/MM/YYYY)")
     parser.add_argument('-v',
                         '--version',
                         action='version',
@@ -48,6 +49,12 @@ def main():
                         '--quantity',
                         type=Decimal,
                         help="quantity to price")
+    parser.add_argument('-ds',
+                        choices=sorted([ds.__name__.upper()
+                                        for ds in DataSourceBase.__subclasses__()]),
+                        dest='datasource',
+                        type=str.upper,
+                        help="specify the data source to use")
     parser.add_argument('-nc',
                         '--nocache',
                         action='store_true', help="bypass cache for historical data")
@@ -60,7 +67,7 @@ def main():
         print("%ssystem: %s, release: %s" % (Fore.GREEN, platform.system(), platform.release()))
         config.output_config()
 
-    value_asset = ValueAsset()
+    value_asset = ValueAsset(config.args.datasource)
     asset = config.args.asset[0]
 
     if asset == config.CCY:
@@ -71,6 +78,7 @@ def main():
             price_ccy, name, data_source = value_asset.get_historical_price(asset, config.args.date)
         else:
             price_ccy, name, data_source = value_asset.get_latest_price(asset)
+
     except UnexpectedDataSourceError as e:
         parser.exit("%sERROR%s %s" % (
             Back.RED+Fore.BLACK, Back.RESET+Fore.RED, e))
@@ -106,11 +114,18 @@ def main():
                 Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, asset))
 
 def validate_date(value):
-    if not re.match(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$", value):
-        raise argparse.ArgumentTypeError("date format is not valid, use YYYY-MM-DD")
+    match = re.match(r"^([0-9]{4}-[0-9]{2}-[0-9]{2})|([0-9]{2}\/[0-9]{2}\/[0-9]{4})$", value)
+
+    if not match:
+        raise argparse.ArgumentTypeError("date format is not valid, use YYYY-MM-DD or DD/MM/YYYY")
+    else:
+        if match.group(1):
+            dayfirst = False
+        else:
+            dayfirst = True
 
     try:
-        date = dateutil.parser.parse(value)
+        date = dateutil.parser.parse(value, dayfirst=dayfirst)
     except ValueError:
         raise argparse.ArgumentTypeError("date is not valid")
 

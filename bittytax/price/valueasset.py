@@ -13,8 +13,8 @@ from ..tax import which_tax_year
 from .pricedata import PriceData
 
 class ValueAsset(object):
-    def __init__(self):
-        self.price_data = PriceData()
+    def __init__(self, data_source=None):
+        self.price_data = PriceData(data_source)
         self.price_report = {}
 
     def get_value(self, asset, timestamp, quantity):

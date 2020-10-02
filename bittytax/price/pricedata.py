@@ -7,32 +7,46 @@ from colorama import Fore
 
 from ..version import __version__
 from ..config import config
-from .datasource import DataSourceBase
+from .datasource import DataSourceBase, CoinPaprika, CryptoCompare
 from .exceptions import UnexpectedDataSourceError
 
 class PriceData(object):
-    def __init__(self):
+    def __init__(self, data_source=None):
+        self.data_source = data_source
         self.data_sources = {}
 
         if not os.path.exists(config.CACHE_DIR):
             os.mkdir(config.CACHE_DIR)
 
-        data_sources_required = set(config.data_source_fiat +
-                                    config.data_source_crypto) | \
-                                {x for v in config.data_source_select.values() for x in v}
-
-        for data_source in DataSourceBase.__subclasses__():
-            if data_source.__name__.upper() in [ds.upper() for ds in data_sources_required]:
-                self.data_sources[data_source.__name__.upper()] = data_source()
-
-    @staticmethod
-    def data_source_priority(asset):
-        if asset in config.data_source_select:
-            return config.data_source_select[asset]
-        elif asset in config.fiat_list:
-            return config.data_source_fiat
+        if not data_source:
+            data_sources_required = set(config.data_source_fiat +
+                                        config.data_source_crypto) | \
+                                    {x for v in config.data_source_select.values() for x in v}
         else:
-            return config.data_source_crypto
+            data_sources_required = {data_source}
+
+            if data_source == CoinPaprika.__name__.upper():
+                # CoinPaprika does not support BTC/GBP, so we need to add another source
+                data_sources_required.add(CryptoCompare.__name__)
+
+
+        for data_source_class in DataSourceBase.__subclasses__():
+            if data_source_class.__name__.upper() in [ds.upper() for ds in data_sources_required]:
+                self.data_sources[data_source_class.__name__.upper()] = data_source_class()
+
+    def data_source_priority(self, asset):
+        if not self.data_source:
+            if asset in config.data_source_select:
+                return config.data_source_select[asset]
+            elif asset in config.fiat_list:
+                return config.data_source_fiat
+            else:
+                return config.data_source_crypto
+        else:
+            if self.data_source == CoinPaprika.__name__.upper():
+                return [self.data_source, CryptoCompare.__name__]
+            else:
+                return [self.data_source]
 
     def get_latest_ds(self, data_source, asset, quote):
         if data_source.upper() in self.data_sources:
