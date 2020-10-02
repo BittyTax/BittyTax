@@ -31,6 +31,7 @@
 - Qt Wallet parser: recognise Namecoin operations.
 - Qt Wallet parser: warning when skipping unconfirmed transactions.
 - Conversion tool: added extra debug.
+- Accounting tool: new transaction type Gift-Spouse added.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 - Data source names in config are now case-insensitive.
