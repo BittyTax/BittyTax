@@ -139,12 +139,47 @@ def parse_coinbase_pro_trades(data_row, parser, _filename):
     else:
         raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
 
+def parse_coinbase_pro_trades2(data_row, parser, _filename):
+    in_row = data_row.in_row
+    data_row.timestamp = DataParser.parse_timestamp(in_row[4])
+
+    if in_row[3] == "BUY":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                 data_row.timestamp,
+                                                 buy_quantity=in_row[5],
+                                                 buy_asset=in_row[6],
+                                                 sell_quantity=abs(Decimal(in_row[9])) - \
+                                                               Decimal(in_row[8]),
+                                                 sell_asset=in_row[10],
+                                                 fee_quantity=in_row[8],
+                                                 fee_asset=in_row[10],
+                                                 wallet=WALLET)
+    elif in_row[3] == "SELL":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                 data_row.timestamp,
+                                                 buy_quantity=in_row[9],
+                                                 buy_asset=in_row[10],
+                                                 sell_quantity=in_row[5],
+                                                 sell_asset=in_row[6],
+                                                 fee_quantity=in_row[8],
+                                                 fee_asset=in_row[10],
+                                                 wallet=WALLET)
+    else:
+        raise UnexpectedTypeError(3, parser.in_header[3], in_row[3])
+
 DataParser(DataParser.TYPE_EXCHANGE,
            "Coinbase Pro",
            ['portfolio', 'type', 'time', 'amount', 'balance', 'amount/balance unit', 'transfer id',
             'trade id', 'order id'],
            worksheet_name="Coinbase Pro",
            all_handler=parse_coinbase_pro)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Coinbase Pro Trades",
+           ['portfolio', 'trade id', 'product', 'side', 'created at', 'size', 'size unit', 'price',
+            'fee', 'total', 'price/fee/total unit'],
+           worksheet_name="Coinbase Pro T",
+           row_handler=parse_coinbase_pro_trades2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Coinbase Pro Deposits/Withdrawals",
