@@ -157,6 +157,7 @@ class TransactionBase(object):
         self.fee_fixed = True
         self.wallet = None
         self.timestamp = None
+        self.note = None
         self.matched = False
         self.pooled = []
 
@@ -263,6 +264,7 @@ class Buy(TransactionBase):
         if other.fee_fixed != self.fee_fixed:
             self.fee_fixed = False
 
+        self.note = None
         self.pooled.append(other)
         return self
 
@@ -359,6 +361,7 @@ class Sell(TransactionBase):
         if other.fee_fixed != self.fee_fixed:
             self.fee_fixed = False
 
+        self.note = None
         self.pooled.append(other)
         return self
 

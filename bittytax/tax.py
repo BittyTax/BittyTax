@@ -322,9 +322,10 @@ class TaxCalculator(object):
         return tax_year
 
 class TaxEvent(object):
-    def __init__(self, date, asset):
+    def __init__(self, date, asset, note):
         self.date = date
         self.asset = asset
+        self.note = note
 
     def __eq__(self, other):
         return self.date == other.date
@@ -337,7 +338,7 @@ class TaxEvent(object):
 
 class TaxEventCapitalGains(TaxEvent):
     def __init__(self, disposal_type, b, s, cost, fees):
-        super(TaxEventCapitalGains, self).__init__(s.timestamp, s.asset)
+        super(TaxEventCapitalGains, self).__init__(s.timestamp, s.asset, s.note)
         self.disposal_type = disposal_type
         self.quantity = s.quantity
         self.cost = cost.quantize(PRECISION)
@@ -362,7 +363,7 @@ class TaxEventCapitalGains(TaxEvent):
 
 class TaxEventIncome(TaxEvent):
     def __init__(self, b):
-        super(TaxEventIncome, self).__init__(b.timestamp, b.asset)
+        super(TaxEventIncome, self).__init__(b.timestamp, b.asset, b.note)
         self.type = b.t_type
         self.quantity = b.quantity
         self.amount = b.cost.quantize(PRECISION)

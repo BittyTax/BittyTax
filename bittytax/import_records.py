@@ -142,7 +142,7 @@ class TransactionRow(object):
               'Buy Quantity', 'Buy Asset', 'Buy Value',
               'Sell Quantity', 'Sell Asset', 'Sell Value',
               'Fee Quantity', 'Fee Asset', 'Fee Value',
-              'Wallet', 'Timestamp']
+              'Wallet', 'Timestamp', 'Note']
 
     BUY_TYPES = (TransactionRecord.TYPE_DEPOSIT,
                  TransactionRecord.TYPE_MINING,
@@ -205,7 +205,7 @@ class TransactionRow(object):
                 fee.disposal = False
 
         self.t_record = TransactionRecord(t_type, buy, sell, fee, self.row[10],
-                                          self.parse_timestamp(self.row[11]))
+                                          self.parse_timestamp(self.row[11]), self.row[12])
 
     @staticmethod
     def parse_timestamp(timestamp_str):
