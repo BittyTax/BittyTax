@@ -89,7 +89,7 @@ class ValueAsset(object):
         if asset == 'BTC' or asset in config.fiat_list:
             asset_price_ccy, name, data_source = self.price_data.get_latest(asset, config.CCY)
         else:
-            btc_price_ccy, _, _ = self.price_data.get_latest('BTC', config.CCY)
+            btc_price_ccy, name, data_source = self.price_data.get_latest('BTC', config.CCY)
 
             if btc_price_ccy is not None:
                 asset_price_btc, name, data_source = self.price_data.get_latest(asset, 'BTC')
