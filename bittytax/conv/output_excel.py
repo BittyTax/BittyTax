@@ -145,8 +145,12 @@ class Worksheet(object):
         return name
 
     def _make_columns(self, in_header):
+        if sys.version_info[0] < 3:
+            in_header = [h.decode('utf8') for h in in_header]
+
         col_names = {}
         columns = []
+
         for col_num, col_name in enumerate(self.output.BITTYTAX_OUT_HEADER + in_header):
             if col_name.lower() not in col_names:
                 col_names[col_name.lower()] = 1
