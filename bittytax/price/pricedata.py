@@ -11,7 +11,8 @@ from .datasource import DataSourceBase, CoinPaprika, CryptoCompare
 from .exceptions import UnexpectedDataSourceError
 
 class PriceData(object):
-    def __init__(self, data_source=None):
+    def __init__(self, price_tool=False, data_source=None):
+        self.price_tool = price_tool
         self.data_source = data_source
         self.data_sources = {}
 
@@ -43,8 +44,9 @@ class PriceData(object):
             else:
                 return config.data_source_crypto
         else:
-            if self.data_source == CoinPaprika.__name__.upper():
-                return [self.data_source, CryptoCompare.__name__]
+            if self.data_source == CoinPaprika.__name__.upper() and asset == 'BTC':
+                # CoinPaprika does not support BTC/GBP
+                return [CryptoCompare.__name__]
             else:
                 return [self.data_source]
 
@@ -98,6 +100,15 @@ class PriceData(object):
                         quote,
                         self.data_sources[data_source.upper()].name(),
                         name))
+                if self.price_tool:
+                    print("%s1 %s=%s %s %svia %s (%s)" % (
+                        Fore.YELLOW,
+                        asset,
+                        '{:0,f}'.format(price.normalize()),
+                        quote,
+                        Fore.CYAN,
+                        self.data_sources[data_source.upper()].name(),
+                        name))
                 return price, name, self.data_sources[data_source.upper()].name()
         return None, name, None
 
@@ -113,6 +124,15 @@ class PriceData(object):
                         asset,
                         '{:0,f}'.format(price.normalize()),
                         quote,
+                        self.data_sources[data_source.upper()].name(),
+                        name))
+                if self.price_tool:
+                    print("%s1 %s=%s %s %svia %s (%s)" % (
+                        Fore.YELLOW,
+                        asset,
+                        '{:0,f}'.format(price.normalize()),
+                        quote,
+                        Fore.CYAN,
                         self.data_sources[data_source.upper()].name(),
                         name))
                 return price, name, self.data_sources[data_source.upper()].name(), url

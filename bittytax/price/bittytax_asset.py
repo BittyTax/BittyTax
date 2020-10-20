@@ -40,6 +40,10 @@ def main():
     parser.add_argument('-ds',
                         choices=sorted([ds.__name__.upper()
                                         for ds in DataSourceBase.__subclasses__()]),
+                        metavar='{' +
+                                ', '.join(sorted([ds.__name__ for ds in
+                                                  DataSourceBase.__subclasses__()])) +
+                                '}',
                         dest='datasource',
                         type=str.upper,
                         help="specify the data source to use")
