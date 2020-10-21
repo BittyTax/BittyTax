@@ -55,6 +55,7 @@
 - HandCash parser: identify transactions to other users as gifts.
 - Qt Wallet parser: get symbol name from "Amount" if available.
 - Qt Wallet parser: -ca option takes precedence over any symbol name found in the data file.
+- Conversion tool: Excel currency format changed to improve compatibility.
 
 ## Version [0.4.1] Beta (2020-07-25)
 ### Fixed

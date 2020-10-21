@@ -63,7 +63,7 @@ class OutputExcel(OutputBase):
                                                            'align': 'right'})
         self.format_currency = self.workbook.add_format({'font_size': FONT_SIZE,
                                                          'font_color': 'black',
-                                                         'num_format': config.sym() + '#,##0.00'})
+                                                         'num_format': '"' + config.sym() + '"#,##0.00'})
         self.format_timestamp = self.workbook.add_format({'font_size': FONT_SIZE,
                                                           'font_color': 'black',
                                                           'num_format': self.DATE_FORMAT})
