@@ -147,9 +147,9 @@ class TransactionRow(object):
     BUY_TYPES = (TransactionRecord.TYPE_DEPOSIT,
                  TransactionRecord.TYPE_MINING,
                  TransactionRecord.TYPE_STAKING,
-                 TransactionRecord.TYPE_INCOME,
                  TransactionRecord.TYPE_INTEREST,
                  TransactionRecord.TYPE_DIVIDEND,
+                 TransactionRecord.TYPE_INCOME,
                  TransactionRecord.TYPE_GIFT_RECEIVED)
     SELL_TYPES = (TransactionRecord.TYPE_WITHDRAWAL,
                   TransactionRecord.TYPE_SPEND,

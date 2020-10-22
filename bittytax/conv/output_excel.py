@@ -63,7 +63,8 @@ class OutputExcel(OutputBase):
                                                            'align': 'right'})
         self.format_currency = self.workbook.add_format({'font_size': FONT_SIZE,
                                                          'font_color': 'black',
-                                                         'num_format': '"' + config.sym() + '"#,##0.00'})
+                                                         'num_format': '"' + config.sym() +
+                                                                       '"#,##0.00'})
         self.format_timestamp = self.workbook.add_format({'font_size': FONT_SIZE,
                                                           'font_color': 'black',
                                                           'num_format': self.DATE_FORMAT})
@@ -88,9 +89,9 @@ class Worksheet(object):
     BUY_LIST = (TransactionOutRecord.TYPE_DEPOSIT,
                 TransactionOutRecord.TYPE_MINING,
                 TransactionOutRecord.TYPE_STAKING,
-                TransactionOutRecord.TYPE_INCOME,
                 TransactionOutRecord.TYPE_INTEREST,
                 TransactionOutRecord.TYPE_DIVIDEND,
+                TransactionOutRecord.TYPE_INCOME,
                 TransactionOutRecord.TYPE_GIFT_RECEIVED)
 
     SELL_LIST = (TransactionOutRecord.TYPE_WITHDRAWAL,

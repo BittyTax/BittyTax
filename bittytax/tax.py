@@ -29,8 +29,8 @@ class TaxCalculator(object):
     DISPOSAL_SECTION_104 = 'Section 104'
     DISPOSAL_NO_GAIN_NO_LOSS = 'No Gain/No Loss'
 
-    INCOME_TYPES = (Buy.TYPE_MINING, Buy.TYPE_STAKING, Buy.TYPE_INCOME, Buy.TYPE_INTEREST,
-                    Buy.TYPE_DIVIDEND)
+    INCOME_TYPES = (Buy.TYPE_MINING, Buy.TYPE_STAKING, Buy.TYPE_DIVIDEND, Buy.TYPE_INTEREST,
+                    Buy.TYPE_INCOME)
 
     def __init__(self, transactions):
         self.transactions = transactions
