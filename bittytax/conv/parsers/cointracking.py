@@ -22,7 +22,7 @@ COINTRACKING_TYPE_MAPPING = {'Trade': TransactionOutRecord.TYPE_TRADE,
 
 def parse_cointracking(data_row, parser, _filename):
     in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[12])
+    data_row.timestamp = DataParser.parse_timestamp(in_row[12], dayfirst=True)
 
     if in_row[0] == "Trade":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
