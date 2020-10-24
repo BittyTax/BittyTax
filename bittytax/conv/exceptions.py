@@ -12,6 +12,10 @@ class UnexpectedTypeError(DataParserError):
     def __str__(self):
         return "Unrecognised %s: \'%s\'" % (self.col_name, self.value)
 
+class UnexpectedContentError(DataParserError):
+    def __str__(self):
+        return "Unexpected %s content: \'%s\'" % (self.col_name, self.value)
+
 class MissingValueError(DataParserError):
     def __str__(self):
         return "Missing value for \'%s\'" % self.col_name

@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import sys
+import re
 from decimal import Decimal
 
-from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
-from ..exceptions import UnexpectedTypeError
+from ..exceptions import UnexpectedTypeError, UnexpectedContentError
 
 WALLET = "Coinbase"
 DUPLICATE = "Duplicate"
@@ -33,27 +34,53 @@ def parse_coinbase(data_row, parser, _filename):
                                                  sell_asset=in_row[2],
                                                  wallet=WALLET)
     elif in_row[1] == "Buy":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                 data_row.timestamp,
-                                                 buy_quantity=in_row[3],
-                                                 buy_asset=in_row[2],
-                                                 sell_quantity=in_row[5],
-                                                 sell_asset=config.CCY,
-                                                 fee_quantity=in_row[7],
-                                                 fee_asset=config.CCY,
-                                                 wallet=WALLET)
+        currency = get_currency(in_row[8])
+        if currency is None:
+            raise UnexpectedContentError(8, parser.in_header[8], in_row[8])
+
+        if Decimal(in_row[7]) == 0:
+            # No fee indicates Buy was for an early Referral reward
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
+                                                     data_row.timestamp,
+                                                     buy_quantity=in_row[3],
+                                                     buy_asset=in_row[2],
+                                                     wallet=WALLET)
+        else:
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                     data_row.timestamp,
+                                                     buy_quantity=in_row[3],
+                                                     buy_asset=in_row[2],
+                                                     sell_quantity=in_row[5],
+                                                     sell_asset=currency,
+                                                     fee_quantity=in_row[7],
+                                                     fee_asset=currency,
+                                                     wallet=WALLET)
     elif in_row[1] == "Sell":
+        currency = get_currency(in_row[8])
+        if currency is None:
+            raise UnexpectedContentError(8, parser.in_header[8], in_row[8])
+
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[5],
-                                                 buy_asset=config.CCY,
+                                                 buy_asset=currency,
                                                  sell_quantity=in_row[3],
                                                  sell_asset=in_row[2],
                                                  fee_quantity=in_row[7],
-                                                 fee_asset=config.CCY,
+                                                 fee_asset=currency,
                                                  wallet=WALLET)
     else:
         raise UnexpectedTypeError(1, parser.in_header[1], in_row[1])
+
+def get_currency(notes):
+    if sys.version_info[0] < 3:
+        notes = notes.decode('utf8')
+
+    match = re.match(r".+for .{1}\d+\.\d+ (\w{3})$", notes)
+
+    if match:
+        return match.group(1)
+    return None
 
 def parse_coinbase_transfers(data_row, parser, _filename):
     in_row = data_row.in_row
