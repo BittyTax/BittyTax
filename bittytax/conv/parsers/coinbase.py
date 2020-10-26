@@ -76,7 +76,7 @@ def get_currency(notes):
     if sys.version_info[0] < 3:
         notes = notes.decode('utf8')
 
-    match = re.match(r".+for .{1}\d+\.\d+ (\w{3})$", notes)
+    match = re.match(r".+for .{1}[\d|,]+\.\d{2} (\w{3})$", notes)
 
     if match:
         return match.group(1)
