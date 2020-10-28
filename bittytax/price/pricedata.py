@@ -45,8 +45,8 @@ class PriceData(object):
                 return config.data_source_crypto
         else:
             if self.data_source == CoinPaprika.__name__.upper() and asset == 'BTC':
-                # CoinPaprika does not support BTC/GBP
-                return [CryptoCompare.__name__]
+                # CoinPaprika does not support BTC/GBP for historic prices
+                return [self.data_source, CryptoCompare.__name__]
             else:
                 return [self.data_source]
 

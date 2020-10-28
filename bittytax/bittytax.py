@@ -46,7 +46,7 @@ def main():
     parser.add_argument('-d',
                         '--debug',
                         action='store_true',
-                        help="enabled debug logging")
+                        help="enable debug logging")
     parser.add_argument('-ty',
                         '--taxyear',
                         type=validate_year,

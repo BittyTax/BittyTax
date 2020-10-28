@@ -16,7 +16,6 @@
 ### Added
 - Conversion tool: added parser for CoinTracking.info accounting data.
 - Conversion tool: added parser for Gravity (Bitstocks) exchange.
-- Asset tool: new tool to list/search which assets have price data available.
 - Etherscan parser: added ERC-20 tokens and ERC-721 NFTs exports.
 - Bittrex parser: new data file format added.
 - Coinbase Pro parser: new "Account Statement" data file format added.
@@ -44,6 +43,7 @@
 - Price tool: added data source (-ds) argument.
 - Accounting tool: new transaction type Gift-Spouse added.
 - Coinbase Pro parser: new "Fills Statement" data file format added.
+- Price tool: added list asset command.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 - Data source names in config are now case-insensitive.
@@ -56,6 +56,8 @@
 - Qt Wallet parser: get symbol name from "Amount" if available.
 - Qt Wallet parser: -ca option takes precedence over any symbol name found in the data file.
 - Conversion tool: Excel currency format changed to improve compatibility.
+- Price tool: added commands for latest and historic prices.
+- Price tool: quantity is now an optional argument, -q or --quantity is not required.
 
 ## Version [0.4.1] Beta (2020-07-25)
 ### Fixed
