@@ -17,23 +17,23 @@ def parse_hitbtc_trades2(data_row, parser, _filename):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[6],
-                                                 buy_asset=in_row[2].split('/')[1],
+                                                 buy_asset=in_row[2].split('/')[0],
                                                  sell_quantity=Decimal(in_row[8]) - \
                                                                Decimal(in_row[10]),
-                                                 sell_asset=in_row[2].split('/')[2],
+                                                 sell_asset=in_row[2].split('/')[1],
                                                  fee_quantity=in_row[9],
-                                                 fee_asset=in_row[2].split('/')[2],
+                                                 fee_asset=in_row[2].split('/')[1],
                                                  wallet=WALLET)
     elif in_row[5] == "sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=Decimal(in_row[8]) + \
                                                               Decimal(in_row[10]),
-                                                 buy_asset=in_row[2].split('/')[2],
+                                                 buy_asset=in_row[2].split('/')[1],
                                                  sell_quantity=in_row[6],
-                                                 sell_asset=in_row[2].split('/')[1],
+                                                 sell_asset=in_row[2].split('/')[0],
                                                  fee_quantity=in_row[9],
-                                                 fee_asset=in_row[2].split('/')[2],
+                                                 fee_asset=in_row[2].split('/')[1],
                                                  wallet=WALLET)
     else:
         raise UnexpectedTypeError(5, parser.in_header[5], in_row[5])
@@ -119,7 +119,7 @@ DataParser(DataParser.TYPE_EXCHANGE,
 DataParser(DataParser.TYPE_EXCHANGE,
            "HitBTC",
            ['Email', 'Date (UTC)', 'Operation id', 'Type', 'Amount', 'Transaction hash',
-           'Main account balance', 'Currency'],
+            'Main account balance', 'Currency'],
            worksheet_name="HitBTC D,W",
            row_handler=parse_hitbtc_deposits_withdrawals2)
 
