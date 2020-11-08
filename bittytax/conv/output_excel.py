@@ -78,7 +78,13 @@ class OutputExcel(OutputBase):
             for i, data_row in enumerate(data_rows):
                 worksheet.add_row(data_row, i + 1)
 
-            worksheet.make_table(len(data_rows), data_file.parser.worksheet_name)
+            if data_rows:
+                worksheet.make_table(len(data_rows), data_file.parser.worksheet_name)
+            else:
+                # Just add headings
+                for i, columns in enumerate(worksheet.columns):
+                    worksheet.worksheet.write(0, i, columns['header'], columns['header_format'])
+
             worksheet.autofit()
 
         self.workbook.close()
