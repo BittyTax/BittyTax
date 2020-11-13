@@ -1,5 +1,7 @@
 # Change Log
 ## [Unreleased]
+### Added
+- Conversion tool: added parser for CGTCalculator.
 
 ## Version [0.4.2] Beta (2020-10-30)
 ### Fixed
