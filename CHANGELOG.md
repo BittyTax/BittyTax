@@ -1,5 +1,7 @@
 # Change Log
 ## [Unreleased]
+### Fixed
+- UserWarning: Must have at least one data row in in add_table()
 ### Added
 - Conversion tool: added parser for CGTCalculator.
 
