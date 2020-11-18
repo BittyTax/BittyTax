@@ -46,18 +46,19 @@ def parse_hitbtc_trades_row(data_rows, parser, data_row, row_index):
                                                      wallet=WALLET)
         data_rows.insert(row_index + 1, dup_data_row)
 
-        fee_quantity = None
-        fee_asset = ""
+        fee_quantity = Decimal(0)
     else:
         fee_quantity = in_row[9]
-        fee_asset = in_row[2].split('/')[1]
+
+    fee_asset = in_row[2].split('/')[1]
 
     if in_row[5] == "buy":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[6],
                                                  buy_asset=in_row[2].split('/')[0],
-                                                 sell_quantity=in_row[8],
+                                                 sell_quantity=Decimal(in_row[6]) * \
+                                                               Decimal(in_row[7]),
                                                  sell_asset=in_row[2].split('/')[1],
                                                  fee_quantity=fee_quantity,
                                                  fee_asset=fee_asset,
@@ -65,7 +66,8 @@ def parse_hitbtc_trades_row(data_rows, parser, data_row, row_index):
     elif in_row[5] == "sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[8],
+                                                 buy_quantity=Decimal(in_row[6]) * \
+                                                              Decimal(in_row[7]),
                                                  buy_asset=in_row[2].split('/')[1],
                                                  sell_quantity=in_row[6],
                                                  sell_asset=in_row[2].split('/')[0],
@@ -113,13 +115,13 @@ def parse_hitbtc_deposits_withdrawals2(data_row, _parser, _filename):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=abs(Decimal(in_row[4])),
-                                                 sell_asset=in_row[7],
+                                                 sell_asset=in_row[7].upper(),
                                                  wallet=WALLET)
     elif in_row[3] == "Deposit":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[4],
-                                                 buy_asset=in_row[7],
+                                                 buy_asset=in_row[7].upper(),
                                                  wallet=WALLET)
 
 def parse_hitbtc_deposits_withdrawals(data_row, _parser, _filename):
