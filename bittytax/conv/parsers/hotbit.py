@@ -54,12 +54,12 @@ def parse_hotbit_trades_row(data_rows, parser, data_row, row_index):
                                                      wallet=WALLET)
         data_rows.insert(row_index + 1, dup_data_row)
 
-        fee_quantity = None
-        fee_asset = ""
+        fee_quantity = Decimal(0)
     else:
         # Have to re-calculate the fee as rounding in datafile is incorrect
         fee_quantity = (total * TAKER_FEE).quantize(PRECISION, rounding=ROUND_DOWN)
-        fee_asset = in_row[5].split(' ')[1]
+
+    fee_asset = in_row[5].split(' ')[1]
 
     if in_row[2] == "BUY":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,

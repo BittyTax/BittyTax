@@ -1,9 +1,11 @@
 # Change Log
 ## [Unreleased]
 ### Fixed
-- UserWarning: Must have at least one data row in in add_table()
+- UserWarning: Must have at least one data row in in add_table().
 ### Added
 - Conversion tool: added parser for CGTCalculator.
+### Changed
+- Hotbit parser: Negative fees are now set to zero.
 
 ## Version [0.4.2] Beta (2020-10-30)
 ### Fixed
