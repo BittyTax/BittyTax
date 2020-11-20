@@ -6,6 +6,7 @@
 - Conversion tool: added parser for CGTCalculator.
 ### Changed
 - Hotbit parser: Negative fees are now set to zero.
+- Accounting tool: Drop buy/sell/fee transactions of zero quantity.
 
 ## Version [0.4.2] Beta (2020-10-30)
 ### Fixed

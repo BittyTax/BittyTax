@@ -29,7 +29,7 @@ class TransactionHistory(object):
             self.get_all_values(tr)
 
             # Attribute the fee value to the buy, the sell or both
-            if tr.fee and tr.fee.disposal and tr.fee.proceeds is not None:
+            if tr.fee and tr.fee.disposal and tr.fee.proceeds:
                 if tr.buy and tr.sell:
                     if tr.buy.asset in config.fiat_list:
                         tr.sell.fee_value = tr.fee.proceeds
@@ -50,17 +50,19 @@ class TransactionHistory(object):
                     tr.sell.fee_value = tr.fee.proceeds
                     tr.sell.fee_fixed = tr.fee.proceeds_fixed
 
-            if tr.buy and tr.buy.asset not in config.fiat_list:
+            if tr.buy and tr.buy.quantity and tr.buy.asset not in config.fiat_list:
                 tr.buy.set_tid()
                 self.transactions.append(tr.buy)
                 if config.args.debug:
                     print("%ssplit:   %s" % (Fore.GREEN, tr.buy))
-            if tr.sell and tr.sell.asset not in config.fiat_list:
+
+            if tr.sell and tr.sell.quantity and tr.sell.asset not in config.fiat_list:
                 tr.sell.set_tid()
                 self.transactions.append(tr.sell)
                 if config.args.debug:
                     print("%ssplit:   %s" % (Fore.GREEN, tr.sell))
-            if tr.fee and tr.fee.asset not in config.fiat_list:
+
+            if tr.fee and tr.fee.quantity and tr.fee.asset not in config.fiat_list:
                 tr.fee.set_tid()
                 self.transactions.append(tr.fee)
                 if config.args.debug:

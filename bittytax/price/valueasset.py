@@ -22,6 +22,9 @@ class ValueAsset(object):
         if asset == config.CCY:
             return quantity, True
 
+        if quantity == 0:
+            return Decimal(0), False
+
         asset_price_ccy, _, _ = self.get_historical_price(asset, timestamp)
         if asset_price_ccy is not None:
             value = asset_price_ccy * quantity
@@ -72,7 +75,7 @@ class ValueAsset(object):
                                                                                      timestamp)
             if asset_price_btc is not None:
                 btc_price_ccy, name2, data_source2, url2 = self.price_data.get_historical(
-                        'BTC', config.CCY, timestamp)
+                    'BTC', config.CCY, timestamp)
                 if btc_price_ccy is not None:
                     asset_price_ccy = btc_price_ccy * asset_price_btc
 
