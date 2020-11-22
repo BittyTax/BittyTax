@@ -23,7 +23,7 @@ def get_long_description():
 setup(
     name='BittyTax',
     version=get_version(),
-    description='Crypto-currency tax calculator for UK tax rules. Produces a PDF report of your capital ',
+    description='Crypto-currency tax calculator for UK tax rules. Produces a PDF report of your capital '
                 'gains and income. Import your data from popular wallets and exchanges (i.e. Coinbase, Binance, etc).',
     long_description=get_long_description(),
     long_description_content_type='text/markdown',
