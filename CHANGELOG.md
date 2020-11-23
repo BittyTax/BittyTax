@@ -2,6 +2,7 @@
 ## [Unreleased]
 ### Fixed
 - UserWarning: Must have at least one data row in in add_table().
+- AttributeError: 'module' object has no attribute 'UTC'. ([#27](https://github.com/BittyTax/BittyTax/issues/27))
 ### Added
 - Conversion tool: added parser for CGTCalculator.
 ### Changed
