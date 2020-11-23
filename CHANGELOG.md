@@ -5,6 +5,7 @@
 - AttributeError: 'module' object has no attribute 'UTC'. ([#27](https://github.com/BittyTax/BittyTax/issues/27))
 ### Added
 - Conversion tool: added parser for CGTCalculator.
+- Conversion tool: added parser for Nexo.
 ### Changed
 - Hotbit parser: Negative fees are now set to zero.
 - Accounting tool: Drop buy/sell/fee transactions of zero quantity.
