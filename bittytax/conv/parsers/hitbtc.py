@@ -111,13 +111,15 @@ def parse_hitbtc_deposits_withdrawals2(data_row, _parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[1])
 
-    if in_row[3] == "Withdraw":
+    # Looks like a bug in the exporter, Withdrawals are blank
+    # Failed transactions have no transaction hash
+    if in_row[3] in ("Withdraw", "") and in_row[5] != "":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=abs(Decimal(in_row[4])),
                                                  sell_asset=in_row[7].upper(),
                                                  wallet=WALLET)
-    elif in_row[3] == "Deposit":
+    elif in_row[3] == "Deposit" and in_row[5] != "":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[4],
