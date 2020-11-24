@@ -12,7 +12,7 @@ WALLET = "Crypto.com"
 
 def parse_crypto_com(data_row, parser, _filename):
     in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0], dayfirst=True)
+    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 
     if in_row[9] == "crypto_transfer":
         if Decimal(in_row[3]) > 0:
@@ -65,7 +65,8 @@ def parse_crypto_com(data_row, parser, _filename):
                                                      sell_asset=in_row[2],
                                                      wallet=WALLET)
     elif in_row[9] in ("referral_bonus", "referral_card_cashback", "reimbursement",
-                       "gift_card_reward", "transfer_cashback", "admin_wallet_credited"):
+                       "gift_card_reward", "transfer_cashback", "admin_wallet_credited",
+                       "referral_gift"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[3],
