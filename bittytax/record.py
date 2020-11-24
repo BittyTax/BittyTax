@@ -87,6 +87,13 @@ class TransactionRecord(object):
                 config.CCY)
         return ''
 
+    @staticmethod
+    def _format_timestamp(timestamp):
+        if timestamp.time().microsecond:
+            return timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f %Z')
+        else:
+            return timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
+
     def __eq__(self, other):
         return self.timestamp == other.timestamp
 
@@ -108,7 +115,7 @@ class TransactionRecord(object):
                 self._format_value(self.sell.proceeds),
                 self._format_fee(),
                 self.wallet,
-                self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+                self._format_timestamp(self.timestamp),
                 self.tid[0])
         elif self.buy:
             return "%s %s %s%s%s '%s' %s [TID:%s]" % (
@@ -118,7 +125,7 @@ class TransactionRecord(object):
                 self._format_value(self.buy.cost),
                 self._format_fee(),
                 self.wallet,
-                self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+                self._format_timestamp(self.timestamp),
                 self.tid[0])
         elif self.sell:
             return "%s %s %s%s%s '%s' %s [TID:%s]" % (
@@ -128,7 +135,7 @@ class TransactionRecord(object):
                 self._format_value(self.sell.proceeds),
                 self._format_fee(),
                 self.wallet,
-                self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+                self._format_timestamp(self.timestamp),
                 self.tid[0])
 
         return ''
