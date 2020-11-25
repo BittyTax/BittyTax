@@ -144,28 +144,28 @@ def parse_hitbtc_deposits_withdrawals(data_row, _parser, _filename):
                                                  wallet=WALLET)
 
 DataParser(DataParser.TYPE_EXCHANGE,
-           "HitBTC",
+           "HitBTC Trades",
            ['Email', 'Date (UTC)', 'Instrument', 'Trade ID', 'Order ID', 'Side', 'Quantity',
             'Price', 'Volume', 'Fee', 'Rebate', 'Total'],
            worksheet_name="HitBTC T",
            all_handler=parse_hitbtc_trades2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
-           "HitBTC",
+           "HitBTC Trades",
            ['Date (UTC)', 'Instrument', 'Trade ID', 'Order ID', 'Side', 'Quantity', 'Price',
             'Volume', 'Fee', 'Rebate', 'Total'],
            worksheet_name="HitBTC T",
            row_handler=parse_hitbtc_trades)
 
 DataParser(DataParser.TYPE_EXCHANGE,
-           "HitBTC",
+           "HitBTC Deposits/Withdrawals",
            ['Email', 'Date (UTC)', 'Operation id', 'Type', 'Amount', 'Transaction hash',
             'Main account balance', 'Currency'],
            worksheet_name="HitBTC D,W",
            row_handler=parse_hitbtc_deposits_withdrawals2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
-           "HitBTC",
+           "HitBTC Deposits/Withdrawals",
            ['Date (UTC)', 'Operation id', 'Type', 'Amount', 'Transaction Hash',
             'Main account balance'],
            worksheet_name="HitBTC D,W",
