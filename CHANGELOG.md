@@ -9,6 +9,7 @@
 - Conversion tool: added parser for CGTCalculator.
 - Conversion tool: added parser for Nexo.
 - Conversion tool: added parser for Kraken.
+- HitBTC parser: new data file format added.
 ### Changed
 - Hotbit parser: Negative fees are now set to zero.
 - Accounting tool: Drop buy/sell/fee transactions of zero quantity.
