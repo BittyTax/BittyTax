@@ -1,7 +1,19 @@
 # Change Log
 ## [Unreleased]
+### Fixed
+- UserWarning: Must have at least one data row in in add_table().
+- AttributeError: 'module' object has no attribute 'UTC'. ([#27](https://github.com/BittyTax/BittyTax/issues/27))
+- Crypto.com parser: fix date parser.
+- Incorrect price data for stablecoins via CryptoCompare. ([#29](https://github.com/BittyTax/BittyTax/issues/29))
 ### Added
+- Conversion tool: added parser for CGTCalculator.
+- Conversion tool: added parser for Nexo.
+- Conversion tool: added parser for Kraken.
 - HitBTC parser: new data file format added.
+### Changed
+- Hotbit parser: Negative fees are now set to zero.
+- Accounting tool: Drop buy/sell/fee transactions of zero quantity.
+- Crypto.com parser: Add support for referral_gift transaction type.
 
 ## Version [0.4.2] Beta (2020-10-30)
 ### Fixed
@@ -167,11 +179,11 @@
 - Conversion tool raises warning if 15-digit precision exceeded (Excel limit).
 - Conversion tool: added option to output in Recap import CSV format.
 ### Removed
-- Negative balance warning in a Section 104 holding. 
+- Negative balance warning in a Section 104 holding.
 - Logging removed from within config module.
 ### Changed
 - Logging is now initialised by each tool, instead of within the `config.py` module.
-- Conversion tool now outputs logging to `stderr` so it will be filtered when piping into `bittytax`. 
+- Conversion tool now outputs logging to `stderr` so it will be filtered when piping into `bittytax`.
 - The `pricedata.py` module has been renamed `valueasset.py`, and main function moved to new `price.py` module.
 - Package layout restructured, added subfolders for price and conv tools.
 - Refactored code for "all_handler" data parsers.

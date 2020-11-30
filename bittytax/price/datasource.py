@@ -213,7 +213,7 @@ class CryptoCompare(DataSourceBase):
 
     def get_historical(self, asset, quote, timestamp):
         url = "https://min-api.cryptocompare.com/data/histoday?aggregate=1&extraParams=%s" \
-              "&fsym=%s&tsym=%s&limit=%s&tryConversion=false&toTs=%d" % (
+              "&fsym=%s&tsym=%s&limit=%s&toTs=%d" % (
                   self.USER_AGENT, asset, quote, CRYPTOCOMPARE_MAX_DAYS,
                   self.epoch_time(timestamp + timedelta(days=CRYPTOCOMPARE_MAX_DAYS)))
 
