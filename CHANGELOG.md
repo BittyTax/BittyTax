@@ -4,6 +4,7 @@
 - UserWarning: Must have at least one data row in in add_table().
 - AttributeError: 'module' object has no attribute 'UTC'. ([#27](https://github.com/BittyTax/BittyTax/issues/27))
 - Crypto.com parser: fix date parser.
+- Incorrect price data for stablecoins via CryptoCompare. ([#29](https://github.com/BittyTax/BittyTax/issues/29))
 ### Added
 - Conversion tool: added parser for CGTCalculator.
 - Conversion tool: added parser for Nexo.
