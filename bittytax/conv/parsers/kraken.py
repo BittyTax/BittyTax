@@ -74,7 +74,7 @@ def parse_kraken_trades(data_row, parser, _filename):
 def split_trading_pair(trading_pair):
     for quote_asset in sorted(QUOTE_ASSETS, reverse=True):
         if trading_pair.endswith(quote_asset):
-            return trading_pair.replace(quote_asset, ''), quote_asset
+            return trading_pair[:-len(quote_asset)], quote_asset
 
     return None, None
 
@@ -98,5 +98,12 @@ DataParser(DataParser.TYPE_EXCHANGE,
            ['txid', 'ordertxid', 'pair', 'time', 'type', 'ordertype', 'price', 'cost', 'fee', 'vol',
             'margin', 'misc', 'ledgers', 'postxid', 'posstatus', 'cprice', 'ccost', 'cfee', 'cvol',
             'cmargin', 'net', 'trades'],
+           worksheet_name="Kraken T",
+           row_handler=parse_kraken_trades)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Kraken Trades",
+           ['txid', 'ordertxid', 'pair', 'time', 'type', 'ordertype', 'price', 'cost', 'fee', 'vol',
+            'margin', 'misc', 'ledgers'],
            worksheet_name="Kraken T",
            row_handler=parse_kraken_trades)

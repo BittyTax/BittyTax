@@ -67,7 +67,7 @@ def parse_binance_deposits_withdrawals(data_row, _parser, _filename):
 def split_trading_pair(trading_pair):
     for quote_asset in QUOTE_ASSETS:
         if trading_pair.endswith(quote_asset):
-            return trading_pair.replace(quote_asset, ''), quote_asset
+            return trading_pair[:-len(quote_asset)], quote_asset
 
     return None, None
 
