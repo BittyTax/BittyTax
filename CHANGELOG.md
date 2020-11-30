@@ -1,7 +1,7 @@
 # Change Log
 ## [Unreleased]
-### Fixed
-- HitBTC parser: new data file format added. ([#26](https://github.com/BittyTax/BittyTax/issues/26))
+### Added
+- HitBTC parser: new data file format added.
 
 ## Version [0.4.2] Beta (2020-10-30)
 ### Fixed
