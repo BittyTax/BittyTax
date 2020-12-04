@@ -1,5 +1,8 @@
 # Change Log
 ## [Unreleased]
+
+## Version [0.4.3] Beta (2020-12-04)
+Important:- if upgrading, please remove your price data cache file for CryptoCompare: `~/.bittytax/cache/CryptoCompare.json` (see Issue [#29](https://github.com/BittyTax/BittyTax/issues/29))
 ### Fixed
 - UserWarning: Must have at least one data row in in add_table().
 - AttributeError: 'module' object has no attribute 'UTC'. ([#27](https://github.com/BittyTax/BittyTax/issues/27))
@@ -210,7 +213,8 @@ This is the initial beta release. Although it has been throughly tested, it's po
 - Exchange data files supported: Bitstamp, Bittrex, ChangeTip, Circle, Coinbase, Coinbase Pro, Coinfloor, Cryptopia, Cryptsy, Gatehub, OKEx, Poloniex, TradeSatoshi, Uphold.
 - Explorer data files supported: Etherscan.
 
-[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/BittyTax/BittyTax/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/BittyTax/BittyTax/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/BittyTax/BittyTax/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/BittyTax/BittyTax/compare/v0.3.3...v0.4.0
