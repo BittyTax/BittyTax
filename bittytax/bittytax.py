@@ -15,6 +15,7 @@ import xlrd
 from .version import __version__
 from .config import config
 from .import_records import ImportRecords
+from .export_records import ExportRecords
 from .transactions import TransactionHistory
 from .audit import AuditRecords
 from .price.valueasset import ValueAsset
@@ -67,6 +68,9 @@ def main():
     parser.add_argument('--nopdf',
                         action='store_true',
                         help="don't output PDF report, output report to terminal only")
+    parser.add_argument('--export',
+                        action='store_true',
+                        help="export your transaction records populated with price data")
 
     config.args = parser.parse_args()
     config.args.nocache = False
@@ -83,6 +87,10 @@ def main():
         parser.exit("%sERROR%s File could not be read: %s" % (
             Back.RED+Fore.BLACK, Back.RESET+Fore.RED, config.args.filename))
     except ImportFailureError:
+        parser.exit()
+
+    if config.args.export:
+        do_export(transaction_records)
         parser.exit()
 
     if not config.args.skipaudit and not config.args.summary:
@@ -185,3 +193,8 @@ def do_tax(transaction_records, tax_year, summary):
             tax.calculate_holdings(value_asset)
 
     return tax, value_asset
+
+def do_export(transaction_records):
+    value_asset = ValueAsset()
+    TransactionHistory(transaction_records, value_asset)
+    ExportRecords(transaction_records).write_csv()
