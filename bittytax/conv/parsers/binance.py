@@ -13,8 +13,9 @@ from ..exceptions import UnexpectedTypeError, UnexpectedTradingPairError, \
                          UnexpectedContentError, MissingComponentError, DataFilenameError
 
 WALLET = "Binance"
-QUOTE_ASSETS = ['BNB', 'BTC', 'BUSD', 'ETH', 'EUR', 'GBP', 'NGN', 'PAX', 'RUB', 'TRX',
-                'TUSD', 'USDC', 'USDS', 'USDT', 'XRP']
+QUOTE_ASSETS = ['AUD', 'BIDR', 'BKRW', 'BNB', 'BRL', 'BTC', 'BUSD', 'BVND', 'DAI', 'ETH', 'EUR',
+                'GBP', 'IDRT', 'NGN', 'PAX', 'RUB', 'TRX', 'TRY', 'TUSD', 'UAH', 'USDC', 'USDS',
+                'USDT', 'XRP', 'ZAR']
 
 def parse_binance_trades(data_row, parser, _filename):
     in_row = data_row.in_row
