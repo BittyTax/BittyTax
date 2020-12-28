@@ -1,5 +1,9 @@
 # Change Log
 ## [Unreleased]
+### Added
+- Etherscan parser: added internal transactions export.
+### Changed
+- Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 
 ## Version [0.4.3] Beta (2020-12-04)
 Important:- if upgrading, please remove your price data cache file for CryptoCompare: `~/.bittytax/cache/CryptoCompare.json` (see Issue [#29](https://github.com/BittyTax/BittyTax/issues/29))
