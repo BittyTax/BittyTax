@@ -56,7 +56,7 @@ setup(
         'python-dateutil>=2.7.0',
         'requests',
         'pyyaml',
-        'xlrd',
+        'xlrd<=1.2.0',
         'xlsxwriter',
         'jinja2',
         'xhtml2pdf',
