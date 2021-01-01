@@ -6,6 +6,7 @@
 - Etherscan parser: added internal transactions export.
 - Binance parser: added cash deposit and withdrawal exports.
 - Binance parser: added statements export.
+- Coinbase parser: handle Coinbase Earn income.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.

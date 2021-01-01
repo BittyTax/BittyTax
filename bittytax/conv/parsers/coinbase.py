@@ -27,6 +27,12 @@ def parse_coinbase(data_row, parser, _filename):
                                                  buy_quantity=in_row[3],
                                                  buy_asset=in_row[2],
                                                  wallet=WALLET)
+    elif in_row[1] == "Coinbase Earn":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INCOME,
+                                            data_row.timestamp,
+                                            buy_quantity=in_row[3],
+                                            buy_asset=in_row[2],
+                                            wallet=WALLET)
     elif in_row[1] == "Send":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
