@@ -7,6 +7,7 @@
 - Binance parser: added cash deposit and withdrawal exports.
 - Binance parser: added statements export.
 - Coinbase parser: handle Coinbase Earn income.
+- Bitfinex parser: new "Trades" data file format added. ([#41](https://github.com/BittyTax/BittyTax/issues/41))
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
