@@ -6,13 +6,14 @@
 - Etherscan parser: added internal transactions export.
 - Binance parser: added cash deposit and withdrawal exports.
 - Binance parser: added statements export.
-- Coinbase parser: handle Coinbase Earn income.
 - Bitfinex parser: new "Trades" data file format added. ([#41](https://github.com/BittyTax/BittyTax/issues/41))
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
 - Binance parser: updated quote assets via new script.
 - Crypto.com parser: added new "Supercharger" transaction types. ([#38](https://github.com/BittyTax/BittyTax/issues/38))
+- Coinbase parser: added Coinbase Earn/Rewards Income transactions.
+- Bittrex parser: added market buy/sell transactions.
 
 ## Version [0.4.3] Beta (2020-12-04)
 Important:- if upgrading, please remove your price data cache file for CryptoCompare: `~/.bittytax/cache/CryptoCompare.json` (see Issue [#29](https://github.com/BittyTax/BittyTax/issues/29))

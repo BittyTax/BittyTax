@@ -13,7 +13,7 @@ def parse_bittrex_trades2(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[2])
 
-    if in_row[3] == "LIMIT_BUY":
+    if in_row[3] in ("LIMIT_BUY", 'MARKET_BUY'):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=Decimal(in_row[5]) - \
@@ -24,7 +24,7 @@ def parse_bittrex_trades2(data_row, parser, _filename):
                                                  fee_quantity=in_row[7],
                                                  fee_asset=in_row[1].split('-')[0],
                                                  wallet=WALLET)
-    elif in_row[3] == "LIMIT_SELL":
+    elif in_row[3] in ("LIMIT_SELL", 'MARKET_SELL'):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[8],
@@ -42,7 +42,7 @@ def parse_bittrex_trades(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[7])
 
-    if in_row[2] == "LIMIT_BUY":
+    if in_row[2] in ("LIMIT_BUY", 'MARKET_BUY'):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[3],
@@ -52,7 +52,7 @@ def parse_bittrex_trades(data_row, parser, _filename):
                                                  fee_quantity=in_row[5],
                                                  fee_asset=in_row[1].split('-')[0],
                                                  wallet=WALLET)
-    elif in_row[2] == "LIMIT_SELL":
+    elif in_row[2] in ("LIMIT_SELL", 'MARKET_SELL'):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[6],
