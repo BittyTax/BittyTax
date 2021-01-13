@@ -81,8 +81,33 @@ def parse_coinbase(data_row, parser, _filename):
                                                  fee_quantity=in_row[7],
                                                  fee_asset=currency,
                                                  wallet=WALLET)
+    elif in_row[1] == "Convert":
+        convert_info = get_convert_info(in_row[8])
+        if convert_info is None:
+            raise UnexpectedContentError(8, parser.in_header[8], in_row[8])
+
+        buy_quantity = convert_info[2]
+        buy_asset = convert_info[3]
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                 data_row.timestamp,
+                                                 buy_quantity=buy_quantity,
+                                                 buy_asset=buy_asset,
+                                                 sell_quantity=in_row[3],
+                                                 sell_asset=in_row[2],
+                                                 wallet=WALLET)
+
     else:
         raise UnexpectedTypeError(1, parser.in_header[1], in_row[1])
+
+def get_convert_info(notes):
+    if sys.version_info[0] < 3:
+        notes = notes.decode('utf8')
+
+    match = re.match(r'^Converted ([\d|,]*\.\d+) (\w+) to ([\d|,]*\.\d+) (\w+) *$', notes)
+
+    if match:
+        return match.groups()
+    return None
 
 def get_currency(notes):
     if sys.version_info[0] < 3:
