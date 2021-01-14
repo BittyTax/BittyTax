@@ -123,6 +123,13 @@ DataParser(DataParser.TYPE_EXCHANGE,
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bittrex Deposits",
            ['Id', 'Currency', 'Amount', 'Confirmations', 'LastUpdatedDate', 'TxId',
+            'CryptoAddress', 'Source'],
+           worksheet_name="Bittrex D",
+           row_handler=parse_bittrex_deposits2)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Bittrex Deposits",
+           ['Id', 'Currency', 'Amount', 'Confirmations', 'LastUpdatedDate', 'TxId',
             'CryptoAddress'],
            worksheet_name="Bittrex D",
            row_handler=parse_bittrex_deposits2)
