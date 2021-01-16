@@ -18,27 +18,27 @@ def parse_coinbase(data_row, parser, _filename):
 
     if in_row[1] == "Receive":
         if "Coinbase Referral" in in_row[8]:
-            t_type = TransactionOutRecord.TYPE_GIFT_RECEIVED
+            # We can calculate the exact buy_value from the spot price
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
+                                                     data_row.timestamp,
+                                                     buy_quantity=in_row[3],
+                                                     buy_asset=in_row[2],
+                                                     buy_value=Decimal(in_row[4]) * \
+                                                               Decimal(in_row[3]),
+                                                     wallet=WALLET)
         else:
-            t_type = TransactionOutRecord.TYPE_DEPOSIT
-
-        data_row.t_record = TransactionOutRecord(t_type,
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                                     data_row.timestamp,
+                                                     buy_quantity=in_row[3],
+                                                     buy_asset=in_row[2],
+                                                     wallet=WALLET)
+    elif in_row[1] in ("Coinbase Earn", "Rewards Income"):
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INCOME,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[3],
                                                  buy_asset=in_row[2],
+                                                 buy_value=in_row[6],
                                                  wallet=WALLET)
-    elif in_row[1] == "Coinbase Earn":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INCOME,
-                                            data_row.timestamp,
-                                            buy_quantity=in_row[3],
-                                            buy_asset=in_row[2],
-                                            wallet=WALLET)
-    elif in_row[1] == "Rewards Income":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INCOME,
-                                            data_row.timestamp,
-                                            buy_quantity=in_row[3],
-                                            buy_asset=in_row[2],
-                                            wallet=WALLET)
     elif in_row[1] == "Send":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
@@ -46,27 +46,21 @@ def parse_coinbase(data_row, parser, _filename):
                                                  sell_asset=in_row[2],
                                                  wallet=WALLET)
     elif in_row[1] == "Buy":
+        # Warning: early referral rewards and airdrops also appear as Buys and so have
+        # to be manually corrected.
         currency = get_currency(in_row[8])
         if currency is None:
             raise UnexpectedContentError(8, parser.in_header[8], in_row[8])
 
-        if Decimal(in_row[7]) == 0:
-            # No fee indicates Buy was for an early Referral reward
-            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
-                                                     data_row.timestamp,
-                                                     buy_quantity=in_row[3],
-                                                     buy_asset=in_row[2],
-                                                     wallet=WALLET)
-        else:
-            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                     data_row.timestamp,
-                                                     buy_quantity=in_row[3],
-                                                     buy_asset=in_row[2],
-                                                     sell_quantity=in_row[5],
-                                                     sell_asset=currency,
-                                                     fee_quantity=in_row[7],
-                                                     fee_asset=currency,
-                                                     wallet=WALLET)
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                 data_row.timestamp,
+                                                 buy_quantity=in_row[3],
+                                                 buy_asset=in_row[2],
+                                                 sell_quantity=in_row[5],
+                                                 sell_asset=currency,
+                                                 fee_quantity=in_row[7],
+                                                 fee_asset=currency,
+                                                 wallet=WALLET)
     elif in_row[1] == "Sell":
         currency = get_currency(in_row[8])
         if currency is None:
@@ -92,8 +86,10 @@ def parse_coinbase(data_row, parser, _filename):
                                                  data_row.timestamp,
                                                  buy_quantity=buy_quantity,
                                                  buy_asset=buy_asset,
+                                                 buy_value=in_row[6],
                                                  sell_quantity=in_row[3],
                                                  sell_asset=in_row[2],
+                                                 sell_value=in_row[6],
                                                  wallet=WALLET)
 
     else:

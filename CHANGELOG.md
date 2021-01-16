@@ -3,6 +3,7 @@
 ### Fixed
 - Accounting tool: "xlrd.biffh.XLRDError: Excel xlsx file; not supported" Exception. ([#36](https://github.com/BittyTax/BittyTax/issues/36))
 - Coinbase parser: added support for Convert transactions ([#46](https://github.com/BittyTax/BittyTax/issues/46))
+- Coinbase parser: mis-classifying trade as gift-received ([#47](https://github.com/BittyTax/BittyTax/issues/47))
 ### Added
 - Etherscan parser: added internal transactions export.
 - Binance parser: added cash deposit and withdrawal exports.
@@ -15,6 +16,7 @@
 - Binance parser: updated quote assets via new script.
 - Crypto.com parser: added new "Supercharger" transaction types. ([#38](https://github.com/BittyTax/BittyTax/issues/38))
 - Coinbase parser: added Coinbase Earn/Rewards Income transactions.
+- Coinbase parser: get value (from spot price) where possible.
 - Bittrex parser: added market buy/sell transactions.
 
 ## Version [0.4.3] Beta (2020-12-04)
