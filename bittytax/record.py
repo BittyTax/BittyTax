@@ -34,7 +34,7 @@ class TransactionRecord(object):
 
     cnt = 0
 
-    def __init__(self, t_type, buy, sell, fee, wallet, timestamp):
+    def __init__(self, t_type, buy, sell, fee, wallet, timestamp, raw_row):
         self.tid = None
         self.t_type = t_type
         self.buy = buy
@@ -42,6 +42,7 @@ class TransactionRecord(object):
         self.fee = fee
         self.wallet = wallet
         self.timestamp = timestamp
+        self.raw_row = raw_row
 
         if self.buy:
             self.buy.t_record = self

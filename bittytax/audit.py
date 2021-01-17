@@ -8,6 +8,7 @@ from colorama import Fore, Back, Style
 from tqdm import tqdm
 
 from .config import config
+from .audit_fix.asset import Asset
 
 class AuditRecords(object):
     def __init__(self, transaction_records):
@@ -23,6 +24,13 @@ class AuditRecords(object):
                        disable=bool(config.args.debug or not sys.stdout.isatty())):
             if config.args.debug:
                 print("%saudit: TR %s" % (Fore.MAGENTA, tr))
+
+            # adjust (if required) the available assets based on the way transactions are shown
+            # for example, coinbase doesn't show fiat currency deposit as seperate lines
+            found, asset, quantity = Asset.find_missing_asset(tr)
+            if found and asset == tr.sell.asset:
+                self._add_tokens(tr.wallet, asset, quantity, deposit=True)
+
             if tr.buy:
                 self._add_tokens(tr.wallet, tr.buy.asset, tr.buy.quantity)
 
@@ -53,7 +61,7 @@ class AuditRecords(object):
                     '{:0,f}'.format(self.totals[asset].normalize()),
                     Style.NORMAL))
 
-    def _add_tokens(self, wallet, asset, quantity):
+    def _add_tokens(self, wallet, asset, quantity, deposit=False):
         if wallet not in self.wallets:
             self.wallets[wallet] = {}
 
@@ -68,12 +76,13 @@ class AuditRecords(object):
         self.totals[asset] += quantity
 
         if config.args.debug:
-            print("%saudit:   %s:%s=%s (+%s)" % (
+            print("%saudit:   %s:%s=%s (+%s) %s" % (
                 Fore.GREEN,
                 wallet,
                 asset,
                 '{:0,f}'.format(self.wallets[wallet][asset].normalize()),
-                '{:0,f}'.format(quantity.normalize())))
+                '{:0,f}'.format(quantity.normalize()),
+                deposit and 'deposit' or ''))
 
     def _subtract_tokens(self, wallet, asset, quantity):
         if wallet not in self.wallets:

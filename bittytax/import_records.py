@@ -43,7 +43,7 @@ class ImportRecords(object):
                 row = [self.convert_cell(worksheet.cell(row_num, cell_num), workbook)
                        for cell_num in range(0, worksheet.ncols)]
 
-                t_row = TransactionRow(row[:len(TransactionRow.HEADER)], row_num+1, worksheet.name)
+                t_row = TransactionRow(row[:len(TransactionRow.HEADER)], row_num+1, row, worksheet.name)
                 try:
                     t_row.parse()
                 except TransactionParserError as e:
@@ -162,8 +162,9 @@ class TransactionRow(object):
 
     cnt = 0
 
-    def __init__(self, row, row_num, worksheet_name=None):
+    def __init__(self, row, row_num, raw_row, worksheet_name=None):
         self.row = row
+        self.raw_row = raw_row
         self.row_num = row_num
         self.worksheet_name = worksheet_name
         self.t_record = None
@@ -205,7 +206,7 @@ class TransactionRow(object):
                 fee.disposal = False
 
         self.t_record = TransactionRecord(t_type, buy, sell, fee, self.row[10],
-                                          self.parse_timestamp(self.row[11]))
+                                          self.parse_timestamp(self.row[11]), self.raw_row)
 
     @staticmethod
     def parse_timestamp(timestamp_str):
