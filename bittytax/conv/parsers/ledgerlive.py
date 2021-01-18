@@ -13,14 +13,22 @@ def parse_ledger_live(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 
+    # ERC-20 tokens don't include fees
+    if in_row[4]:
+        fee_quantity = Decimal(in_row[4])
+        fee_asset = in_row[1]
+    else:
+        fee_quantity = None
+        fee_asset = ''
+
     if in_row[2] == "IN":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
                                                  buy_quantity=Decimal(in_row[3]) + \
                                                               Decimal(in_row[4]),
                                                  buy_asset=in_row[1],
-                                                 fee_quantity=Decimal(in_row[4]),
-                                                 fee_asset=in_row[1],
+                                                 fee_quantity=fee_quantity,
+                                                 fee_asset=fee_asset,
                                                  wallet=WALLET)
     elif in_row[2] == "OUT":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
@@ -28,8 +36,8 @@ def parse_ledger_live(data_row, parser, _filename):
                                                  sell_quantity=Decimal(in_row[3]) - \
                                                                Decimal(in_row[4]),
                                                  sell_asset=in_row[1],
-                                                 fee_quantity=Decimal(in_row[4]),
-                                                 fee_asset=in_row[1],
+                                                 fee_quantity=fee_quantity,
+                                                 fee_asset=fee_asset,
                                                  wallet=WALLET)
     else:
         raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
