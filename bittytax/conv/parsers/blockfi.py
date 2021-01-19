@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2020
+# WhippingBoy 2021
 
 from decimal import Decimal
 
