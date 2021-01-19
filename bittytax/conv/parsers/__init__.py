@@ -3,8 +3,10 @@ from . import barclays
 from . import bitfinex
 from . import bitstamp
 from . import bittrex
+from . import blockfi
 from . import cgtcalculator
 from . import changetip
+from . import celsius
 from . import circle
 from . import coinbase
 from . import coinbasepro
