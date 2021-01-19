@@ -88,6 +88,8 @@ class Config(object):
     def sym(self):
         if self.CCY == 'GBP':
             return u'\xA3' # £
+        elif self.CCY == 'DKK' or self.CCY == 'NOK' or self.CCY == 'SEK':                   
+            return 'kr.'  
         raise ValueError("Currency not supported")
 
 config = Config()
