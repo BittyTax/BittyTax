@@ -31,8 +31,8 @@ def parse_bitstamp(data_row, parser, _filename):
                                                      buy_asset=in_row[3].split(' ')[1],
                                                      sell_quantity=in_row[4].split(' ')[0],
                                                      sell_asset=in_row[4].split(' ')[1],
-                                                     fee_quantity=in_row[6].split(' ')[0],
-                                                     fee_asset=in_row[6].split(' ')[1],
+                                                     fee_quantity=safeValue(in_row[6]),
+                                                     fee_asset=safeAsset(in_row[6]),
                                                      wallet=WALLET)
         elif in_row[7] == "Sell":
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
@@ -41,13 +41,29 @@ def parse_bitstamp(data_row, parser, _filename):
                                                      buy_asset=in_row[4].split(' ')[1],
                                                      sell_quantity=in_row[3].split(' ')[0],
                                                      sell_asset=in_row[3].split(' ')[1],
-                                                     fee_quantity=in_row[6].split(' ')[0],
-                                                     fee_asset=in_row[6].split(' ')[1],
+                                                     fee_quantity=safeValue(in_row[6]),
+                                                     fee_asset=safeAsset(in_row[6]),
                                                      wallet=WALLET)
         else:
             raise UnexpectedTypeError(7, parser.in_header[7], in_row[7])
     else:
         raise UnexpectedTypeError(0, parser.in_header[0], in_row[0])
+
+
+# Some old (~Jan15) Bitstamp records don't have fees. Don't know why!
+def safeValue(cell):
+    split = cell.split(' ')
+    if len(split) <= 2:
+        return 0.0
+    return split[0]
+
+def safeAsset(cell):
+    split = cell.split(' ')
+    if len(split) <= 2:
+        return "USD"
+    return split[1]
+
+
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bitstamp",
