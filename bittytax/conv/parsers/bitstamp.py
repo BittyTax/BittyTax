@@ -53,13 +53,13 @@ def parse_bitstamp(data_row, parser, _filename):
 # Some old (~Jan15) Bitstamp records don't have fees. Don't know why!
 def safeValue(cell):
     split = cell.split(' ')
-    if len(split) <= 2:
+    if len(split) < 2:
         return 0.0
     return split[0]
 
 def safeAsset(cell):
     split = cell.split(' ')
-    if len(split) <= 2:
+    if len(split) < 2:
         return "USD"
     return split[1]
 
