@@ -19,6 +19,7 @@
 - Coinbase parser: get value (from spot price) where possible.
 - Bittrex parser: added market buy/sell transactions.
 - Ledger Live parser: fees now optional, as missing from ERC-20 wallets.
+- Bitstamp parser: fees now optional.
 
 ## Version [0.4.3] Beta (2020-12-04)
 Important:- if upgrading, please remove your price data cache file for CryptoCompare: `~/.bittytax/cache/CryptoCompare.json` (see Issue [#29](https://github.com/BittyTax/BittyTax/issues/29))
