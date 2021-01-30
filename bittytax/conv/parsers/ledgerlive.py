@@ -17,15 +17,17 @@ def parse_ledger_live(data_row, parser, _filename):
     if in_row[4]:
         fee_quantity = Decimal(in_row[4])
         fee_asset = in_row[1]
+        buy_fee_quantity = Decimal(in_row[4])
     else:
         fee_quantity = None
         fee_asset = ''
+        buy_fee_quantity = 0
 
     if in_row[2] == "IN":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
                                                  buy_quantity=Decimal(in_row[3]) + \
-                                                              Decimal(in_row[4]),
+                                                              buy_fee_quantity,
                                                  buy_asset=in_row[1],
                                                  fee_quantity=fee_quantity,
                                                  fee_asset=fee_asset,
@@ -34,7 +36,7 @@ def parse_ledger_live(data_row, parser, _filename):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=Decimal(in_row[3]) - \
-                                                               Decimal(in_row[4]),
+                                                               fee_quantity,
                                                  sell_asset=in_row[1],
                                                  fee_quantity=fee_quantity,
                                                  fee_asset=fee_asset,
