@@ -5,6 +5,7 @@ import sys
 import re
 from decimal import Decimal
 
+from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError, UnexpectedContentError
@@ -46,21 +47,29 @@ def parse_coinbase(data_row, parser, _filename):
                                                  sell_asset=in_row[2],
                                                  wallet=WALLET)
     elif in_row[1] == "Buy":
-        # Warning: early referral rewards and airdrops also appear as Buys and so have
-        # to be manually corrected.
         currency = get_currency(in_row[8])
         if currency is None:
             raise UnexpectedContentError(8, parser.in_header[8], in_row[8])
 
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                 data_row.timestamp,
-                                                 buy_quantity=in_row[3],
-                                                 buy_asset=in_row[2],
-                                                 sell_quantity=in_row[5],
-                                                 sell_asset=currency,
-                                                 fee_quantity=in_row[7],
-                                                 fee_asset=currency,
-                                                 wallet=WALLET)
+        if getattr(config, 'coinbase_zero_fees_are_gifts', False) and Decimal(in_row[7]) == 0:
+            # Zero fees "may" indicate an early referral reward, or airdrop
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
+                                                     data_row.timestamp,
+                                                     buy_quantity=in_row[3],
+                                                     buy_asset=in_row[2],
+                                                     buy_value=in_row[6] if Decimal(in_row[6]) > 0
+                                                                         else None,
+                                                     wallet=WALLET)
+        else:
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                     data_row.timestamp,
+                                                     buy_quantity=in_row[3],
+                                                     buy_asset=in_row[2],
+                                                     sell_quantity=in_row[5],
+                                                     sell_asset=currency,
+                                                     fee_quantity=in_row[7],
+                                                     fee_asset=currency,
+                                                     wallet=WALLET)
     elif in_row[1] == "Sell":
         currency = get_currency(in_row[8])
         if currency is None:

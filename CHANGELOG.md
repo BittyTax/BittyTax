@@ -10,6 +10,7 @@
 - Binance parser: added statements export.
 - Bitfinex parser: new "Trades" data file format added. ([#41](https://github.com/BittyTax/BittyTax/issues/41))
 - Bittrex parser: new deposits data file format added.
+- Coinbase parser: new config "coinbase_zero_fees_are_gifts" added.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
