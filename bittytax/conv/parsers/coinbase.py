@@ -51,7 +51,7 @@ def parse_coinbase(data_row, parser, _filename):
         if currency is None:
             raise UnexpectedContentError(8, parser.in_header[8], in_row[8])
 
-        if getattr(config, 'coinbase_zero_fees_are_gifts', False) and Decimal(in_row[7]) == 0:
+        if config.coinbase_zero_fees_are_gifts and Decimal(in_row[7]) == 0:
             # Zero fees "may" indicate an early referral reward, or airdrop
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                      data_row.timestamp,
