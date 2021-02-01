@@ -74,8 +74,8 @@ class TaxCalculator(object):
 
         if config.args.debug:
             for t in sorted(self.buys_ordered + self.sells_ordered + self.other_transactions):
-                print("%spool: %s" % (Fore.GREEN, t.__str__(pooled_bold=True)))
                 if len(t.pooled) > 1:
+                    print("%spool: %s" % (Fore.GREEN, t.__str__(pooled_bold=True)))
                     for tp in t.pooled:
                         print("%spool:   (%s)" % (Fore.BLUE, tp))
 
