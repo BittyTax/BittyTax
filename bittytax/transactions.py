@@ -193,6 +193,12 @@ class TransactionBase(object):
 
         return ''
 
+    def _format_timestamp(self):
+        if self.timestamp.time().microsecond:
+            return self.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f %Z')
+        else:
+            return self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
+
     def __eq__(self, other):
         return (self.asset, self.timestamp) == (other.asset, other.timestamp)
 
@@ -309,7 +315,7 @@ class Buy(TransactionBase):
             self._format_cost(),
             self._format_fee(),
             self.wallet,
-            self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+            self._format_timestamp(),
             self._format_tid(),
             self._format_pooled(pooled_bold))
 
@@ -405,6 +411,6 @@ class Sell(TransactionBase):
             self._format_proceeds(),
             self._format_fee(),
             self.wallet,
-            self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+            self._format_timestamp(),
             self._format_tid(),
             self._format_pooled(pooled_bold))

@@ -23,6 +23,7 @@ else:
 class OutputExcel(OutputBase):
     FILE_EXTENSION = 'xlsx'
     DATE_FORMAT = 'yyyy-mm-dd hh:mm:ss'
+    DATE_FORMAT_MS = 'yyyy-mm-dd hh:mm:ss.000' # Excel can only display milliseconds
     FONT_COLOR_IN_DATA = '#808080'
     TITLE = 'BittyTax Records'
     PROJECT_URL = 'https://github.com/BittyTax/BittyTax'
@@ -68,6 +69,9 @@ class OutputExcel(OutputBase):
         self.format_timestamp = self.workbook.add_format({'font_size': FONT_SIZE,
                                                           'font_color': 'black',
                                                           'num_format': self.DATE_FORMAT})
+        self.format_timestamp_ms = self.workbook.add_format({'font_size': FONT_SIZE,
+                                                             'font_color': 'black',
+                                                             'num_format': self.DATE_FORMAT_MS})
 
     def write_excel(self):
         data_files = sorted(self.data_files, key=lambda df: df.parser.worksheet_name, reverse=False)
@@ -261,8 +265,14 @@ class Worksheet(object):
         utc_timestamp = timestamp.astimezone(config.TZ_UTC)
         utc_timestamp = timestamp.replace(tzinfo=None)
 
-        self.worksheet.write_datetime(row_num, col_num, utc_timestamp, self.output.format_timestamp)
-        self._autofit_calc(col_num, len(self.output.DATE_FORMAT))
+        if utc_timestamp.time().microsecond:
+            self.worksheet.write_datetime(row_num, col_num, utc_timestamp,
+                                          self.output.format_timestamp_ms)
+            self._autofit_calc(col_num, len(self.output.DATE_FORMAT_MS))
+        else:
+            self.worksheet.write_datetime(row_num, col_num, utc_timestamp,
+                                          self.output.format_timestamp)
+            self._autofit_calc(col_num, len(self.output.DATE_FORMAT))
 
     def _autofit_calc(self, col_num, width):
         if width > self.MAX_COL_WIDTH:
