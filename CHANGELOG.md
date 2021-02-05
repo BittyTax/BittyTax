@@ -5,6 +5,7 @@
 - AttributeError: 'module' object has no attribute 'UTC'. ([#27](https://github.com/BittyTax/BittyTax/issues/27))
 ### Added
 - Conversion tool: added parser for CGTCalculator.
+- Accounting/Conversion tool: support for milli/microsecond timestamps.
 ### Changed
 - Hotbit parser: Negative fees are now set to zero.
 - Accounting tool: Drop buy/sell/fee transactions of zero quantity.

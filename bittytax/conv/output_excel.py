@@ -23,7 +23,7 @@ else:
 class OutputExcel(OutputBase):
     FILE_EXTENSION = 'xlsx'
     DATE_FORMAT = 'yyyy-mm-dd hh:mm:ss'
-    DATE_FORMAT_MS = 'yyyy-mm-dd hh:mm:ss.000' # Excel can only display 3 digits of microseconds
+    DATE_FORMAT_MS = 'yyyy-mm-dd hh:mm:ss.000' # Excel can only display milliseconds
     FONT_COLOR_IN_DATA = '#808080'
     TITLE = 'BittyTax Records'
     PROJECT_URL = 'https://github.com/BittyTax/BittyTax'
