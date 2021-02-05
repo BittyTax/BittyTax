@@ -213,7 +213,7 @@ class CryptoCompare(DataSourceBase):
 
     def get_historical(self, asset, quote, timestamp):
         url = "https://min-api.cryptocompare.com/data/histoday?aggregate=1&extraParams=%s" \
-              "&fsym=%s&tsym=%s&limit=%s&tryConversion=false&toTs=%d" % (
+              "&fsym=%s&tsym=%s&limit=%s&toTs=%d" % (
                   self.USER_AGENT, asset, quote, CRYPTOCOMPARE_MAX_DAYS,
                   self.epoch_time(timestamp + timedelta(days=CRYPTOCOMPARE_MAX_DAYS)))
 
@@ -222,11 +222,11 @@ class CryptoCompare(DataSourceBase):
         # Warning - CryptoCompare returns 0 as data for missing dates, convert these to None.
         if 'Data' in json_resp:
             self.update_prices(pair,
-                           {datetime.fromtimestamp(d['time']).strftime('%Y-%m-%d'): {
-                               'price': Decimal(repr(d['close'])) if 'close' in d and \
-                                       d['close'] else None,
-                               'url': url} for d in json_resp['Data']},
-                           timestamp)
+                               {datetime.fromtimestamp(d['time']).strftime('%Y-%m-%d'): {
+                                   'price': Decimal(repr(d['close'])) if 'close' in d and \
+                                           d['close'] else None,
+                                   'url': url} for d in json_resp['Data']},
+                               timestamp)
 
 class CoinGecko(DataSourceBase):
     def __init__(self):

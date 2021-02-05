@@ -1,9 +1,16 @@
 ![BittyTax logo](https://github.com/BittyTax/BittyTax/raw/master/img/BittyTax.png)
-[![Version badge][version-badge]][version] [![License badge][license-badge]][license] [![Python badge][python-badge]][python] [![Discord badge][discord-badge]][discord]
+[![Version badge][version-badge]][version]
+[![License badge][license-badge]][license]
+[![Python badge][python-badge]][python]
+[![Downloads badge][downloads-badge]][downloads]
+[![Stars badge][github-stars-badge]][github-stars]
+[![Twitter badge][twitter-badge]][twitter]
+[![Discord badge][discord-badge]][discord]
+[![Donation badge][donation-badge]][PayPal]
 # BittyTax
-BittyTax is a collection of command-line tools to help you manage your cryptoasset accounts. It allows you to audit, value and calculate your annual UK Capital Gains and Income Tax.
+BittyTax is a collection of command-line tools to help you calculate your cryptoasset taxes in the UK.
 
-This tool is designed to be used by someone who is already familiar with cryptoasset taxation rules in the UK. HMRC has published guidance on this. We've collected some useful links in the [Resources](#resources) section at the end.
+It's completely free to use, and retains your privacy as there is no need to share your data with a 3rd party.
 
 BittyTax comprises of the following tools.
 
@@ -12,6 +19,9 @@ BittyTax comprises of the following tools.
 2. `bittytax_conv` - convert your wallet and exchange files into transaction records (see [Conversion Tool](#conversion-tool))
 
 3. `bittytax_price` - (optional) lookup historic price data for cryptoassets and foreign currencies (see [Price Tool](#price-tool))
+
+This tool is designed to be used by someone who is already familiar with cryptoasset taxation rules in the UK. HMRC has published guidance on this. We've collected some useful links in the [Resources](#resources) section at the end.
+
 
 ## Disclaimer
 This software is copyright (c) Nano Nano Ltd, and licensed for use under the AGPLv3 License, see [LICENSE](https://github.com/BittyTax/BittyTax/blob/master/LICENSE) file for details.
@@ -263,7 +273,7 @@ The **Summary** section provides enough information for you to complete the "Oth
 
 If the disposal proceeds exceed more than 4 times the annual tax-free allowance this is shown. HMRC requires you to report this in your self assessment even if the gain was within your annual allowance.
 
-HMRC also requires you to include details of each gain or loss. You can use the `--summary` option in combination with `--taxyear` to generate a PDF report which only includes the capital gains disposals and summary for that specific tax year, this can then be attached to your self assessment.
+HMRC also requires you to include details of each gain or loss. You can use the `--summary` option in combination with `--taxyear` to generate a PDF report which only includes the capital gains disposals and summary for that specific tax year, this can then be attached to your self assessment. You can see an example summary report [here](https://github.com/BittyTax/BittyTax/blob/master/data/BittyTax_Report_Summary.pdf).
 
 The **Tax Estimate** section is given purely as an estimate. Capital gains tax figures are calculated at both the basic and higher rate, and take into consideration the full tax-free allowance.  
 
@@ -545,6 +555,7 @@ For most wallet files, transactions can only be categorised as deposits or withd
 - Electrum
 - HandCash
 - Ledger Live
+- Nexo
 - Qt Wallet (i.e. Bitcoin Core)
 - Trezor
 
@@ -565,6 +576,7 @@ For most wallet files, transactions can only be categorised as deposits or withd
 - Gravity (Bitstocks)
 - HitBTC
 - Hotbit
+- Kraken
 - KuCoin
 - Liquid
 - OKEx
@@ -659,6 +671,7 @@ You can also use the conversion tool to convert your wallet or exchange files in
 1. Etherscan - for ERC-20 (Tokens) and ERC-721 (NFTs) exports, it is important that the filename contains your ethereum address (Etherscan does this by default), as it is used to determine if transactions are being sent or received.
 1. GateHub - some exports contain incomplete data (i.e. no counter asset in an "*exchange*"), which are possibly failed transactions. The tool will filter them and raise a warning for you to review, the data still appears to balance correctly. Any XRP network fees which cannot be attributed to a "*payment*" or an "*exchange*" will be included separately as a spend transaction record.
 1. Hotbit - the exported file (.xls) is actually a html file, you will need to open this file in Excel and then "*Save As*" the Excel workbook format (.xlsx) before you can convert it.
+1. Kraken - export both the "*Trades*" and  "*Ledgers*" history.
 1. Qt Wallet - by default, unconfirmed transactions are filtered by the conversion tool. If you want to include them, use the `-uc` or `--unconfirmed` command argument.
 
 ## Price Tool
@@ -894,11 +907,24 @@ Let me know what you would find most useful or any new features not mentioned yo
 **HMRC Webinar**
 - https://www.youtube.com/watch?v=EzNebqkw13w
 
+## Donations ##
+If you would like to support this project, you can donate via [PayPal]. All donations are gratefully received.
+
+Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of this project. Nano Nano Ltd is not a charity, or non-profit organisation.
+
 [version-badge]: https://img.shields.io/pypi/v/BittyTax.svg
 [license-badge]: https://img.shields.io/pypi/l/BittyTax.svg
 [python-badge]: https://img.shields.io/pypi/pyversions/BittyTax.svg
+[downloads-badge]: https://img.shields.io/pypi/dm/bittytax
+[github-stars-badge]: https://img.shields.io/github/stars/BittyTax/BittyTax?color=yellow
+[twitter-badge]: https://img.shields.io/twitter/follow/bitty_tax?color=%231DA1F2&style=flat
 [discord-badge]: https://img.shields.io/discord/581493570112847872.svg
+[donation-badge]: https://img.shields.io/badge/donate-PayPal-179bd7.svg
 [version]: https://pypi.org/project/BittyTax/
 [license]: https://github.com/BittyTax/BittyTax/blob/master/LICENSE
-[discord]: https://discord.gg/NHE3QFt
 [python]: https://wiki.python.org/moin/BeginnersGuide/Download
+[downloads]: https://pypistats.org/packages/bittytax
+[github-stars]: https://github.com/BittyTax/BittyTax/stargazers
+[twitter]: https://twitter.com/intent/follow?screen_name=bitty_tax
+[discord]: https://discord.gg/NHE3QFt
+[PayPal]: https://www.paypal.com/donate?hosted_button_id=HVBQW8TBEHXLC

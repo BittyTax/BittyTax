@@ -32,7 +32,7 @@ class ReportPdf(object):
 
         template = self.env.get_template(self.TEMPLATE_FILE)
         html = template.render({'date': datetime.now(),
-                                'author': '{} {}'.format(progname, __version__),
+                                'author': '{} v{}'.format(progname, __version__),
                                 'config': config,
                                 'audit': audit,
                                 'tax_report': tax_report,

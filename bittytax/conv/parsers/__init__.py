@@ -22,9 +22,11 @@ from . import handcash
 from . import hitbtc
 from . import hotbit
 from . import ii
+from . import kraken
 from . import kucoin
 from . import ledgerlive
 from . import liquid
+from . import nexo
 from . import okex
 from . import poloniex
 from . import qtwallet
