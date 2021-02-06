@@ -12,6 +12,7 @@
 - Bittrex parser: new deposits data file format added.
 - Coinbase parser: new config "coinbase_zero_fees_are_gifts" added.
 - Accounting/Conversion tool: support for milli/microsecond timestamps.
+- Accounting tool: export option for transaction records with prices.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.

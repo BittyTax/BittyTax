@@ -93,6 +93,12 @@ class TransactionRecord(object):
             return timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f %Z')
         else:
             return timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
+        
+    @staticmethod
+    def _format_decimal(decimal):
+        if decimal is None:
+            return ''
+        return '{:0f}'.format(decimal.normalize())
 
     def __eq__(self, other):
         return self.timestamp == other.timestamp
@@ -139,3 +145,46 @@ class TransactionRecord(object):
                 self.tid[0])
 
         return ''
+
+    def to_csv(self):
+        if self.buy and self.sell:
+            return [self.t_type,
+                    self._format_decimal(self.buy.quantity),
+                    self.buy.asset,
+                    self._format_decimal(self.buy.cost),
+                    self._format_decimal(self.sell.quantity),
+                    self.sell.asset,
+                    self._format_decimal(self.sell.proceeds),
+                    self._format_decimal(self.fee.quantity) if self.fee else '',
+                    self.fee.asset if self.fee else '',
+                    self._format_decimal(self.fee.proceeds) if self.fee else '',
+                    self.wallet,
+                    self._format_timestamp(self.timestamp)]
+        elif self.buy:
+            return [self.t_type,
+                    self._format_decimal(self.buy.quantity),
+                    self.buy.asset,
+                    self._format_decimal(self.buy.cost),
+                    '',
+                    '',
+                    '',
+                    self._format_decimal(self.fee.quantity) if self.fee else '',
+                    self.fee.asset if self.fee else '',
+                    self._format_decimal(self.fee.proceeds) if self.fee else '',
+                    self.wallet,
+                    self._format_timestamp(self.timestamp)]
+        elif self.sell:
+            return [self.t_type,
+                    '',
+                    '',
+                    '',
+                    self._format_decimal(self.sell.quantity),
+                    self.sell.asset,
+                    self._format_decimal(self.sell.proceeds),
+                    self._format_decimal(self.fee.quantity) if self.fee else '',
+                    self.fee.asset if self.fee else '',
+                    self._format_decimal(self.fee.proceeds) if self.fee else '',
+                    self.wallet,
+                    self._format_timestamp(self.timestamp)]
+
+        return []
