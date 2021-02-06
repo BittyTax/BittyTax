@@ -24,6 +24,7 @@ class OutputExcel(OutputBase):
     FILE_EXTENSION = 'xlsx'
     DATE_FORMAT = 'yyyy-mm-dd hh:mm:ss'
     DATE_FORMAT_MS = 'yyyy-mm-dd hh:mm:ss.000' # Excel can only display milliseconds
+    STR_FORMAT_MS = '%Y-%m-%dT%H:%M:%S.%f'
     FONT_COLOR_IN_DATA = '#808080'
     TITLE = 'BittyTax Records'
     PROJECT_URL = 'https://github.com/BittyTax/BittyTax'
@@ -121,6 +122,7 @@ class Worksheet(object):
                                                        data_file.parser.worksheet_name))
         self.col_width = {}
         self.columns = self._make_columns(data_file.parser.in_header)
+        self.microseconds, self.milliseconds = self._is_microsecond_timestamp(data_file.data_rows)
 
         self.worksheet.freeze_panes(1, len(self.output.BITTYTAX_OUT_HEADER))
 
@@ -177,6 +179,15 @@ class Worksheet(object):
             self._autofit_calc(col_num, len(col_name))
 
         return columns
+
+    @staticmethod
+    def _is_microsecond_timestamp(data_rows):
+        milliseconds = bool([dr.t_record.timestamp for dr in data_rows
+                             if dr.t_record and dr.t_record.timestamp.microsecond % 1000])
+        microseconds = bool([dr.t_record.timestamp for dr in data_rows
+                             if dr.t_record and dr.t_record.timestamp.microsecond])
+
+        return milliseconds, microseconds
 
     def add_row(self, data_row, row_num):
         self.worksheet.set_row(row_num, None, self.output.format_out_data)
@@ -265,7 +276,13 @@ class Worksheet(object):
         utc_timestamp = timestamp.astimezone(config.TZ_UTC)
         utc_timestamp = timestamp.replace(tzinfo=None)
 
-        if utc_timestamp.time().microsecond:
+        if self.microseconds:
+            # Excel datetime can only display milliseconds
+            self.worksheet.write_string(row_num, col_num,
+                                        utc_timestamp.strftime(self.output.STR_FORMAT_MS),
+                                        self.output.format_num_string)
+            self._autofit_calc(col_num, len(utc_timestamp.strftime(self.output.STR_FORMAT_MS)))
+        elif self.milliseconds:
             self.worksheet.write_datetime(row_num, col_num, utc_timestamp,
                                           self.output.format_timestamp_ms)
             self._autofit_calc(col_num, len(self.output.DATE_FORMAT_MS))
