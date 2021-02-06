@@ -1,5 +1,7 @@
 # Change Log
 ## [Unreleased]
+### Added
+- Accounting tool: export option for transaction records with prices
 
 ## Version [0.4.3] Beta (2020-12-04)
 Important:- if upgrading, please remove your price data cache file for CryptoCompare: `~/.bittytax/cache/CryptoCompare.json` (see Issue [#29](https://github.com/BittyTax/BittyTax/issues/29))
