@@ -89,11 +89,11 @@ class TransactionRecord(object):
 
     @staticmethod
     def _format_timestamp(timestamp):
-        if timestamp.time().microsecond:
+        if timestamp.microsecond:
             return timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f %Z')
         else:
             return timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
-        
+
     @staticmethod
     def _format_decimal(decimal):
         if decimal is None:

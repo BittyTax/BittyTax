@@ -194,7 +194,7 @@ class TransactionBase(object):
         return ''
 
     def _format_timestamp(self):
-        if self.timestamp.time().microsecond:
+        if self.timestamp.microsecond:
             return self.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f %Z')
         else:
             return self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')

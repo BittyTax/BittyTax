@@ -66,7 +66,7 @@ class ImportRecords(object):
     def convert_cell(cell, workbook):
         if cell.ctype == xlrd.XL_CELL_DATE:
             datetime = xlrd.xldate.xldate_as_datetime(cell.value, workbook.datemode)
-            if datetime.time().microsecond:
+            if datetime.microsecond:
                 value = datetime.strftime('%Y-%m-%dT%H:%M:%S.%f')
             else:
                 value = datetime.strftime('%Y-%m-%d %H:%M:%S')
