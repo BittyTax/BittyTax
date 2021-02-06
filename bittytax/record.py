@@ -88,6 +88,13 @@ class TransactionRecord(object):
         return ''
 
     @staticmethod
+    def _format_timestamp(timestamp):
+        if timestamp.time().microsecond:
+            return timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f %Z')
+        else:
+            return timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
+        
+    @staticmethod
     def _format_decimal(decimal):
         if decimal is None:
             return ''
@@ -114,7 +121,7 @@ class TransactionRecord(object):
                 self._format_value(self.sell.proceeds),
                 self._format_fee(),
                 self.wallet,
-                self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+                self._format_timestamp(self.timestamp),
                 self.tid[0])
         elif self.buy:
             return "%s %s %s%s%s '%s' %s [TID:%s]" % (
@@ -124,7 +131,7 @@ class TransactionRecord(object):
                 self._format_value(self.buy.cost),
                 self._format_fee(),
                 self.wallet,
-                self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+                self._format_timestamp(self.timestamp),
                 self.tid[0])
         elif self.sell:
             return "%s %s %s%s%s '%s' %s [TID:%s]" % (
@@ -134,7 +141,7 @@ class TransactionRecord(object):
                 self._format_value(self.sell.proceeds),
                 self._format_fee(),
                 self.wallet,
-                self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+                self._format_timestamp(self.timestamp),
                 self.tid[0])
 
         return ''
@@ -152,7 +159,7 @@ class TransactionRecord(object):
                     self.fee.asset if self.fee else '',
                     self._format_decimal(self.fee.proceeds) if self.fee else '',
                     self.wallet,
-                    self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')]
+                    self._format_timestamp(self.timestamp)]
         elif self.buy:
             return [self.t_type,
                     self._format_decimal(self.buy.quantity),
@@ -165,7 +172,7 @@ class TransactionRecord(object):
                     self.fee.asset if self.fee else '',
                     self._format_decimal(self.fee.proceeds) if self.fee else '',
                     self.wallet,
-                    self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')]
+                    self._format_timestamp(self.timestamp)]
         elif self.sell:
             return [self.t_type,
                     '',
@@ -178,6 +185,6 @@ class TransactionRecord(object):
                     self.fee.asset if self.fee else '',
                     self._format_decimal(self.fee.proceeds) if self.fee else '',
                     self.wallet,
-                    self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')]
+                    self._format_timestamp(self.timestamp)]
 
         return []

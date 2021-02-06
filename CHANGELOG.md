@@ -1,7 +1,29 @@
 # Change Log
 ## [Unreleased]
+### Fixed
+- Accounting tool: "xlrd.biffh.XLRDError: Excel xlsx file; not supported" Exception. ([#36](https://github.com/BittyTax/BittyTax/issues/36))
+- Coinbase parser: added support for Convert transactions ([#46](https://github.com/BittyTax/BittyTax/issues/46))
+- Coinbase parser: mis-classifying trade as gift-received ([#47](https://github.com/BittyTax/BittyTax/issues/47))
 ### Added
-- Accounting tool: export option for transaction records with prices
+- Etherscan parser: added internal transactions export.
+- Binance parser: added cash deposit and withdrawal exports.
+- Binance parser: added statements export.
+- Bitfinex parser: new "Trades" data file format added. ([#41](https://github.com/BittyTax/BittyTax/issues/41))
+- Bittrex parser: new deposits data file format added.
+- Coinbase parser: new config "coinbase_zero_fees_are_gifts" added.
+- Accounting/Conversion tool: support for milli/microsecond timestamps.
+- Accounting tool: export option for transaction records with prices.
+### Changed
+- Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
+- Binance parser: use filename to determine if deposits or withdrawals.
+- Binance parser: updated quote assets via new script.
+- Crypto.com parser: added new "Supercharger" transaction types. ([#38](https://github.com/BittyTax/BittyTax/issues/38))
+- Coinbase parser: added Coinbase Earn/Rewards Income transactions.
+- Coinbase parser: get value (from spot price) where possible.
+- Bittrex parser: added market buy/sell transactions.
+- Ledger Live parser: fees now optional, as missing from ERC-20 wallets.
+- Bitstamp parser: fees now optional.
+- Accounting tool: same day pooling debug now only shows the pooled transactions.
 
 ## Version [0.4.3] Beta (2020-12-04)
 Important:- if upgrading, please remove your price data cache file for CryptoCompare: `~/.bittytax/cache/CryptoCompare.json` (see Issue [#29](https://github.com/BittyTax/BittyTax/issues/29))

@@ -24,6 +24,13 @@ def parse_bitstamp(data_row, parser, _filename):
                                                  sell_asset=in_row[3].split(' ')[1],
                                                  wallet=WALLET)
     elif in_row[0] == "Market":
+        if in_row[6]:
+            fee_quantity = in_row[6].split(' ')[0]
+            fee_asset = in_row[6].split(' ')[1]
+        else:
+            fee_quantity = None
+            fee_asset = ''
+
         if in_row[7] == "Buy":
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                      data_row.timestamp,
@@ -31,8 +38,8 @@ def parse_bitstamp(data_row, parser, _filename):
                                                      buy_asset=in_row[3].split(' ')[1],
                                                      sell_quantity=in_row[4].split(' ')[0],
                                                      sell_asset=in_row[4].split(' ')[1],
-                                                     fee_quantity=in_row[6].split(' ')[0],
-                                                     fee_asset=in_row[6].split(' ')[1],
+                                                     fee_quantity=fee_quantity,
+                                                     fee_asset=fee_asset,
                                                      wallet=WALLET)
         elif in_row[7] == "Sell":
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
@@ -41,8 +48,8 @@ def parse_bitstamp(data_row, parser, _filename):
                                                      buy_asset=in_row[4].split(' ')[1],
                                                      sell_quantity=in_row[3].split(' ')[0],
                                                      sell_asset=in_row[3].split(' ')[1],
-                                                     fee_quantity=in_row[6].split(' ')[0],
-                                                     fee_asset=in_row[6].split(' ')[1],
+                                                     fee_quantity=fee_quantity,
+                                                     fee_asset=fee_asset,
                                                      wallet=WALLET)
         else:
             raise UnexpectedTypeError(7, parser.in_header[7], in_row[7])

@@ -44,6 +44,7 @@ class Config(object):
         'data_source_select': {},
         'data_source_fiat': DATA_SOURCE_FIAT,
         'data_source_crypto': DATA_SOURCE_CRYPTO,
+        'coinbase_zero_fees_are_gifts': False,
     }
 
     def __init__(self):

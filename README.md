@@ -1,5 +1,12 @@
 ![BittyTax logo](https://github.com/BittyTax/BittyTax/raw/master/img/BittyTax.png)
-[![Version badge][version-badge]][version] [![License badge][license-badge]][license] [![Python badge][python-badge]][python] [![Discord badge][discord-badge]][discord]
+[![Version badge][version-badge]][version]
+[![License badge][license-badge]][license]
+[![Python badge][python-badge]][python]
+[![Downloads badge][downloads-badge]][downloads]
+[![Stars badge][github-stars-badge]][github-stars]
+[![Twitter badge][twitter-badge]][twitter]
+[![Discord badge][discord-badge]][discord]
+[![Donation badge][donation-badge]][PayPal]
 # BittyTax
 BittyTax is a collection of command-line tools to help you calculate your cryptoasset taxes in the UK.
 
@@ -266,7 +273,7 @@ The **Summary** section provides enough information for you to complete the "Oth
 
 If the disposal proceeds exceed more than 4 times the annual tax-free allowance this is shown. HMRC requires you to report this in your self assessment even if the gain was within your annual allowance.
 
-HMRC also requires you to include details of each gain or loss. You can use the `--summary` option in combination with `--taxyear` to generate a PDF report which only includes the capital gains disposals and summary for that specific tax year, this can then be attached to your self assessment.
+HMRC also requires you to include details of each gain or loss. You can use the `--summary` option in combination with `--taxyear` to generate a PDF report which only includes the capital gains disposals and summary for that specific tax year, this can then be attached to your self assessment. You can see an example summary report [here](https://github.com/BittyTax/BittyTax/blob/master/data/BittyTax_Report_Summary.pdf).
 
 The **Tax Estimate** section is given purely as an estimate. Capital gains tax figures are calculated at both the basic and higher rate, and take into consideration the full tax-free allowance.  
 
@@ -900,11 +907,24 @@ Let me know what you would find most useful or any new features not mentioned yo
 **HMRC Webinar**
 - https://www.youtube.com/watch?v=EzNebqkw13w
 
+## Donations ##
+If you would like to support this project, you can donate via [PayPal]. All donations are gratefully received.
+
+Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of this project. Nano Nano Ltd is not a charity, or non-profit organisation.
+
 [version-badge]: https://img.shields.io/pypi/v/BittyTax.svg
 [license-badge]: https://img.shields.io/pypi/l/BittyTax.svg
 [python-badge]: https://img.shields.io/pypi/pyversions/BittyTax.svg
+[downloads-badge]: https://img.shields.io/pypi/dm/bittytax
+[github-stars-badge]: https://img.shields.io/github/stars/BittyTax/BittyTax?color=yellow
+[twitter-badge]: https://img.shields.io/twitter/follow/bitty_tax?color=%231DA1F2&style=flat
 [discord-badge]: https://img.shields.io/discord/581493570112847872.svg
+[donation-badge]: https://img.shields.io/badge/donate-PayPal-179bd7.svg
 [version]: https://pypi.org/project/BittyTax/
 [license]: https://github.com/BittyTax/BittyTax/blob/master/LICENSE
-[discord]: https://discord.gg/NHE3QFt
 [python]: https://wiki.python.org/moin/BeginnersGuide/Download
+[downloads]: https://pypistats.org/packages/bittytax
+[github-stars]: https://github.com/BittyTax/BittyTax/stargazers
+[twitter]: https://twitter.com/intent/follow?screen_name=bitty_tax
+[discord]: https://discord.gg/NHE3QFt
+[PayPal]: https://www.paypal.com/donate?hosted_button_id=HVBQW8TBEHXLC
