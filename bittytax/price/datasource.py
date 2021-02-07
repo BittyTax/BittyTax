@@ -13,6 +13,7 @@ import requests
 
 from ..version import __version__
 from ..config import config
+from .exceptions import UnexpectedDataSourceAssetIdError
 
 CRYPTOCOMPARE_MAX_DAYS = 2000
 COINPAPRIKA_MAX_DAYS = 5000
@@ -23,6 +24,7 @@ class DataSourceBase(object):
 
     def __init__(self):
         self.assets = {}
+        self.ids = {}
         self.prices = self.load_prices()
 
         for pair in sorted(self.prices):
@@ -45,8 +47,7 @@ class DataSourceBase(object):
 
         if response:
             return response.json()
-        else:
-            return {}
+        return {}
 
     def update_prices(self, pair, prices, timestamp):
         if pair not in self.prices:
@@ -92,6 +93,60 @@ class DataSourceBase(object):
                            for pair in self.prices}
             json.dump(json_prices, price_cache, indent=4, sort_keys=True)
 
+    def get_config_assets(self):
+        for symbol in config.data_source_select:
+            for ds in config.data_source_select[symbol]:
+                if ds.upper().startswith(self.name().upper() + ':'):
+                    if symbol in self.assets:
+                        self._update_asset(symbol, ds)
+                    else:
+                        self._add_asset(symbol, ds)
+
+    def _update_asset(self, symbol, data_source):
+        asset_id = data_source.split(':')[1]
+        # Update an existing symbol, validate id belongs to that symbol
+        if asset_id in self.ids and self.ids[asset_id]['symbol'] == symbol:
+            self.assets[symbol] = {'id': asset_id, 'name': self.ids[asset_id]['name']}
+
+            if config.args.debug:
+                print("%sprice: %s updated as %s [ID:%s] (%s)" % (
+                    Fore.YELLOW,
+                    symbol,
+                    self.name(),
+                    asset_id,
+                    self.ids[asset_id]['name']))
+        else:
+            raise UnexpectedDataSourceAssetIdError(data_source, symbol)
+
+    def _add_asset(self, symbol, data_source):
+        asset_id = data_source.split(':')[1]
+        # You can only add a new symbol for an id not being used
+        if asset_id in self.ids and self.assets[self.ids[asset_id]['symbol']]['id'] != asset_id:
+            self.assets[symbol] = {'id': asset_id, 'name': self.ids[asset_id]['name']}
+            self.ids[asset_id] = {'symbol': symbol, 'name': self.ids[asset_id]['name']}
+
+            if config.args.debug:
+                print("%sprice: %s added as %s [ID:%s] (%s)" % (
+                    Fore.YELLOW,
+                    symbol,
+                    self.name(),
+                    asset_id,
+                    self.ids[asset_id]['name']))
+        else:
+            raise UnexpectedDataSourceAssetIdError(data_source, symbol)
+
+    def get_list(self):
+        if self.ids:
+            asset_list = {}
+            for c in self.ids:
+                symbol = self.ids[c]['symbol']
+                if symbol not in asset_list:
+                    asset_list[symbol] = []
+
+                asset_list[symbol].append({'id': c, 'name': self.ids[c]['name']})
+            return asset_list
+        return {k: [{'id':None, 'name': v['name']}] for k, v in self.assets.items()}
+
     @staticmethod
     def pair(asset, quote):
         return asset + '/' + quote
@@ -123,15 +178,15 @@ class ExchangeRatesAPI(DataSourceBase):
                       'ISK', 'NOK', 'HRK', 'RUB', 'TRL', 'TRY', 'AUD', 'BRL', 'CAD', 'CNY',
                       'HKD', 'IDR', 'ILS', 'INR', 'KRW', 'MXN', 'MYR', 'NZD', 'PHP', 'SGD',
                       'THB', 'ZAR']
-        self.assets = {c: 'Fiat' for c in currencies}
+        self.assets = {c: {'name': 'Fiat ' + c} for c in currencies}
 
-    def get_latest(self, asset, quote):
+    def get_latest(self, asset, quote, _asset_id=None):
         url = "https://api.exchangeratesapi.io/latest?base=%s&symbols=%s" % (asset, quote)
         json_resp = self.get_json(url)
         return Decimal(repr(json_resp['rates'][quote])) \
                 if 'rates' in json_resp and quote in json_resp['rates'] else None
 
-    def get_historical(self, asset, quote, timestamp):
+    def get_historical(self, asset, quote, timestamp, _asset_id=None):
         url = "https://api.exchangeratesapi.io/%s?base=%s&symbols=%s" % (
             timestamp.strftime('%Y-%m-%d'), asset, quote)
         json_resp = self.get_json(url)
@@ -145,6 +200,9 @@ class ExchangeRatesAPI(DataSourceBase):
                                'url': url}},
                            timestamp)
 
+    def get_list(self):
+        return {k: [{'id':None, 'name': v['name']}] for k, v in self.assets.items()}
+
 class RatesAPI(DataSourceBase):
     def __init__(self):
         super(RatesAPI, self).__init__()
@@ -154,16 +212,16 @@ class RatesAPI(DataSourceBase):
                       'ISK', 'NOK', 'HRK', 'RUB', 'TRL', 'TRY', 'AUD', 'BRL', 'CAD', 'CNY',
                       'HKD', 'IDR', 'ILS', 'INR', 'KRW', 'MXN', 'MYR', 'NZD', 'PHP', 'SGD',
                       'THB', 'ZAR']
-        self.assets = {c: 'Fiat' for c in currencies}
+        self.assets = {c: {'name': 'Fiat ' + c} for c in currencies}
 
-    def get_latest(self, asset, quote):
+    def get_latest(self, asset, quote, _asset_id=None):
         json_resp = self.get_json(
             "https://api.ratesapi.io/api/latest?base=%s&symbols=%s" % (asset, quote)
         )
         return Decimal(repr(json_resp['rates'][quote])) \
                 if 'rates' in json_resp and quote in json_resp['rates'] else None
 
-    def get_historical(self, asset, quote, timestamp):
+    def get_historical(self, asset, quote, timestamp, _asset_id=None):
         url = "https://api.ratesapi.io/api/%s?base=%s&symbols=%s" % (
             timestamp.strftime('%Y-%m-%d'), asset, quote)
         json_resp = self.get_json(url)
@@ -180,14 +238,14 @@ class RatesAPI(DataSourceBase):
 class CoinDesk(DataSourceBase):
     def __init__(self):
         super(CoinDesk, self).__init__()
-        self.assets = {'BTC': 'Bitcoin'}
+        self.assets = {'BTC': {'name': 'Bitcoin'}}
 
-    def get_latest(self, _, quote):
+    def get_latest(self, _asset, quote, _asset_id=None):
         json_resp = self.get_json("https://api.coindesk.com/v1/bpi/currentprice.json")
         return Decimal(repr(json_resp['bpi'][quote]['rate_float'])) \
                 if 'bpi' in json_resp and quote in json_resp['bpi'] else None
 
-    def get_historical(self, asset, quote, timestamp):
+    def get_historical(self, asset, quote, timestamp, _asset_id=None):
         url = "https://api.coindesk.com/v1/bpi/historical/close.json" \
               "?start=%s&end=%s&currency=%s" % (
                   timestamp.strftime('%Y-%m-%d'), datetime.now().strftime('%Y-%m-%d'), quote)
@@ -204,14 +262,16 @@ class CryptoCompare(DataSourceBase):
     def __init__(self):
         super(CryptoCompare, self).__init__()
         json_resp = self.get_json("https://min-api.cryptocompare.com/data/all/coinlist")
-        self.assets = {c[1]['Symbol']: c[1]['CoinName'] for c in json_resp['Data'].items()}
+        self.assets = {c[1]['Symbol'].strip().upper(): {'name': c[1]['CoinName'].strip()}
+                       for c in json_resp['Data'].items()}
+        # CryptoCompare symbols are unique, so no ID required
 
-    def get_latest(self, asset, quote):
+    def get_latest(self, asset, quote, _asset_id=None):
         json_resp = self.get_json("https://min-api.cryptocompare.com/data/price" \
             "?extraParams=%s&fsym=%s&tsyms=%s" % (self.USER_AGENT, asset, quote))
         return Decimal(repr(json_resp[quote])) if quote in json_resp else None
 
-    def get_historical(self, asset, quote, timestamp):
+    def get_historical(self, asset, quote, timestamp, _asset_id=None):
         url = "https://min-api.cryptocompare.com/data/histoday?aggregate=1&extraParams=%s" \
               "&fsym=%s&tsym=%s&limit=%s&toTs=%d" % (
                   self.USER_AGENT, asset, quote, CRYPTOCOMPARE_MAX_DAYS,
@@ -228,23 +288,35 @@ class CryptoCompare(DataSourceBase):
                                    'url': url} for d in json_resp['Data']},
                                timestamp)
 
+    def get_list(self):
+        return {k: [{'id':None, 'name': v['name']}] for k, v in self.assets.items()}
+
 class CoinGecko(DataSourceBase):
     def __init__(self):
         super(CoinGecko, self).__init__()
         json_resp = self.get_json("https://api.coingecko.com/api/v3/coins/list")
-        self.assets = {c['symbol'].upper(): c['name'] for c in json_resp}
-        self.ids = {c['symbol'].upper(): c['id'] for c in json_resp}
+        self.ids = {c['id']: {'symbol': c['symbol'].strip().upper(), 'name': c['name'].strip()}
+                    for c in json_resp}
+        self.assets = {c['symbol'].strip().upper(): {'id': c['id'], 'name': c['name'].strip()}
+                       for c in json_resp}
+        self.get_config_assets()
 
-    def get_latest(self, asset, quote):
-        json_resp = self.get_json("https://api.coingecko.com/api/v3/coins/%s" \
-            "?localization=false&community_data=false&developer_data=false" % self.ids[asset])
+    def get_latest(self, asset, quote, asset_id=None):
+        if asset_id is None:
+            asset_id = self.assets[asset]['id']
+
+        json_resp = self.get_json("https://api.coingecko.com/api/v3/coins/%s?localization=false" \
+            "&community_data=false&developer_data=false" % asset_id)
         return Decimal(repr(json_resp['market_data']['current_price'][quote.lower()])) \
                 if 'market_data' in json_resp and 'current_price' in json_resp['market_data'] and \
                 quote.lower() in json_resp['market_data']['current_price'] else None
 
-    def get_historical(self, asset, quote, timestamp):
+    def get_historical(self, asset, quote, timestamp, asset_id=None):
+        if asset_id is None:
+            asset_id = self.assets[asset]['id']
+
         url = "https://api.coingecko.com/api/v3/coins/%s/market_chart?vs_currency=%s&days=max" % (
-            self.ids[asset], quote)
+            asset_id, quote)
         json_resp = self.get_json(url)
         pair = self.pair(asset, quote)
         if 'prices' in json_resp:
@@ -258,25 +330,33 @@ class CoinPaprika(DataSourceBase):
     def __init__(self):
         super(CoinPaprika, self).__init__()
         json_resp = self.get_json("https://api.coinpaprika.com/v1/coins")
-        self.assets = {c['symbol']: c['name'] for c in json_resp}
-        self.ids = {c['symbol']: c['id'] for c in json_resp}
+        self.ids = {c['id']: {'symbol': c['symbol'].strip().upper(), 'name': c['name'].strip()}
+                    for c in json_resp}
+        self.assets = {c['symbol'].strip().upper(): {'id': c['id'], 'name': c['name'].strip()}
+                       for c in json_resp}
+        self.get_config_assets()
 
-    def get_latest(self, asset, quote):
+    def get_latest(self, asset, quote, asset_id=None):
+        if asset_id is None:
+            asset_id = self.assets[asset]['id']
+
         json_resp = self.get_json("https://api.coinpaprika.com/v1/tickers/%s?quotes=%s" % (
-            (self.ids[asset], quote)))
+            (asset_id, quote)))
         return Decimal(repr(json_resp['quotes'][quote]['price'])) \
                 if 'quotes' in json_resp and quote in json_resp['quotes'] else None
 
-    def get_historical(self, asset, quote, timestamp):
+    def get_historical(self, asset, quote, timestamp, asset_id=None):
         # Historic prices only available in USD or BTC
         if quote not in ('USD', 'BTC'):
             return
 
+        if asset_id is None:
+            asset_id = self.assets[asset]['id']
+
         url = "https://api.coinpaprika.com/v1/tickers/%s/historical" \
               "?start=%s&limit=%s&quote=%s&interval=1d" % (
-                  self.ids[asset], timestamp.strftime('%Y-%m-%d'), COINPAPRIKA_MAX_DAYS, quote)
+                  asset_id, timestamp.strftime('%Y-%m-%d'), COINPAPRIKA_MAX_DAYS, quote)
 
-        pair = self.pair(asset, quote)
         json_resp = self.get_json(url)
         pair = self.pair(asset, quote)
         self.update_prices(pair,

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Cryptoasset accounting, auditing and UK tax calculations (Capital Gains/Income Tax)
+# Cryptocurrency tax calculator for UK tax rules
 # (c) Nano Nano Ltd 2019
 
 import argparse
@@ -19,7 +19,7 @@ from .export_records import ExportRecords
 from .transactions import TransactionHistory
 from .audit import AuditRecords
 from .price.valueasset import ValueAsset
-from .price.exceptions import UnexpectedDataSourceError
+from .price.exceptions import DataSourceError
 from .tax import TaxCalculator, CalculateCapitalGains as CCG
 from .report import ReportLog, ReportPdf
 from .exceptions import ImportFailureError
@@ -102,7 +102,7 @@ def main():
         tax, value_asset = do_tax(transaction_records,
                                   config.args.taxyear,
                                   config.args.summary)
-    except UnexpectedDataSourceError as e:
+    except DataSourceError as e:
         parser.exit("%sERROR%s %s" % (
             Back.RED+Fore.BLACK, Back.RESET+Fore.RED, e))
 

@@ -13,6 +13,9 @@
 - Coinbase parser: new config "coinbase_zero_fees_are_gifts" added.
 - Accounting/Conversion tool: support for milli/microsecond timestamps.
 - Accounting tool: export option for transaction records with prices.
+- Price/Accounting tool: support for duplicate symbol names. ([#34](https://github.com/BittyTax/BittyTax/issues/34))
+- Price tool: search option (-s) added to list command.
+- Price tool: data source (-ds) option added to list command.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.

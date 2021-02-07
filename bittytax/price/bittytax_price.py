@@ -17,7 +17,7 @@ from ..config import config
 from .datasource import DataSourceBase
 from .assetdata import AssetData
 from .valueasset import ValueAsset
-from .exceptions import UnexpectedDataSourceError
+from .exceptions import DataSourceError
 
 CMD_LATEST = 'latest'
 CMD_HISTORY = 'historic'
@@ -79,7 +79,7 @@ def main():
                                                        "the same data source(s) as "
                                                        "'bittytax' are used.")
     parser_history.add_argument('asset',
-                                type=str,
+                                type=str.upper,
                                 nargs=1,
                                 help="symbol of cryptoasset or fiat currency "
                                      "(i.e. BTC/LTC/ETH or EUR/USD)")
@@ -113,6 +113,18 @@ def main():
                              nargs='?',
                              help="symbol of cryptoasset or fiat currency "
                                   "(i.e. BTC/LTC/ETH or EUR/USD)")
+    parser_list.add_argument('-s',
+                             type=str,
+                             nargs='+',
+                             metavar='STRING',
+                             dest='search',
+                             help="search assets using STRING")
+    parser_list.add_argument('-ds',
+                             choices=datasource_choices(upper=True) + ['ALL'],
+                             metavar='{' + ', '.join(datasource_choices()) + '} or ALL',
+                             dest='datasource',
+                             type=str.upper,
+                             help="specify the data source to use, or all")
     parser_list.add_argument('-d',
                              '--debug',
                              action='store_true',
@@ -130,29 +142,57 @@ def main():
         symbol = config.args.asset[0]
         asset = price = False
 
-        if config.args.datasource == 'ALL':
-            data_sources = datasource_choices(upper=True)
-        else:
-            data_sources = [config.args.datasource]
+        try:
+            if config.args.datasource:
+                if config.args.command == CMD_HISTORY:
+                    assets = AssetData().get_historic_price_ds(symbol,
+                                                               config.args.date[0],
+                                                               config.args.datasource)
+                else:
+                    assets = AssetData().get_latest_price_ds(symbol,
+                                                             config.args.datasource)
+                btc = None
+                for asset in assets:
+                    if not asset['price']:
+                        continue
 
-        for ds in data_sources:
-            value_asset = ValueAsset(price_tool=True, data_source=ds)
-            try:
+                    output_ds_price(asset)
+                    if asset['quote'] == 'BTC':
+                        if btc is None:
+                            if config.args.command == CMD_HISTORY:
+                                btc = get_historic_btc_price(config.args.date[0])
+                            else:
+                                btc = get_latest_btc_price()
+
+                        if btc['price'] is not None:
+                            price_ccy = btc['price'] * asset['price']
+                            output_ds_price(btc)
+                            price = True
+                    else:
+                        price_ccy = asset['price']
+                        price = True
+
+                    output_price(symbol, price_ccy)
+
+                if not assets:
+                    asset = False
+            else:
+                value_asset = ValueAsset(price_tool=True)
                 if config.args.command == CMD_HISTORY:
                     price_ccy, name, _ = value_asset.get_historical_price(symbol,
                                                                           config.args.date[0])
                 else:
                     price_ccy, name, _ = value_asset.get_latest_price(symbol)
-            except UnexpectedDataSourceError as e:
-                parser.exit("%sERROR%s %s" % (
-                    Back.RED+Fore.BLACK, Back.RESET+Fore.RED, e))
 
-            if price_ccy is not None:
-                output_price(price_ccy)
-                price = True
+                if price_ccy is not None:
+                    output_price(symbol, price_ccy)
+                    price = True
 
-            if name is not None:
-                asset = True
+                if name is not None:
+                    asset = True
+
+        except DataSourceError as e:
+            parser.exit("%sERROR%s %s" % (Back.RED+Fore.BLACK, Back.RESET+Fore.RED, e))
 
         if not asset:
             parser.exit("%sWARNING%s Prices for %s are not supported" % (
@@ -167,26 +207,43 @@ def main():
                 parser.exit("%sWARNING%s Current price for %s is not available" % (
                     Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, symbol))
     elif config.args.command == CMD_LIST:
-        if config.args.command == CMD_LIST:
-            asset_data = AssetData()
+        symbol = config.args.asset
+        try:
+            assets = AssetData().get_assets(symbol, config.args.datasource, config.args.search)
+        except DataSourceError as e:
+            parser.exit("%sERROR%s %s" % (Back.RED+Fore.BLACK, Back.RESET+Fore.RED, e))
 
-            if config.args.asset:
-                assets = asset_data.get_asset(config.args.asset)
-                if assets:
-                    output_assets(assets)
-                else:
-                    parser.exit("%sWARNING%s Asset %s not found" % (
-                        Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, config.args.asset))
-            else:
-                assets = asset_data.all_assets()
-                output_assets(assets)
+        if symbol and not assets:
+            parser.exit("%sWARNING%s Asset %s not found" % (
+                Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, symbol))
 
-        if config.args.command in (CMD_LATEST, CMD_HISTORY):
-            symbol = config.args.asset[0]
+        if config.args.search and not assets:
+            parser.exit("No results found")
 
-def output_price(price_ccy):
-    symbol = config.args.asset[0]
+        output_assets(assets)
 
+def get_latest_btc_price():
+    btc = {}
+    btc['symbol'] = 'BTC'
+    btc['price'] = None
+    btc['quote'] = 'GBP'
+
+    value_asset = ValueAsset()
+    btc['price'], btc['name'], btc['data_source'] = value_asset.get_latest_price(btc['symbol'])
+    return btc
+
+def get_historic_btc_price(date):
+    btc = {}
+    btc['symbol'] = 'BTC'
+    btc['price'] = None
+    btc['quote'] = 'GBP'
+
+    value_asset = ValueAsset()
+    btc['price'], btc['name'], btc['data_source'] = value_asset.get_historical_price(btc['symbol'],
+                                                                                     date)
+    return btc
+
+def output_price(symbol, price_ccy):
     print("%s1 %s=%s %s" % (
         Fore.WHITE,
         symbol,
@@ -201,14 +258,28 @@ def output_price(price_ccy):
             config.sym() + '{:0,.2f}'.format(quantity * price_ccy),
             config.CCY))
 
+def output_ds_price(asset):
+    print("%s1 %s=%s %s %svia %s (%s)%s" % (
+        Fore.YELLOW,
+        asset['symbol'],
+        '{:0,f}'.format(asset['price'].normalize()),
+        asset['quote'],
+        Fore.CYAN,
+        asset['data_source'],
+        asset['name'],
+        Fore.YELLOW + ' <-' if asset.get('priority') else ''))
+
 def output_assets(assets):
     for asset in assets:
-        print("%s%s (%s) %svia %s" % (
+        print("%s%s (%s) %svia %s%s%s" % (
             Fore.WHITE,
+            #Fore.YELLOW if asset['priority'] else Fore.WHITE,
             asset['symbol'],
             asset['name'],
             Fore.CYAN,
-            asset['data_source']))
+            asset['data_source'],
+            ' [ID:{}]'.format(asset['id']) if asset['id'] else '',
+            Fore.YELLOW + ' <-' if asset['priority'] else ''))
 
 def validate_date(value):
     match = re.match(r"^([0-9]{4}-[0-9]{2}-[0-9]{2})|([0-9]{2}\/[0-9]{2}\/[0-9]{4})$", value)
@@ -239,5 +310,4 @@ def validate_quantity(value):
 def datasource_choices(upper=False):
     if upper:
         return sorted([ds.__name__.upper() for ds in DataSourceBase.__subclasses__()])
-    else:
-        return sorted([ds.__name__ for ds in DataSourceBase.__subclasses__()])
+    return sorted([ds.__name__ for ds in DataSourceBase.__subclasses__()])
