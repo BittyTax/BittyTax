@@ -28,7 +28,7 @@ class TransactionHistory(object):
 
             self.get_all_values(tr)
 
-            # Attribute the fee value to the buy, the sell or both
+            # Attribute the fee value (allowable cost) to the buy, the sell or both
             if tr.fee and tr.fee.disposal and tr.fee.proceeds:
                 if tr.buy and tr.sell:
                     if tr.buy.asset in config.fiat_list:
@@ -38,11 +38,19 @@ class TransactionHistory(object):
                         tr.buy.fee_value = tr.fee.proceeds
                         tr.buy.fee_fixed = tr.fee.proceeds_fixed
                     else:
-                        # Split fee between both
-                        tr.buy.fee_value = tr.fee.proceeds / 2
-                        tr.buy.fee_fixed = tr.fee.proceeds_fixed
-                        tr.sell.fee_value = tr.fee.proceeds - tr.buy.fee_value
-                        tr.sell.fee_fixed = tr.fee.proceeds_fixed
+                        # Crypto-to-crypto trades
+                        if config.trade_allowable_cost_type == config.TRADE_ALLOWABLE_COST_BUY:
+                            tr.buy.fee_value = tr.fee.proceeds
+                            tr.buy.fee_fixed = tr.fee.proceeds_fixed
+                        elif config.trade_allowable_cost_type == config.TRADE_ALLOWABLE_COST_SELL:
+                            tr.sell.fee_value = tr.fee.proceeds
+                            tr.sell.fee_fixed = tr.fee.proceeds_fixed
+                        else:
+                            # Split fee between both
+                            tr.buy.fee_value = tr.fee.proceeds / 2
+                            tr.buy.fee_fixed = tr.fee.proceeds_fixed
+                            tr.sell.fee_value = tr.fee.proceeds - tr.buy.fee_value
+                            tr.sell.fee_fixed = tr.fee.proceeds_fixed
                 elif tr.buy:
                     tr.buy.fee_value = tr.fee.proceeds
                     tr.buy.fee_fixed = tr.fee.proceeds_fixed

@@ -32,6 +32,10 @@ class Config(object):
     TRADE_ASSET_TYPE_SELL = 1
     TRADE_ASSET_TYPE_PRIORITY = 2
 
+    TRADE_ALLOWABLE_COST_BUY = 0
+    TRADE_ALLOWABLE_COST_SELL = 1
+    TRADE_ALLOWABLE_COST_SPLIT = 2
+
     DATA_SOURCE_FIAT = ['ExchangeRatesAPI', 'RatesAPI']
     DATA_SOURCE_CRYPTO = ['CryptoCompare', 'CoinGecko']
 
@@ -39,6 +43,7 @@ class Config(object):
         'fiat_list': FIAT_LIST,
         'crypto_list': CRYPTO_LIST,
         'trade_asset_type': TRADE_ASSET_TYPE_PRIORITY,
+        'trade_allowable_cost_type': TRADE_ALLOWABLE_COST_SPLIT,
         'show_empty_wallets': False,
         'transfers_include': True,
         'data_source_select': {},

@@ -16,6 +16,7 @@
 - Price/Accounting tool: support for duplicate symbol names. ([#34](https://github.com/BittyTax/BittyTax/issues/34))
 - Price tool: search option (-s) added to list command.
 - Price tool: data source (-ds) option added to list command.
+- Accounting tool: config for allowable cost attribution.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
