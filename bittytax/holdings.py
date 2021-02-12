@@ -27,7 +27,7 @@ class Holdings(object):
             self.deposits += 1
 
         if config.args.debug:
-            print("%ssection104:   %s=%s (+%s) cost=%s %s (+%s %s) fees=%s %s (+%s %s}" % (
+            print("%ssection104:   %s=%s (+%s) cost=%s %s (+%s %s) fees=%s %s (+%s %s)" % (
                 Fore.YELLOW,
                 self.asset,
                 '{:0,f}'.format(self.quantity.normalize()),
@@ -50,7 +50,7 @@ class Holdings(object):
             self.withdrawals += 1
 
         if config.args.debug:
-            print("%ssection104:   %s=%s (-%s) cost=%s %s (-%s %s) fees=%s %s (-%s %s}" % (
+            print("%ssection104:   %s=%s (-%s) cost=%s %s (-%s %s) fees=%s %s (-%s %s)" % (
                 Fore.YELLOW,
                 self.asset,
                 '{:0,f}'.format(self.quantity.normalize()),
