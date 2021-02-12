@@ -181,9 +181,6 @@ class TransactionBase(object):
             return ''
         return '{:0,f}'.format(self.quantity.normalize())
 
-    def _format_matched(self):
-        return '//' if self.matched else ''
-
     def _format_pooled(self, bold=False):
         if self.pooled:
             return " %s[%s]%s" % (
@@ -311,8 +308,7 @@ class Buy(TransactionBase):
         return ''
 
     def __str__(self, pooled_bold=False, quantity_bold=False):
-        return "%s%s%s %s%s %s %s%s%s%s '%s' %s [TID:%s]%s" % (
-            self._format_matched(),
+        return "%s%s %s%s %s %s%s%s%s '%s' %s [TID:%s]%s" % (
             type(self).__name__.upper(),
             '*' if not self.acquisition else '',
             self.t_type,
@@ -407,8 +403,7 @@ class Sell(TransactionBase):
         return ''
 
     def __str__(self, pooled_bold=False, quantity_bold=False):
-        return "%s%s%s %s%s %s %s%s%s%s '%s' %s [TID:%s]%s" % (
-            self._format_matched(),
+        return "%s%s %s%s %s %s%s%s%s '%s' %s [TID:%s]%s" % (
             type(self).__name__.upper(),
             '*' if not self.disposal else '',
             self.t_type,

@@ -4,6 +4,8 @@
 - Accounting tool: "xlrd.biffh.XLRDError: Excel xlsx file; not supported" Exception. ([#36](https://github.com/BittyTax/BittyTax/issues/36))
 - Coinbase parser: added support for Convert transactions ([#46](https://github.com/BittyTax/BittyTax/issues/46))
 - Coinbase parser: mis-classifying trade as gift-received ([#47](https://github.com/BittyTax/BittyTax/issues/47))
+- Accounting tool: unexpected treatment of withdrawal fees (transfers_include=False) ([#56](https://github.com/BittyTax/BittyTax/issues/56))
+- Accounting tool: assets which only have matched disposals are not shown in holdings report ([#60](https://github.com/BittyTax/BittyTax/issues/60))
 ### Added
 - Etherscan parser: added internal transactions export.
 - Binance parser: added cash deposit and withdrawal exports.
@@ -17,6 +19,10 @@
 - Price tool: search option (-s) added to list command.
 - Price tool: data source (-ds) option added to list command.
 - Accounting tool: config for allowable cost attribution.
+- Accounting tool: integrity check (disposals between transfers).
+- Accounting tool: warning given if disposal detected between transfers.
+- Accounting tool: integrity check (audit balances against section 104 pools).
+- Accounting tool: skip integrity check (--skipint) option added.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
@@ -28,6 +34,10 @@
 - Ledger Live parser: fees now optional, as missing from ERC-20 wallets.
 - Bitstamp parser: fees now optional.
 - Accounting tool: same day pooling debug now only shows the pooled transactions.
+- Accounting tool: section 104 debug also shows matched transactions.
+### Removed
+- Accounting tool: skip audit (-s or --skipaudit) option removed.
+- Accounting tool: updated transactions debug removed.
 
 ## Version [0.4.3] Beta (2020-12-04)
 Important:- if upgrading, please remove your price data cache file for CryptoCompare: `~/.bittytax/cache/CryptoCompare.json` (see Issue [#29](https://github.com/BittyTax/BittyTax/issues/29))

@@ -103,7 +103,7 @@ class ReportLog(object):
 
         print("%stax report output:" % Fore.WHITE)
         if config.args.taxyear:
-            if not config.args.skipaudit and not config.args.summary:
+            if not config.args.summary:
                 self.audit()
 
             print("\n%sTax Year - %d/%d%s" % (
@@ -114,7 +114,7 @@ class ReportLog(object):
                 print("\n%sAppendix%s" % (Fore.CYAN+Style.BRIGHT, Style.NORMAL))
                 self.price_data(config.args.taxyear)
         else:
-            if not config.args.skipaudit and not config.args.summary:
+            if not config.args.summary:
                 self.audit()
 
             for tax_year in sorted(tax_report):
