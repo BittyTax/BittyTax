@@ -66,7 +66,7 @@ def parse_crypto_com(data_row, parser, _filename):
                                                      wallet=WALLET)
     elif in_row[9] in ("referral_bonus", "referral_card_cashback", "reimbursement",
                        "gift_card_reward", "transfer_cashback", "admin_wallet_credited",
-                       "referral_gift"):
+                       "referral_gift", "campaign_reward"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[3],

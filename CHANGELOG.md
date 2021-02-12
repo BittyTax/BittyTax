@@ -35,6 +35,7 @@
 - Bitstamp parser: fees now optional.
 - Accounting tool: same day pooling debug now only shows the pooled transactions.
 - Accounting tool: section 104 debug also shows matched transactions.
+- Crypto.com parser: added "campaign_reward" transaction type. ([#64](https://github.com/BittyTax/BittyTax/issues/64))
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.
