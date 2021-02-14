@@ -23,8 +23,10 @@ def get_long_description():
 setup(
     name='BittyTax',
     version=get_version(),
-    description='Cryptoasset accounting, auditing and UK tax calculations (Capital Gains/Income '
-                'Tax)',
+    description='Crypto-currency tax calculator for UK tax rules. '
+                'Produces a PDF report of your capital gains and income. '
+                'Import your data from popular wallets and exchanges '
+                '(i.e. Coinbase, Binance, etc).',
     long_description=get_long_description(),
     long_description_content_type='text/markdown',
     url=GITHUB_REPO,
@@ -43,17 +45,19 @@ setup(
         'Operating System :: Microsoft :: Windows',
         'Operating System :: POSIX',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
     ],
     keywords='bittytax cryptoasset cryptocurrency crypto tax',
     packages=['bittytax', 'bittytax.conv', 'bittytax.conv.parsers', 'bittytax.price'],
     package_data={'bittytax': ['templates/*.html']},
     install_requires=[
-        'python-dateutil',
+        'python-dateutil>=2.7.0',
         'requests',
         'pyyaml',
-        'xlrd',
+        'xlrd<=1.2.0',
         'xlsxwriter',
         'jinja2',
         'xhtml2pdf',
@@ -65,8 +69,15 @@ setup(
             'bittytax = bittytax.bittytax:main',
             'bittytax_conv = bittytax.conv.bittytax_conv:main',
             'bittytax_price = bittytax.price.bittytax_price:main',
-            'bittytax_asset = bittytax.price.bittytax_asset:main',
         ],
+    },
+    project_urls={
+        'Donate': 'https://www.paypal.com/donate?hosted_button_id=HVBQW8TBEHXLC',
+        'Twitter': 'https://twitter.com/bitty_tax',
+        'Discord': 'https://discord.com/invite/NHE3QFt',
+        'Changes': 'https://github.com/BittyTax/BittyTax/blob/master/CHANGELOG.md',
+        'Source': 'https://github.com/BittyTax/BittyTax',
+        'Tracker': 'https://github.com/BittyTax/BittyTax/issues',
     },
     include_package_data=True,
     zip_safe=False,

@@ -14,23 +14,38 @@ def parse_ledger_live(data_row, parser, _filename):
     data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 
     if in_row[2] == "IN":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                                 data_row.timestamp,
-                                                 buy_quantity=Decimal(in_row[3]) + \
-                                                              Decimal(in_row[4]),
-                                                 buy_asset=in_row[1],
-                                                 fee_quantity=Decimal(in_row[4]),
-                                                 fee_asset=in_row[1],
-                                                 wallet=WALLET)
+        if in_row[4]:
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                                     data_row.timestamp,
+                                                     buy_quantity=Decimal(in_row[3]) + \
+                                                                  Decimal(in_row[4]),
+                                                     buy_asset=in_row[1],
+                                                     fee_quantity=in_row[4],
+                                                     fee_asset=in_row[1],
+                                                     wallet=WALLET)
+        else:
+            # ERC-20 tokens don't include fees
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                                     data_row.timestamp,
+                                                     buy_quantity=in_row[3],
+                                                     buy_asset=in_row[1],
+                                                     wallet=WALLET)
     elif in_row[2] == "OUT":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
-                                                 data_row.timestamp,
-                                                 sell_quantity=Decimal(in_row[3]) - \
-                                                               Decimal(in_row[4]),
-                                                 sell_asset=in_row[1],
-                                                 fee_quantity=Decimal(in_row[4]),
-                                                 fee_asset=in_row[1],
-                                                 wallet=WALLET)
+        if in_row[4]:
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                     data_row.timestamp,
+                                                     sell_quantity=Decimal(in_row[3]) - \
+                                                                   Decimal(in_row[4]),
+                                                     sell_asset=in_row[1],
+                                                     fee_quantity=in_row[4],
+                                                     fee_asset=in_row[1],
+                                                     wallet=WALLET)
+        else:
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                     data_row.timestamp,
+                                                     sell_quantity=in_row[3],
+                                                     sell_asset=in_row[1],
+                                                     wallet=WALLET)
     else:
         raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
 

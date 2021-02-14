@@ -12,7 +12,7 @@ WALLET = "Crypto.com"
 
 def parse_crypto_com(data_row, parser, _filename):
     in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0], dayfirst=True)
+    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 
     if in_row[9] == "crypto_transfer":
         if Decimal(in_row[3]) > 0:
@@ -65,7 +65,8 @@ def parse_crypto_com(data_row, parser, _filename):
                                                      sell_asset=in_row[2],
                                                      wallet=WALLET)
     elif in_row[9] in ("referral_bonus", "referral_card_cashback", "reimbursement",
-                       "gift_card_reward", "transfer_cashback", "admin_wallet_credited"):
+                       "gift_card_reward", "transfer_cashback", "admin_wallet_credited",
+                       "referral_gift", "campaign_reward"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[3],
@@ -107,7 +108,8 @@ def parse_crypto_com(data_row, parser, _filename):
                        "dynamic_coin_swap_credited", "dynamic_coin_swap_debited",
                        "dynamic_coin_swap_bonus_exchange_deposit",
                        "interest_swap_credited", "interest_swap_debited",
-                       "crypto_wallet_swap_credited", "crypto_wallet_swap_debited"):
+                       "crypto_wallet_swap_credited", "crypto_wallet_swap_debited",
+                       "supercharger_deposit", "supercharger_withdrawal"):
         return
     elif in_row[9] == "":
         # Could be a fiat transaction

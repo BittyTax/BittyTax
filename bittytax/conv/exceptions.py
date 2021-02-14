@@ -12,6 +12,10 @@ class UnexpectedTypeError(DataParserError):
     def __str__(self):
         return "Unrecognised %s: \'%s\'" % (self.col_name, self.value)
 
+class UnexpectedContentError(DataParserError):
+    def __str__(self):
+        return "Unexpected %s content: \'%s\'" % (self.col_name, self.value)
+
 class MissingValueError(DataParserError):
     def __str__(self):
         return "Missing value for \'%s\'" % self.col_name
@@ -32,9 +36,14 @@ class UnknownUsernameError(Exception):
     def __str__(self):
         return "Username cannot be identified"
 
-class UnknownAddressError(Exception):
+class DataFilenameError(Exception):
+    def __init__(self, filename, component):
+        super(DataFilenameError, self).__init__()
+        self.filename = filename
+        self.component = component
+
     def __str__(self):
-        return "Cryptoasset address cannot be identified"
+        return "%s cannot be identified from filename: %s" % (self.component, self.filename)
 
 class DataFormatUnrecognised(Exception):
     def __str__(self):

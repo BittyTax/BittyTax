@@ -29,8 +29,10 @@ class TaxCalculator(object):
     DISPOSAL_SECTION_104 = 'Section 104'
     DISPOSAL_NO_GAIN_NO_LOSS = 'No Gain/No Loss'
 
-    INCOME_TYPES = (Buy.TYPE_MINING, Buy.TYPE_STAKING, Buy.TYPE_INCOME, Buy.TYPE_INTEREST,
-                    Buy.TYPE_DIVIDEND)
+    TRANSFER_TYPES = (Buy.TYPE_DEPOSIT, Sell.TYPE_WITHDRAWAL)
+
+    INCOME_TYPES = (Buy.TYPE_MINING, Buy.TYPE_STAKING, Buy.TYPE_DIVIDEND, Buy.TYPE_INTEREST,
+                    Buy.TYPE_INCOME)
 
     def __init__(self, transactions):
         self.transactions = transactions
@@ -73,15 +75,14 @@ class TaxCalculator(object):
         self.sells_ordered = sorted(sell_transactions.values())
 
         if config.args.debug:
-            for t in sorted(self.buys_ordered + self.sells_ordered + self.other_transactions):
-                print("%spool: %s" % (Fore.GREEN, t.__str__(pooled_bold=True)))
+            for t in sorted(self.all_transactions()):
                 if len(t.pooled) > 1:
+                    print("%spool: %s" % (Fore.GREEN, t.__str__(pooled_bold=True)))
                     for tp in t.pooled:
                         print("%spool:   (%s)" % (Fore.BLUE, tp))
 
         if config.args.debug:
-            print("%spool: total transactions=%d" % (
-                Fore.CYAN, len(self.buys_ordered + self.sells_ordered + self.other_transactions)))
+            print("%spool: total transactions=%d" % (Fore.CYAN, len(self.all_transactions())))
 
     def match(self, rule):
         sell_index = buy_index = 0
@@ -149,19 +150,8 @@ class TaxCalculator(object):
 
         pbar.close()
 
-    def output_transactions(self):
-        print("%supdated transactions" % Fore.CYAN)
-
-        for t in sorted(self.buys_ordered +
-                        self.sells_ordered +
-                        self.other_transactions):
-            if t.matched:
-                print("%supdated: %s" % (Fore.BLUE, t))
-            else:
-                print("%supdated: %s" % (Fore.GREEN, t))
-
-        print("%supdated: total transactions=%d" % (
-            Fore.CYAN, len(self.sells_ordered + self.buys_ordered + self.other_transactions)))
+        if config.args.debug:
+            print("%smatch: total transactions=%d" % (Fore.CYAN, len(self.all_transactions())))
 
     def _rule_match(self, s_timestamp, b_timestamp, rule):
         if rule == self.DISPOSAL_SAME_DAY:
@@ -172,20 +162,28 @@ class TaxCalculator(object):
         else:
             raise Exception
 
-    def process_unmatched(self):
-        unmatched_transactions = sorted([t for t in self.buys_ordered +
-                                         self.sells_ordered +
-                                         self.other_transactions if t.matched is False])
-
+    def process_section104(self):
         if config.args.debug:
-            print("%sprocess unmatched transactions" % Fore.CYAN)
+            print("%sprocess section 104" % Fore.CYAN)
 
-        for t in tqdm(unmatched_transactions,
+        for t in tqdm(sorted(self.all_transactions()),
                       unit='t',
-                      desc="%sprocess unmatched%s" % (Fore.CYAN, Fore.GREEN),
+                      desc="%sprocess section 104%s" % (Fore.CYAN, Fore.GREEN),
                       disable=bool(config.args.debug or not sys.stdout.isatty())):
-            if config.args.debug:
-                print("%ssection104: %s" % (Fore.GREEN, t))
+            if t.asset not in self.holdings:
+                self.holdings[t.asset] = Holdings(t.asset)
+
+            if t.matched:
+                if config.args.debug:
+                    print("%ssection104: //%s <- matched" % (Fore.BLUE, t))
+                continue
+            elif not config.transfers_include and t.t_type in self.TRANSFER_TYPES:
+                if config.args.debug:
+                    print("%ssection104: //%s <- transfer" % (Fore.BLUE, t))
+                continue
+            else:
+                if config.args.debug:
+                    print("%ssection104: %s" % (Fore.GREEN, t))
 
             if isinstance(t, Buy):
                 self._add_tokens(t)
@@ -193,31 +191,18 @@ class TaxCalculator(object):
                 self._subtract_tokens(t)
 
     def _add_tokens(self, t):
-        if t.asset not in self.holdings:
-            self.holdings[t.asset] = Holdings(t.asset)
-
         if not t.acquisition:
-            if config.transfers_include:
-                # !IMPORTANT! - Make sure no disposal event occurs between a Withdrawal and a
-                #   Deposit (of the same asset) otherwise the average cost basis would be incorrect
-                cost = fees = Decimal(0)
-            else:
-                return
+            cost = fees = Decimal(0)
         else:
             cost = t.cost
             fees = t.fee_value or Decimal(0)
 
-        self.holdings[t.asset].add_tokens(t.quantity, cost, fees)
+        self.holdings[t.asset].add_tokens(t.quantity, cost, fees,
+                                          t.t_type == Buy.TYPE_DEPOSIT)
 
     def _subtract_tokens(self, t):
-        if t.asset not in self.holdings:
-            self.holdings[t.asset] = Holdings(t.asset)
-
         if not t.disposal:
-            if config.transfers_include:
-                cost = fees = Decimal(0)
-            else:
-                return
+            cost = fees = Decimal(0)
         else:
             if self.holdings[t.asset].quantity:
                 cost = self.holdings[t.asset].cost * (t.quantity /
@@ -228,7 +213,8 @@ class TaxCalculator(object):
                 # Should never happen, only if incorrect transaction records
                 cost = fees = Decimal(0)
 
-        self.holdings[t.asset].subtract_tokens(t.quantity, cost, fees)
+        self.holdings[t.asset].subtract_tokens(t.quantity, cost, fees,
+                                               t.t_type == Sell.TYPE_WITHDRAWAL)
 
         if t.disposal:
             if t.t_type == Sell.TYPE_GIFT_SPOUSE:
@@ -245,6 +231,9 @@ class TaxCalculator(object):
             if config.args.debug:
                 print("%ssection104:   %s" % (Fore.CYAN, tax_event))
 
+            if config.transfers_include and not config.args.skip_integrity:
+                self.holdings[t.asset].check_transfer_mismatch()
+
     def process_income(self):
         if config.args.debug:
             print("%sprocess income" % Fore.CYAN)
@@ -256,6 +245,9 @@ class TaxCalculator(object):
             if t.t_type in self.INCOME_TYPES:
                 tax_event = TaxEventIncome(t)
                 self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
+
+    def all_transactions(self):
+        return self.buys_ordered + self.sells_ordered + self.other_transactions
 
     def calculate_capital_gains(self, tax_year):
         self.tax_report[tax_year] = {}

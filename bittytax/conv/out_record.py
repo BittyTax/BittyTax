@@ -9,9 +9,9 @@ class TransactionOutRecord(object):
     TYPE_DEPOSIT = TransactionRecord.TYPE_DEPOSIT
     TYPE_MINING = TransactionRecord.TYPE_MINING
     TYPE_STAKING = TransactionRecord.TYPE_STAKING
-    TYPE_INCOME = TransactionRecord.TYPE_INCOME
     TYPE_INTEREST = TransactionRecord.TYPE_INTEREST
     TYPE_DIVIDEND = TransactionRecord.TYPE_DIVIDEND
+    TYPE_INCOME = TransactionRecord.TYPE_INCOME
     TYPE_GIFT_RECEIVED = TransactionRecord.TYPE_GIFT_RECEIVED
     TYPE_WITHDRAWAL = TransactionRecord.TYPE_WITHDRAWAL
     TYPE_SPEND = TransactionRecord.TYPE_SPEND

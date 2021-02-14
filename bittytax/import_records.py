@@ -65,8 +65,11 @@ class ImportRecords(object):
     @staticmethod
     def convert_cell(cell, workbook):
         if cell.ctype == xlrd.XL_CELL_DATE:
-            value = xlrd.xldate.xldate_as_datetime(cell.value, workbook.datemode). \
-                         strftime('%Y-%m-%d %H:%M:%S')
+            datetime = xlrd.xldate.xldate_as_datetime(cell.value, workbook.datemode)
+            if datetime.microsecond:
+                value = datetime.strftime('%Y-%m-%dT%H:%M:%S.%f')
+            else:
+                value = datetime.strftime('%Y-%m-%d %H:%M:%S')
         elif cell.ctype in (xlrd.XL_CELL_NUMBER, xlrd.XL_CELL_BOOLEAN, xlrd.XL_CELL_ERROR):
             # repr is required to ensure no precision is lost
             value = repr(cell.value)
@@ -147,9 +150,9 @@ class TransactionRow(object):
     BUY_TYPES = (TransactionRecord.TYPE_DEPOSIT,
                  TransactionRecord.TYPE_MINING,
                  TransactionRecord.TYPE_STAKING,
-                 TransactionRecord.TYPE_INCOME,
                  TransactionRecord.TYPE_INTEREST,
                  TransactionRecord.TYPE_DIVIDEND,
+                 TransactionRecord.TYPE_INCOME,
                  TransactionRecord.TYPE_GIFT_RECEIVED)
     SELL_TYPES = (TransactionRecord.TYPE_WITHDRAWAL,
                   TransactionRecord.TYPE_SPEND,

@@ -96,7 +96,7 @@ class DataFile(object):
     def convert_cell(cell, workbook):
         if cell.ctype == xlrd.XL_CELL_DATE:
             value = xlrd.xldate.xldate_as_datetime(cell.value, workbook.datemode). \
-                         strftime('%Y-%m-%dT%H:%M:%S %Z')
+                         strftime('%Y-%m-%dT%H:%M:%S.%f %Z')
         elif cell.ctype in (xlrd.XL_CELL_NUMBER, xlrd.XL_CELL_BOOLEAN, xlrd.XL_CELL_ERROR):
             # repr is required to ensure no precision is lost
             value = repr(cell.value)

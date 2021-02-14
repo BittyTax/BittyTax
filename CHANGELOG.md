@@ -11,6 +11,64 @@ Important:- A new Note field has been added to the end of the transaction record
 - Qt Wallet parser: Note field is mapped from 'Label'.
 - Trezor parser: Note field is mapped from 'Address Label'.
 ### Fixed
+- Accounting tool: "xlrd.biffh.XLRDError: Excel xlsx file; not supported" Exception. ([#36](https://github.com/BittyTax/BittyTax/issues/36))
+- Coinbase parser: added support for Convert transactions ([#46](https://github.com/BittyTax/BittyTax/issues/46))
+- Coinbase parser: mis-classifying trade as gift-received ([#47](https://github.com/BittyTax/BittyTax/issues/47))
+- Accounting tool: unexpected treatment of withdrawal fees (transfers_include=False) ([#56](https://github.com/BittyTax/BittyTax/issues/56))
+- Accounting tool: assets which only have matched disposals are not shown in holdings report ([#60](https://github.com/BittyTax/BittyTax/issues/60))
+### Added
+- Etherscan parser: added internal transactions export.
+- Binance parser: added cash deposit and withdrawal exports.
+- Binance parser: added statements export.
+- Bitfinex parser: new "Trades" data file format added. ([#41](https://github.com/BittyTax/BittyTax/issues/41))
+- Bittrex parser: new deposits data file format added.
+- Coinbase parser: new config "coinbase_zero_fees_are_gifts" added.
+- Accounting/Conversion tool: support for milli/microsecond timestamps.
+- Accounting tool: export option for transaction records with prices.
+- Price/Accounting tool: support for duplicate symbol names. ([#34](https://github.com/BittyTax/BittyTax/issues/34))
+- Price tool: search option (-s) added to list command.
+- Price tool: data source (-ds) option added to list command.
+- Accounting tool: config for allowable cost attribution.
+- Accounting tool: integrity check (disposals between transfers).
+- Accounting tool: warning given if disposal detected between transfers.
+- Accounting tool: integrity check (audit balances against section 104 pools).
+- Accounting tool: skip integrity check (--skipint) option added.
+### Changed
+- Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
+- Binance parser: use filename to determine if deposits or withdrawals.
+- Binance parser: updated quote assets via new script.
+- Crypto.com parser: added new "Supercharger" transaction types. ([#38](https://github.com/BittyTax/BittyTax/issues/38))
+- Coinbase parser: added Coinbase Earn/Rewards Income transactions.
+- Coinbase parser: get value (from spot price) where possible.
+- Bittrex parser: added market buy/sell transactions.
+- Ledger Live parser: fees now optional, as missing from ERC-20 wallets.
+- Bitstamp parser: fees now optional.
+- Accounting tool: same day pooling debug now only shows the pooled transactions.
+- Accounting tool: section 104 debug also shows matched transactions.
+- Crypto.com parser: added "campaign_reward" transaction type. ([#64](https://github.com/BittyTax/BittyTax/issues/64))
+### Removed
+- Accounting tool: skip audit (-s or --skipaudit) option removed.
+- Accounting tool: updated transactions debug removed.
+
+## Version [0.4.3] Beta (2020-12-04)
+Important:- if upgrading, please remove your price data cache file for CryptoCompare: `~/.bittytax/cache/CryptoCompare.json` (see Issue [#29](https://github.com/BittyTax/BittyTax/issues/29))
+### Fixed
+- UserWarning: Must have at least one data row in in add_table().
+- AttributeError: 'module' object has no attribute 'UTC'. ([#27](https://github.com/BittyTax/BittyTax/issues/27))
+- Crypto.com parser: fix date parser.
+- Incorrect price data for stablecoins via CryptoCompare. ([#29](https://github.com/BittyTax/BittyTax/issues/29))
+### Added
+- Conversion tool: added parser for CGTCalculator.
+- Conversion tool: added parser for Nexo.
+- Conversion tool: added parser for Kraken.
+- HitBTC parser: new data file format added.
+### Changed
+- Hotbit parser: Negative fees are now set to zero.
+- Accounting tool: Drop buy/sell/fee transactions of zero quantity.
+- Crypto.com parser: Add support for referral_gift transaction type.
+
+## Version [0.4.2] Beta (2020-10-30)
+### Fixed
 - Cell conversion of imported Excel data safer for python 2.
 - Circle parser: filter out other currency symbols '£€$'.
 - Cryptsy parser: sell/buy quantities already had fee included.
@@ -22,10 +80,10 @@ Important:- A new Note field has been added to the end of the transaction record
 - Electrum parser: timestamp is in local time.
 - KeyError: 'bpi' exception. ([#21](https://github.com/BittyTax/BittyTax/issues/21))
 - Python 3.x compatibility. ([#20](https://github.com/BittyTax/BittyTax/issues/20))
+- Conversion tool: Python 2, UnicodeDecodeError exception.
 ### Added
 - Conversion tool: added parser for CoinTracking.info accounting data.
 - Conversion tool: added parser for Gravity (Bitstocks) exchange.
-- Asset tool: new tool to list/search which assets have price data available.
 - Etherscan parser: added ERC-20 tokens and ERC-721 NFTs exports.
 - Bittrex parser: new data file format added.
 - Coinbase Pro parser: new "Account Statement" data file format added.
@@ -53,6 +111,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Price tool: added data source (-ds) argument.
 - Accounting tool: new transaction type Gift-Spouse added.
 - Coinbase Pro parser: new "Fills Statement" data file format added.
+- Price tool: added list asset command.
 ### Changed
 - Sort wallet names in audit debug as case-insensitive.
 - Data source names in config are now case-insensitive.
@@ -64,6 +123,9 @@ Important:- A new Note field has been added to the end of the transaction record
 - HandCash parser: identify transactions to other users as gifts.
 - Qt Wallet parser: get symbol name from "Amount" if available.
 - Qt Wallet parser: -ca option takes precedence over any symbol name found in the data file.
+- Conversion tool: Excel currency format changed to improve compatibility.
+- Price tool: added commands for latest and historic prices.
+- Price tool: quantity is now an optional argument, -q or --quantity is not required.
 
 ## Version [0.4.1] Beta (2020-07-25)
 ### Fixed
@@ -169,11 +231,11 @@ Important:- A new Note field has been added to the end of the transaction record
 - Conversion tool raises warning if 15-digit precision exceeded (Excel limit).
 - Conversion tool: added option to output in Recap import CSV format.
 ### Removed
-- Negative balance warning in a Section 104 holding. 
+- Negative balance warning in a Section 104 holding.
 - Logging removed from within config module.
 ### Changed
 - Logging is now initialised by each tool, instead of within the `config.py` module.
-- Conversion tool now outputs logging to `stderr` so it will be filtered when piping into `bittytax`. 
+- Conversion tool now outputs logging to `stderr` so it will be filtered when piping into `bittytax`.
 - The `pricedata.py` module has been renamed `valueasset.py`, and main function moved to new `price.py` module.
 - Package layout restructured, added subfolders for price and conv tools.
 - Refactored code for "all_handler" data parsers.
@@ -200,7 +262,9 @@ This is the initial beta release. Although it has been throughly tested, it's po
 - Exchange data files supported: Bitstamp, Bittrex, ChangeTip, Circle, Coinbase, Coinbase Pro, Coinfloor, Cryptopia, Cryptsy, Gatehub, OKEx, Poloniex, TradeSatoshi, Uphold.
 - Explorer data files supported: Etherscan.
 
-[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/BittyTax/BittyTax/compare/v0.4.2...v0.4.3
+[0.4.2]: https://github.com/BittyTax/BittyTax/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/BittyTax/BittyTax/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/BittyTax/BittyTax/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/BittyTax/BittyTax/compare/v0.3.2...v0.3.3

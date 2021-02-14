@@ -13,6 +13,7 @@ class AuditRecords(object):
     def __init__(self, transaction_records):
         self.wallets = {}
         self.totals = {}
+        self.failures = []
 
         if config.args.debug:
             print("%saudit transaction records" % Fore.CYAN)
@@ -101,3 +102,62 @@ class AuditRecords(object):
             tqdm.write("%sWARNING%s Balance at %s:%s is negative %s" % (
                 Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW,
                 wallet, asset, '{:0,f}'.format(self.wallets[wallet][asset].normalize())))
+
+    def compare_pools(self, holdings):
+        passed = True
+        for asset in sorted(self.totals):
+            if asset in config.fiat_list:
+                continue
+
+            if asset in holdings:
+                if self.totals[asset] == holdings[asset].quantity:
+                    if config.args.debug:
+                        print("%scheck pool: %s (ok)" %(Fore.GREEN, asset))
+                else:
+                    if config.args.debug:
+                        print("%scheck pool: %s %s (mismatch)" %(Fore.RED, asset,
+                            '{:+0,f}'.format((holdings[asset].quantity-
+                                              self.totals[asset]).normalize())))
+
+                    self._log_failure(asset, self.totals[asset], holdings[asset].quantity)
+                    passed = False
+            else:
+                if config.args.debug:
+                    print("%scheck pool: %s (missing)" %(Fore.RED, asset))
+
+                self._log_failure(asset, self.totals[asset], None)
+                passed = False
+
+        return passed
+
+    def _log_failure(self, asset, audit, s104):
+        failure = {}
+        failure['asset'] = asset
+        failure['audit'] = audit
+        failure['s104'] = s104
+
+        self.failures.append(failure)
+
+    def report_failures(self):
+        header = "%-8s %25s %25s %25s" % ('Asset',
+                                          'Audit Balance',
+                                          'Section 104 Pool',
+                                          'Difference')
+
+        print('\n%s%s' % (Fore.YELLOW, header))
+        for failure in self.failures:
+            if failure['s104'] is not None:
+                print("%s%-8s %25s %25s %s%25s" % (
+                    Fore.WHITE,
+                    failure['asset'],
+                    '{:0,f}'.format(failure['audit'].normalize()),
+                    '{:0,f}'.format(failure['s104'].normalize()),
+                    Fore.RED,
+                    '{:+0,f}'.format((failure['s104']-failure['audit']).normalize())))
+            else:
+                print("%s%-8s %25s %s%25s" % (
+                    Fore.WHITE,
+                    failure['asset'],
+                    '{:0,f}'.format(failure['audit'].normalize()),
+                    Fore.RED,
+                    '<missing>'))

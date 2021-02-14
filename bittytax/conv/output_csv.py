@@ -66,9 +66,9 @@ class OutputCsv(OutputBase):
     RECAP_TYPE_MAPPING = {TransactionOutRecord.TYPE_DEPOSIT: 'Deposit',
                           TransactionOutRecord.TYPE_MINING: 'Mining',
                           TransactionOutRecord.TYPE_STAKING: 'Income',
-                          TransactionOutRecord.TYPE_INCOME: 'Income',
                           TransactionOutRecord.TYPE_INTEREST: 'Income',
                           TransactionOutRecord.TYPE_DIVIDEND: 'Income',
+                          TransactionOutRecord.TYPE_INCOME: 'Income',
                           TransactionOutRecord.TYPE_GIFT_RECEIVED: 'Gift',
                           TransactionOutRecord.TYPE_WITHDRAWAL: 'Withdrawal',
                           TransactionOutRecord.TYPE_SPEND: 'Purchase',
@@ -130,6 +130,13 @@ class OutputCsv(OutputBase):
         return self._to_bittytax_csv(t_record)
 
     @staticmethod
+    def _format_timestamp(timestamp):
+        if timestamp.microsecond:
+            return timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f %Z')
+        else:
+            return timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
+
+    @staticmethod
     def _to_bittytax_csv(tr):
         if tr.buy_quantity is not None and \
                 len(tr.buy_quantity.normalize().as_tuple().digits) > OutputBase.EXCEL_PRECISION:
@@ -165,7 +172,7 @@ class OutputCsv(OutputBase):
                 '{0:f}'.format(tr.fee_value.normalize()) if tr.fee_value is not None \
                                                          else None,
                 tr.wallet,
-                tr.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+                OutputCsv._format_timestamp(tr.timestamp),
                 tr.note]
 
     @staticmethod

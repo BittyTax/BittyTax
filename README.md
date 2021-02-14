@@ -1,9 +1,16 @@
 ![BittyTax logo](https://github.com/BittyTax/BittyTax/raw/master/img/BittyTax.png)
-[![Version badge][version-badge]][version] [![License badge][license-badge]][license] [![Python badge][python-badge]][python] [![Discord badge][discord-badge]][discord]
+[![Version badge][version-badge]][version]
+[![License badge][license-badge]][license]
+[![Python badge][python-badge]][python]
+[![Downloads badge][downloads-badge]][downloads]
+[![Stars badge][github-stars-badge]][github-stars]
+[![Twitter badge][twitter-badge]][twitter]
+[![Discord badge][discord-badge]][discord]
+[![Donation badge][donation-badge]][PayPal]
 # BittyTax
-BittyTax is a collection of command-line tools to help you manage your cryptoasset accounts. It allows you to audit, value and calculate your annual UK Capital Gains and Income Tax.
+BittyTax is a collection of command-line tools to help you calculate your cryptoasset taxes in the UK.
 
-This tool is designed to be used by someone who is already familiar with cryptoasset taxation rules in the UK. HMRC has published guidance on this. We've collected some useful links in the [Resources](#resources) section at the end.
+It's completely free to use, and retains your privacy as there is no need to share your data with a 3rd party.
 
 BittyTax comprises of the following tools.
 
@@ -12,6 +19,9 @@ BittyTax comprises of the following tools.
 2. `bittytax_conv` - convert your wallet and exchange files into transaction records (see [Conversion Tool](#conversion-tool))
 
 3. `bittytax_price` - (optional) lookup historic price data for cryptoassets and foreign currencies (see [Price Tool](#price-tool))
+
+This tool is designed to be used by someone who is already familiar with cryptoasset taxation rules in the UK. HMRC has published guidance on this. We've collected some useful links in the [Resources](#resources) section at the end.
+
 
 ## Disclaimer
 This software is copyright (c) Nano Nano Ltd, and licensed for use under the AGPLv3 License, see [LICENSE](https://github.com/BittyTax/BittyTax/blob/master/LICENSE) file for details.
@@ -27,9 +37,9 @@ This software is provided 'as is', Nano Nano Ltd does not give any warranties of
 ### Prerequisites
 You need to have Python 2.7 or 3.x installed on your machine before you can install BittyTax. MacOS and most Linux distributions already come with Python pre-installed.
 
-If you need to install Python we recommend you install Python 3.x. See https://wiki.python.org/moin/BeginnersGuide/Download for instructions.
+If you need to install Python we recommend you install Python 3.8. See https://wiki.python.org/moin/BeginnersGuide/Download for instructions.
 
-**Note:** BittyTax is currently in Beta version (see the [CHANGELOG](https://github.com/BittyTax/BittyTax/blob/master/CHANGELOG.md) file for details). It has been tested on MacOS and Windows 10, using both Python 2.7 and Python 3.7.
+**Note:** BittyTax is currently in Beta version (see the [CHANGELOG](https://github.com/BittyTax/BittyTax/blob/master/CHANGELOG.md) file for details). It has been tested on MacOS and Windows 10, using both Python 2.7 and Python 3.8.
 
 ### Installing
 
@@ -67,11 +77,15 @@ A transaction record is represented as a row of data which contains the followin
 | --- | --- | ---|
 | Type | `Deposit` | Tokens deposited to a wallet you own  
 | | `Mining` | Tokens received as income from mining |
+| | `Staking` | Tokens received as income from staking |
+| | `Interest` | Tokens received as interest |
+| | `Dividend` | Tokens received as a dividend |
 | | `Income` | Tokens received as other income |
 | | `Gift-Received` | Tokens received as a gift |
 | | `Withdrawal` | Tokens withdrawn from a wallet you own |
 | | `Spend` | Tokens spent on goods or services |
 | | `Gift-Sent` | Tokens sent as a gift |
+| | `Gift-Spouse` | Tokens gifted to your spouse or civil partner |
 | | `Charity-Sent` | Tokens sent to a charity as a gift |
 | | `Trade` | Tokens exchanged for another token or fiat currency |
 | Buy Quantity | | Quantity of the asset acquired |
@@ -92,11 +106,15 @@ The transaction Type dictates which fields in the row are required, either (M)an
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---| --- |
 | `Deposit` | M | M |   |||| O | O |  | O | M |
 | `Mining` | M | M | O |||| O | O | O| O | M |
+| `Staking` | M | M | O |||| O | O | O| O | M |
+| `Interest` | M | M | O |||| O | O | O| O | M |
+| `Dividend` | M | M | O |||| O | O | O| O | M |
 | `Income` | M | M | O |||| O | O | O| O | M |
 | `Gift-Received` | M | M | O |||| O | O | O| O | M |
 | `Withdrawal` |||| M | M |   | O | O |   | O | M |
 | `Spend` |||| M | M | O | O | O | O | O | M |
 | `Gift-Sent` |||| M | M | O | O | O | O | O | M |
+| `Gift-Spouse` |||| M | M |  | O | O | O | O | M |
 | `Charity-Sent` |||| M | M | O | O | O | O | O | M |
 | `Trade` | M | M | O | M | M | O | O | O | O | O | M
 
@@ -106,7 +124,7 @@ The transaction Type dictates which fields in the row are required, either (M)an
 
 - Wallet name is optional, but recommended if you want to audit your cryptoasset balances across multiple wallets.  
 
-- Timestamp should be in the format `YYYY-MM-DDTHH:MM:SS ZZZ`, recognised timezones (ZZZ) are GMT, BST and UTC.
+- Timestamps should be in Excel Date & Time format (as UTC), or if text, in the format `YYYY-MM-DDTHH:MM:SS ZZZ`, where timezone (ZZZ) can be GMT, BST or UTC.
 
 - Cryptoasset symbol names need to be consistent throughout your transaction records. For example, Bitcoin Cash was referred to as both BCC and BCH at the time of the first fork, but more recently as BCHABC or BAB. The symbol name you choose should match the symbol name used by the price data source, otherwise valuations will fail. See [Price Tool](#price-tool) for more information.
 
@@ -129,17 +147,32 @@ A `Withdrawal` is a transfer transaction record, indicating tokens being sent fr
 The Withdrawal type can also be used to record fiat withdrawals from an exchange.
 
 ### Mining
-The `Mining` transaction type is used to identify tokens received as income from mining. The `Income` transaction type could also be used to record this - it's use is purely descriptive.
+The `Mining` transaction type is used to identify tokens received as income from mining. The `Income` transaction type could also be used to record this - its use is purely descriptive.
+
+These transaction records will appear within your income tax report.
+
+### Staking
+The `Staking` transaction type is used to identify tokens received as income from staking.
+
+These transaction records will appear within your income tax report.
+
+### Interest
+The `Interest` transaction type is used to identify tokens received as interest.
+
+These transaction records will appear within your income tax report.
+
+### Dividend
+The `Dividend` transaction type is used to identify tokens received as a dividend.
 
 These transaction records will appear within your income tax report.
 
 ### Income
-The `Income` transaction type is used to identify tokens received as other income.
+The `Income` transaction type is used to identify tokens received as other income, i.e. income which cannot be categorised as `Mining`, `Staking`, `Interest` or `Dividend`.
 
 These transaction records will appear within your income tax report.
 
 ### Gift-Received
-The `gift-received` transaction type is used to record cryptoasset tokens received as a gift.
+The `Gift-Received` transaction type is used to record cryptoasset tokens received as a gift.
 
 A gift received is not taxed as income.
 
@@ -152,6 +185,13 @@ As a disposal transaction, it is applicable for Capital Gains tax.
 A `Gift-Sent` is a disposal transaction record, which identifies cryptoasset tokens sent as a gift.
 
 As a disposal transaction, it is applicable for Capital Gains tax.
+
+### Gift-Spouse
+`Gift-Spouse` is a disposal transaction record, it identifies cryptoasset tokens gifted to your spouse or civil partner.
+
+This disposal is recorded as "No-Gain/No-Loss", it is applicable for Capital Gains tax, although there will be no gain as the proceeds are calculated to match the acquisition cost (including fees).
+
+Your spouses' accounts should contain an equivalent `Gift-Received` transaction record, with a Buy Value that matches the proceeds of your "No-Gain/No-Loss" disposal.
 
 ### Charity-Sent
 A `Charity-Sent` is a disposal transaction record, it identifies cryptoasset tokens sent to a charity as a gift. It's handling is the same as a `Gift-Sent` - it's purpose is purely descriptive.
@@ -177,10 +217,7 @@ Below is a list of some other situations which you might need to record, but whi
 1. **Airdrop** - If nothing was done in return for them, these tokens can be recorded as a `Gift-Received`. If the distribution of tokens was dependant upon providing a service or other conditions, these tokens can be recorded as `Income`. See [HMRC Guidance on Airdrops](https://www.gov.uk/government/publications/tax-on-cryptoassets/cryptoassets-for-individuals#airdrops).  
 1. **Dust clean** - Some exchanges remove very small amounts (dust) of cryptoasset tokens from wallets after a period of time, since these are too small to be traded or withdrawn. This can be captured as a `Spend` with a Sell Value of 0.  
 1. **Fork** - If a cryptoasset you own is forked and a new cryptoasset is created, this can be recorded as a `Gift-Received` but with a Buy Value of 0. This assumes that you are not splitting the cost between the original and new cryptoasset. Currently, it is not possible to derive a cost from the original cryptoasset and apportion this to the new one. See [HMRC Guidance on Blockchain forks](https://www.gov.uk/government/publications/tax-on-cryptoassets/cryptoassets-for-individuals#fork).
-1. **Gift to spouse** - If cryptoasset tokens are gifted to your spouse, it can be recorded as a `Gift-Sent` but with a Sell Value of 0.
-1. **Margin funding** - Tokens received from an exchange in return for margin funding can be captured as `Income`.
 1. **Lost** - Tokens which have been lost (i.e. the private keys are unrecoverable) have to be reported/accepted by HMRC as a *"negligible value claim"*. These are treated as a disposal, followed by a re-acquisition for the amount lost, since technically you still own the cryptoasset. This can be recorded as a crypto-to-fiat `Trade` with a GBP cost of 0, followed by a fiat-to-crypto `Trade` for exactly the same quantity of the cryptoasset, also with a cost of 0. See [HMRC Guidance on losing public and private keys](https://www.gov.uk/government/publications/tax-on-cryptoassets/cryptoassets-for-individuals#losing-public-and-private-keys).
-1. **Staking** - Tokens received from Proof of Stake (POS) can be recorded as `Mining` or `Income`.
 
 ## Accounting Tool
 Once you have all of your transaction records stored in an Excel or CSV file, you can use `bittytax` to process them and generate your report.
@@ -236,7 +273,7 @@ The **Summary** section provides enough information for you to complete the "Oth
 
 If the disposal proceeds exceed more than 4 times the annual tax-free allowance this is shown. HMRC requires you to report this in your self assessment even if the gain was within your annual allowance.
 
-HMRC also requires you to include details of each gain or loss. You can use the `--summary` option in combination with `--taxyear` to generate a PDF report which only includes the capital gains disposals and summary for that specific tax year, this can then be attached to your self assessment.
+HMRC also requires you to include details of each gain or loss. You can use the `--summary` option in combination with `--taxyear` to generate a PDF report which only includes the capital gains disposals and summary for that specific tax year, this can then be attached to your self assessment. You can see an example summary report [here](https://github.com/BittyTax/BittyTax/blob/master/data/BittyTax_Report_Summary.pdf).
 
 The **Tax Estimate** section is given purely as an estimate. Capital gains tax figures are calculated at both the basic and higher rate, and take into consideration the full tax-free allowance.  
 
@@ -245,7 +282,7 @@ Obviously you would need to take into account other capital gains/losses in the 
 #### Income
 Income events are listed in date order and by asset, with totals per asset (if more than 1 event).
 
-Totals are also given per Income Type (i.e `Mining` and `Income`), as well as the totals for that tax year.
+Totals are also given per Income Type (`Mining`, `Staking`, `Interest`, `Dividend` and `Income`), as well as the totals for that tax year.
 
 You should check with an accountant for how this should be reported according to your personal situation.
 
@@ -263,7 +300,7 @@ The appendix section also contains details of your remaining cryptoasset balance
 
 By default, empty wallets are excluded, this setting can be changed in the config file, see [Config](#config).
 
-The data source used for the current price is the same used for historic price data.
+The data source used to get the latest price is the same as for the historic price data.
 
 ### Processing
 You can turn on debug using the `-d` or `--debug` option to see full details of how the transaction records are processed.
@@ -416,7 +453,7 @@ If the buy and sell quantities do not match, the transaction with the larger qua
 
 This allows a gain or a loss to be calculated for the matching transactions, taking into consideration the combined fees. The transaction containing the remainder is then carried forward, and used in further tax calculations.
 
-In the log, you can see which transactions have been "*same day*" matched, and where a buy or sell has been split.
+In the log, you can see which transactions have been "*same day*" matched, if a buy or sell has been split, and the resulting disposal event.
 
 New transactions created by a split are allocated the next TID in sequence.
 
@@ -436,13 +473,13 @@ See ["*The “bed and breakfast” rule TCGA92/S106A(5) and (5A)*"](https://www.
  
 This tax functions matches sells to buybacks of the same cryptoasset which occur within 30 days.
 
-As with the ["same day"](#match-same-day-rule) rule, if the buy and sell quantities do not match, the transactions will be split. 
+As with the ["same day"](#match-same-day-rule) rule, if the buy and sell quantities do not match, a transaction will be split.
 
 Transactions are sorted by timestamp, and matched in chronological order.
 
 Any matched "same day" transactions are excluded from this rule.
 
-In the log, you can see which transactions have been matched by the "*bed & breakfast*" rule. The number of days between the sell and buyback are also shown.
+In the log, you can see which transactions have been matched by the "*bed & breakfast*" rule, and the resulting disposal event.
 
 ```console
 match bed & breakfast transactions
@@ -501,12 +538,12 @@ section104:   Disposal(section 104) gain=£-0.42 (proceeds=£1,474.27 - cost=£1
 ```
 
 ### Process Income
-This function searches through all the original transactions, and records any that are applicable for income tax. Currently this is only `Mining` and `Income` transaction types.
+This function searches through all the original transactions, and records any that are applicable for income tax. Currently this is `Mining`, `Staking`, `Interest`, `Dividend` and `Income` transaction types.
 
 ## Conversion Tool
 The bittytax conversion tool `bittytax_conv` takes all of the data files exported from your wallets and exchanges, normalises them into the transaction record format required by bittytax, and consolidates them into a single Excel spreadsheet for you to review, make edits, and add any missing records.
 
-Don't worry if you don't have Microsoft Excel installed. These spreadsheets also work with [OpenOffice](https://www.openoffice.org) or [LibreOffice](https://www.libreoffice.org).
+Don't worry if you don't have Microsoft Excel installed. These spreadsheets will work with [OpenOffice](https://www.openoffice.org) or [LibreOffice](https://www.libreoffice.org). You can also use [Google Sheets](https://www.google.co.uk/sheets/about/) or [Numbers for Mac](https://www.apple.com/uk/numbers/), although some conditional formatting is not supported.
 
 Each converted file appears within its own worksheet. Data files of the same format are aggregated together. The transaction records and the original raw data appear side by side, sorted by timestamp, making it easier for you to review and to provide traceability.
 
@@ -518,6 +555,7 @@ For most wallet files, transactions can only be categorised as deposits or withd
 - Electrum
 - HandCash
 - Ledger Live
+- Nexo
 - Qt Wallet (i.e. Bitcoin Core)
 - Trezor
 
@@ -531,11 +569,16 @@ For most wallet files, transactions can only be categorised as deposits or withd
 - Coinbase
 - Coinbase Pro
 - Coinfloor
+- Crypto.com
 - Cryptopia
 - Cryptsy
 - Gatehub
+- Gravity (Bitstocks)
 - HitBTC
+- Hotbit
+- Kraken
 - KuCoin
+- Liquid
 - OKEx
 - Poloniex
 - TradeSatoshi
@@ -543,10 +586,14 @@ For most wallet files, transactions can only be categorised as deposits or withd
 - Wirex
 
 **Explorers:**
+- Energy Web
 - Etherscan
 
+**Accounting:**
+- CoinTracking
+
 ### Usage
-The help command displays a full list of recognised data file formats, as well as details of all command line arguments.
+The help option displays a full list of recognised data file formats, as well as details of all command line arguments.
 
     bittytax_conv --help
 
@@ -594,7 +641,7 @@ A useful feature of the CSV format is that the output can be piped directly into
 
     bittytax_conv --format CSV <filename> | bittytax
 
-This will instantly show you what the remaining balance of each asset should be for that wallet or exchange file. Bear in mind that for some exchanges (I will try and list them below) the data provided will not balance exactly. This is probably due to the rounding used in the export file being different to that used internally by the exchange.
+This will instantly show you what the remaining balance of each asset should be for that wallet or exchange file.
 
 **Recap**
 
@@ -606,14 +653,29 @@ You can also use the conversion tool to convert your wallet or exchange files in
 1. Some exchanges only allow the export of trades. This means transaction records of deposits and withdrawals will have to be created manually, otherwise the assets will not balance.
 1. Bitfinex - when exporting your data, make sure the "*Date Format*" is set to "*DD-MM-YY*" which is the default.
 1. ChangeTip - the conversion tool requires your username(s) to be configured. This is to identify which transactions are a gift received or a gift sent. See [Config](#config).
-1. Coinbase - has many different export formats. Bittytax recognises the "*Transactions history*" and "*Buys, sells, and merchant payouts*" reports (also known as "*Transfers*"). Coinbase provides these reports for each individual wallet (both fiat and crypto). It's possible to end up with duplicate transaction records (i.e. one for the GBP wallet and another for the BTC wallet), which then have to be filtered manually. The converter will flag some of the duplicates it finds by setting the transaction type to Duplicate.
-1. Coinbase Pro - the converter recognises both the "*Fills Report*" export for trades and the "*Account Report*" export for deposits and withdrawals. Please note, the "*Account Report*" also contains details of the trades ("*match*") but with less detail. These are filtered by the tool to prevent duplicates.
-1. GateHub - some exports contain incomplete data (i.e. no counter asset in an "*exchange*"), which are possibly failed transactions. The tool will filter them and raise a warning for you to review, the data still appears to balance correctly. Any Ripple network fees which cannot be attributed to a "*payment*" or an "*exchange*" will be included separately as a Spend transaction record.
+1. Coinbase - the latest "*Transaction history (all-time)*" report format from Coinbase is not as complete and detailed as previous reports. Below is a list of issues I'm aware of, there may be others.
+    * Early referral rewards appear as BTC buys. These are filtered from real buys by checking if the fee is zero.
+    * EUR buys/sells are listed as GBP. The actual currency is identified from the description in the "*Notes*" field.
+    * Fiat deposits/withdrawals are not shown in the report so will not balance.
+    * Crypto deposits/withdrawals which are relayed to/from Coinbase Pro are missing so will not balance.
+
+    If you are also using Coinbase Pro, and your account does not balance, see below.
+1. Coinbase Pro - generate the "*Account Statement*" report and export. This report on its own should balance correctly.
+
+    If you are also using Coinbase, the only way to get these accounts to both balance (with the current reporting) is to treat them as one entity.
+
+    In your transaction records file, change the wallet name from 'Coinbase Pro' to 'Coinbase'. Then remove any deposit or withdrawal transaction records which are for crypto, since these also appear in the Coinbase transaction records as they are relayed. It's important to keep any fiat ones, as these are missing in the Coinbase report. This should make the accounts balance correctly, apart from maybe some deposit fees which you would have to account for from your own records.
+
+    This converter can be very slow with large amounts of data.
+1. CoinTracking - export the "*Trade Prices*" report, but first change the date and time format to include seconds. This can be found under "*Account Settings*" -> "*Display Settings*". Select the special format "*d.m.Y H:i:s*".
+1. Etherscan - for ERC-20 (Tokens) and ERC-721 (NFTs) exports, it is important that the filename contains your ethereum address (Etherscan does this by default), as it is used to determine if transactions are being sent or received.
+1. GateHub - some exports contain incomplete data (i.e. no counter asset in an "*exchange*"), which are possibly failed transactions. The tool will filter them and raise a warning for you to review, the data still appears to balance correctly. Any XRP network fees which cannot be attributed to a "*payment*" or an "*exchange*" will be included separately as a spend transaction record.
+1. Hotbit - the exported file (.xls) is actually a html file, you will need to open this file in Excel and then "*Save As*" the Excel workbook format (.xlsx) before you can convert it.
+1. Kraken - export both the "*Trades*" and  "*Ledgers*" history.
 1. Qt Wallet - by default, unconfirmed transactions are filtered by the conversion tool. If you want to include them, use the `-uc` or `--unconfirmed` command argument.
-1. Exchanges which do not balance (just some dust left) are Cryptopia, OKEx, and TradeSatoshi.
 
 ## Price Tool
-The bittytax price tool `bittytax_price` allows you to lookup current and historic prices of cryptoassets and foreign currencies. Its use is not strictly required as part of the process of completing your accounts but provides a useful insight into the prices which bittytax will assign when it comes to value your cryptoassets in UK pounds.
+The bittytax price tool `bittytax_price` allows you to get the latest and historic prices of cryptoassets and foreign currencies. Its use is not strictly required as part of the process of completing your accounts, but provides a useful insight into the prices which bittytax will assign when it comes to value your cryptoassets in UK pounds.
 
 **Data Sources:**
 The following price data sources are used.
@@ -627,40 +689,89 @@ The following price data sources are used.
 
 The priority (primary, secondary, etc) to which data source is used and for which asset is controlled by the `bittytax.conf` config file, (see [Config](#config)). If your cryptoasset cannot be identified by the primary data source, the secondary source will be used, and so on. 
 
-All price data is cached within the .bittytax/cache folder in your home directory. This is to prevent repeated lookups and reduce load on the APIs which could fail due to throttling.
+All historic price data is cached within the .bittytax/cache folder in your home directory. This is to prevent repeated lookups and reduce load on the APIs which could fail due to throttling.
 
 ### Usage
-To use the tool you need to pass the asset symbol name, either for a cryptoasset (i.e. BTC) or a foreign currency (i.e. USD).  If you wish to perform a historic data lookup, the date must be in the format (YYYY-MM-DD). If the date is not specified, the current price will be returned instead.
 
-    bittytax_price asset [date]
+To get the latest price of an asset, use the `latest` command, followed by the asset symbol name. This can be a cryptoasset (i.e. BTC) or a foreign currency (i.e. USD). An optional quantity can also be specified.
+
+    bittytax_price latest asset [quantity]
 
 If the lookup is successful not only will the price be displayed in the terminal window, but also the data source used and the full name of the asset. This is useful in making sure the asset symbol you are using in your transaction records is the correct one.
 
 ```console
-$ bittytax_price ETH
-1 ETH=£185.51 GBP via CryptoCompare (Ethereum)
+$ bittytax_price latest ETH 0.5
+1 ETH=0.03064 BTC via CryptoCompare (Ethereum)
+1 BTC=10,147.0942 GBP via CoinDesk (Bitcoin)
+1 ETH=£310.91 GBP
+0.5 ETH=£155.45 GBP
 ```
 
-Since there is no standardisation of cryptoasset symbols, it's possible that the same symbol has two different meanings across different data sources. For example, BTCP is Bitcoin Private on CryptoCompare but Bitcoin Pro on CoinGecko.
+If you wish to perform a historic data lookup, use the `historic` command instead, followed by the asset symbol name and the date.  The date can be in either `YYYY-MM-DD` or `DD/MM/YYYY` formats.
 
-If bittytax is not picking up the correct price for you, you can change the config so that the asset symbol only uses the data source you require. See [Config](#config).   
+    bittytax_price historic asset date [quantity]
 
-You can use the help command argument to display a full list of the command line arguments. 
-
-    bittytax_price --help
-
-Another useful function of the price tool is to calculate the historic price of a specific transaction, you can use the `-q` or `--quantity` argument to specify the quantity to price. This can be used as a memory jogger if you are looking at old wallet transactions and trying to remember what it was you spent your crypto on!
+By specifying a quantity to price, you can use the tool to calculate the historic price of a specific transaction. This can be used as a memory jogger if you are looking at old wallet transactions and trying to remember what it was you spent your crypto on!
 
 ```console
-$ bittytax_price BTC 2014-06-24 -q 0.002435
-1 BTC=£338.59 GBP via CoinDesk (Bitcoin)
+$ bittytax_price historic BTC 2014-06-24 0.002435
+1 BTC=338.5947 GBP via CoinDesk (Bitcoin)
+1 BTC=£338.59 GBP
 0.002435 BTC=£0.82 GBP
 ```
+
+Since there is no standardisation of cryptoasset symbols, it's possible that the same symbol has different meanings across different data sources. For example, EDG is Edgeless on CryptoCompare but Edgeware on CoinGecko.
+
+A quick way to check this is to use the `list` command, followed by an asset symbol name.
+
+    bittytax_price list [asset]
+
+This command will return any matches it finds for that asset symbol name across all the data sources.
+
+```console
+$ bittytax_price list EDG
+EDG (Edgeware) via CoinGecko
+EDG (Edgeless) via CoinPaprika
+EDG (Edgeless) via CryptoCompare
+```
+
+You can also get a complete list of all supported assets (in alphabetical order) by not specifying any asset.
+
+If bittytax is not picking up the correct asset price for you, you can change the config so that the asset symbol only uses the data source you require. See [Config](#config).
+
+The `latest` and `historic` price commands also give you the `-ds` option to override the config and specify the data source directly. It's a quick way to check asset prices are correct before updating your config.
+
+```console
+$ bittytax_price historic EDG 2020-07-04 -ds CoinGecko
+1 EDG=0.000000637935405438 BTC via CoinGecko (Edgeware)
+1 BTC=7,266.832558992103 GBP via CoinGecko (Bitcoin)
+1 EDG=£0.00 GBP
+```
+
+You can also set the data source to `ALL`, this will return price data for all data sources which have a match. If the [Price Data](#price-data) appendix in your tax report has any missing data, you can use this method to find prices. Some data sources have price history going back further than others.
+
+```console
+$ bittytax_price historic EDG 2020-07-04 -ds ALL
+1 EDG=0.000000637935405438 BTC via CoinGecko (Edgeware)
+1 BTC=7,266.832558992103 GBP via CoinGecko (Bitcoin)
+1 EDG=£0.00 GBP
+1 EDG=0.00000089 BTC via CoinPaprika (Edgeless)
+1 BTC=7,339.45 GBP via CryptoCompare (Bitcoin)
+1 EDG=£0.01 GBP
+1 EDG=0.000001 BTC via CryptoCompare (Edgeless)
+1 BTC=7,339.45 GBP via CryptoCompare (Bitcoin)
+1 EDG=£0.01 GBP
+```
+
+To get a full details of all the arguments you can use the help option, either on its own or for a specific command.
+
+    bittytax_price [command] --help
 
 ### Notes:
 1. Not all data source APIs return prices in UK pounds (GBP), for this reason cryptoasset prices are requested in BTC and then converted from BTC into UK pounds (GBP) as a two step process.
 1. Some APIs return multiple prices for the same day. If this is the case then the 'close' price is always used.
-1. Historical price data is held for each data source as a separate JSON file in the .bittytax/cache folder within your home directory.
+1. Historical price data is cached for each data source as a separate JSON file in the .bittytax/cache folder within your home directory.
+1. CoinPaprika does not support BTC/GBP historic prices.
 
 ## Config
 The `bittytax.conf` file resides in the .bittytax folder within your home directory.
@@ -719,12 +830,12 @@ This parameter overrides the any data sources defined by `data_source_fiat` and 
 
 By default, only an entry for BTC exists. This selects CoinDesk as the primary data source for bitcoin prices and CryptoCompare as the secondary. 
 
-If, for example you wanted BTCP to use only the CoinGecko data source, you would change the config as follows.
+If, for example you wanted EDG to use only the CoinGecko data source, you would change the config as follows.
 
 ```yaml
 data_source_select: {
     'BTC': ['CoinDesk', 'CryptoCompare'],
-    'BTCP': ['CoinGecko'],
+    'EDG': ['CoinGecko'],
     }
 ```
 
@@ -778,9 +889,6 @@ Let me know what you would find most useful or any new features not mentioned yo
 - Convert data from clipboard. Some wallets/exchanges don't provide an export function. It should be possible to copy the transaction data directly from the webpage and have the conversion tool analyse this data and then convert it into the transaction record format.
 - Add exchange APIs to automatically convert new trades into the transaction record format.
 
-### Price Tool
-- Add command option to list supported cryptoassets symbols/names for a specific data source(s).
-
 ### Accounting Tool
 - BittyTax integration with Excel. The command line interface is not for everyone. By integrating with Excel (or OpenOffice), this would greatly improve the user experience.
 - Add export function for QuickBooks (QBXML format), to include transactions records with exchange rate data added.
@@ -799,11 +907,24 @@ Let me know what you would find most useful or any new features not mentioned yo
 **HMRC Webinar**
 - https://www.youtube.com/watch?v=EzNebqkw13w
 
+## Donations ##
+If you would like to support this project, you can donate via [PayPal]. All donations are gratefully received.
+
+Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of this project. Nano Nano Ltd is not a charity, or non-profit organisation.
+
 [version-badge]: https://img.shields.io/pypi/v/BittyTax.svg
 [license-badge]: https://img.shields.io/pypi/l/BittyTax.svg
 [python-badge]: https://img.shields.io/pypi/pyversions/BittyTax.svg
+[downloads-badge]: https://img.shields.io/pypi/dm/bittytax
+[github-stars-badge]: https://img.shields.io/github/stars/BittyTax/BittyTax?color=yellow
+[twitter-badge]: https://img.shields.io/twitter/follow/bitty_tax?color=%231DA1F2&style=flat
 [discord-badge]: https://img.shields.io/discord/581493570112847872.svg
+[donation-badge]: https://img.shields.io/badge/donate-PayPal-179bd7.svg
 [version]: https://pypi.org/project/BittyTax/
 [license]: https://github.com/BittyTax/BittyTax/blob/master/LICENSE
-[discord]: https://discord.gg/NHE3QFt
 [python]: https://wiki.python.org/moin/BeginnersGuide/Download
+[downloads]: https://pypistats.org/packages/bittytax
+[github-stars]: https://github.com/BittyTax/BittyTax/stargazers
+[twitter]: https://twitter.com/intent/follow?screen_name=bitty_tax
+[discord]: https://discord.gg/NHE3QFt
+[PayPal]: https://www.paypal.com/donate?hosted_button_id=HVBQW8TBEHXLC

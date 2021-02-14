@@ -7,9 +7,9 @@ class TransactionRecord(object):
     TYPE_DEPOSIT = 'Deposit'
     TYPE_MINING = 'Mining'
     TYPE_STAKING = 'Staking'
-    TYPE_INCOME = 'Income'
     TYPE_INTEREST = 'Interest'
     TYPE_DIVIDEND = 'Dividend'
+    TYPE_INCOME = 'Income'
     TYPE_GIFT_RECEIVED = 'Gift-Received'
     TYPE_WITHDRAWAL = 'Withdrawal'
     TYPE_SPEND = 'Spend'
@@ -96,6 +96,19 @@ class TransactionRecord(object):
         if note:
             return "'%s' " % note
         return ''
+      
+    @staticmethod
+    def _format_timestamp(timestamp):
+        if timestamp.microsecond:
+            return timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f %Z')
+        else:
+            return timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
+
+    @staticmethod
+    def _format_decimal(decimal):
+        if decimal is None:
+            return ''
+        return '{:0f}'.format(decimal.normalize())
 
     def __eq__(self, other):
         return self.timestamp == other.timestamp
@@ -118,7 +131,7 @@ class TransactionRecord(object):
                 self._format_value(self.sell.proceeds),
                 self._format_fee(),
                 self.wallet,
-                self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+                self._format_timestamp(self.timestamp),
                 self._format_note(self.note),
                 self.tid[0])
         elif self.buy:
@@ -129,7 +142,7 @@ class TransactionRecord(object):
                 self._format_value(self.buy.cost),
                 self._format_fee(),
                 self.wallet,
-                self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+                self._format_timestamp(self.timestamp),
                 self._format_note(self.note),
                 self.tid[0])
         elif self.sell:
@@ -140,8 +153,54 @@ class TransactionRecord(object):
                 self._format_value(self.sell.proceeds),
                 self._format_fee(),
                 self.wallet,
-                self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+                self._format_timestamp(self.timestamp),
                 self._format_note(self.note),
                 self.tid[0])
 
         return ''
+
+    def to_csv(self):
+        if self.buy and self.sell:
+            return [self.t_type,
+                    self._format_decimal(self.buy.quantity),
+                    self.buy.asset,
+                    self._format_decimal(self.buy.cost),
+                    self._format_decimal(self.sell.quantity),
+                    self.sell.asset,
+                    self._format_decimal(self.sell.proceeds),
+                    self._format_decimal(self.fee.quantity) if self.fee else '',
+                    self.fee.asset if self.fee else '',
+                    self._format_decimal(self.fee.proceeds) if self.fee else '',
+                    self.wallet,
+                    self._format_timestamp(self.timestamp),
+                    self.note]
+        elif self.buy:
+            return [self.t_type,
+                    self._format_decimal(self.buy.quantity),
+                    self.buy.asset,
+                    self._format_decimal(self.buy.cost),
+                    '',
+                    '',
+                    '',
+                    self._format_decimal(self.fee.quantity) if self.fee else '',
+                    self.fee.asset if self.fee else '',
+                    self._format_decimal(self.fee.proceeds) if self.fee else '',
+                    self.wallet,
+                    self._format_timestamp(self.timestamp),
+                    self.note]
+        elif self.sell:
+            return [self.t_type,
+                    '',
+                    '',
+                    '',
+                    self._format_decimal(self.sell.quantity),
+                    self.sell.asset,
+                    self._format_decimal(self.sell.proceeds),
+                    self._format_decimal(self.fee.quantity) if self.fee else '',
+                    self.fee.asset if self.fee else '',
+                    self._format_decimal(self.fee.proceeds) if self.fee else '',
+                    self.wallet,
+                    self._format_timestamp(self.timestamp),
+                    self.note]
+
+        return []

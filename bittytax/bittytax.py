@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Cryptoasset accounting, auditing and UK tax calculations (Capital Gains/Income Tax)
+# Cryptocurrency tax calculator for UK tax rules
 # (c) Nano Nano Ltd 2019
 
 import argparse
@@ -15,10 +15,11 @@ import xlrd
 from .version import __version__
 from .config import config
 from .import_records import ImportRecords
+from .export_records import ExportRecords
 from .transactions import TransactionHistory
 from .audit import AuditRecords
 from .price.valueasset import ValueAsset
-from .price.exceptions import UnexpectedDataSourceError
+from .price.exceptions import DataSourceError
 from .tax import TaxCalculator, CalculateCapitalGains as CCG
 from .report import ReportLog, ReportPdf
 from .exceptions import ImportFailureError
@@ -46,17 +47,17 @@ def main():
     parser.add_argument('-d',
                         '--debug',
                         action='store_true',
-                        help="enabled debug logging")
+                        help="enable debug logging")
     parser.add_argument('-ty',
                         '--taxyear',
                         type=validate_year,
                         help="tax year must be in the range (%s-%s)" % (
                             min(CCG.CG_DATA_INDIVIDUALS),
                             max(CCG.CG_DATA_INDIVIDUALS)))
-    parser.add_argument('-s',
-                        '--skipaudit',
+    parser.add_argument('--skipint',
+                        dest='skip_integrity',
                         action='store_true',
-                        help="skip auditing of transaction records")
+                        help="skip integrity check")
     parser.add_argument('--summary',
                         action='store_true',
                         help="only output the capital gains summary in the tax report")
@@ -67,6 +68,9 @@ def main():
     parser.add_argument('--nopdf',
                         action='store_true',
                         help="don't output PDF report, output report to terminal only")
+    parser.add_argument('--export',
+                        action='store_true',
+                        help="export your transaction records populated with price data")
 
     config.args = parser.parse_args()
     config.args.nocache = False
@@ -85,16 +89,28 @@ def main():
     except ImportFailureError:
         parser.exit()
 
-    if not config.args.skipaudit and not config.args.summary:
-        audit = AuditRecords(transaction_records)
-    else:
-        audit = None
+    if config.args.export:
+        do_export(transaction_records)
+        parser.exit()
+
+    audit = AuditRecords(transaction_records)
 
     try:
-        tax, value_asset = do_tax(transaction_records,
-                                  config.args.taxyear,
-                                  config.args.summary)
-    except UnexpectedDataSourceError as e:
+        tax, value_asset = do_tax(transaction_records)
+        if not config.args.skip_integrity:
+            int_passed = do_integrity_check(audit, tax.holdings)
+            if not int_passed:
+                parser.exit()
+
+        if not config.args.summary:
+            tax.process_income()
+
+        do_each_tax_year(tax,
+                         config.args.taxyear,
+                         config.args.summary,
+                         value_asset)
+
+    except DataSourceError as e:
         parser.exit("%sERROR%s %s" % (
             Back.RED+Fore.BLACK, Back.RESET+Fore.RED, e))
 
@@ -145,7 +161,7 @@ def do_import(filename):
 
     return import_records.get_records()
 
-def do_tax(transaction_records, tax_year, summary):
+def do_tax(transaction_records):
     value_asset = ValueAsset()
     transaction_history = TransactionHistory(transaction_records, value_asset)
 
@@ -153,15 +169,44 @@ def do_tax(transaction_records, tax_year, summary):
     tax.pool_same_day()
     tax.match(tax.DISPOSAL_SAME_DAY)
     tax.match(tax.DISPOSAL_BED_AND_BREAKFAST)
+    tax.process_section104()
+    return tax, value_asset
 
-    if config.args.debug:
-        tax.output_transactions()
+def do_integrity_check(audit, holdings):
+    int_passed = True
 
-    tax.process_unmatched()
+    if config.transfers_include:
+        transfer_mismatch = transfer_mismatches(holdings)
+    else:
+        transfer_mismatch = False
 
-    if not summary:
-        tax.process_income()
+    pools_match = audit.compare_pools(holdings)
 
+    if not pools_match or transfer_mismatch:
+        int_passed = False
+
+    print("%sintegrity check: %s%s" % (
+        Fore.CYAN, Fore.YELLOW, 'passed' if int_passed else 'failed'))
+
+    if transfer_mismatch:
+        print("%sWARNING%s Integrity check failed: disposal(s) detected during transfer, "
+              "turn on logging [-d] to see transactions" % (
+                  Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW))
+    elif not pools_match:
+        if not config.transfers_include:
+            print("%sWARNING%s Integrity check failed: audit does not match section 104 pools, "
+                  "please check Withdrawals and Deposits for missing fees" % (
+                      Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW))
+        else:
+            print("%sERROR%s Integrity check failed: audit does not match section 104 pools" % (
+                Back.RED+Fore.BLACK, Back.RESET+Fore.RED))
+        audit.report_failures()
+    return int_passed
+
+def transfer_mismatches(holdings):
+    return bool([asset for asset in holdings if holdings[asset].mismatches])
+
+def do_each_tax_year(tax, tax_year, summary, value_asset):
     if tax_year:
         print("%scalculating tax year %d/%d" % (
             Fore.CYAN, tax_year - 1, tax_year))
@@ -185,3 +230,8 @@ def do_tax(transaction_records, tax_year, summary):
             tax.calculate_holdings(value_asset)
 
     return tax, value_asset
+
+def do_export(transaction_records):
+    value_asset = ValueAsset()
+    TransactionHistory(transaction_records, value_asset)
+    ExportRecords(transaction_records).write_csv()

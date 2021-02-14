@@ -28,8 +28,8 @@ class TransactionHistory(object):
 
             self.get_all_values(tr)
 
-            # Attribute the fee value to the buy, the sell or both
-            if tr.fee and tr.fee.disposal and tr.fee.proceeds is not None:
+            # Attribute the fee value (allowable cost) to the buy, the sell or both
+            if tr.fee and tr.fee.disposal and tr.fee.proceeds:
                 if tr.buy and tr.sell:
                     if tr.buy.asset in config.fiat_list:
                         tr.sell.fee_value = tr.fee.proceeds
@@ -38,11 +38,19 @@ class TransactionHistory(object):
                         tr.buy.fee_value = tr.fee.proceeds
                         tr.buy.fee_fixed = tr.fee.proceeds_fixed
                     else:
-                        # Split fee between both
-                        tr.buy.fee_value = tr.fee.proceeds / 2
-                        tr.buy.fee_fixed = tr.fee.proceeds_fixed
-                        tr.sell.fee_value = tr.fee.proceeds - tr.buy.fee_value
-                        tr.sell.fee_fixed = tr.fee.proceeds_fixed
+                        # Crypto-to-crypto trades
+                        if config.trade_allowable_cost_type == config.TRADE_ALLOWABLE_COST_BUY:
+                            tr.buy.fee_value = tr.fee.proceeds
+                            tr.buy.fee_fixed = tr.fee.proceeds_fixed
+                        elif config.trade_allowable_cost_type == config.TRADE_ALLOWABLE_COST_SELL:
+                            tr.sell.fee_value = tr.fee.proceeds
+                            tr.sell.fee_fixed = tr.fee.proceeds_fixed
+                        else:
+                            # Split fee between both
+                            tr.buy.fee_value = tr.fee.proceeds / 2
+                            tr.buy.fee_fixed = tr.fee.proceeds_fixed
+                            tr.sell.fee_value = tr.fee.proceeds - tr.buy.fee_value
+                            tr.sell.fee_fixed = tr.fee.proceeds_fixed
                 elif tr.buy:
                     tr.buy.fee_value = tr.fee.proceeds
                     tr.buy.fee_fixed = tr.fee.proceeds_fixed
@@ -50,17 +58,19 @@ class TransactionHistory(object):
                     tr.sell.fee_value = tr.fee.proceeds
                     tr.sell.fee_fixed = tr.fee.proceeds_fixed
 
-            if tr.buy and tr.buy.asset not in config.fiat_list:
+            if tr.buy and tr.buy.quantity and tr.buy.asset not in config.fiat_list:
                 tr.buy.set_tid()
                 self.transactions.append(tr.buy)
                 if config.args.debug:
                     print("%ssplit:   %s" % (Fore.GREEN, tr.buy))
-            if tr.sell and tr.sell.asset not in config.fiat_list:
+
+            if tr.sell and tr.sell.quantity and tr.sell.asset not in config.fiat_list:
                 tr.sell.set_tid()
                 self.transactions.append(tr.sell)
                 if config.args.debug:
                     print("%ssplit:   %s" % (Fore.GREEN, tr.sell))
-            if tr.fee and tr.fee.asset not in config.fiat_list:
+
+            if tr.fee and tr.fee.quantity and tr.fee.asset not in config.fiat_list:
                 tr.fee.set_tid()
                 self.transactions.append(tr.fee)
                 if config.args.debug:
@@ -171,14 +181,11 @@ class TransactionBase(object):
         if self.quantity is None:
             return ''
         return '{:0,f}'.format(self.quantity.normalize())
-
+      
     def _format_note(self):
         if self.note:
             return "'%s' " % self.note
         return ''
-
-    def _format_matched(self):
-        return '//' if self.matched else ''
 
     def _format_pooled(self, bold=False):
         if self.pooled:
@@ -196,6 +203,12 @@ class TransactionBase(object):
                 config.CCY)
 
         return ''
+
+    def _format_timestamp(self):
+        if self.timestamp.microsecond:
+            return self.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f %Z')
+        else:
+            return self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
 
     def __eq__(self, other):
         return (self.asset, self.timestamp) == (other.asset, other.timestamp)
@@ -222,9 +235,9 @@ class Buy(TransactionBase):
     TYPE_DEPOSIT = TransactionRecord.TYPE_DEPOSIT
     TYPE_MINING = TransactionRecord.TYPE_MINING
     TYPE_STAKING = TransactionRecord.TYPE_STAKING
-    TYPE_INCOME = TransactionRecord.TYPE_INCOME
     TYPE_INTEREST = TransactionRecord.TYPE_INTEREST
     TYPE_DIVIDEND = TransactionRecord.TYPE_DIVIDEND
+    TYPE_INCOME = TransactionRecord.TYPE_INCOME
     TYPE_GIFT_RECEIVED = TransactionRecord.TYPE_GIFT_RECEIVED
     TYPE_TRADE = TransactionRecord.TYPE_TRADE
 
@@ -304,8 +317,7 @@ class Buy(TransactionBase):
         return ''
 
     def __str__(self, pooled_bold=False, quantity_bold=False):
-        return "%s%s%s %s%s %s %s%s%s%s '%s' %s %s[TID:%s]%s" % (
-            self._format_matched(),
+        return "%s%s %s%s %s %s%s%s%s '%s' %s %s[TID:%s]%s" % (
             type(self).__name__.upper(),
             '*' if not self.acquisition else '',
             self.t_type,
@@ -316,7 +328,7 @@ class Buy(TransactionBase):
             self._format_cost(),
             self._format_fee(),
             self.wallet,
-            self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+            self._format_timestamp(),
             self._format_note(),
             self._format_tid(),
             self._format_pooled(pooled_bold))
@@ -404,8 +416,7 @@ class Sell(TransactionBase):
         return ''
 
     def __str__(self, pooled_bold=False, quantity_bold=False):
-        return "%s%s%s %s%s %s %s%s%s%s '%s' %s %s[TID:%s]%s" % (
-            self._format_matched(),
+        return "%s%s %s%s %s %s%s%s%s '%s' %s %s[TID:%s]%s" % (
             type(self).__name__.upper(),
             '*' if not self.disposal else '',
             self.t_type,
@@ -416,7 +427,7 @@ class Sell(TransactionBase):
             self._format_proceeds(),
             self._format_fee(),
             self.wallet,
-            self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z'),
+            self._format_timestamp(),
             self._format_note(),
             self._format_tid(),
             self._format_pooled(pooled_bold))

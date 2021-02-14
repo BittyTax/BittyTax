@@ -1,58 +1,138 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2020
 
-import re
-
 from ..config import config
-from .datasource import DataSourceBase
+from .datasource import DataSourceBase, ExchangeRatesAPI, RatesAPI
+from .exceptions import UnexpectedDataSourceError
 
 class AssetData(object):
+    FIAT_DATASOURCES = (ExchangeRatesAPI.__name__, RatesAPI.__name__)
+
     def __init__(self):
         self.data_sources = {}
 
-        for data_source in DataSourceBase.__subclasses__():
-            if config.args.datasource and data_source.__name__.upper() == config.args.datasource \
-                    or not config.args.datasource:
-                self.data_sources[data_source.__name__.upper()] = data_source()
+        for data_source_class in DataSourceBase.__subclasses__():
+            self.data_sources[data_source_class.__name__.upper()] = data_source_class()
 
-    def get_asset(self, symbol):
-        assets = []
-        if config.args.datasource:
-            if symbol in self.data_sources[config.args.datasource].assets:
-                assets.append({'symbol': symbol,
-                               'name': self.data_sources[config.args.datasource].assets[symbol],
-                               'data_source': self.data_sources[config.args.datasource].name()})
+    def get_assets(self, req_symbol, req_data_source, search):
+        if not req_data_source or req_data_source == 'ALL':
+            data_sources = self.data_sources
         else:
-            for data_source in sorted(self.data_sources):
-                if symbol in self.data_sources[data_source].assets:
-                    assets.append({'symbol': symbol,
-                                   'name': self.data_sources[data_source].assets[symbol],
-                                   'data_source': self.data_sources[data_source].name()})
-        return assets
+            data_sources = [req_data_source]
 
-    def all_assets(self):
-        assets = []
+        asset_data = []
+        for ds in data_sources:
+            if not req_symbol:
+                assets = self.data_sources[ds].get_list()
+            else:
+                assets = {}
+                assets[req_symbol] = self.data_sources[ds].get_list().get(req_symbol, [])
+            for symbol in assets:
+                for asset_id in assets[symbol]:
+                    if search:
+                        match = self.do_search(symbol, asset_id['name'])
+                    else:
+                        match = True
 
-        if config.args.datasource:
-            for symbol in self.data_sources[config.args.datasource].assets:
-                assets.append({'symbol': symbol,
-                               'name': self.data_sources[config.args.datasource].assets[symbol],
-                               'data_source': self.data_sources[config.args.datasource].name()})
+                    if match:
+                        asset_data.append({'symbol':symbol,
+                                           'name': asset_id['name'],
+                                           'data_source': self.data_sources[ds].name(),
+                                           'id': asset_id['id'],
+                                           'priority': self._is_priority(symbol,
+                                                                         asset_id['id'], ds)})
+
+        return sorted(asset_data, key=lambda a: a['symbol'].lower())
+
+    def _is_priority(self, symbol, asset_id, data_source):
+        if symbol in config.data_source_select:
+            ds_priority = [ds.split(':')[0] for ds in config.data_source_select[symbol]]
+        elif symbol in config.fiat_list:
+            ds_priority = config.data_source_fiat
         else:
-            for data_source in self.data_sources:
-                for symbol in self.data_sources[data_source].assets:
-                    assets.append({'symbol': symbol,
-                                   'name': self.data_sources[data_source].assets[symbol],
-                                   'data_source': self.data_sources[data_source].name()})
+            ds_priority = config.data_source_crypto
 
-            if config.args.duplicates:
-                asset_names = {}
-                for asset in assets:
-                    asset_names[self.filter_name(asset['symbol']+asset['name'])] = asset
-                assets = asset_names.values()
-
-        return sorted(assets, key=lambda a: a['symbol'].lower())
+        for ds in ds_priority:
+            if ds.upper() in self.data_sources:
+                if symbol in self.data_sources[ds.upper()].assets:
+                    if ds.upper() == data_source.upper() and \
+                            self.data_sources[ds.upper()].assets[symbol].get('id') == asset_id:
+                        return True
+                    return False
+            else:
+                raise UnexpectedDataSourceError(ds, DataSourceBase)
+        return False
 
     @staticmethod
-    def filter_name(name):
-        return re.sub(r'[^\w]', '', name).upper()
+    def do_search(symbol, name):
+        for string in config.args.search:
+            if string.upper() not in symbol.upper() + ' ' + name.upper():
+                return False
+
+        return True
+
+    def get_latest_price_ds(self, req_symbol, req_data_source):
+        if req_data_source == 'ALL':
+            data_sources = self.data_sources
+        else:
+            data_sources = [req_data_source]
+
+        all_assets = []
+        for ds in data_sources:
+            for asset_id in self.data_sources[ds].get_list().get(req_symbol, []):
+                asset_id['symbol'] = req_symbol
+                asset_id['data_source'] = self.data_sources[ds].name()
+                asset_id['priority'] = self._is_priority(asset_id['symbol'],
+                                                         asset_id['id'],
+                                                         asset_id['data_source'])
+
+                if req_symbol == 'BTC' or asset_id['data_source'] in self.FIAT_DATASOURCES:
+                    asset_id['quote'] = config.CCY
+                else:
+                    asset_id['quote'] = 'BTC'
+
+                asset_id['price'] = self.data_sources[ds].get_latest(req_symbol,
+                                                                     asset_id['quote'],
+                                                                     asset_id['id'])
+                all_assets.append(asset_id)
+        return all_assets
+
+    def get_historic_price_ds(self, req_symbol, req_date, req_data_source):
+        if req_data_source == 'ALL':
+            data_sources = self.data_sources
+        else:
+            data_sources = [req_data_source]
+
+        all_assets = []
+        for ds in data_sources:
+            for asset_id in self.data_sources[ds].get_list().get(req_symbol, []):
+                asset_id['symbol'] = req_symbol
+                asset_id['data_source'] = self.data_sources[ds].name()
+                asset_id['priority'] = self._is_priority(asset_id['symbol'],
+                                                         asset_id['id'],
+                                                         asset_id['data_source'])
+
+                if req_symbol == 'BTC' or asset_id['data_source'] in self.FIAT_DATASOURCES:
+                    asset_id['quote'] = config.CCY
+                else:
+                    asset_id['quote'] = 'BTC'
+
+                date = req_date.strftime('%Y-%m-%d')
+                pair = req_symbol + '/' + asset_id['quote']
+
+                if not config.args.nocache:
+                    # check cache first
+                    if pair in self.data_sources[ds].prices and \
+                            date in self.data_sources[ds].prices[pair]:
+                        asset_id['price'] = self.data_sources[ds].prices[pair][date]['price']
+                        all_assets.append(asset_id)
+                        continue
+
+                self.data_sources[ds].get_historical(req_symbol, asset_id['quote'],
+                                                     req_date, asset_id['id'])
+                if pair in self.data_sources[ds].prices and \
+                       date in self.data_sources[ds].prices[pair]:
+                    asset_id['price'] = self.data_sources[ds].prices[pair][date]['price']
+
+                all_assets.append(asset_id)
+        return all_assets
