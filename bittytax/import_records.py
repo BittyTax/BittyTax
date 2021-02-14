@@ -204,8 +204,13 @@ class TransactionRow(object):
                 # A fee spend is normally a disposal unless it's part of a transfer
                 fee.disposal = False
 
+        if len(self.row) == len(self.HEADER):
+            note = self.row[12]
+        else:
+            note = ''
+
         self.t_record = TransactionRecord(t_type, buy, sell, fee, self.row[10],
-                                          self.parse_timestamp(self.row[11]), self.row[12])
+                                          self.parse_timestamp(self.row[11]), note)
 
     @staticmethod
     def parse_timestamp(timestamp_str):

@@ -32,7 +32,8 @@ def parse_trezor(data_row, parser, filename):
                                                  buy_asset=symbol,
                                                  fee_quantity=Decimal(in_row[7])-Decimal(in_row[6]),
                                                  fee_asset=symbol,
-                                                 wallet=WALLET)
+                                                 wallet=WALLET,
+                                                 note=in_row[4])
     elif in_row[5] == "OUT":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
@@ -41,7 +42,8 @@ def parse_trezor(data_row, parser, filename):
                                                  fee_quantity=abs(Decimal(in_row[7]))
                                                  -Decimal(in_row[6]),
                                                  fee_asset=symbol,
-                                                 wallet=WALLET)
+                                                 wallet=WALLET,
+                                                 note=in_row[4])
     elif in_row[5] == "SELF":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
@@ -49,7 +51,8 @@ def parse_trezor(data_row, parser, filename):
                                                  sell_asset=symbol,
                                                  fee_quantity=abs(Decimal(in_row[7])),
                                                  fee_asset=symbol,
-                                                 wallet=WALLET)
+                                                 wallet=WALLET,
+                                                 note=in_row[4])
     else:
         raise UnexpectedTypeError(5, parser.in_header[5], in_row[5])
 

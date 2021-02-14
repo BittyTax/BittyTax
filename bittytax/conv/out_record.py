@@ -24,7 +24,7 @@ class TransactionOutRecord(object):
                  buy_quantity=None, buy_asset='', buy_value=None,
                  sell_quantity=None, sell_asset='', sell_value=None,
                  fee_quantity=None, fee_asset='', fee_value=None,
-                 wallet=''):
+                 wallet='', note=''):
 
         self.t_type = t_type
         self.buy_quantity = Decimal(buy_quantity) if buy_quantity is not None else None
@@ -38,6 +38,7 @@ class TransactionOutRecord(object):
         self.fee_value = Decimal(fee_value) if fee_value is not None else None
         self.wallet = wallet
         self.timestamp = timestamp
+        self.note = note
 
     @staticmethod
     def format_quantity(quantity):

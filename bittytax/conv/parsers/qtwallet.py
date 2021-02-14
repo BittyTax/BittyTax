@@ -41,19 +41,22 @@ def parse_qt_wallet(data_row, parser, _filename):
                                                  data_row.timestamp,
                                                  buy_quantity=amount,
                                                  buy_asset=symbol,
-                                                 wallet=WALLET)
+                                                 wallet=WALLET,
+                                                 note=in_row[3])
     elif in_row[2] == "Sent to":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=amount,
                                                  sell_asset=symbol,
-                                                 wallet=WALLET)
+                                                 wallet=WALLET,
+                                                 note=in_row[3])
     elif in_row[2] == "Mined":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_MINING,
                                                  data_row.timestamp,
                                                  buy_quantity=amount,
                                                  buy_asset=symbol,
-                                                 wallet=WALLET)
+                                                 wallet=WALLET,
+                                                 note=in_row[3])
     elif in_row[2] == "Payment to yourself":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
@@ -61,13 +64,15 @@ def parse_qt_wallet(data_row, parser, _filename):
                                                  sell_asset=symbol,
                                                  fee_quantity=amount,
                                                  fee_asset=symbol,
-                                                 wallet=WALLET)
+                                                 wallet=WALLET,
+                                                 note=in_row[3])
     elif in_row[2] == "Name operation":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
                                                  data_row.timestamp,
                                                  sell_quantity=amount,
                                                  sell_asset=symbol,
-                                                 wallet=WALLET)
+                                                 wallet=WALLET,
+                                                 note=in_row[3])
     else:
         raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
 

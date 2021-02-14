@@ -1,5 +1,15 @@
 # Change Log
 ## [Unreleased]
+Important:- A new Note field has been added to the end of the transaction record format (column M), this is used to add a description to a transaction. It is recommended that you add the additional Note column to all your existing transaction records.
+### Added
+- Accounting tool: new Note field added to transaction record format.
+- Accounting tool: note field added to income report.
+- Conversion tool: note field added to the Excel and CSV output.
+### Changed
+- Elecrum parser: Note field is mapped from 'label'.
+- HandCash parser: Note field is mapped from 'note'.
+- Qt Wallet parser: Note field is mapped from 'Label'.
+- Trezor parser: Note field is mapped from 'Address Label'.
 ### Fixed
 - Cell conversion of imported Excel data safer for python 2.
 - Circle parser: filter out other currency symbols '£€$'.
