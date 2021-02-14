@@ -1,15 +1,6 @@
 # Change Log
 ## [Unreleased]
 Important:- A new Note field has been added to the end of the transaction record format (column M), this is used to add a description to a transaction. It is recommended that you add the additional Note column to all your existing transaction records.
-### Added
-- Accounting tool: new Note field added to transaction record format.
-- Accounting tool: note field added to income report.
-- Conversion tool: note field added to the Excel and CSV output.
-### Changed
-- Elecrum parser: Note field is mapped from 'label'.
-- HandCash parser: Note field is mapped from 'note'.
-- Qt Wallet parser: Note field is mapped from 'Label'.
-- Trezor parser: Note field is mapped from 'Address Label'.
 ### Fixed
 - Accounting tool: "xlrd.biffh.XLRDError: Excel xlsx file; not supported" Exception. ([#36](https://github.com/BittyTax/BittyTax/issues/36))
 - Coinbase parser: added support for Convert transactions ([#46](https://github.com/BittyTax/BittyTax/issues/46))
@@ -33,6 +24,9 @@ Important:- A new Note field has been added to the end of the transaction record
 - Accounting tool: warning given if disposal detected between transfers.
 - Accounting tool: integrity check (audit balances against section 104 pools).
 - Accounting tool: skip integrity check (--skipint) option added.
+- Accounting tool: new Note field added to transaction record format.
+- Accounting tool: note field added to income report.
+- Conversion tool: note field added to the Excel and CSV output.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
@@ -46,6 +40,10 @@ Important:- A new Note field has been added to the end of the transaction record
 - Accounting tool: same day pooling debug now only shows the pooled transactions.
 - Accounting tool: section 104 debug also shows matched transactions.
 - Crypto.com parser: added "campaign_reward" transaction type. ([#64](https://github.com/BittyTax/BittyTax/issues/64))
+- Elecrum parser: Note field is mapped from 'label'.
+- HandCash parser: Note field is mapped from 'note'.
+- Qt Wallet parser: Note field is mapped from 'Label'.
+- Trezor parser: Note field is mapped from 'Address Label'.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.
