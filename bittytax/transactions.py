@@ -189,7 +189,7 @@ class TransactionBase(object):
 
     def _format_pooled(self, bold=False):
         if self.pooled:
-            return " %s[%s]%s" % (
+            return " %s(%s)%s" % (
                 Style.BRIGHT if bold else '',
                 len(self.pooled),
                 Style.NORMAL if bold else '')
