@@ -96,13 +96,12 @@ class TransactionRecord(object):
         if note:
             return "'%s' " % note
         return ''
-      
+
     @staticmethod
     def _format_timestamp(timestamp):
         if timestamp.microsecond:
             return timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f %Z')
-        else:
-            return timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
+        return timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
 
     @staticmethod
     def _format_decimal(decimal):

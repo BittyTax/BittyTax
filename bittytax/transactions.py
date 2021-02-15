@@ -181,7 +181,7 @@ class TransactionBase(object):
         if self.quantity is None:
             return ''
         return '{:0,f}'.format(self.quantity.normalize())
-      
+
     def _format_note(self):
         if self.note:
             return "'%s' " % self.note
