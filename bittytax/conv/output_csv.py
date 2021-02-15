@@ -17,7 +17,7 @@ class OutputBase(object):
                            'Buy Quantity', 'Buy Asset', 'Buy Value',
                            'Sell Quantity', 'Sell Asset', 'Sell Value',
                            'Fee Quantity', 'Fee Asset', 'Fee Value',
-                           'Wallet', 'Timestamp']
+                           'Wallet', 'Timestamp', 'Note']
 
     RECAP_OUT_HEADER = ['Type', 'Date',
                         'InOrBuyAmount', 'InOrBuyCurrency',
@@ -172,7 +172,8 @@ class OutputCsv(OutputBase):
                 '{0:f}'.format(tr.fee_value.normalize()) if tr.fee_value is not None \
                                                          else None,
                 tr.wallet,
-                OutputCsv._format_timestamp(tr.timestamp)]
+                OutputCsv._format_timestamp(tr.timestamp),
+                tr.note]
 
     @staticmethod
     def _to_recap_csv(tr):

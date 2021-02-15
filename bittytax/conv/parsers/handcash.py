@@ -25,7 +25,8 @@ def parse_handcash(data_row, parser, _filename):
                                                  data_row.timestamp,
                                                  buy_quantity=Decimal(in_row[5]) / 10 ** 8,
                                                  buy_asset="BSV",
-                                                 wallet=WALLET)
+                                                 wallet=WALLET,
+                                                 note=in_row[3])
     elif in_row[0] == "send":
         if participants[0]["type"] == "user":
             t_type = TransactionOutRecord.TYPE_GIFT_SENT
@@ -38,7 +39,8 @@ def parse_handcash(data_row, parser, _filename):
                                                  sell_asset="BSV",
                                                  fee_quantity=Decimal(in_row[4]) / 10 ** 8,
                                                  fee_asset="BSV",
-                                                 wallet=WALLET)
+                                                 wallet=WALLET,
+                                                 note=in_row[3])
     else:
         raise UnexpectedTypeError(0, parser.in_header[0], in_row[0])
 

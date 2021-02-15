@@ -167,6 +167,7 @@ class TransactionBase(object):
         self.fee_fixed = True
         self.wallet = None
         self.timestamp = None
+        self.note = None
         self.matched = False
         self.pooled = []
 
@@ -180,6 +181,11 @@ class TransactionBase(object):
         if self.quantity is None:
             return ''
         return '{:0,f}'.format(self.quantity.normalize())
+
+    def _format_note(self):
+        if self.note:
+            return "'%s' " % self.note
+        return ''
 
     def _format_pooled(self, bold=False):
         if self.pooled:
@@ -276,6 +282,9 @@ class Buy(TransactionBase):
         if other.fee_fixed != self.fee_fixed:
             self.fee_fixed = False
 
+        if other.note != self.note:
+            self.note = "<pooled>"
+
         self.pooled.append(other)
         return self
 
@@ -308,7 +317,7 @@ class Buy(TransactionBase):
         return ''
 
     def __str__(self, pooled_bold=False, quantity_bold=False):
-        return "%s%s %s%s %s %s%s%s%s '%s' %s [TID:%s]%s" % (
+        return "%s%s %s%s %s %s%s%s%s '%s' %s %s[TID:%s]%s" % (
             type(self).__name__.upper(),
             '*' if not self.acquisition else '',
             self.t_type,
@@ -320,6 +329,7 @@ class Buy(TransactionBase):
             self._format_fee(),
             self.wallet,
             self._format_timestamp(),
+            self._format_note(),
             self._format_tid(),
             self._format_pooled(pooled_bold))
 
@@ -371,6 +381,9 @@ class Sell(TransactionBase):
         if other.fee_fixed != self.fee_fixed:
             self.fee_fixed = False
 
+        if other.note != self.note:
+            self.note = "<pooled>"
+
         self.pooled.append(other)
         return self
 
@@ -403,7 +416,7 @@ class Sell(TransactionBase):
         return ''
 
     def __str__(self, pooled_bold=False, quantity_bold=False):
-        return "%s%s %s%s %s %s%s%s%s '%s' %s [TID:%s]%s" % (
+        return "%s%s %s%s %s %s%s%s%s '%s' %s %s[TID:%s]%s" % (
             type(self).__name__.upper(),
             '*' if not self.disposal else '',
             self.t_type,
@@ -415,5 +428,6 @@ class Sell(TransactionBase):
             self._format_fee(),
             self.wallet,
             self._format_timestamp(),
+            self._format_note(),
             self._format_tid(),
             self._format_pooled(pooled_bold))

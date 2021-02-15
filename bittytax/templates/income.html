@@ -6,27 +6,25 @@
         <tr>
             <th align="left">Asset</th>
             <th align="left">Date</th>
-            <th align="left">Income Type</th>
+            <th align="left">Type</th>
+            <th align="left">Description</th>
             <th align="right">Quantity</th>
             <th align="right">Amount</th>
             <th align="right">Fees</th>
-            <th></th>
-            <th></th>
         </tr>
         {% for te in income.assets[asset] %}
             {% set asset_totals.events = asset_totals.events + 1 %}
             <tr>
                 <td>{{te.asset}}</td>
                 <td>{{te.date|datefilter}}</td>
-                <td width="25%">{{te.type}}</td>
+                <td>{{te.type}}</td>
+                <td width="30%">{{te.note|nowrapfilter}}</td>
                 <td align="right">{{te.quantity|quantityfilter}}</td>
                 {% set asset_totals.quantity = asset_totals.quantity + te.quantity %}
                 <td align="right">{{te.amount|valuefilter}}</td>
                 {% set asset_totals.amount = asset_totals.amount + te.amount %}
                 <td align="right">{{te.fees|valuefilter}}</td>
                 {% set asset_totals.fees = asset_totals.fees + te.fees %}
-                <td></td>
-                <td></td>
             </tr>
         {% endfor %}
         {% if asset_totals.events > 1 %}
@@ -34,11 +32,10 @@
                 <td align="left">Total</td>
                 <td align="left"></td>
                 <td align="left"></td>
+                <td align="left"></td>
                 <td align="right">{{asset_totals.quantity|quantityfilter}}</td>
                 <td align="right">{{asset_totals.amount|valuefilter}}</td>
                 <td align="right">{{asset_totals.fees|valuefilter}}</td>
-                <td></td>
-                <td></td>
             </tr>
         {% endif %}
     </table>
@@ -48,23 +45,21 @@
     <tr>
         <th align="left">Income Type</th>
         <th></th>
-        <th width="25%"></th>
+        <th></th>
+        <th width="30%"></th>
         <th></th>
         <th align="right">Amount</th>
         <th align="right">Fees</th>
-        <th></th>
-        <th></th>
     </tr>
     {% for i_type in income.type_totals|sort %}
         <tr>
             <td>{{i_type}}</td>
             <td></td>
-            <td width="25%"></td>
+            <td></td>
+            <td width="30%"></td>
             <td></td>
             <td align="right">{{income.type_totals[i_type]['amount']|valuefilter}}</td>
             <td align="right">{{income.type_totals[i_type]['fees']|valuefilter}}</td>
-            <td></td>
-            <td></td>
         </tr>
     {% endfor %}
 </table>
@@ -72,11 +67,10 @@
     <tr class="total_row">
         <td align="left">Total</td>
         <td align="left"></td>
-        <td align="left" width="25%"></td>
+        <td align="left"></td>
+        <td align="left" width="30%"></td>
         <td align="right"></td>
         <td align="right">{{income.totals['amount']|valuefilter}}</td>
         <td align="right">{{income.totals['fees']|valuefilter}}</td>
-        <td></td>
-        <td></td>
     </tr>
 </table>

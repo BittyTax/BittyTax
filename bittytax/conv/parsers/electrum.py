@@ -22,13 +22,15 @@ def parse_electrum2(data_row, _parser, _filename):
                                                  data_row.timestamp,
                                                  buy_quantity=Decimal(in_row[2]),
                                                  buy_asset=config.args.cryptoasset,
-                                                 wallet=WALLET)
+                                                 wallet=WALLET,
+                                                 note=in_row[1])
     else:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=abs(Decimal(in_row[2])),
                                                  sell_asset=config.args.cryptoasset,
-                                                 wallet=WALLET)
+                                                 wallet=WALLET,
+                                                 note=in_row[1])
 
 def parse_electrum(data_row, _parser, _filename):
     in_row = data_row.in_row
@@ -42,13 +44,15 @@ def parse_electrum(data_row, _parser, _filename):
                                                  data_row.timestamp,
                                                  buy_quantity=Decimal(in_row[3]),
                                                  buy_asset=config.args.cryptoasset,
-                                                 wallet=WALLET)
+                                                 wallet=WALLET,
+                                                 note=in_row[1])
     else:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=abs(Decimal(in_row[3])),
                                                  sell_asset=config.args.cryptoasset,
-                                                 wallet=WALLET)
+                                                 wallet=WALLET,
+                                                 note=in_row[1])
 
 DataParser(DataParser.TYPE_WALLET,
            "Electrum",

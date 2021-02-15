@@ -358,6 +358,7 @@ class TaxEventIncome(TaxEvent):
         self.type = b.t_type
         self.quantity = b.quantity
         self.amount = b.cost.quantize(PRECISION)
+        self.note = b.note
         if b.fee_value:
             self.fees = b.fee_value.quantize(PRECISION)
         else:

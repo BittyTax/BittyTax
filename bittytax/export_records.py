@@ -14,7 +14,7 @@ class ExportRecords:
                   'Buy Quantity', 'Buy Asset', 'Buy Value',
                   'Sell Quantity', 'Sell Asset', 'Sell Value',
                   'Fee Quantity', 'Fee Asset', 'Fee Value',
-                  'Wallet', 'Timestamp']
+                  'Wallet', 'Timestamp', 'Note']
 
     def __init__(self, transaction_records):
         self.transaction_records = transaction_records

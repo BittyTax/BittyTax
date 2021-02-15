@@ -270,13 +270,15 @@ class ReportLog(object):
         income = self.tax_report[tax_year]['Income']
 
         print("\n%sIncome\n" % Fore.CYAN)
-        header = "%s %-10s %-28s %-25s %13s %13s" % ('Asset'.ljust(self.MAX_SYMBOL_LEN),
-                                                     'Date',
-                                                     'Income Type',
-                                                     'Quantity',
-                                                     'Amount',
-                                                     'Fees')
+        header = "%s %-10s %-10s %-40s %-25s %13s %13s" % ('Asset'.ljust(self.MAX_SYMBOL_LEN),
+                                                           'Date',
+                                                           'Type',
+                                                           'Description',
+                                                           'Quantity',
+                                                           'Amount',
+                                                           'Fees')
         print("%s%s" % (Fore.YELLOW, header))
+
         for asset in sorted(income.assets):
             events = quantity = amount = fees = 0
             for te in income.assets[asset]:
@@ -284,46 +286,51 @@ class ReportLog(object):
                 quantity += te.quantity
                 amount += te.amount
                 fees += te.fees
-                print("%s%s %-10s %-28s %-25s %13s %13s" % (
+                print("%s%s %-10s %-10s %-40s %-25s %13s %13s" % (
                     Fore.WHITE,
                     te.asset.ljust(self.MAX_SYMBOL_LEN),
                     self.format_date(te.date),
                     te.type,
+                    te.note,
                     self.format_quantity(te.quantity),
                     self.format_value(te.amount),
                     self.format_value(te.fees)))
 
             if events > 1:
-                print("%s%s %-10s %-28s %-25s %13s %13s\n" % (
+                print("%s%s %-10s %-10s %-40s %-25s %13s %13s\n" % (
                     Fore.YELLOW,
                     'Total'.ljust(self.MAX_SYMBOL_LEN),
+                    '',
                     '',
                     '',
                     self.format_quantity(quantity),
                     self.format_value(amount),
                     self.format_value(fees)))
 
-        print("%s%s %-28s %-25s %13s %13s" % (
+        print("%s%s %-10s %-40s %-25s %13s %13s" % (
             Fore.YELLOW,
             'Income Type'.ljust(self.MAX_SYMBOL_LEN + 11),
+            '',
             '',
             '',
             'Amount',
             'Fees'))
 
         for i_type in sorted(income.type_totals):
-            print("%s%s %-28s %-25s %13s %13s" % (
+            print("%s%s %-10s %-40s %-25s %13s %13s" % (
                 Fore.WHITE,
                 i_type.ljust(self.MAX_SYMBOL_LEN + 11),
+                '',
                 '',
                 '',
                 self.format_value(income.type_totals[i_type]['amount']),
                 self.format_value(income.type_totals[i_type]['fees'])))
 
         print("%s%s" % (Fore.YELLOW, '_' * len(header)))
-        print("%s%s %-28s %-25s %13s %13s%s" % (
+        print("%s%s %-10s %-40s %-25s %13s %13s%s" % (
             Fore.YELLOW+Style.BRIGHT,
             'Total'.ljust(self.MAX_SYMBOL_LEN + 11),
+            '',
             '',
             '',
             self.format_value(income.totals['amount']),

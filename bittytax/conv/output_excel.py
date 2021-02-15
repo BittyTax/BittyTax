@@ -206,6 +206,7 @@ class Worksheet(object):
             self._xl_value(data_row.t_record.fee_value, row_num, 9)
             self._xl_wallet(data_row.t_record.wallet, row_num, 10)
             self._xl_timestamp(data_row.t_record.timestamp, row_num, 11)
+            self._xl_note(data_row.t_record.note, row_num, 12)
 
         if sys.version_info[0] < 3:
             in_row = [r.decode('utf8') for r in data_row.in_row]
@@ -215,13 +216,13 @@ class Worksheet(object):
         # Add original data
         for col_num, col_data in enumerate(in_row):
             if data_row.failure and data_row.failure.col_num == col_num:
-                self.worksheet.write(row_num, 12 + col_num, col_data,
-                                     self.output.format_in_data_err)
+                self.worksheet.write(row_num, len(self.output.BITTYTAX_OUT_HEADER) + col_num,
+                                     col_data, self.output.format_in_data_err)
             else:
-                self.worksheet.write(row_num, 12 + col_num, col_data,
-                                     self.output.format_in_data)
+                self.worksheet.write(row_num, len(self.output.BITTYTAX_OUT_HEADER) + col_num,
+                                     col_data, self.output.format_in_data)
 
-            self._autofit_calc(12 + col_num, len(col_data))
+            self._autofit_calc(len(self.output.BITTYTAX_OUT_HEADER) + col_num, len(col_data))
 
     def _xl_type(self, t_type, row_num, col_num):
         if t_type in self.BUY_LIST:
@@ -290,6 +291,10 @@ class Worksheet(object):
             self.worksheet.write_datetime(row_num, col_num, utc_timestamp,
                                           self.output.format_timestamp)
             self._autofit_calc(col_num, len(self.output.DATE_FORMAT))
+
+    def _xl_note(self, note, row_num, col_num):
+        self.worksheet.write_string(row_num, col_num, note)
+        self._autofit_calc(col_num, len(note) if note else self.MAX_COL_WIDTH)
 
     def _autofit_calc(self, col_num, width):
         if width > self.MAX_COL_WIDTH:
