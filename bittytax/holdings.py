@@ -65,7 +65,7 @@ class Holdings(object):
                 config.CCY))
 
     def check_transfer_mismatch(self):
-        if self.withdrawals != self.deposits:
+        if self.withdrawals > 0 and self.withdrawals != self.deposits:
             tqdm.write("%sWARNING%s Disposal detected between a Withdrawal and a Deposit "
                        "(%s:%s) for %s, cost basis will be wrong" % ( Back.RED+Fore.BLACK,
                            Back.RESET+Fore.RED, self.withdrawals, self.deposits, self.asset))
