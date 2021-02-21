@@ -247,6 +247,9 @@ class TaxCalculator(object):
                 self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
     def all_transactions(self):
+        if not config.transfers_include:
+            # Ordered so transfers appear before the fee spend in the log
+            return self.other_transactions + self.buys_ordered + self.sells_ordered
         return self.buys_ordered + self.sells_ordered + self.other_transactions
 
     def calculate_capital_gains(self, tax_year):

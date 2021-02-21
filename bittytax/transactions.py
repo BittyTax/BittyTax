@@ -3,7 +3,6 @@
 
 import sys
 import copy
-from decimal import Decimal
 
 from colorama import Fore, Style
 from tqdm import tqdm
@@ -30,7 +29,7 @@ class TransactionHistory(object):
 
             # Attribute the fee value (allowable cost) to the buy, the sell or both
             if tr.fee and tr.fee.disposal and tr.fee.proceeds:
-                if tr.buy and tr.sell:
+                if tr.buy and tr.buy.acquisition and tr.sell and tr.sell.disposal:
                     if tr.buy.asset in config.fiat_list:
                         tr.sell.fee_value = tr.fee.proceeds
                         tr.sell.fee_fixed = tr.fee.proceeds_fixed
@@ -51,20 +50,25 @@ class TransactionHistory(object):
                             tr.buy.fee_fixed = tr.fee.proceeds_fixed
                             tr.sell.fee_value = tr.fee.proceeds - tr.buy.fee_value
                             tr.sell.fee_fixed = tr.fee.proceeds_fixed
-                elif tr.buy:
+                elif tr.buy and tr.buy.acquisition:
                     tr.buy.fee_value = tr.fee.proceeds
                     tr.buy.fee_fixed = tr.fee.proceeds_fixed
-                elif tr.sell:
+                elif tr.sell and tr.sell.disposal:
                     tr.sell.fee_value = tr.fee.proceeds
                     tr.sell.fee_fixed = tr.fee.proceeds_fixed
+                else:
+                    # Special case for transfer fees
+                    tr.fee.fee_value = tr.fee.proceeds
 
-            if tr.buy and tr.buy.quantity and tr.buy.asset not in config.fiat_list:
+            if tr.buy and (tr.buy.quantity or tr.buy.fee_value) and \
+                    tr.buy.asset not in config.fiat_list:
                 tr.buy.set_tid()
                 self.transactions.append(tr.buy)
                 if config.args.debug:
                     print("%ssplit:   %s" % (Fore.GREEN, tr.buy))
 
-            if tr.sell and tr.sell.quantity and tr.sell.asset not in config.fiat_list:
+            if tr.sell and (tr.sell.quantity or tr.sell.fee_value) and \
+                    tr.sell.asset not in config.fiat_list:
                 tr.sell.set_tid()
                 self.transactions.append(tr.sell)
                 if config.args.debug:
@@ -105,18 +109,22 @@ class TransactionHistory(object):
                     if tr.buy.cost and tr.buy.quantity:
                         price = tr.buy.cost / tr.buy.quantity
                         tr.fee.proceeds = tr.fee.quantity * price
+                        tr.fee.proceeds_fixed = tr.buy.cost_fixed
                     else:
-                        tr.fee.proceeds = Decimal(0)
-
-                    tr.fee.proceeds_fixed = tr.buy.cost_fixed
+                        (tr.fee.proceeds,
+                         tr.fee.proceeds_fixed) = self.value_asset.get_value(tr.fee.asset,
+                                                                             tr.fee.timestamp,
+                                                                             tr.fee.quantity)
                 elif tr.sell and tr.sell.asset == tr.fee.asset:
                     if tr.sell.proceeds and tr.sell.quantity:
                         price = tr.sell.proceeds / tr.sell.quantity
                         tr.fee.proceeds = tr.fee.quantity * price
+                        tr.fee.proceeds_fixed = tr.sell.proceeds_fixed
                     else:
-                        tr.fee.proceeds = Decimal(0)
-
-                    tr.fee.proceeds_fixed = tr.sell.proceeds_fixed
+                        (tr.fee.proceeds,
+                         tr.fee.proceeds_fixed) = self.value_asset.get_value(tr.fee.asset,
+                                                                             tr.fee.timestamp,
+                                                                             tr.fee.quantity)
                 else:
                     # Must be a 3rd cryptoasset
                     (tr.fee.proceeds,

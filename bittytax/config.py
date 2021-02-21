@@ -46,6 +46,7 @@ class Config(object):
         'trade_allowable_cost_type': TRADE_ALLOWABLE_COST_SPLIT,
         'show_empty_wallets': False,
         'transfers_include': True,
+        'transfer_fee_disposal': False,
         'data_source_select': {},
         'data_source_fiat': DATA_SOURCE_FIAT,
         'data_source_crypto': DATA_SOURCE_CRYPTO,

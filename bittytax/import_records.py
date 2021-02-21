@@ -203,9 +203,16 @@ class TransactionRow(object):
         if fee_asset:
             # Fees are added as a separate spend transaction
             fee = Sell(TransactionRecord.TYPE_SPEND, fee_quantity, fee_asset, fee_value)
+
+            # Transfers fees are a special case
             if t_type in self.TRANSFER_TYPES:
-                # A fee spend is normally a disposal unless it's part of a transfer
-                fee.disposal = False
+                if config.transfers_include:
+                    # Not a disposal, fees removed from the pool at zero cost
+                    fee.disposal = False
+                else:
+                    # Not a disposal (unless configured otherwise)
+                    if not config.transfer_fee_disposal:
+                        fee.disposal = False
 
         if len(self.row) == len(self.HEADER):
             note = self.row[12]

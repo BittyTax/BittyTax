@@ -27,6 +27,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Accounting tool: new Note field added to transaction record format.
 - Accounting tool: note field added to income report.
 - Conversion tool: note field added to the Excel and CSV output.
+- Accounting tool: new config "transfer_fee_disposal" added (transfers_include=False) ([#56](https://github.com/BittyTax/BittyTax/issues/56)).
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
@@ -44,6 +45,9 @@ Important:- A new Note field has been added to the end of the transaction record
 - HandCash parser: Note field is mapped from 'note'.
 - Qt Wallet parser: Note field is mapped from 'Label'.
 - Trezor parser: Note field is mapped from 'Address Label'.
+- Accounting tool: get value for fee if matching buy/sell asset has zero quantity or no price.
+- Accounting tool: don't drop zero quantity buy/sell if fee value present.
+- Accounting tool: ordering of all transactions when transfers_include=False.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.
