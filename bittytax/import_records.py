@@ -28,6 +28,9 @@ class ImportRecords(object):
         print("%sExcel file: %s%s" % (Fore.WHITE, Fore.YELLOW, filename))
 
         for worksheet in workbook.sheets():
+            if worksheet.name.startswith('--'):
+                print("%sskipping '%s'" % (Fore.CYAN, worksheet.name))
+
             if config.args.debug:
                 print("%simporting '%s' rows" % (Fore.CYAN, worksheet.name))
 
@@ -173,7 +176,7 @@ class TransactionRow(object):
         self.failure = None
 
     def parse(self):
-        if all(not self.row[i] for i in range(len(self.row))):
+        if all(not self.row[i] for i in range(len(self.row)-1)):
             # Skip empty rows
             return
 
