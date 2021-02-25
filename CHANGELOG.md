@@ -28,6 +28,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Accounting tool: note field added to income report.
 - Conversion tool: note field added to the Excel and CSV output.
 - Accounting tool: new config "transfer_fee_disposal" added (transfers_include=False) ([#56](https://github.com/BittyTax/BittyTax/issues/56)).
+- Accounting tool: Excel files with worksheet names prefixed with '--' are ignored by the import.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.

@@ -29,8 +29,8 @@ class ImportRecords(object):
 
         for worksheet in workbook.sheets():
             if worksheet.name.startswith('--'):
-                print("%sskipping '%s'" % (Fore.CYAN, worksheet.name))
-
+                print("%sskipping '%s' worksheet" % (Fore.GREEN, worksheet.name))
+                continue
             if config.args.debug:
                 print("%simporting '%s' rows" % (Fore.CYAN, worksheet.name))
 
