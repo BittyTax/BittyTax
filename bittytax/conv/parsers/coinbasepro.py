@@ -129,7 +129,8 @@ def parse_coinbase_pro_trades(data_row, parser, _filename):
     elif in_row[2] == "SELL":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[8],
+                                                 buy_quantity=abs(Decimal(in_row[8])) + \
+                                                              Decimal(in_row[7]),
                                                  buy_asset=in_row[9],
                                                  sell_quantity=in_row[4],
                                                  sell_asset=in_row[5],
@@ -157,7 +158,8 @@ def parse_coinbase_pro_trades2(data_row, parser, _filename):
     elif in_row[3] == "SELL":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[9],
+                                                 buy_quantity=abs(Decimal(in_row[9])) + \
+                                                              Decimal(in_row[8]),
                                                  buy_asset=in_row[10],
                                                  sell_quantity=in_row[5],
                                                  sell_asset=in_row[6],
