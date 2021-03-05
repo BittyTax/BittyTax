@@ -3,10 +3,10 @@
 Important:- A new Note field has been added to the end of the transaction record format (column M), this is used to add a description to a transaction. It is recommended that you add the additional Note column to all your existing transaction records.
 ### Fixed
 - Accounting tool: "xlrd.biffh.XLRDError: Excel xlsx file; not supported" Exception. ([#36](https://github.com/BittyTax/BittyTax/issues/36))
-- Coinbase parser: added support for Convert transactions ([#46](https://github.com/BittyTax/BittyTax/issues/46))
-- Coinbase parser: mis-classifying trade as gift-received ([#47](https://github.com/BittyTax/BittyTax/issues/47))
-- Accounting tool: unexpected treatment of withdrawal fees (transfers_include=False) ([#56](https://github.com/BittyTax/BittyTax/issues/56))
-- Accounting tool: assets which only have matched disposals are not shown in holdings report ([#60](https://github.com/BittyTax/BittyTax/issues/60))
+- Coinbase parser: added support for Convert transactions. ([#46](https://github.com/BittyTax/BittyTax/issues/46))
+- Coinbase parser: mis-classifying trade as gift-received. ([#47](https://github.com/BittyTax/BittyTax/issues/47))
+- Accounting tool: unexpected treatment of withdrawal fees (transfers_include=False). ([#56](https://github.com/BittyTax/BittyTax/issues/56))
+- Accounting tool: assets which only have matched disposals are not shown in holdings report. ([#60](https://github.com/BittyTax/BittyTax/issues/60))
 - Coinbase Pro parser: fills export, buy quantity missing fee.
 ### Added
 - Etherscan parser: added internal transactions export.
@@ -28,7 +28,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Accounting tool: new Note field added to transaction record format.
 - Accounting tool: note field added to income report.
 - Conversion tool: note field added to the Excel and CSV output.
-- Accounting tool: new config "transfer_fee_disposal" added (transfers_include=False) ([#56](https://github.com/BittyTax/BittyTax/issues/56)).
+- Accounting tool: new config "transfer_fee_disposal" added (transfers_include=False). ([#56](https://github.com/BittyTax/BittyTax/issues/56))
 - Accounting tool: Excel files with worksheet names prefixed with '--' are ignored by the import.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
@@ -50,6 +50,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Accounting tool: get value for fee if matching buy/sell asset has zero quantity or no price.
 - Accounting tool: don't drop zero quantity buy/sell if fee value present.
 - Accounting tool: ordering of all transactions when transfers_include=False.
+- Ledger Live parser: added "FEES" and "REVEAL" operation types. ([#79](https://github.com/BittyTax/BittyTax/issues/79)
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.

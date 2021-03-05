@@ -46,6 +46,15 @@ def parse_ledger_live(data_row, parser, _filename):
                                                      sell_quantity=in_row[3],
                                                      sell_asset=in_row[1],
                                                      wallet=WALLET)
+    elif in_row[2] in ("FEES", "REVEAL"):
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
+                                                 data_row.timestamp,
+                                                 sell_quantity=Decimal(in_row[3]) - \
+                                                               Decimal(in_row[4]),
+                                                 sell_asset=in_row[1],
+                                                 fee_quantity=in_row[4],
+                                                 fee_asset=in_row[1],
+                                                 wallet=WALLET)
     else:
         raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
 
