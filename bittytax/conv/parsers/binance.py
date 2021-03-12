@@ -116,7 +116,7 @@ def parse_binance_statements(data_rows, parser, _filename):
         in_row = data_row.in_row
         data_row.timestamp = DataParser.parse_timestamp(in_row[0])
 
-        if in_row[2] in ("Distribution", "Commission History"):
+        if in_row[2] in ("Distribution", "Commission History", "Referrer rebates"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                      data_row.timestamp,
                                                      buy_quantity=in_row[4],

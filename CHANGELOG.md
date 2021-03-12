@@ -52,6 +52,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Accounting tool: don't drop zero quantity buy/sell if fee value present.
 - Accounting tool: ordering of all transactions when transfers_include=False.
 - Ledger Live parser: added "FEES" and "REVEAL" operation types. ([#79](https://github.com/BittyTax/BittyTax/issues/79)
+- Binance parser: added "Referrer rebates" operation type.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.
