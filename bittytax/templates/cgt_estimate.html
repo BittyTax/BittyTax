@@ -1,0 +1,26 @@
+<h3>Tax Estimate</h3>
+<p>The figures below are only an estimate, they do not take into consideration other gains and losses in the same tax year, always consult with a professional accountant before filing.</p>
+<table width="75%">
+    <tr>
+        {% if cgains.totals['gain'] > 0 %}
+            <td>Taxable gain*:</td>
+        {% else %}
+            <td>Taxable gain:</td>
+        {% endif %}
+        <td align="right">{{cgains.estimate['taxable_gain']|valuefilter}}</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Capital Gains Tax (Basic rate):</td>
+        <td align="right">{{cgains.estimate['cgt_basic']|valuefilter}}</td>
+        <td align="left" style="padding-left:2px">({{cgains.estimate['cgt_basic_rate']|ratefilter}})</td>
+    </tr>
+    <tr>
+        <td>Capital Gains Tax (Higher rate):</td>
+        <td align="right">{{cgains.estimate['cgt_higher']|valuefilter}}</td>
+        <td align="left" style="padding-left:2px">({{cgains.estimate['cgt_higher_rate']|ratefilter}})</td>
+    </tr>
+</table>
+{% if cgains.estimate['allowance_used'] %}
+    <p>*{{cgains.estimate['allowance_used']|valuefilter}} of the tax-free allowance ({{cgains.estimate['allowance']|valuefilter}}) used</p>
+{% endif %}

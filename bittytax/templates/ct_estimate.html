@@ -1,0 +1,24 @@
+<h3>Tax Estimate</h3>
+<p>The figures below are only an estimate, they do not take into consideration other gains and losses in the same tax year, always consult with a professional accountant before filing.</p>
+<table width="75%">
+    <tr>
+        <td>Taxable gain:</td>
+        <td align="right">{{cgains.estimate['taxable_gain']|valuefilter}}</td>
+        <td></td>
+    </tr>
+    {% if 'ct_small' in cgains.estimate %}
+        <tr>
+            <td>Corporation Tax (Small profits rate):</td>
+            <td align="right">{{cgains.estimate['ct_small']|valuefilter}}</td>
+            <td align="left" style="padding-left:2px">({{cgains.estimate['ct_small_rates']|ratesfilter}})</td>
+        </tr>
+    {% endif %}
+    <tr>
+        <td>Corporation Tax (Main rate):</td>
+        <td align="right">{{cgains.estimate['ct_main']|valuefilter}}</td>
+        <td align="left" style="padding-left:2px">({{cgains.estimate['ct_main_rates']|ratesfilter}})</td>
+    </tr>
+</table>
+{% if None in cgains.estimate['ct_small_rates'] %}
+    <p>*Main rate used</p>
+{% endif %}
