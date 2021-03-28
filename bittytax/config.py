@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+from datetime import datetime, timedelta
+
 import os
 import pkg_resources
 
@@ -27,6 +29,11 @@ class Config(object):
     FORMAT_CSV = 'CSV'
     FORMAT_EXCEL = 'EXCEL'
     FORMAT_RECAP = 'RECAP'
+
+    TAX_RULES_UK_INDIVIDUAL = 'UK_INDIVIDUAL'
+    TAX_RULES_UK_COMPANY = ['UK_COMPANY_JAN', 'UK_COMPANY_FEB', 'UK_COMPANY_MAR', 'UK_COMPANY_APR',
+                            'UK_COMPANY_MAY', 'UK_COMPANY_JUN', 'UK_COMPANY_JUL', 'UK_COMPANY_AUG',
+                            'UK_COMPANY_SEP', 'UK_COMPANY_OCT', 'UK_COMPANY_NOV', 'UK_COMPANY_DEC']
 
     TRADE_ASSET_TYPE_BUY = 0
     TRADE_ASSET_TYPE_SELL = 1
@@ -55,6 +62,8 @@ class Config(object):
 
     def __init__(self):
         self.args = None
+        self.start_of_year_month = 4
+        self.start_of_year_day = 6
 
         if not os.path.exists(Config.BITTYTAX_PATH):
             os.mkdir(Config.BITTYTAX_PATH)
@@ -96,5 +105,35 @@ class Config(object):
         if self.CCY == 'GBP':
             return u'\xA3' # £
         raise ValueError("Currency not supported")
+
+    def get_tax_year_start(self, tax_year):
+        if self.start_of_year_month != 1:
+            return datetime(tax_year - 1,
+                            self.start_of_year_month,
+                            self.start_of_year_day,
+                            tzinfo=config.TZ_LOCAL)
+        return datetime(tax_year,
+                        self.start_of_year_month,
+                        self.start_of_year_day,
+                        tzinfo=config.TZ_LOCAL)
+
+    def get_tax_year_end(self, tax_year):
+        if self.start_of_year_month == 1:
+            return datetime(tax_year + 1,
+                            self.start_of_year_month,
+                            self.start_of_year_day,
+                            tzinfo=config.TZ_LOCAL) - timedelta(microseconds=1)
+        return datetime(tax_year,
+                        self.start_of_year_month,
+                        self.start_of_year_day,
+                        tzinfo=config.TZ_LOCAL) - timedelta(microseconds=1)
+
+    def format_tax_year(self, tax_year):
+        start = self.get_tax_year_start(tax_year)
+        end = self.get_tax_year_end(tax_year)
+
+        if start.year == end.year:
+            return start.strftime('%Y')
+        return '{}/{}'.format(start.strftime('%Y'), end.strftime('%y'))
 
 config = Config()

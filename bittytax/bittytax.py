@@ -52,8 +52,17 @@ def main():
                         '--taxyear',
                         type=validate_year,
                         help="tax year must be in the range (%s-%s)" % (
-                            min(CCG.CG_DATA_INDIVIDUALS),
-                            max(CCG.CG_DATA_INDIVIDUALS)))
+                            min(CCG.CG_DATA_INDIVIDUAL),
+                            max(CCG.CG_DATA_INDIVIDUAL)))
+    parser.add_argument('--taxrules',
+                        choices=[config.TAX_RULES_UK_INDIVIDUAL] + config.TAX_RULES_UK_COMPANY,
+                        metavar='{UK_INDIVIDUAL, UK_COMPANY_XXX} '
+                                'where XXX is the month which starts the financial year, '
+                                'i.e. JAN, FEB, etc.',
+                        default=config.TAX_RULES_UK_INDIVIDUAL,
+                        type=str.upper,
+                        dest='tax_rules',
+                        help="specify tax rules to use, default: UK_INDIVIDUAL")
     parser.add_argument('--skipint',
                         dest='skip_integrity',
                         action='store_true',
@@ -80,6 +89,10 @@ def main():
         print("%spython: v%s" % (Fore.GREEN, platform.python_version()))
         print("%ssystem: %s, release: %s" % (Fore.GREEN, platform.system(), platform.release()))
         config.output_config()
+
+    if config.args.tax_rules in config.TAX_RULES_UK_COMPANY:
+        config.start_of_year_month = config.TAX_RULES_UK_COMPANY.index(config.args.tax_rules) + 1
+        config.start_of_year_day = 1
 
     try:
         transaction_records = do_import(config.args.filename)
@@ -128,12 +141,12 @@ def main():
 
 def validate_year(value):
     year = int(value)
-    if year not in CCG.CG_DATA_INDIVIDUALS:
+    if year not in CCG.CG_DATA_INDIVIDUAL:
         raise argparse.ArgumentTypeError("tax year %d is not supported, "
                                          "must be in the range (%s-%s)" % (
             year,
-            min(CCG.CG_DATA_INDIVIDUALS),
-            max(CCG.CG_DATA_INDIVIDUALS)))
+            min(CCG.CG_DATA_INDIVIDUAL),
+            max(CCG.CG_DATA_INDIVIDUAL)))
 
     return year
 
@@ -168,7 +181,12 @@ def do_tax(transaction_records):
     tax = TaxCalculator(transaction_history.transactions)
     tax.pool_same_day()
     tax.match(tax.DISPOSAL_SAME_DAY)
-    tax.match(tax.DISPOSAL_BED_AND_BREAKFAST)
+
+    if config.args.tax_rules == config.TAX_RULES_UK_INDIVIDUAL:
+        tax.match(tax.DISPOSAL_BED_AND_BREAKFAST)
+    elif config.args.tax_rules in config.TAX_RULES_UK_COMPANY:
+        tax.match(tax.DISPOSAL_TEN_DAY)
+
     tax.process_section104()
     return tax, value_asset
 
@@ -208,17 +226,21 @@ def transfer_mismatches(holdings):
 
 def do_each_tax_year(tax, tax_year, summary, value_asset):
     if tax_year:
-        print("%scalculating tax year %d/%d" % (
-            Fore.CYAN, tax_year - 1, tax_year))
+        print("%scalculating tax year %s" % (
+            Fore.CYAN,
+            config.format_tax_year(tax_year)))
+
         tax.calculate_capital_gains(tax_year)
         if not summary:
             tax.calculate_income(tax_year)
     else:
         # Calculate for all years
         for year in sorted(tax.tax_events):
-            print("%scalculating tax year %d/%d" % (
-                Fore.CYAN, year - 1, year))
-            if year in CCG.CG_DATA_INDIVIDUALS:
+            print("%scalculating tax year %s" % (
+                Fore.CYAN,
+                config.format_tax_year(year)))
+
+            if year in CCG.CG_DATA_INDIVIDUAL:
                 tax.calculate_capital_gains(year)
                 if not summary:
                     tax.calculate_income(year)

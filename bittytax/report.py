@@ -26,8 +26,11 @@ class ReportPdf(object):
         self.filename = self.get_output_filename(self.FILE_EXTENSION)
 
         self.env.filters['datefilter'] = self.datefilter
+        self.env.filters['datefilter2'] = self.datefilter2
         self.env.filters['quantityfilter'] = self.quantityfilter
         self.env.filters['valuefilter'] = self.valuefilter
+        self.env.filters['ratefilter'] = self.ratefilter
+        self.env.filters['ratesfilter'] = self.ratesfilter
         self.env.filters['nowrapfilter'] = self.nowrapfilter
 
         template = self.env.get_template(self.TEMPLATE_FILE)
@@ -54,8 +57,12 @@ class ReportPdf(object):
     def datefilter(date):
         if isinstance(date, datetime):
             return date.strftime('%d/%m/%Y')
-        else:
-            return dateutil.parser.parse(date).strftime('%d/%m/%Y')
+        return dateutil.parser.parse(date).strftime('%d/%m/%Y')
+
+    @staticmethod
+    def datefilter2(date):
+        return '{} {}{} {}'.format(date.strftime('%b'),
+                                   date.day, ReportLog.format_day(date.day), date.strftime('%Y'))
 
     @staticmethod
     def quantityfilter(quantity):
@@ -64,6 +71,16 @@ class ReportPdf(object):
     @staticmethod
     def valuefilter(value):
         return '&pound;{:0,.2f}'.format(value)
+
+    @staticmethod
+    def ratefilter(rate):
+        if rate is None:
+            return '*'
+        return '{}%'.format(rate)
+
+    @staticmethod
+    def ratesfilter(rates):
+        return '/'.join(map(ReportPdf.ratefilter, rates))
 
     @staticmethod
     def nowrapfilter(text):
@@ -106,8 +123,12 @@ class ReportLog(object):
             if not config.args.summary:
                 self.audit()
 
-            print("\n%sTax Year - %d/%d%s" % (
-                Fore.CYAN+Style.BRIGHT, config.args.taxyear - 1, config.args.taxyear, Style.NORMAL))
+            print("\n%sTax Year - %s (%s to %s)%s" % (
+                Fore.CYAN+Style.BRIGHT,
+                config.format_tax_year(config.args.taxyear),
+                self.format_date2(config.get_tax_year_start(config.args.taxyear)),
+                self.format_date2(config.get_tax_year_end(config.args.taxyear)),
+                Style.NORMAL))
             self.capital_gains(config.args.taxyear)
             if not config.args.summary:
                 self.income(config.args.taxyear)
@@ -118,8 +139,12 @@ class ReportLog(object):
                 self.audit()
 
             for tax_year in sorted(tax_report):
-                print("\n%sTax Year - %d/%d%s" % (
-                    Fore.CYAN+Style.BRIGHT, tax_year - 1, tax_year, Style.NORMAL))
+                print("\n%sTax Year - %s (%s to %s)%s" % (
+                    Fore.CYAN+Style.BRIGHT,
+                    config.format_tax_year(tax_year),
+                    self.format_date2(config.get_tax_year_start(tax_year)),
+                    self.format_date2(config.get_tax_year_end(tax_year)),
+                    Style.NORMAL))
                 self.capital_gains(tax_year)
                 if not config.args.summary:
                     self.income(tax_year)
@@ -151,7 +176,11 @@ class ReportLog(object):
     def capital_gains(self, tax_year):
         cgains = self.tax_report[tax_year]['CapitalGains']
 
-        print("%sCapital Gains" % Fore.CYAN)
+        if config.tax_rules in config.TAX_RULES_UK_COMPANY:
+            print("%sChargeable Gains" % Fore.CYAN)
+        else:
+            print("%sCapital Gains" % Fore.CYAN)
+
         header = "%s %-10s %-28s %25s %13s %13s %13s %13s" % ('Asset'.ljust(self.MAX_SYMBOL_LEN),
                                                               'Date',
                                                               'Disposal Type',
@@ -210,25 +239,25 @@ class ReportLog(object):
             Style.NORMAL))
 
         print("\n%sSummary\n" % Fore.CYAN)
-        print("%s%-35s %13d" % (Fore.WHITE, "Number of disposals:", cgains.summary['disposals']))
+        print("%s%-40s %13d" % (Fore.WHITE, "Number of disposals:", cgains.summary['disposals']))
         if cgains.estimate['proceeds_warning']:
-            print("%s%-35s %s" % (
+            print("%s%-40s %s" % (
                 Fore.WHITE, "Disposal proceeds:",
                 ('*' + self.format_value(cgains.totals['proceeds'])).rjust(13). \
                         replace('*', Fore.YELLOW + '*' + Fore.WHITE)))
         else:
-            print("%s%-35s %13s" % (
+            print("%s%-40s %13s" % (
                 Fore.WHITE, "Disposal proceeds:",
                 self.format_value(cgains.totals['proceeds'])))
 
-        print("%s%-35s %13s" % (
+        print("%s%-40s %13s" % (
             Fore.WHITE, "Allowable costs (including the",
             self.format_value(cgains.totals['cost'] + cgains.totals['fees'])))
         print("%spurchase price):" % Fore.WHITE)
-        print("%s%-35s %13s" % (
+        print("%s%-40s %13s" % (
             Fore.WHITE, "Gains in the year, before losses:",
             self.format_value(cgains.summary['total_gain'])))
-        print("%s%-35s %13s" % (
+        print("%s%-40s %13s" % (
             Fore.WHITE, "Losses in the year:",
             self.format_value(abs(cgains.summary['total_loss']))))
 
@@ -238,33 +267,66 @@ class ReportLog(object):
                       Fore.YELLOW, self.format_value(cgains.estimate['allowance'] * 4)))
 
         if not config.args.summary:
-            print("\n%sTax Estimate\n" % Fore.CYAN)
-            print("%sThe figures below are only an estimate, they do not take into consideration "
-                  "other gains and losses in the same tax year, always consult with a professional "
-                  "accountant before filing.\n" % Fore.CYAN)
-            if cgains.totals['gain'] > 0:
-                print("%s%s %13s" % (
-                    Fore.WHITE,
-                    "Taxable Gain*:".ljust(35).replace('*', Fore.YELLOW + '*' + Fore.WHITE),
-                    self.format_value(cgains.estimate['taxable_gain'])))
+            if config.tax_rules in config.TAX_RULES_UK_COMPANY:
+                self.ct_estimate(tax_year)
             else:
-                print("%s%-35s %13s" % (
-                    Fore.WHITE,
-                    "Taxable Gain:",
-                    self.format_value(cgains.estimate['taxable_gain'])))
+                self.cgt_estimate(tax_year)
 
-            print("%s%-35s %13s" % (
-                Fore.WHITE, "Capital Gains Tax (Basic rate):",
-                self.format_value(cgains.estimate['cgt_basic'])))
-            print("%s%-35s %13s" % (
-                Fore.WHITE, "Capital Gains Tax (Higher rate):",
-                self.format_value(cgains.estimate['cgt_higher'])))
+    def cgt_estimate(self, tax_year):
+        cgains = self.tax_report[tax_year]['CapitalGains']
+        print("\n%sTax Estimate\n" % Fore.CYAN)
+        print("%sThe figures below are only an estimate, they do not take into consideration "
+              "other gains and losses in the same tax year, always consult with a professional "
+              "accountant before filing.\n" % Fore.CYAN)
+        if cgains.totals['gain'] > 0:
+            print("%s%s %13s" % (
+                Fore.WHITE,
+                "Taxable Gain*:".ljust(40).replace('*', Fore.YELLOW + '*' + Fore.WHITE),
+                self.format_value(cgains.estimate['taxable_gain'])))
+        else:
+            print("%s%-40s %13s" % (
+                Fore.WHITE,
+                "Taxable Gain:",
+                self.format_value(cgains.estimate['taxable_gain'])))
 
-            if cgains.estimate['allowance_used']:
-                print("%s*%s of the tax-free allowance (%s) used" % (
-                    Fore.YELLOW,
-                    self.format_value(cgains.estimate['allowance_used']),
-                    self.format_value(cgains.estimate['allowance'])))
+        print("%s%-40s %13s (%s)" % (
+            Fore.WHITE, "Capital Gains Tax (Basic rate):",
+            self.format_value(cgains.estimate['cgt_basic']),
+            self.format_rate(cgains.estimate['cgt_basic_rate'])))
+        print("%s%-40s %13s (%s)" % (
+            Fore.WHITE, "Capital Gains Tax (Higher rate):",
+            self.format_value(cgains.estimate['cgt_higher']),
+            self.format_rate(cgains.estimate['cgt_higher_rate'])))
+
+        if cgains.estimate['allowance_used']:
+            print("%s*%s of the tax-free allowance (%s) used" % (
+                Fore.YELLOW,
+                self.format_value(cgains.estimate['allowance_used']),
+                self.format_value(cgains.estimate['allowance'])))
+
+    def ct_estimate(self, tax_year):
+        cgains = self.tax_report[tax_year]['CapitalGains']
+        print("\n%sTax Estimate\n" % Fore.CYAN)
+        print("%sThe figures below are only an estimate, they do not take into consideration "
+              "other gains and losses in the same tax year, always consult with a professional "
+              "accountant before filing.\n" % Fore.CYAN)
+        print("%s%-40s %13s" % (
+              Fore.WHITE,
+              "Taxable Gain:",
+              self.format_value(cgains.estimate['taxable_gain'])))
+        if 'ct_small' in cgains.estimate:
+            print("%s%-40s %13s (%s)" % (
+                Fore.WHITE, "Corporation Tax (Small profits rate):",
+                self.format_value(cgains.estimate['ct_small']),
+                '/'.join(map(self.format_rate, cgains.estimate['ct_small_rates']))))
+
+        print("%s%-40s %13s (%s)" % (
+            Fore.WHITE, "Corporation Tax (Main rate):",
+            self.format_value(cgains.estimate['ct_main']),
+            '/'.join(map(self.format_rate, cgains.estimate['ct_main_rates']))))
+
+        if None in cgains.estimate['ct_small_rates']:
+            print("%s* Main rate used" % Fore.YELLOW)
 
     def income(self, tax_year):
         income = self.tax_report[tax_year]['Income']
@@ -338,7 +400,7 @@ class ReportLog(object):
             Style.NORMAL))
 
     def price_data(self, tax_year):
-        print("%sPrice Data - %d/%d\n" % (Fore.CYAN, tax_year - 1, tax_year))
+        print("%sPrice Data - %s\n" % (Fore.CYAN, config.format_tax_year(tax_year)))
         print("%s%s %-16s %-10s  %13s %25s" % (
             Fore.YELLOW,
             'Asset'.ljust(self.ASSET_WIDTH+2),
@@ -421,8 +483,16 @@ class ReportLog(object):
     def format_date(date):
         if isinstance(date, datetime):
             return date.strftime('%d/%m/%Y')
-        else:
-            return dateutil.parser.parse(date).strftime('%d/%m/%Y')
+        return dateutil.parser.parse(date).strftime('%d/%m/%Y')
+
+    @staticmethod
+    def format_date2(date):
+        return '{} {}{} {}'.format(date.strftime('%b'),
+                                   date.day, ReportLog.format_day(date.day), date.strftime('%Y'))
+
+    @staticmethod
+    def format_day(day):
+        return 'th' if 11<=day<=13 else {1:'st',2:'nd',3:'rd'}.get(day%10, 'th')
 
     @staticmethod
     def format_quantity(quantity):
@@ -439,6 +509,12 @@ class ReportLog(object):
         if name is not None:
             return "%s (%s)" % (asset, name)
         return asset
+
+    @staticmethod
+    def format_rate(rate):
+        if rate is None:
+            return Fore.YELLOW + '*' + Fore.WHITE
+        return '{}%'.format(rate)
 
 class ProgressSpinner:
     def __init__(self):

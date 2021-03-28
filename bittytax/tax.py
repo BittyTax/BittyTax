@@ -15,16 +15,9 @@ from .holdings import Holdings
 
 PRECISION = Decimal('0.00')
 
-def which_tax_year(timestamp):
-    if timestamp >= datetime(timestamp.year, 4, 6, tzinfo=config.TZ_LOCAL):
-        tax_year = timestamp.year + 1
-    else:
-        tax_year = timestamp.year
-
-    return tax_year
-
 class TaxCalculator(object):
     DISPOSAL_SAME_DAY = 'Same Day'
+    DISPOSAL_TEN_DAY = 'Ten Day'
     DISPOSAL_BED_AND_BREAKFAST = 'Bed & Breakfast'
     DISPOSAL_SECTION_104 = 'Section 104'
     DISPOSAL_NO_GAIN_NO_LOSS = 'No Gain/No Loss'
@@ -133,7 +126,7 @@ class TaxCalculator(object):
                 tax_event = TaxEventCapitalGains(rule, b, s, b.cost,
                                                  (b.fee_value or Decimal(0)) +
                                                  (s.fee_value or Decimal(0)))
-                self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
+                self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
                 if config.args.debug:
                     print("%smatch:   %s" % (Fore.CYAN, tax_event))
 
@@ -156,11 +149,13 @@ class TaxCalculator(object):
     def _rule_match(self, s_timestamp, b_timestamp, rule):
         if rule == self.DISPOSAL_SAME_DAY:
             return b_timestamp.date() == s_timestamp.date()
-        elif rule == self.DISPOSAL_BED_AND_BREAKFAST:
+        if rule == self.DISPOSAL_TEN_DAY:
+            return (s_timestamp.date() < b_timestamp.date() and
+                    b_timestamp.date() <= s_timestamp.date() + timedelta(days=10))
+        if rule == self.DISPOSAL_BED_AND_BREAKFAST:
             return (s_timestamp.date() < b_timestamp.date() and
                     b_timestamp.date() <= s_timestamp.date() + timedelta(days=30))
-        else:
-            raise Exception
+        raise Exception
 
     def process_section104(self):
         if config.args.debug:
@@ -177,13 +172,14 @@ class TaxCalculator(object):
                 if config.args.debug:
                     print("%ssection104: //%s <- matched" % (Fore.BLUE, t))
                 continue
-            elif not config.transfers_include and t.t_type in self.TRANSFER_TYPES:
+
+            if not config.transfers_include and t.t_type in self.TRANSFER_TYPES:
                 if config.args.debug:
                     print("%ssection104: //%s <- transfer" % (Fore.BLUE, t))
                 continue
-            else:
-                if config.args.debug:
-                    print("%ssection104: %s" % (Fore.GREEN, t))
+
+            if config.args.debug:
+                print("%ssection104: %s" % (Fore.GREEN, t))
 
             if isinstance(t, Buy):
                 self._add_tokens(t)
@@ -227,7 +223,7 @@ class TaxCalculator(object):
                 tax_event = TaxEventCapitalGains(self.DISPOSAL_SECTION_104,
                                                  None, t, cost, fees + (t.fee_value or Decimal(0)))
 
-            self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
+            self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
             if config.args.debug:
                 print("%ssection104:   %s" % (Fore.CYAN, tax_event))
 
@@ -244,7 +240,7 @@ class TaxCalculator(object):
                       disable=bool(config.args.debug or not sys.stdout.isatty())):
             if t.t_type in self.INCOME_TYPES:
                 tax_event = TaxEventIncome(t)
-                self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
+                self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
 
     def all_transactions(self):
         if not config.transfers_include:
@@ -261,7 +257,10 @@ class TaxCalculator(object):
                 if isinstance(te, TaxEventCapitalGains):
                     self.tax_report[tax_year]['CapitalGains'].tax_summary(te)
 
-        self.tax_report[tax_year]['CapitalGains'].tax_estimate(tax_year)
+        if config.tax_rules in config.TAX_RULES_UK_COMPANY:
+            self.tax_report[tax_year]['CapitalGains'].tax_estimate_ct(tax_year)
+        else:
+            self.tax_report[tax_year]['CapitalGains'].tax_estimate_cgt(tax_year)
 
     def calculate_income(self, tax_year):
         self.tax_report[tax_year]['Income'] = CalculateIncome()
@@ -309,8 +308,12 @@ class TaxCalculator(object):
         self.holdings_report['holdings'] = holdings
         self.holdings_report['totals'] = totals
 
-    def _which_tax_year(self, timestamp):
-        tax_year = which_tax_year(timestamp)
+    def which_tax_year(self, timestamp):
+        if timestamp > config.get_tax_year_end(timestamp.year):
+            tax_year = timestamp.year + 1
+        else:
+            tax_year = timestamp.year
+
         if tax_year not in self.tax_events:
             self.tax_events[tax_year] = []
 
@@ -342,7 +345,8 @@ class TaxEventCapitalGains(TaxEvent):
         self.acquisition_date = b.timestamp if b else None
 
     def format_disposal(self):
-        if self.disposal_type == TaxCalculator.DISPOSAL_BED_AND_BREAKFAST:
+        if self.disposal_type in (TaxCalculator.DISPOSAL_BED_AND_BREAKFAST,
+                                  TaxCalculator.DISPOSAL_TEN_DAY):
             return "%s (%s)" % (self.disposal_type, self.acquisition_date.strftime('%d/%m/%Y'))
 
         return self.disposal_type
@@ -368,20 +372,36 @@ class TaxEventIncome(TaxEvent):
             self.fees = Decimal(0)
 
 class CalculateCapitalGains(object):
-    CG_DATA_INDIVIDUALS = {2009: {'allowance': 9600, 'basic_rate': 18, 'higher_rate': 18},
-                           2010: {'allowance': 10100, 'basic_rate': 18, 'higher_rate': 18},
-                           2011: {'allowance': 10100, 'basic_rate': 18, 'higher_rate': 28},
-                           2012: {'allowance': 10600, 'basic_rate': 18, 'higher_rate': 28},
-                           2013: {'allowance': 10600, 'basic_rate': 18, 'higher_rate': 28},
-                           2014: {'allowance': 10900, 'basic_rate': 18, 'higher_rate': 28},
-                           2015: {'allowance': 11000, 'basic_rate': 18, 'higher_rate': 28},
-                           2016: {'allowance': 11100, 'basic_rate': 18, 'higher_rate': 28},
-                           2017: {'allowance': 11100, 'basic_rate': 10, 'higher_rate': 20},
-                           2018: {'allowance': 11300, 'basic_rate': 10, 'higher_rate': 20},
-                           2019: {'allowance': 11700, 'basic_rate': 10, 'higher_rate': 20},
-                           2020: {'allowance': 12000, 'basic_rate': 10, 'higher_rate': 20},
-                           2021: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20},
-                           2022: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20}}
+    # Rate changes start from 6th April in previous year, i.e. 2022 is for tax year 2021/22
+    CG_DATA_INDIVIDUAL = {2009: {'allowance': 9600, 'basic_rate': 18, 'higher_rate': 18},
+                          2010: {'allowance': 10100, 'basic_rate': 18, 'higher_rate': 18},
+                          2011: {'allowance': 10100, 'basic_rate': 18, 'higher_rate': 28},
+                          2012: {'allowance': 10600, 'basic_rate': 18, 'higher_rate': 28},
+                          2013: {'allowance': 10600, 'basic_rate': 18, 'higher_rate': 28},
+                          2014: {'allowance': 10900, 'basic_rate': 18, 'higher_rate': 28},
+                          2015: {'allowance': 11000, 'basic_rate': 18, 'higher_rate': 28},
+                          2016: {'allowance': 11100, 'basic_rate': 18, 'higher_rate': 28},
+                          2017: {'allowance': 11100, 'basic_rate': 10, 'higher_rate': 20},
+                          2018: {'allowance': 11300, 'basic_rate': 10, 'higher_rate': 20},
+                          2019: {'allowance': 11700, 'basic_rate': 10, 'higher_rate': 20},
+                          2020: {'allowance': 12000, 'basic_rate': 10, 'higher_rate': 20},
+                          2021: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20},
+                          2022: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20}}
+
+    # Rate changes start from 1st April
+    CG_DATA_COMPANY = {2009: {'small_rate': 21, 'main_rate': 28},
+                       2010: {'small_rate': 21, 'main_rate': 28},
+                       2011: {'small_rate': 20, 'main_rate': 23},
+                       2012: {'small_rate': 20, 'main_rate': 24},
+                       2013: {'small_rate': 20, 'main_rate': 23},
+                       2014: {'small_rate': 20, 'main_rate': 21},
+                       2015: {'small_rate': None, 'main_rate': 20},
+                       2016: {'small_rate': None, 'main_rate': 20},
+                       2017: {'small_rate': None, 'main_rate': 19},
+                       2018: {'small_rate': None, 'main_rate': 19},
+                       2019: {'small_rate': None, 'main_rate': 19},
+                       2020: {'small_rate': None, 'main_rate': 19},
+                       2021: {'small_rate': None, 'main_rate': 19}}
 
     def __init__(self, tax_year):
         self.totals = {'cost': Decimal(0),
@@ -391,13 +411,32 @@ class CalculateCapitalGains(object):
         self.summary = {'disposals': Decimal(0),
                         'total_gain': Decimal(0),
                         'total_loss': Decimal(0)}
-        self.estimate = {'allowance': Decimal(self.CG_DATA_INDIVIDUALS[tax_year]['allowance']),
-                         'allowance_used': Decimal(0),
-                         'taxable_gain': Decimal(0),
-                         'cgt_basic': Decimal(0),
-                         'cgt_higher': Decimal(0),
-                         'proceeds_warning': False}
+
+        if config.tax_rules in config.TAX_RULES_UK_COMPANY:
+            self.estimate = {'proceeds_warning': False,
+                             'ct_small_rates': [],
+                             'ct_main_rates': [],
+                             'taxable_gain': Decimal(0),
+                             'ct_small': Decimal(0),
+                             'ct_main': Decimal(0)}
+        else:
+            self.estimate = {'allowance': Decimal(self.CG_DATA_INDIVIDUAL[tax_year]['allowance']),
+                             'cgt_basic_rate': self.CG_DATA_INDIVIDUAL[tax_year]['basic_rate'],
+                             'cgt_higher_rate': self.CG_DATA_INDIVIDUAL[tax_year]['higher_rate'],
+                             'allowance_used': Decimal(0),
+                             'taxable_gain': Decimal(0),
+                             'cgt_basic': Decimal(0),
+                             'cgt_higher': Decimal(0),
+                             'proceeds_warning': False}
         self.assets = {}
+
+    def get_ct_rate(self, date):
+        if date < datetime(date.year, 4, 1, tzinfo=config.TZ_LOCAL):
+            # Use rate from previous year
+            return self.CG_DATA_COMPANY[date.year-1]['small_rate'], \
+                   self.CG_DATA_COMPANY[date.year-1]['main_rate']
+        return self.CG_DATA_COMPANY[date.year]['small_rate'], \
+               self.CG_DATA_COMPANY[date.year]['main_rate']
 
     def tax_summary(self, te):
         self.summary['disposals'] += 1
@@ -415,19 +454,53 @@ class CalculateCapitalGains(object):
 
         self.assets[te.asset].append(te)
 
-    def tax_estimate(self, tax_year):
+    def tax_estimate_cgt(self, tax_year):
         if self.totals['gain'] > self.estimate['allowance']:
             self.estimate['allowance_used'] = self.estimate['allowance']
             self.estimate['taxable_gain'] = self.totals['gain'] - self.estimate['allowance']
             self.estimate['cgt_basic'] = self.estimate['taxable_gain'] * \
-                                         self.CG_DATA_INDIVIDUALS[tax_year]['basic_rate'] / 100
+                                         self.CG_DATA_INDIVIDUAL[tax_year]['basic_rate'] / 100
             self.estimate['cgt_higher'] = self.estimate['taxable_gain'] * \
-                                          self.CG_DATA_INDIVIDUALS[tax_year]['higher_rate'] /100
+                                          self.CG_DATA_INDIVIDUAL[tax_year]['higher_rate'] /100
         elif self.totals['gain'] > 0:
             self.estimate['allowance_used'] = self.totals['gain']
 
         if self.totals['proceeds'] >= self.estimate['allowance'] * 4:
             self.estimate['proceeds_warning'] = True
+
+    def tax_estimate_ct(self, tax_year):
+        if self.totals['gain'] > 0:
+            self.estimate['taxable_gain'] = self.totals['gain']
+
+        start_date = config.get_tax_year_start(tax_year)
+        end_date = config.get_tax_year_end(tax_year)
+        day_count = (end_date - start_date).days + 1
+
+        for date in (start_date + timedelta(n) for n in range(day_count)):
+            small_rate, main_rate = self.get_ct_rate(date)
+
+            if small_rate not in self.estimate['ct_small_rates']:
+                self.estimate['ct_small_rates'].append(small_rate)
+
+            if main_rate not in self.estimate['ct_main_rates']:
+                self.estimate['ct_main_rates'].append(main_rate)
+
+            if self.estimate['taxable_gain'] > 0:
+                if small_rate is None:
+                    # Use main rate if there isn't a small rate
+                    self.estimate['ct_small'] += self.estimate['taxable_gain'] / day_count * \
+                                                 main_rate / 100
+                else:
+                    self.estimate['ct_small'] += self.estimate['taxable_gain'] / day_count * \
+                                                 small_rate / 100
+
+                self.estimate['ct_main'] += self.estimate['taxable_gain'] / day_count * \
+                                            main_rate / 100
+
+        if self.estimate['ct_small_rates'] == [None]:
+            # No small rate so remove estimate
+            self.estimate.pop('ct_small')
+            self.estimate['ct_small_rates'] = []
 
 class CalculateIncome(object):
     def __init__(self):

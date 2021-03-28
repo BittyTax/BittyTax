@@ -1,5 +1,5 @@
 {% set price_missing = namespace(flag=false) %}
-<h2>Price Data - {{tax_year - 1}}/{{tax_year}}</h2>
+<h2>Price Data - {{config.format_tax_year(tax_year)}}</h2>
 <table repeat="1" width="100%">
     <tr>
         <th align="left">Asset</th>
