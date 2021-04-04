@@ -406,7 +406,7 @@ class ReportLog(object):
             'Asset'.ljust(self.ASSET_WIDTH+2),
             'Data Source',
             'Date',
-            'Price (GBP)',
+            'Price (%s)' % config.CCY,
             'Price (BTC)'))
 
         if tax_year not in self.price_report:
