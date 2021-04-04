@@ -38,6 +38,25 @@ def parse_kraken_deposits_withdrawals(data_row, _parser, _filename):
                                                  fee_quantity=in_row[8],
                                                  fee_asset=normalise_asset(in_row[6]),
                                                  wallet=WALLET)
+    elif in_row[3] == "transfer" and in_row[0] != "":
+        if float(in_row[7]) >= 0:
+            # Positive transfers are forks and airdrops
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
+                                                     data_row.timestamp,
+                                                     buy_quantity=in_row[7],
+                                                     buy_asset=normalise_asset(in_row[6]),
+                                                     fee_quantity=in_row[8],
+                                                     fee_asset=normalise_asset(in_row[6]),
+                                                     wallet=WALLET)
+        else:
+            # Negative transfers are unlisted assets
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
+                                                     data_row.timestamp,
+                                                     sell_quantity=abs(Decimal(in_row[7])),
+                                                     sell_asset=normalise_asset(in_row[6]),
+                                                     fee_quantity=in_row[8],
+                                                     fee_asset=normalise_asset(in_row[6]),
+                                                     wallet=WALLET)
 
 def parse_kraken_trades(data_row, parser, _filename):
     in_row = data_row.in_row
