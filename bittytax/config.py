@@ -48,6 +48,7 @@ class Config(object):
 
     DEFAULT_CONFIG = {
         'fiat_list': FIAT_LIST,
+        'fiat_main': CCY,
         'crypto_list': CRYPTO_LIST,
         'trade_asset_type': TRADE_ASSET_TYPE_PRIORITY,
         'trade_allowable_cost_type': TRADE_ALLOWABLE_COST_SPLIT,
@@ -90,6 +91,7 @@ class Config(object):
                 self.config[name] = default
 
         self.asset_priority = self.config['fiat_list'] + self.config['crypto_list']
+        self.CCY = self.config['fiat_main']
 
     def __getattr__(self, name):
         try:
@@ -104,7 +106,12 @@ class Config(object):
     def sym(self):
         if self.CCY == 'GBP':
             return u'\xA3' # £
-        raise ValueError("Currency not supported")
+        elif self.CCY == 'EUR':
+            return u'\u20AC' # €
+        elif self.CCY == 'USD':
+            return '$'
+        else:
+            raise ValueError("Currency not supported")
 
     def get_tax_year_start(self, tax_year):
         if self.start_of_year_month != 1:
