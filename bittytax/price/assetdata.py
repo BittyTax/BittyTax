@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2020
 
+import os
+
 from ..config import config
 from .datasource import DataSourceBase, ExchangeRatesAPI, RatesAPI
 from .exceptions import UnexpectedDataSourceError
@@ -10,6 +12,9 @@ class AssetData(object):
 
     def __init__(self):
         self.data_sources = {}
+
+        if not os.path.exists(config.CACHE_DIR):
+            os.mkdir(config.CACHE_DIR)
 
         for data_source_class in DataSourceBase.__subclasses__():
             self.data_sources[data_source_class.__name__.upper()] = data_source_class()
