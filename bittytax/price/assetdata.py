@@ -138,6 +138,8 @@ class AssetData(object):
                 if pair in self.data_sources[ds].prices and \
                        date in self.data_sources[ds].prices[pair]:
                     asset_id['price'] = self.data_sources[ds].prices[pair][date]['price']
+                else:
+                    asset_id['price'] = None
 
                 all_assets.append(asset_id)
         return all_assets

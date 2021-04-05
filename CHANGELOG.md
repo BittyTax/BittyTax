@@ -9,6 +9,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Accounting tool: assets which only have matched disposals are not shown in holdings report. ([#60](https://github.com/BittyTax/BittyTax/issues/60))
 - Coinbase Pro parser: fills export, buy quantity missing fee.
 - Price tool: list command returns error. ([#86](https://github.com/BittyTax/BittyTax/issues/86))
+- Price tool: -ds option returns "KeyError: 'price'" exception.
 ### Added
 - Etherscan parser: added internal transactions export.
 - Binance parser: added cash deposit and withdrawal exports.

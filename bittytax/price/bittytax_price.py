@@ -153,7 +153,7 @@ def main():
                                                              config.args.datasource)
                 btc = None
                 for asset in assets:
-                    if not asset['price']:
+                    if asset['price'] is None:
                         continue
 
                     output_ds_price(asset)
@@ -225,22 +225,16 @@ def main():
 def get_latest_btc_price():
     btc = {}
     btc['symbol'] = 'BTC'
-    btc['price'] = None
-    btc['quote'] = 'GBP'
-
-    value_asset = ValueAsset()
-    btc['price'], btc['name'], btc['data_source'] = value_asset.get_latest_price(btc['symbol'])
+    btc['quote'] = config.CCY
+    btc['price'], btc['name'], btc['data_source'] = ValueAsset().get_latest_price(btc['symbol'])
     return btc
 
 def get_historic_btc_price(date):
     btc = {}
     btc['symbol'] = 'BTC'
-    btc['price'] = None
-    btc['quote'] = 'GBP'
-
-    value_asset = ValueAsset()
-    btc['price'], btc['name'], btc['data_source'] = value_asset.get_historical_price(btc['symbol'],
-                                                                                     date)
+    btc['quote'] = config.CCY
+    btc['price'], btc['name'], btc['data_source'] = ValueAsset().get_historical_price(btc['symbol'],
+                                                                                      date)
     return btc
 
 def output_price(symbol, price_ccy):
