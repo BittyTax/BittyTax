@@ -265,7 +265,7 @@ class TransactionRow(object):
             if buy_value < 0:
                 raise DataValueError(3, TransactionRow.HEADER[3], buy_value)
 
-            if buy_asset == config.CCY and buy_value != buy_quantity:
+            if buy_asset == config.ccy and buy_value != buy_quantity:
                 raise DataValueError(3, TransactionRow.HEADER[3], buy_value)
         else:
             buy_value = None
@@ -310,7 +310,7 @@ class TransactionRow(object):
             if sell_value < 0:
                 raise DataValueError(6, TransactionRow.HEADER[6], sell_value)
 
-            if sell_asset == config.CCY and sell_value != sell_quantity:
+            if sell_asset == config.ccy and sell_value != sell_quantity:
                 raise DataValueError(6, TransactionRow.HEADER[6], sell_value)
         else:
             sell_value = None
@@ -355,7 +355,7 @@ class TransactionRow(object):
             if fee_value < 0:
                 raise DataValueError(9, TransactionRow.HEADER[9], fee_value)
 
-            if fee_asset == config.CCY and fee_value != fee_quantity:
+            if fee_asset == config.ccy and fee_value != fee_quantity:
                 raise DataValueError(9, TransactionRow.HEADER[9], fee_value)
         else:
             fee_value = None

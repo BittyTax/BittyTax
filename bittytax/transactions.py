@@ -208,7 +208,7 @@ class TransactionBase(object):
             return " + fee=%s%s %s" % (
                 '' if self.fee_fixed else '~',
                 config.sym() + '{:0,.2f}'.format(self.fee_value),
-                config.CCY)
+                config.ccy)
 
         return ''
 
@@ -321,7 +321,7 @@ class Buy(TransactionBase):
             return " (%s%s %s)" % (
                 '=' if self.cost_fixed else '~',
                 config.sym() + '{:0,.2f}'.format(self.cost),
-                config.CCY)
+                config.ccy)
         return ''
 
     def __str__(self, pooled_bold=False, quantity_bold=False):
@@ -420,7 +420,7 @@ class Sell(TransactionBase):
             return " (%s%s %s)" % (
                 '=' if self.proceeds_fixed else '~',
                 config.sym() + '{:0,.2f}'.format(self.proceeds),
-                config.CCY)
+                config.ccy)
         return ''
 
     def __str__(self, pooled_bold=False, quantity_bold=False):

@@ -47,10 +47,10 @@ def main():
 
     parser_latest = subparsers.add_parser(CMD_LATEST,
                                           help="get the latest price of an asset",
-                                          description="Get the latest [asset] price (in GBP). "
+                                          description="Get the latest [asset] price (in %s). "
                                                       "If no data source [-ds] is given, "
                                                       "the same data source(s) as "
-                                                      "'bittytax' are used.")
+                                                      "'bittytax' are used." % config.ccy)
     parser_latest.add_argument('asset',
                                type=str,
                                nargs=1,
@@ -73,11 +73,11 @@ def main():
 
     parser_history = subparsers.add_parser(CMD_HISTORY,
                                            help="get the historical price of an asset",
-                                           description="Get the historic [asset] price (in GBP) "
+                                           description="Get the historic [asset] price (in %s) "
                                                        "for the [date] specified. "
                                                        "If no data source [-ds] is given, "
                                                        "the same data source(s) as "
-                                                       "'bittytax' are used.")
+                                                       "'bittytax' are used." % config.ccy)
     parser_history.add_argument('asset',
                                 type=str.upper,
                                 nargs=1,
@@ -225,14 +225,14 @@ def main():
 def get_latest_btc_price():
     btc = {}
     btc['symbol'] = 'BTC'
-    btc['quote'] = config.CCY
+    btc['quote'] = config.ccy
     btc['price'], btc['name'], btc['data_source'] = ValueAsset().get_latest_price(btc['symbol'])
     return btc
 
 def get_historic_btc_price(date):
     btc = {}
     btc['symbol'] = 'BTC'
-    btc['quote'] = config.CCY
+    btc['quote'] = config.ccy
     btc['price'], btc['name'], btc['data_source'] = ValueAsset().get_historical_price(btc['symbol'],
                                                                                       date)
     return btc
@@ -242,7 +242,7 @@ def output_price(symbol, price_ccy):
         Fore.WHITE,
         symbol,
         config.sym() + '{:0,.2f}'.format(price_ccy),
-        config.CCY))
+        config.ccy))
     if config.args.quantity:
         quantity = Decimal(config.args.quantity)
         print("%s%s %s=%s %s" % (
@@ -250,7 +250,7 @@ def output_price(symbol, price_ccy):
             '{:0,f}'.format(quantity.normalize()),
             symbol,
             config.sym() + '{:0,.2f}'.format(quantity * price_ccy),
-            config.CCY))
+            config.ccy))
 
 def output_ds_price(asset):
     print("%s1 %s=%s %s %svia %s (%s)%s" % (

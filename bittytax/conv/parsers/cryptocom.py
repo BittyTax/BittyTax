@@ -129,7 +129,7 @@ def parse_crypto_com(data_row, parser, _filename):
         raise UnexpectedTypeError(9, parser.in_header[9], in_row[9])
 
 def get_value(in_row):
-    if in_row[6] == config.CCY:
+    if in_row[6] == config.ccy:
         return abs(Decimal(in_row[7]))
     return None
 

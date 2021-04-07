@@ -25,14 +25,14 @@ def parse_ii(data_row, parser, _filename):
                                                  buy_asset=in_row[2],
                                                  sell_quantity=in_row[9].
                                                  strip('£').replace(',', ''),
-                                                 sell_asset=config.CCY,
+                                                 sell_asset=config.ccy,
                                                  wallet=WALLET)
     elif in_row[10]:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[10].
                                                  strip('£').replace(',', ''),
-                                                 buy_asset=config.CCY,
+                                                 buy_asset=config.ccy,
                                                  sell_quantity=in_row[5],
                                                  sell_asset=in_row[2],
                                                  wallet=WALLET)

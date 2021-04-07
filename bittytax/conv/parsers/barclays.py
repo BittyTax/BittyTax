@@ -19,13 +19,13 @@ def parse_barclays(data_row, parser, _filename):
                                                  buy_quantity=in_row[5],
                                                  buy_asset=in_row[0],
                                                  sell_quantity=in_row[6],
-                                                 sell_asset=config.CCY,
+                                                 sell_asset=config.ccy,
                                                  wallet=in_row[3])
     elif in_row[4] == "Sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=in_row[6],
-                                                 buy_asset=config.CCY,
+                                                 buy_asset=config.ccy,
                                                  sell_quantity=in_row[5],
                                                  sell_asset=in_row[0],
                                                  wallet=in_row[3])

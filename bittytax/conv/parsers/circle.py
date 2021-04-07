@@ -26,7 +26,7 @@ def parse_circle(data_row, parser, _filename):
                                                  sell_quantity=in_row[5].strip('£€$').split(' ')[0],
                                                  sell_asset=in_row[6],
                                                  sell_value=in_row[7].strip('£€$') if in_row[8] == \
-                                                                                       config.CCY \
+                                                                                       config.ccy \
                                                                                    else None,
                                                  wallet=WALLET)
     elif in_row[2] == "receive":
@@ -35,7 +35,7 @@ def parse_circle(data_row, parser, _filename):
                                                  buy_quantity=in_row[7].strip('£€$').split(' ')[0],
                                                  buy_asset=in_row[8],
                                                  buy_value=in_row[5].strip('£€$') if in_row[6] == \
-                                                                                      config.CCY \
+                                                                                      config.ccy \
                                                                                   else None,
                                                  wallet=WALLET)
     elif in_row[2] == "fork":

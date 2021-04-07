@@ -33,13 +33,13 @@ class Holdings(object):
                 '{:0,f}'.format(self.quantity.normalize()),
                 '{:0,f}'.format(quantity.normalize()),
                 config.sym() + '{:0,.2f}'.format(self.cost),
-                config.CCY,
+                config.ccy,
                 config.sym() + '{:0,.2f}'.format(cost),
-                config.CCY,
+                config.ccy,
                 config.sym() + '{:0,.2f}'.format(self.fees),
-                config.CCY,
+                config.ccy,
                 config.sym() + '{:0,.2f}'.format(fees),
-                config.CCY))
+                config.ccy))
 
     def subtract_tokens(self, quantity, cost, fees, is_withdrawal):
         self.quantity -= quantity
@@ -56,13 +56,13 @@ class Holdings(object):
                 '{:0,f}'.format(self.quantity.normalize()),
                 '{:0,f}'.format(quantity.normalize()),
                 config.sym() + '{:0,.2f}'.format(self.cost),
-                config.CCY,
+                config.ccy,
                 config.sym() + '{:0,.2f}'.format(cost),
-                config.CCY,
+                config.ccy,
                 config.sym() + '{:0,.2f}'.format(self.fees),
-                config.CCY,
+                config.ccy,
                 config.sym() + '{:0,.2f}'.format(fees),
-                config.CCY))
+                config.ccy))
 
     def check_transfer_mismatch(self):
         if self.withdrawals > 0 and self.withdrawals != self.deposits:

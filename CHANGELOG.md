@@ -35,6 +35,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Accounting tool: tax rates and allowance for 2021/22.
 - Accounting tool: tax rules for UK companies.
 - Accounting tool: tax rules option (--taxrules) added.
+- Local currency support.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.

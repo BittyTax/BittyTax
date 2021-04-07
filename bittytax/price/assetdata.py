@@ -92,7 +92,7 @@ class AssetData(object):
                                                          asset_id['data_source'])
 
                 if req_symbol == 'BTC' or asset_id['data_source'] in self.FIAT_DATASOURCES:
-                    asset_id['quote'] = config.CCY
+                    asset_id['quote'] = config.ccy
                 else:
                     asset_id['quote'] = 'BTC'
 
@@ -118,7 +118,7 @@ class AssetData(object):
                                                          asset_id['data_source'])
 
                 if req_symbol == 'BTC' or asset_id['data_source'] in self.FIAT_DATASOURCES:
-                    asset_id['quote'] = config.CCY
+                    asset_id['quote'] = config.ccy
                 else:
                     asset_id['quote'] = 'BTC'
 
