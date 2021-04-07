@@ -9,6 +9,7 @@ from . import circle
 from . import coinbase
 from . import coinbasepro
 from . import coinfloor
+from . import coinomi
 from . import cointracking
 from . import cryptocom
 from . import cryptopia
