@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2020
 
+import sys
+
 from decimal import Decimal
+from colorama import Fore, Back
 
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
-from ..exceptions import UnexpectedTypeError, UnexpectedTradingPairError
 
 WALLET = "Kraken"
 
@@ -17,59 +19,69 @@ ALT_ASSETS = {"KFEE": "FEE", "XETC": "ETC", "XETH": "ETH", "XLTC": "LTC", "XMLN"
               "XXRP": "XRP", "XZEC": "ZEC", "ZAUD": "AUD", "ZCAD": "CAD", "ZEUR": "EUR",
               "ZGBP": "GBP", "ZJPY": "JPY", "ZUSD": "USD"}
 
-def parse_kraken_deposits_withdrawals(data_row, _parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[2])
 
-    if in_row[3] == "deposit" and in_row[0] != "":
-        # Check for txid to filter failed transactions
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                                 data_row.timestamp,
-                                                 buy_quantity=in_row[7],
-                                                 buy_asset=normalise_asset(in_row[6]),
-                                                 fee_quantity=in_row[8],
-                                                 fee_asset=normalise_asset(in_row[6]),
-                                                 wallet=WALLET)
-    elif in_row[3] == "withdrawal" and in_row[0] != "":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
-                                                 data_row.timestamp,
-                                                 sell_quantity=abs(Decimal(in_row[7])),
-                                                 sell_asset=normalise_asset(in_row[6]),
-                                                 fee_quantity=in_row[8],
-                                                 fee_asset=normalise_asset(in_row[6]),
-                                                 wallet=WALLET)
+def parse_kraken_deposits_withdrawals(data_rows, parser, _filename):
+    # https://support.kraken.com/hc/en-us/articles/360001169383-How-to-interpret-Ledger-history-fields
+    txid_idx = parser.header.index('txid')
+    type_idx = parser.header.index('type')
+    time_idx = parser.header.index('time')
+    asset_idx = parser.header.index('asset')
+    amount_idx = parser.header.index('amount')
+    fee_idx = parser.header.index('fee')
+
+    for row in data_rows:
+        if row.in_row[txid_idx] == '':
+            continue
+        type = row.in_row[type_idx]
+        amount = row.in_row[amount_idx]
+        fee = row.in_row[fee_idx]
+        row.timestamp = timestamp = DataParser.parse_timestamp(row.in_row[time_idx])
+        transaction_type = TransactionOutRecord.TYPE_TRADE
+        buy_quantity = sell_quantity = None
+        fee_quantity = fee
+        buy_asset = sell_asset = fee_asset = normalise_asset(row.in_row[asset_idx])
+
+        if type == 'deposit':
+            transaction_type = TransactionOutRecord.TYPE_DEPOSIT
+            sell_asset = None
+            buy_quantity = amount
+        elif type == 'withdrawal':
+            transaction_type = TransactionOutRecord.TYPE_WITHDRAWAL
+            buy_asset = None
+            sell_quantity = abs(Decimal(amount))
+        elif type in ['trade', 'margin', 'rollover', 'transfer']:
+            buy_quantity = sell_quantity = '0'
+            fee_quantity = fee
+            if float(amount) > 0:
+                buy_quantity = amount
+                if type == 'transfer':
+                    sell_asset = None
+                    sell_quantity = None
+                    transaction_type = TransactionOutRecord.TYPE_GIFT_RECEIVED
+            else:
+                sell_quantity = abs(Decimal(amount))
+                if type == 'transfer':
+                    transaction_type = TransactionOutRecord.TYPE_TRADE
+        else:
+            sys.stderr.write(
+                "%sWARNING%s Unsupported type: 'Kraken:%s'. Audit will not match.%s\n" % (
+                    Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW, type, Fore.RESET))
+
+        row.t_record = TransactionOutRecord(transaction_type, timestamp,
+                                            buy_quantity=buy_quantity,
+                                            buy_asset=buy_asset,
+                                            sell_quantity=sell_quantity,
+                                            sell_asset=sell_asset,
+                                            fee_quantity=fee_quantity,
+                                            fee_asset=fee_asset,
+                                            wallet=WALLET)
+
 
 def parse_kraken_trades(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[3])
-
-    base_asset, quote_asset = split_trading_pair(in_row[2])
-    if base_asset is None or quote_asset is None:
-        raise UnexpectedTradingPairError(2, parser.in_header[2], in_row[2])
-
-    if in_row[4] == "buy":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                 data_row.timestamp,
-                                                 buy_quantity=in_row[9],
-                                                 buy_asset=normalise_asset(base_asset),
-                                                 sell_quantity=in_row[7],
-                                                 sell_asset=normalise_asset(quote_asset),
-                                                 fee_quantity=in_row[8],
-                                                 fee_asset=normalise_asset(quote_asset),
-                                                 wallet=WALLET)
-    elif in_row[4] == "sell":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                 data_row.timestamp,
-                                                 buy_quantity=in_row[7],
-                                                 buy_asset=normalise_asset(quote_asset),
-                                                 sell_quantity=in_row[9],
-                                                 sell_asset=normalise_asset(base_asset),
-                                                 fee_quantity=in_row[8],
-                                                 fee_asset=normalise_asset(quote_asset),
-                                                 wallet=WALLET)
-    else:
-        raise UnexpectedTypeError(4, parser.in_header[4], in_row[4])
-
+    # https://support.kraken.com/hc/en-us/articles/360001184886-How-to-interpret-Trades-history-fields
+    sys.stderr.write(
+        "%sWARNING%s Kraken Trades (Kraken T) are deprecated and ignored. Load Ledgers (Kraken D,W) in stead.%s\n" % (
+            Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW, Fore.RESET))
 
 def split_trading_pair(trading_pair):
     for quote_asset in sorted(QUOTE_ASSETS, reverse=True):
@@ -77,6 +89,7 @@ def split_trading_pair(trading_pair):
             return trading_pair[:-len(quote_asset)], quote_asset
 
     return None, None
+
 
 def normalise_asset(asset):
     if asset in ALT_ASSETS:
@@ -86,12 +99,13 @@ def normalise_asset(asset):
         return "BTC"
     return asset
 
+
 DataParser(DataParser.TYPE_EXCHANGE,
            "Kraken Deposits/Withdrawals",
            ['txid', 'refid', 'time', 'type', 'subtype', 'aclass', 'asset', 'amount', 'fee',
             'balance'],
            worksheet_name="Kraken D,W",
-           row_handler=parse_kraken_deposits_withdrawals)
+           all_handler=parse_kraken_deposits_withdrawals)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Kraken Trades",
