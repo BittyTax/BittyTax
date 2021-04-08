@@ -54,6 +54,7 @@ class Config(object):
         'show_empty_wallets': False,
         'transfers_include': True,
         'transfer_fee_disposal': False,
+        'transfer_fee_allowable_cost': False,
         'data_source_select': {},
         'data_source_fiat': DATA_SOURCE_FIAT,
         'data_source_crypto': DATA_SOURCE_CRYPTO,

@@ -58,7 +58,9 @@ class TransactionHistory(object):
                     tr.sell.fee_fixed = tr.fee.proceeds_fixed
                 else:
                     # Special case for transfer fees
-                    tr.fee.fee_value = tr.fee.proceeds
+                    if config.transfer_fee_allowable_cost:
+                        tr.fee.fee_value = tr.fee.proceeds
+                        tr.fee.fee_fixed = tr.fee.proceeds_fixed
 
             if tr.buy and (tr.buy.quantity or tr.buy.fee_value) and \
                     tr.buy.asset not in config.fiat_list:
