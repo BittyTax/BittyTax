@@ -50,7 +50,7 @@ def parse_qt_wallet(data_row, parser, _filename):
                                                  sell_asset=symbol,
                                                  wallet=WALLET,
                                                  note=in_row[3])
-    elif in_row[2] == "Mined":
+    elif in_row[2] in ("Mined", "Masternode Reward"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_MINING,
                                                  data_row.timestamp,
                                                  buy_quantity=amount,
