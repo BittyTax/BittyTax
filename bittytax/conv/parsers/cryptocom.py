@@ -32,7 +32,7 @@ def parse_crypto_com(data_row, parser, filename):
     """
     in_row = data_row.in_row
     header = parser.header
-    data_row.timestamp = DataParser.parse_timestamp(in_row[header.index('Timestamp (UTC)')])
+    timestamp = data_row.timestamp = DataParser.parse_timestamp(in_row[header.index('Timestamp (UTC)')])
     comment = in_row[header.index('Transaction Description')]
     tx_type = in_row[header.index('Transaction Kind')]
     asset = in_row[header.index('Currency')]
@@ -42,123 +42,100 @@ def parse_crypto_com(data_row, parser, filename):
     fiat_asset = in_row[header.index('Native Currency')]
     fiat_quantity = abs(Decimal(in_row[header.index('Native Amount')])) if fiat_asset == config.CCY else None
 
+    # Defaults
+    t_type = TransactionOutRecord.TYPE_TRADE
+    buy_quantity = sell_quantity = fee_quantity = None
+    buy_value = sell_value = None
+    buy_asset = sell_asset = fee_asset = ''
+
     if "fiat" in filename.lower():
         # FIAT wallet export is required for proper FIAT audit.
         if tx_type not in ("viban_card_top_up", "viban_withdrawal", "viban_deposit"):
             # We need to ignore the duplicates already found in the "transactions" file.
             return
-        if tx_type == "viban_card_top_up":
-            # Moving from fiat wallet to card wallet requires parsing the "card" csv file. Until someone volunteers to
-            # do that accurately, we'll just spend the money on the card.
-            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
-                                                     data_row.timestamp,
-                                                     sell_quantity=abs(Decimal(quantity)),
-                                                     sell_asset=asset,
-                                                     sell_value=fiat_quantity,
-                                                     wallet=WALLET, note=comment)
-            return
 
-    if tx_type in ("crypto_transfer", "airdrop_locked"):
+
+    if tx_type == "viban_card_top_up":
+        # Moving from fiat wallet to card wallet requires parsing the "card" csv file. Until someone volunteers to
+        # do that accurately, we'll just spend the money on the card.  
+        t_type = TransactionOutRecord.TYPE_SPEND
+        sell_quantity = abs(Decimal(quantity))
+        sell_asset = asset
+        sell_value = fiat_quantity
+    elif tx_type in ("crypto_transfer", "airdrop_locked"):
         if Decimal(quantity) > 0:
-            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
-                                                     data_row.timestamp,
-                                                     buy_quantity=quantity,
-                                                     buy_asset=asset,
-                                                     buy_value=fiat_quantity,
-                                                     wallet=WALLET, note=comment)
+            t_type = TransactionOutRecord.TYPE_GIFT_RECEIVED
+            buy_quantity = quantity
+            buy_asset = asset
+            buy_value = fiat_quantity
         else:
-            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_SENT,
-                                                     data_row.timestamp,
-                                                     sell_quantity=abs(Decimal(quantity)),
-                                                     sell_asset=asset,
-                                                     sell_value=fiat_quantity,
-                                                     wallet=WALLET, note=comment)
+            t_type = TransactionOutRecord.TYPE_GIFT_SENT
+            sell_quantity = abs(Decimal(quantity))
+            sell_asset = asset
+            sell_value = fiat_quantity
     elif tx_type in ("crypto_earn_interest_paid", "crypto_earn_extra_interest_paid", "mco_stake_reward"):
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INTEREST,
-                                                 data_row.timestamp,
-                                                 buy_quantity=quantity,
-                                                 buy_asset=asset,
-                                                 buy_value=fiat_quantity,
-                                                 wallet=WALLET, note=comment)
+        t_type = TransactionOutRecord.TYPE_INTEREST
+        buy_quantity = quantity
+        buy_asset = asset
+        buy_value = fiat_quantity
     elif tx_type in ("viban_purchase", "van_purchase",
                      "crypto_viban_exchange", "crypto_exchange"):
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                 data_row.timestamp,
-                                                 buy_quantity=to_quantity,
-                                                 buy_asset=to_asset,
-                                                 sell_quantity=abs(Decimal(quantity)),
-                                                 sell_asset=asset,
-                                                 sell_value=fiat_quantity,
-                                                 wallet=WALLET, note=comment)
+        buy_quantity = to_quantity
+        buy_asset = to_asset
+        sell_quantity = abs(Decimal(quantity))
+        sell_asset = asset
+        sell_value = fiat_quantity
     elif tx_type in ("crypto_wallet_swap_credited", "crypto_wallet_swap_debited",
                      "interest_swap_credited", "interest_swap_debited",
                      "lockup_swap_credited", "lockup_swap_debited",
                      "dust_conversion_debited",
                      "dust_conversion_credited"):
         if Decimal(quantity) > 0:
-            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                     data_row.timestamp,
-                                                     buy_quantity=quantity,
-                                                     buy_asset=asset,
-                                                     sell_quantity=0,
-                                                     sell_asset=fiat_asset,
-                                                     wallet=WALLET, note=comment)
+            buy_quantity = quantity
+            buy_asset = asset
+            sell_quantity = 0
+            sell_asset = fiat_asset
         else:
-            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                     data_row.timestamp,
-                                                     buy_quantity=0,
-                                                     buy_asset=fiat_asset,
-                                                     sell_quantity=abs(Decimal(quantity)),
-                                                     sell_asset=asset,
-                                                     wallet=WALLET, note=comment)
+            buy_quantity = 0
+            buy_asset = fiat_asset
+            sell_quantity = abs(Decimal(quantity))
+            sell_asset = asset
     elif tx_type == "crypto_purchase":
         # This is a purchase of crypto with a credit card. Do NOT subtract from fiat.
         # For tax purposes, this needs to be a deposit, not a trade with a price of zero.
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                                 data_row.timestamp,
-                                                 buy_quantity=quantity,
-                                                 buy_asset=asset,
-                                                 sell_quantity=None,
-                                                 sell_asset='',
-                                                 wallet=WALLET, note=comment)
+        t_type = TransactionOutRecord.TYPE_DEPOSIT
+        buy_quantity = quantity
+        buy_asset = asset
+        sell_quantity = None
+        sell_asset = ''
     elif tx_type in ("referral_bonus", "referral_card_cashback", "referral_commission", "reimbursement",
                      "gift_card_reward", "transfer_cashback", "admin_wallet_credited",
                      "referral_gift", "campaign_reward"):
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
-                                                 data_row.timestamp,
-                                                 buy_quantity=quantity,
-                                                 buy_asset=asset,
-                                                 buy_value=fiat_quantity,
-                                                 wallet=WALLET, note=comment)
+        t_type = TransactionOutRecord.TYPE_GIFT_RECEIVED
+        buy_quantity = quantity
+        buy_asset = asset
+        buy_value = fiat_quantity
     elif tx_type in ("card_cashback_reverted", "reimbursement_reverted"):
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_SENT,
-                                                 data_row.timestamp,
-                                                 sell_quantity=abs(Decimal(quantity)),
-                                                 sell_asset=asset,
-                                                 sell_value=fiat_quantity,
-                                                 wallet=WALLET, note=comment)
+        t_type = TransactionOutRecord.TYPE_GIFT_SENT
+        sell_quantity = abs(Decimal(quantity))
+        sell_asset = asset
+        sell_value = fiat_quantity
     elif tx_type in ("crypto_payment", "card_top_up"):
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
-                                                 data_row.timestamp,
-                                                 sell_quantity=abs(Decimal(quantity)),
-                                                 sell_asset=asset,
-                                                 sell_value=fiat_quantity,
-                                                 wallet=WALLET, note=comment)
+        t_type = TransactionOutRecord.TYPE_SPEND
+        sell_quantity = abs(Decimal(quantity))
+        sell_asset = asset
+        sell_value = fiat_quantity
     elif tx_type in ("crypto_withdrawal", "crypto_to_exchange_transfer", "airdrop_to_exchange_transfer",
                      "invest_deposit", "viban_withdrawal"):
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
-                                                 data_row.timestamp,
-                                                 sell_quantity=abs(Decimal(quantity)),
-                                                 sell_asset=asset,
-                                                 sell_value=fiat_quantity,
-                                                 wallet=WALLET, note=comment)
+        t_type = TransactionOutRecord.TYPE_WITHDRAWAL
+        sell_quantity = abs(Decimal(quantity))
+        sell_asset = asset
+        sell_value = fiat_quantity
     elif tx_type in ("crypto_deposit", "exchange_to_crypto_transfer", "invest_withdrawal", "viban_deposit"):
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                                 data_row.timestamp,
-                                                 buy_quantity=quantity,
-                                                 buy_asset=asset,
-                                                 buy_value=fiat_quantity,
-                                                 wallet=WALLET, note=comment)
+        t_type = TransactionOutRecord.TYPE_DEPOSIT
+        buy_quantity = quantity
+        buy_asset = asset
+        buy_value = fiat_quantity
     elif tx_type in ("crypto_earn_program_created", "crypto_earn_program_withdrawn",
                      "lockup_lock", "lockup_upgrade", "lockup_unlock",
                      "supercharger_deposit", "supercharger_withdrawal"):
@@ -177,20 +154,21 @@ def parse_crypto_com(data_row, parser, filename):
         # This is not supposed to happen
         # Could be a fiat transaction
         if "Deposit" in in_row[1]:
-            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                                     data_row.timestamp,
-                                                     buy_quantity=quantity,
-                                                     buy_asset=asset,
-                                                     wallet=WALLET, note=comment)
+            t_type = TransactionOutRecord.TYPE_DEPOSIT
+            buy_quantity = quantity
+            buy_asset = asset
         elif "Withdrawal" in in_row[1]:
-            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
-                                                     data_row.timestamp,
-                                                     sell_quantity=abs(Decimal(quantity)),
-                                                     sell_asset=asset,
-                                                     wallet=WALLET, note=comment)
+            t_type = TransactionOutRecord.TYPE_WITHDRAWAL
+            sell_quantity = abs(Decimal(quantity))
+            sell_asset = asset
     else:
         raise UnexpectedTypeError(9, parser.in_header[9], tx_type)
 
+    data_row.t_record = TransactionOutRecord(t_type, timestamp,
+                                             buy_quantity, buy_asset, buy_value,
+                                             sell_quantity, sell_asset, sell_value,
+                                             fee_quantity, fee_asset, None,
+                                             WALLET, comment)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Crypto.com",
