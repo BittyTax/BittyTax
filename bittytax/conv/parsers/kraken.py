@@ -77,11 +77,13 @@ def parse_kraken_deposits_withdrawals(data_rows, parser, _filename):
                                             wallet=WALLET)
 
 
-def parse_kraken_trades(data_row, parser, _filename):
+def parse_kraken_trades(_data_row, parser, _filename):
     # https://support.kraken.com/hc/en-us/articles/360001184886-How-to-interpret-Trades-history-fields
-    sys.stderr.write(
-        "%sWARNING%s Kraken Trades (Kraken T) are deprecated and ignored. Load Ledgers (Kraken D,W) in stead.%s\n" % (
-            Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW, Fore.RESET))
+    if not hasattr(parser, "deprecation_warning"):
+        parser.deprecation_warning = True
+        sys.stderr.write(
+            "%sWARNING%s Kraken Trades (Kraken T) are deprecated and ignored. Load Ledgers (Kraken D,W) in stead.%s\n" % (
+                Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW, Fore.RESET))
 
 def split_trading_pair(trading_pair):
     for quote_asset in sorted(QUOTE_ASSETS, reverse=True):
