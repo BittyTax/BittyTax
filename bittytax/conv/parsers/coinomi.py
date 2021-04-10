@@ -44,7 +44,7 @@ def parse_coinomi_history(data_row, parser, _filename):
                                              fee_quantity, fee_asset, None,
                                              WALLET, label)
 
-DataParser(DataParser.TYPE_EXCHANGE,
+DataParser(DataParser.TYPE_WALLET,
            "Coinomi",
            ['Asset', 'AccountName', 'Address', 'AddressName', 'Value', 'Symbol', 'Fees', 'InternalTransfer',
             'TransactionID', 'Time(UTC)', 'Time(ISO8601-UTC)', 'BlockExplorer'],
@@ -52,7 +52,7 @@ DataParser(DataParser.TYPE_EXCHANGE,
            row_handler=parse_coinomi_history)
 
 # Yes, seriously
-DataParser(DataParser.TYPE_EXCHANGE,
+DataParser(DataParser.TYPE_WALLET,
            "Coinomi",
            ['Asset', ' AccountName', 'Address', 'AddressName', 'Value', 'Symbol', 'Fees', 'InternalTransfer',
             'TransactionID', 'Time(UTC)', 'Time(ISO8601-UTC)', 'BlockExplorer'],
