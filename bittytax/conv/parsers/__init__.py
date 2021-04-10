@@ -11,6 +11,7 @@ from . import coinbasepro
 from . import coinfloor
 from . import cointracking
 from . import cryptocom
+from . import cryptocom_exchange
 from . import cryptopia
 from . import cryptsy
 from . import electrum
