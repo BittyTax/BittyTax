@@ -18,7 +18,7 @@ class ValueAsset(object):
         self.price_report = {}
 
     def get_value(self, asset, timestamp, quantity):
-        if asset == config.CCY:
+        if asset == config.ccy:
             return quantity, True
 
         if quantity == 0:
@@ -33,12 +33,12 @@ class ValueAsset(object):
                     timestamp.strftime('%Y-%m-%d'),
                     asset,
                     config.sym() + '{:0,.2f}'.format(asset_price_ccy),
-                    config.CCY,
+                    config.ccy,
                     '{:0,f}'.format(quantity.normalize()),
                     asset,
                     Style.BRIGHT,
                     config.sym() + '{:0,.2f}'.format(value),
-                    config.CCY,
+                    config.ccy,
                     Style.NORMAL))
             return value, False
 
@@ -65,7 +65,7 @@ class ValueAsset(object):
 
         if asset == 'BTC' or asset in config.fiat_list:
             asset_price_ccy, name, data_source, url = self.price_data.get_historical(asset,
-                                                                                     config.CCY,
+                                                                                     config.ccy,
                                                                                      timestamp)
             self.price_report_cache(asset, timestamp, name, data_source, url, asset_price_ccy)
         else:
@@ -74,7 +74,7 @@ class ValueAsset(object):
                                                                                      timestamp)
             if asset_price_btc is not None:
                 btc_price_ccy, name2, data_source2, url2 = self.price_data.get_historical(
-                    'BTC', config.CCY, timestamp)
+                    'BTC', config.ccy, timestamp)
                 if btc_price_ccy is not None:
                     asset_price_ccy = btc_price_ccy * asset_price_btc
 
@@ -89,12 +89,12 @@ class ValueAsset(object):
         asset_price_ccy = None
 
         if asset == 'BTC' or asset in config.fiat_list:
-            asset_price_ccy, name, data_source = self.price_data.get_latest(asset, config.CCY)
+            asset_price_ccy, name, data_source = self.price_data.get_latest(asset, config.ccy)
         else:
             asset_price_btc, name, data_source = self.price_data.get_latest(asset, 'BTC')
 
             if asset_price_btc is not None:
-                btc_price_ccy, _, _ = self.price_data.get_latest('BTC', config.CCY)
+                btc_price_ccy, _, _ = self.price_data.get_latest('BTC', config.ccy)
                 if btc_price_ccy is not None:
                     asset_price_ccy = btc_price_ccy * asset_price_btc
 

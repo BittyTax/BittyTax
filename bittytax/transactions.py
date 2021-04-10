@@ -58,7 +58,9 @@ class TransactionHistory(object):
                     tr.sell.fee_fixed = tr.fee.proceeds_fixed
                 else:
                     # Special case for transfer fees
-                    tr.fee.fee_value = tr.fee.proceeds
+                    if config.transfer_fee_allowable_cost:
+                        tr.fee.fee_value = tr.fee.proceeds
+                        tr.fee.fee_fixed = tr.fee.proceeds_fixed
 
             if tr.buy and (tr.buy.quantity or tr.buy.fee_value) and \
                     tr.buy.asset not in config.fiat_list:
@@ -208,7 +210,7 @@ class TransactionBase(object):
             return " + fee=%s%s %s" % (
                 '' if self.fee_fixed else '~',
                 config.sym() + '{:0,.2f}'.format(self.fee_value),
-                config.CCY)
+                config.ccy)
 
         return ''
 
@@ -321,7 +323,7 @@ class Buy(TransactionBase):
             return " (%s%s %s)" % (
                 '=' if self.cost_fixed else '~',
                 config.sym() + '{:0,.2f}'.format(self.cost),
-                config.CCY)
+                config.ccy)
         return ''
 
     def __str__(self, pooled_bold=False, quantity_bold=False):
@@ -420,7 +422,7 @@ class Sell(TransactionBase):
             return " (%s%s %s)" % (
                 '=' if self.proceeds_fixed else '~',
                 config.sym() + '{:0,.2f}'.format(self.proceeds),
-                config.CCY)
+                config.ccy)
         return ''
 
     def __str__(self, pooled_bold=False, quantity_bold=False):

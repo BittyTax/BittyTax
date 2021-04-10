@@ -70,7 +70,15 @@ class ReportPdf(object):
 
     @staticmethod
     def valuefilter(value):
-        return '&pound;{:0,.2f}'.format(value)
+        if config.ccy == 'GBP':
+            return '&pound;{:0,.2f}'.format(value)
+        elif config.ccy == 'EUR':
+            return '&euro;{:0,.2f}'.format(value)
+        elif config.ccy in ('USD', 'AUD', 'NZD'):
+            return '&dollar;{:0,.2f}'.format(value)
+        elif config.ccy in ('DKK', 'NOK', 'SEK'):
+            return 'kr.{:0,.2f}'.format(value)
+        raise ValueError("Currency not supported")
 
     @staticmethod
     def ratefilter(rate):
@@ -406,7 +414,7 @@ class ReportLog(object):
             'Asset'.ljust(self.ASSET_WIDTH+2),
             'Data Source',
             'Date',
-            'Price (GBP)',
+            'Price (%s)' % config.ccy,
             'Price (BTC)'))
 
         if tax_year not in self.price_report:

@@ -40,7 +40,7 @@ def parse_crypto_com(data_row, parser, filename):
     to_asset = in_row[header.index('To Currency')]
     to_quantity = in_row[header.index('To Amount')]
     fiat_asset = in_row[header.index('Native Currency')]
-    fiat_quantity = abs(Decimal(in_row[header.index('Native Amount')])) if fiat_asset == config.CCY else None
+    fiat_quantity = abs(Decimal(in_row[header.index('Native Amount')])) if fiat_asset == config.ccy else None
 
     # Defaults
     t_type = TransactionOutRecord.TYPE_TRADE

@@ -46,7 +46,7 @@ def parse_cointracking(data_row, parser, _filename):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=0,
-                                                 buy_asset=config.CCY,
+                                                 buy_asset=config.ccy,
                                                  sell_quantity=in_row[5],
                                                  sell_asset=in_row[6],
                                                  wallet=wallet_name(in_row[10]))

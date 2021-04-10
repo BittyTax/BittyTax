@@ -23,10 +23,10 @@ def parse_cgtcalculator(data_row, parser, _filename):
                                                  buy_asset=in_row[2],
                                                  sell_quantity=Decimal(in_row[3]) * \
                                                                Decimal(in_row[4]),
-                                                 sell_asset=config.CCY,
+                                                 sell_asset=config.ccy,
                                                  fee_quantity=Decimal(in_row[5]) + \
                                                               Decimal(in_row[6]),
-                                                 fee_asset=config.CCY,
+                                                 fee_asset=config.ccy,
                                                  wallet=WALLET)
     elif in_row[0] == "S":
         if data_row.timestamp >= datetime(2008, 4, 6, tzinfo=config.TZ_UTC):
@@ -34,12 +34,12 @@ def parse_cgtcalculator(data_row, parser, _filename):
                                                      data_row.timestamp,
                                                      buy_quantity=Decimal(in_row[3]) * \
                                                                   Decimal(in_row[4]),
-                                                     buy_asset=config.CCY,
+                                                     buy_asset=config.ccy,
                                                      sell_quantity=in_row[3],
                                                      sell_asset=in_row[2],
                                                      fee_quantity=Decimal(in_row[5]) + \
                                                                   Decimal(in_row[6]),
-                                                     fee_asset=config.CCY,
+                                                     fee_asset=config.ccy,
                                                      wallet=WALLET)
         else:
             raise UnexpectedContentError(1, parser.in_header[1], in_row[1])
@@ -49,7 +49,7 @@ def parse_cgtcalculator(data_row, parser, _filename):
                                                  sell_quantity=in_row[3],
                                                  sell_asset=in_row[2],
                                                  fee_quantity=in_row[4],
-                                                 fee_asset=config.CCY,
+                                                 fee_asset=config.ccy,
                                                  wallet=WALLET)
 
     else:

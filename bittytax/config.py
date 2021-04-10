@@ -17,7 +17,6 @@ class Config(object):
                 'GMT': dateutil.tz.gettz('Europe/London')}
     TZ_LOCAL = dateutil.tz.gettz('Europe/London')
     TZ_UTC = dateutil.tz.UTC
-    CCY = 'GBP'
 
     BITTYTAX_PATH = os.path.expanduser('~/.bittytax')
     BITTYTAX_CONFIG = 'bittytax.conf'
@@ -47,6 +46,7 @@ class Config(object):
     DATA_SOURCE_CRYPTO = ['CryptoCompare', 'CoinGecko']
 
     DEFAULT_CONFIG = {
+        'local_currency': 'GBP',
         'fiat_list': FIAT_LIST,
         'crypto_list': CRYPTO_LIST,
         'trade_asset_type': TRADE_ASSET_TYPE_PRIORITY,
@@ -54,6 +54,7 @@ class Config(object):
         'show_empty_wallets': False,
         'transfers_include': True,
         'transfer_fee_disposal': False,
+        'transfer_fee_allowable_cost': False,
         'data_source_select': {},
         'data_source_fiat': DATA_SOURCE_FIAT,
         'data_source_crypto': DATA_SOURCE_CRYPTO,
@@ -89,6 +90,7 @@ class Config(object):
             if name not in self.config:
                 self.config[name] = default
 
+        self.ccy = self.config['local_currency']
         self.asset_priority = self.config['fiat_list'] + self.config['crypto_list']
 
     def __getattr__(self, name):
@@ -102,8 +104,15 @@ class Config(object):
             print("%sconfig: %s = %s" % (Fore.GREEN, name, self.config[name]))
 
     def sym(self):
-        if self.CCY == 'GBP':
+        if self.ccy == 'GBP':
             return u'\xA3' # £
+        elif self.ccy == 'EUR':
+            return u'\u20AC' # €
+        elif self.ccy in ('USD', 'AUD', 'NZD'):
+            return '$'
+        elif self.ccy in ('DKK', 'NOK', 'SEK'):
+             return 'kr.'
+
         raise ValueError("Currency not supported")
 
     def get_tax_year_start(self, tax_year):

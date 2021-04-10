@@ -88,7 +88,7 @@ class TransactionRecord(object):
         if value is not None:
             return " (%s %s)" % (
                 config.sym() + '{:0,.2f}'.format(value),
-                config.CCY)
+                config.ccy)
         return ''
 
     @staticmethod
