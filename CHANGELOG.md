@@ -58,11 +58,12 @@ Important:- A new Note field has been added to the end of the transaction record
 - Accounting tool: get value for fee if matching buy/sell asset has zero quantity or no price.
 - Accounting tool: don't drop zero quantity buy/sell if fee value present.
 - Accounting tool: ordering of all transactions when transfers_include=False.
-- Ledger Live parser: added "FEES" and "REVEAL" operation types. ([#79](https://github.com/BittyTax/BittyTax/issues/79)
+- Ledger Live parser: added "FEES" and "REVEAL" operation types. ([#79](https://github.com/BittyTax/BittyTax/issues/79))
 - Binance parser: added "Referrer rebates" operation type.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.
+- Config: ExchangeRatesAPI removed. ([#102](https://github.com/BittyTax/BittyTax/issues/102))
 
 ## Version [0.4.3] Beta (2020-12-04)
 Important:- if upgrading, please remove your price data cache file for CryptoCompare: `~/.bittytax/cache/CryptoCompare.json` (see Issue [#29](https://github.com/BittyTax/BittyTax/issues/29))
