@@ -37,6 +37,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Accounting tool: tax rules option (--taxrules) added.
 - Local currency support.
 - Accounting tool: new config "transfer_fee_allowable_cost" added.
+- Conversion tool: allow wildcards in filenames.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.

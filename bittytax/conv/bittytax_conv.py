@@ -5,6 +5,7 @@ import argparse
 import sys
 import codecs
 import platform
+import glob
 
 import colorama
 from colorama import Fore, Back
@@ -87,29 +88,30 @@ def main():
             Fore.GREEN, platform.system(), platform.release()))
 
     for filename in config.args.filename:
-        try:
+        for pathname in glob.iglob(filename):
             try:
-                DataFile.read_excel(filename)
-            except xlrd.XLRDError:
-                DataFile.read_csv(filename)
-        except UnknownCryptoassetError:
-            sys.stderr.write(Fore.RESET)
-            parser.error("cryptoasset cannot be identified for data file: %s, "
-                         "please specify using the [-ca CRYPTOASSET] option" % filename)
-        except UnknownUsernameError:
-            sys.stderr.write(Fore.RESET)
-            parser.exit("%s: error: username cannot be identified in data file: %s, "
-                        "please specify usernames in the %s file" % (
-                            parser.prog, filename, config.BITTYTAX_CONFIG))
-        except DataFilenameError as e:
-            sys.stderr.write(Fore.RESET)
-            parser.exit("%s: error: %s" % (parser.prog, e))
-        except DataFormatUnrecognised:
-            sys.stderr.write("%sWARNING%s File format is unrecognised: %s\n" % (
-                Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, filename))
-        except IOError:
-            sys.stderr.write("%sWARNING%s File could not be read: %s\n" % (
-                Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, filename))
+                try:
+                    DataFile.read_excel(pathname)
+                except xlrd.XLRDError:
+                    DataFile.read_csv(pathname)
+            except UnknownCryptoassetError:
+                sys.stderr.write(Fore.RESET)
+                parser.error("cryptoasset cannot be identified for data file: %s, "
+                             "please specify using the [-ca CRYPTOASSET] option" % pathname)
+            except UnknownUsernameError:
+                sys.stderr.write(Fore.RESET)
+                parser.exit("%s: error: username cannot be identified in data file: %s, "
+                            "please specify usernames in the %s file" % (
+                                parser.prog, pathname, config.BITTYTAX_CONFIG))
+            except DataFilenameError as e:
+                sys.stderr.write(Fore.RESET)
+                parser.exit("%s: error: %s" % (parser.prog, e))
+            except DataFormatUnrecognised:
+                sys.stderr.write("%sWARNING%s File format is unrecognised: %s\n" % (
+                    Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, pathname))
+            except IOError:
+                sys.stderr.write("%sWARNING%s File could not be read: %s\n" % (
+                    Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, pathname))
 
     if DataFile.data_files:
         if config.args.format == config.FORMAT_EXCEL:
