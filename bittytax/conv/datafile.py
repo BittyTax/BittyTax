@@ -26,6 +26,9 @@ class DataFile(object):
         self.parser = parser
         self.data_rows = [DataRow(line_num + 1, in_row) for line_num, in_row in enumerate(reader)]
 
+        # Expose loaded datafiles to parser for intelligent switching
+        parser.data_files = self.data_files
+
         if parser.row_handler:
             for data_row in self.data_rows:
                 if config.args.debug:
