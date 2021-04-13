@@ -85,17 +85,20 @@ def parse_bittrex_deposits(data_row, _parser, _filename):
                                              buy_asset=in_row[2],
                                              wallet=WALLET)
 
-def parse_bittrex_withdrawals(data_row, _parser, _filename):
+def parse_bittrex_withdrawals(data_row, parser, _filename):
     in_row = data_row.in_row
     data_row.timestamp = DataParser.parse_timestamp(in_row[4])
+    canceled = True if in_row[parser.header.index('Canceled')] == 'true' else False
+    authorized = True if in_row[parser.header.index('Authorized')] == 'true' else False
 
-    data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
-                                             data_row.timestamp,
-                                             sell_quantity=in_row[2],
-                                             sell_asset=in_row[1],
-                                             fee_quantity=in_row[7],
-                                             fee_asset=in_row[1],
-                                             wallet=WALLET)
+    if authorized and not canceled:
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                 data_row.timestamp,
+                                                 sell_quantity=in_row[2],
+                                                 sell_asset=in_row[1],
+                                                 fee_quantity=in_row[7],
+                                                 fee_asset=in_row[1],
+                                                 wallet=WALLET)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bittrex Trades",
