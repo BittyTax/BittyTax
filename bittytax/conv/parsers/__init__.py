@@ -3,6 +3,7 @@ from . import barclays
 from . import bitfinex
 from . import bitstamp
 from . import bittrex
+from . import blockchaincom
 from . import cgtcalculator
 from . import changetip
 from . import circle
