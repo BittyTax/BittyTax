@@ -37,7 +37,7 @@ def parse_crypto_com(data_row, parser, _filename):
                                                  buy_asset=in_row[2],
                                                  buy_value=get_value(in_row),
                                                  wallet=WALLET)
-    elif in_row[9] in ("viban_purchase", "van_purchase",
+    elif in_row[9] in ("viban_purchase", "van_purchase", "crypto_to_van_sell_order",
                        "crypto_viban_exchange", "crypto_exchange"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
