@@ -10,25 +10,42 @@ from colorama import Fore, Back
 from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
-from ..exceptions import UnknownCryptoassetError, UnexpectedTypeError
+from ..exceptions import UnknownCryptoassetError, UnexpectedTypeError, DataFilenameError
 
 WALLET = "Qt Wallet"
 
-def parse_qt_wallet(data_row, parser, _filename):
+def parse_qt_wallet(data_row, parser, filename):
     in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[1], tz='Europe/London')
+    header = parser.header
+    data_row.timestamp = DataParser.parse_timestamp(in_row[header.index('Label') if 'Label' in header else header.index('Date/Time')], tz='Europe/London')
+    # amount = None
+    # symbol = None
+    # 'Date/Time'
+    action = in_row[header.index('Type')]
 
-    amount, symbol = get_amount(in_row[5])
+    if 'Amount' in header:
+        note = ''
+        amount = in_row[header.index('Amount')]
+        if 'vericoin' in filename.lower() or 'vrc' in filename.lower():
+            symbol = 'vrc'
+        else:
+            raise DataFilenameError(filename, "Asset Name")
+    else:
+        amount, symbol = get_amount(in_row[5])
+        note = in_row[header.index('Label')]
 
     if not config.args.cryptoasset:
-        if parser.args[0].group(2):
-            symbol = parser.args[0].group(2)
-        elif not symbol:
-            raise UnknownCryptoassetError
+        try:
+            if parser.args[0].group(2):
+                symbol = parser.args[0].group(2)
+            elif not symbol:
+                raise UnknownCryptoassetError
+        except IndexError:
+            pass
     else:
         symbol = config.args.cryptoasset
 
-    if in_row[0] == "false" and not config.args.unconfirmed:
+    if 'Confirmed' in header and in_row[header.index('Confirmed')] == "false" and not config.args.unconfirmed:
         sys.stderr.write("%srow[%s] %s\n" % (
             Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row))
         sys.stderr.write("%sWARNING%s Skipping unconfirmed transaction, "
@@ -36,28 +53,28 @@ def parse_qt_wallet(data_row, parser, _filename):
                              Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW))
         return
 
-    if in_row[2] == "Received with":
+    if action in ("Received with", "Receive"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
                                                  buy_quantity=amount,
                                                  buy_asset=symbol,
                                                  wallet=WALLET,
-                                                 note=in_row[3])
-    elif in_row[2] == "Sent to":
+                                                 note=note)
+    elif action in ("Sent to", "Send"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=amount,
+                                                 sell_quantity=abs(Decimal(amount)),
                                                  sell_asset=symbol,
                                                  wallet=WALLET,
-                                                 note=in_row[3])
-    elif in_row[2] in ("Mined", "Masternode Reward"):
+                                                 note=note)
+    elif action in ("Mined", "Masternode Reward", "Stake"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_MINING,
                                                  data_row.timestamp,
                                                  buy_quantity=amount,
                                                  buy_asset=symbol,
                                                  wallet=WALLET,
-                                                 note=in_row[3])
-    elif in_row[2] == "Payment to yourself":
+                                                 note=note)
+    elif action == "Payment to yourself":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=Decimal(0),
@@ -65,16 +82,16 @@ def parse_qt_wallet(data_row, parser, _filename):
                                                  fee_quantity=amount,
                                                  fee_asset=symbol,
                                                  wallet=WALLET,
-                                                 note=in_row[3])
-    elif in_row[2] == "Name operation":
+                                                 note=note)
+    elif action == "Name operation":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
                                                  data_row.timestamp,
                                                  sell_quantity=amount,
                                                  sell_asset=symbol,
                                                  wallet=WALLET,
-                                                 note=in_row[3])
+                                                 note=note)
     else:
-        raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
+        raise UnexpectedTypeError(header.index('Type'), 'Type', action)
 
 def get_amount(amount):
     match = re.match(r"^(-?\d+\.\d+) (\w{3,4})$", amount)
@@ -89,5 +106,11 @@ DataParser(DataParser.TYPE_WALLET,
            "Qt Wallet (i.e. Bitcoin Core, etc)",
            ['Confirmed', 'Date', 'Type', 'Label', 'Address',
             lambda c: re.match(r"Amount( \((\w+)\))?", c), 'ID'],
+           worksheet_name="Qt Wallet",
+           row_handler=parse_qt_wallet)
+
+DataParser(DataParser.TYPE_WALLET,
+           "Qt Wallet (i.e. Vericoin Qt, etc)",
+           ['Transaction', 'Block', 'Date/Time', 'Type', 'Amount', 'Total'],
            worksheet_name="Qt Wallet",
            row_handler=parse_qt_wallet)
