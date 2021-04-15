@@ -26,7 +26,7 @@ class Holdings(object):
         if is_deposit:
             self.deposits += 1
 
-        if config.args.debug:
+        if config.debug:
             print("%ssection104:   %s=%s (+%s) cost=%s %s (+%s %s) fees=%s %s (+%s %s)" % (
                 Fore.YELLOW,
                 self.asset,
@@ -49,7 +49,7 @@ class Holdings(object):
         if is_withdrawal:
             self.withdrawals += 1
 
-        if config.args.debug:
+        if config.debug:
             print("%ssection104:   %s=%s (-%s) cost=%s %s (-%s %s) fees=%s %s (-%s %s)" % (
                 Fore.YELLOW,
                 self.asset,

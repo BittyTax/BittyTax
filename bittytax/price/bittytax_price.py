@@ -99,6 +99,7 @@ def main():
                                 help="specify the data source to use, or all")
     parser_history.add_argument('-nc',
                                 '--nocache',
+                                dest='no_cache',
                                 action='store_true', help="bypass data cache")
     parser_history.add_argument('-d',
                                 '--debug',
@@ -116,9 +117,9 @@ def main():
     parser_list.add_argument('-s',
                              type=str,
                              nargs='+',
-                             metavar='STRING',
-                             dest='search',
-                             help="search assets using STRING")
+                             metavar='SEARCH_TERM',
+                             dest='search_terms',
+                             help="search assets using SEARCH_TERM(S)")
     parser_list.add_argument('-ds',
                              choices=datasource_choices(upper=True) + ['ALL'],
                              metavar='{' + ', '.join(datasource_choices()) + '} or ALL',
@@ -130,27 +131,29 @@ def main():
                              action='store_true',
                              help="enable debug logging")
 
-    config.args = parser.parse_args()
+    args = parser.parse_args()
+    config.debug = args.debug
 
-    if config.args.debug:
+    if config.debug:
         print("%s%s v%s" % (Fore.YELLOW, parser.prog, __version__))
         print("%spython: v%s" % (Fore.GREEN, platform.python_version()))
         print("%ssystem: %s, release: %s" % (Fore.GREEN, platform.system(), platform.release()))
         config.output_config()
 
-    if config.args.command in (CMD_LATEST, CMD_HISTORY):
-        symbol = config.args.asset[0]
+    if args.command in (CMD_LATEST, CMD_HISTORY):
+        symbol = args.asset[0]
         asset = price = False
 
         try:
-            if config.args.datasource:
-                if config.args.command == CMD_HISTORY:
+            if args.datasource:
+                if args.command == CMD_HISTORY:
                     assets = AssetData().get_historic_price_ds(symbol,
-                                                               config.args.date[0],
-                                                               config.args.datasource)
+                                                               args.date[0],
+                                                               args.datasource,
+                                                               args.no_cache)
                 else:
                     assets = AssetData().get_latest_price_ds(symbol,
-                                                             config.args.datasource)
+                                                             args.datasource)
                 btc = None
                 for asset in assets:
                     if asset['price'] is None:
@@ -159,8 +162,8 @@ def main():
                     output_ds_price(asset)
                     if asset['quote'] == 'BTC':
                         if btc is None:
-                            if config.args.command == CMD_HISTORY:
-                                btc = get_historic_btc_price(config.args.date[0])
+                            if args.command == CMD_HISTORY:
+                                btc = get_historic_btc_price(args.date[0])
                             else:
                                 btc = get_latest_btc_price()
 
@@ -172,20 +175,21 @@ def main():
                         price_ccy = asset['price']
                         price = True
 
-                    output_price(symbol, price_ccy)
+                    output_price(symbol, price_ccy, args.quantity)
 
                 if not assets:
                     asset = False
             else:
                 value_asset = ValueAsset(price_tool=True)
-                if config.args.command == CMD_HISTORY:
+                if args.command == CMD_HISTORY:
                     price_ccy, name, _ = value_asset.get_historical_price(symbol,
-                                                                          config.args.date[0])
+                                                                          args.date[0],
+                                                                          args.no_cache)
                 else:
                     price_ccy, name, _ = value_asset.get_latest_price(symbol)
 
                 if price_ccy is not None:
-                    output_price(symbol, price_ccy)
+                    output_price(symbol, price_ccy, args.quantity)
                     price = True
 
                 if name is not None:
@@ -199,17 +203,17 @@ def main():
                 Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, symbol))
 
         if not price:
-            if config.args.command == CMD_HISTORY:
+            if args.command == CMD_HISTORY:
                 parser.exit("%sWARNING%s Price for %s on %s is not available" % (
                     Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW,
-                    symbol, config.args.date[0].strftime('%Y-%m-%d')))
+                    symbol, args.date[0].strftime('%Y-%m-%d')))
             else:
                 parser.exit("%sWARNING%s Current price for %s is not available" % (
                     Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, symbol))
-    elif config.args.command == CMD_LIST:
-        symbol = config.args.asset
+    elif args.command == CMD_LIST:
+        symbol = args.asset
         try:
-            assets = AssetData().get_assets(symbol, config.args.datasource, config.args.search)
+            assets = AssetData().get_assets(symbol, args.datasource, args.search_terms)
         except DataSourceError as e:
             parser.exit("%sERROR%s %s" % (Back.RED+Fore.BLACK, Back.RESET+Fore.RED, e))
 
@@ -217,7 +221,7 @@ def main():
             parser.exit("%sWARNING%s Asset %s not found" % (
                 Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, symbol))
 
-        if config.args.search and not assets:
+        if args.search_terms and not assets:
             parser.exit("No results found")
 
         output_assets(assets)
@@ -237,14 +241,14 @@ def get_historic_btc_price(date):
                                                                                       date)
     return btc
 
-def output_price(symbol, price_ccy):
+def output_price(symbol, price_ccy, quantity):
     print("%s1 %s=%s %s" % (
         Fore.WHITE,
         symbol,
         config.sym() + '{:0,.2f}'.format(price_ccy),
         config.ccy))
-    if config.args.quantity:
-        quantity = Decimal(config.args.quantity)
+    if quantity:
+        quantity = Decimal(quantity)
         print("%s%s %s=%s %s" % (
             Fore.WHITE,
             '{:0,f}'.format(quantity.normalize()),

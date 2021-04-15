@@ -9,84 +9,88 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Uphold"
 
-def parse_uphold2(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+def parse_uphold2(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'])
 
-    if in_row[11] == "in":
+    if row_dict['Type'] == "in":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[8],
-                                                 buy_asset=in_row[9],
-                                                 fee_quantity=in_row[4] if in_row[4] else None,
-                                                 fee_asset=in_row[5],
+                                                 buy_quantity=row_dict['Origin Amount'],
+                                                 buy_asset=row_dict['Origin Currency'],
+                                                 fee_quantity=row_dict['Fee Amount'] \
+                                                     if row_dict['Fee Amount'] else None,
+                                                 fee_asset=row_dict['Fee Currency'],
                                                  wallet=WALLET)
-    elif in_row[11] == "out":
-        if in_row[9] == in_row[3]:
+    elif row_dict['Type'] == "out":
+        if row_dict['Origin Currency'] == row_dict['Destination Currency']:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                      data_row.timestamp,
-                                                     sell_quantity=in_row[2],
-                                                     sell_asset=in_row[9],
-                                                     fee_quantity=in_row[4] if in_row[4] else None,
-                                                     fee_asset=in_row[5],
+                                                     sell_quantity=row_dict['Destination Amount'],
+                                                     sell_asset=row_dict['Origin Currency'],
+                                                     fee_quantity=row_dict['Fee Amount'] \
+                                                         if row_dict['Fee Amount'] else None,
+                                                     fee_asset=row_dict['Fee Currency'],
                                                      wallet=WALLET)
         else:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                      data_row.timestamp,
-                                                     sell_quantity=in_row[8],
-                                                     sell_asset=in_row[9],
+                                                     sell_quantity=row_dict['Origin Amount'],
+                                                     sell_asset=row_dict['Origin Currency'],
                                                      wallet=WALLET)
-    elif in_row[11] == "transfer":
+    elif row_dict['Type'] == "transfer":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[2],
-                                                 buy_asset=in_row[3],
-                                                 sell_quantity=in_row[8],
-                                                 sell_asset=in_row[9],
+                                                 buy_quantity=row_dict['Destination Amount'],
+                                                 buy_asset=row_dict['Destination Currency'],
+                                                 sell_quantity=row_dict['Origin Amount'],
+                                                 sell_asset=row_dict['Origin Currency'],
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(11, parser.in_header[11], in_row[11])
+        raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 
-def parse_uphold(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+def parse_uphold(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['date'])
 
-    if in_row[2] == "deposit" or in_row[2] == "in":
+    if row_dict['type'] in ("deposit", "in"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[8],
-                                                 buy_asset=in_row[7],
-                                                 fee_quantity=Decimal(in_row[8]) - \
-                                                              Decimal(in_row[11]),
-                                                 fee_asset=in_row[7],
+                                                 buy_quantity=row_dict['origin_amount'],
+                                                 buy_asset=row_dict['origin_currency'],
+                                                 fee_quantity=
+                                                     Decimal(row_dict['origin_amount']) - \
+                                                     Decimal(row_dict['destination_amount']),
+                                                 fee_asset=row_dict['origin_currency'],
                                                  wallet=WALLET)
-    elif in_row[2] == "withdrawal" or in_row[2] == "out":
+    elif row_dict['type'] in ("withdrawal", "out"):
         # Check if origin and destination currency are the same
-        if in_row[7] == in_row[10]:
+        if row_dict['origin_currency'] == row_dict['destination_currency']:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                      data_row.timestamp,
-                                                     sell_quantity=in_row[11],
-                                                     sell_asset=in_row[7],
-                                                     fee_quantity=Decimal(in_row[8]) - \
-                                                                  Decimal(in_row[11]),
-                                                     fee_asset=in_row[7],
+                                                     sell_quantity=row_dict['destination_amount'],
+                                                     sell_asset=row_dict['origin_currency'],
+                                                     fee_quantity= \
+                                                         Decimal(row_dict['origin_amount']) - \
+                                                         Decimal(row_dict['destination_amount']),
+                                                     fee_asset=row_dict['origin_currency'],
                                                      wallet=WALLET)
         else:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                      data_row.timestamp,
-                                                     sell_quantity=in_row[8],
-                                                     sell_asset=in_row[7],
+                                                     sell_quantity=row_dict['origin_amount'],
+                                                     sell_asset=row_dict['origin_currency'],
                                                      wallet=WALLET)
-    elif in_row[2] == "transfer":
+    elif row_dict['type'] == "transfer":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[11],
-                                                 buy_asset=in_row[10],
-                                                 sell_quantity=in_row[8],
-                                                 sell_asset=in_row[7],
+                                                 buy_quantity=row_dict['destination_amount'],
+                                                 buy_asset=row_dict['destination_currency'],
+                                                 sell_quantity=row_dict['origin_amount'],
+                                                 sell_asset=row_dict['origin_currency'],
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
+        raise UnexpectedTypeError(parser.in_header.index('type'), 'type', row_dict['type'])
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Uphold",

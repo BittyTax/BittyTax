@@ -31,14 +31,14 @@ class ImportRecords(object):
             if worksheet.name.startswith('--'):
                 print("%sskipping '%s' worksheet" % (Fore.GREEN, worksheet.name))
                 continue
-            if config.args.debug:
+            if config.debug:
                 print("%simporting '%s' rows" % (Fore.CYAN, worksheet.name))
 
             for row_num in trange(0, worksheet.nrows,
                                   unit=' row',
                                   desc="%simporting '%s' rows%s" % (
                                       Fore.CYAN, worksheet.name, Fore.GREEN),
-                                  disable=bool(config.args.debug or not sys.stdout.isatty())):
+                                  disable=bool(config.debug or not sys.stdout.isatty())):
                 if row_num == 0:
                     # skip headers
                     continue
@@ -52,7 +52,7 @@ class ImportRecords(object):
                 except TransactionParserError as e:
                     t_row.failure = e
 
-                if config.args.debug or t_row.failure:
+                if config.debug or t_row.failure:
                     tqdm.write("%simport: %s" % (Fore.YELLOW, t_row))
 
                 if t_row.failure:
@@ -86,7 +86,7 @@ class ImportRecords(object):
 
     def import_csv(self, import_file):
         print("%sCSV file: %s%s" % (Fore.WHITE, Fore.YELLOW, import_file.name))
-        if config.args.debug:
+        if config.debug:
             print("%simporting rows" % Fore.CYAN)
 
         if sys.version_info[0] < 3:
@@ -98,7 +98,7 @@ class ImportRecords(object):
         for row in tqdm(reader,
                         unit=' row',
                         desc="%simporting%s" % (Fore.CYAN, Fore.GREEN),
-                        disable=bool(config.args.debug or not sys.stdout.isatty())):
+                        disable=bool(config.debug or not sys.stdout.isatty())):
             if reader.line_num == 1:
                 # skip headers
                 continue
@@ -109,7 +109,7 @@ class ImportRecords(object):
             except TransactionParserError as e:
                 t_row.failure = e
 
-            if config.args.debug or t_row.failure:
+            if config.debug or t_row.failure:
                 tqdm.write("%simport: %s" % (Fore.YELLOW, t_row))
 
             if t_row.failure:
@@ -137,7 +137,7 @@ class ImportRecords(object):
         for t_record in transaction_records:
             t_record.set_tid()
 
-        if config.args.debug:
+        if config.debug:
             for t_row in self.t_rows:
                 print("%simport: %s" % (Fore.YELLOW, t_row))
 
@@ -362,7 +362,7 @@ class TransactionRow(object):
 
         if fee_quantity is not None and not fee_asset:
             raise MissingDataError(8, TransactionRow.HEADER[8])
-        elif fee_quantity is None and fee_asset:
+        if fee_quantity is None and fee_asset:
             raise MissingDataError(7, TransactionRow.HEADER[7])
 
         return fee_quantity, fee_asset, fee_value

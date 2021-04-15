@@ -3,7 +3,6 @@
 
 from decimal import Decimal, ROUND_DOWN
 
-
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError
@@ -12,81 +11,74 @@ WALLET = "TradeSatoshi"
 
 PRECISION = Decimal('0.00000000')
 
-def parse_tradesatoshi_deposits2(data_row, _parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+def parse_tradesatoshi_deposits2(data_row, _parser, _filename, _args):
+    parse_tradesatoshi_deposits(data_row, _parser, _filename, _args)
+
+def parse_tradesatoshi_deposits(data_row, _parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['TimeStamp'])
 
     data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                              data_row.timestamp,
-                                             buy_quantity=in_row[3],
-                                             buy_asset=in_row[2],
+                                             buy_quantity=row_dict['Amount'],
+                                             buy_asset=row_dict['Symbol'],
                                              wallet=WALLET)
 
-def parse_tradesatoshi_deposits(data_row, _parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[7])
-
-    data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                             data_row.timestamp,
-                                             buy_quantity=in_row[3],
-                                             buy_asset=in_row[2],
-                                             wallet=WALLET)
-
-def parse_tradesatoshi_withdrawals2(data_row, _parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+def parse_tradesatoshi_withdrawals2(data_row, _parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['TimeStamp'])
 
     data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                              data_row.timestamp,
-                                             sell_quantity=Decimal(in_row[3]),
-                                             sell_asset=in_row[2],
+                                             sell_quantity=Decimal(row_dict['Amount']),
+                                             sell_asset=row_dict['Symbol'],
                                              wallet=WALLET)
 
-def parse_tradesatoshi_withdrawals(data_row, _parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[10])
+def parse_tradesatoshi_withdrawals(data_row, _parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['TimeStamp'])
 
     data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                              data_row.timestamp,
-                                             sell_quantity=Decimal(in_row[3]) - \
-                                                           Decimal(in_row[4]),
-                                             sell_asset=in_row[2],
-                                             fee_quantity=in_row[4],
-                                             fee_asset=in_row[2],
+                                             sell_quantity=Decimal(row_dict['Amount']) - \
+                                                           Decimal(row_dict['Fee']),
+                                             sell_asset=row_dict['Symbol'],
+                                             fee_quantity=row_dict['Fee'],
+                                             fee_asset=row_dict['Symbol'],
                                              wallet=WALLET)
 
-def parse_tradesatoshi_trades(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[6])
+def parse_tradesatoshi_trades(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(data_row.row[6])
 
-    if in_row[2] == "Buy":
-        sell_quantity = Decimal(in_row[3]) * Decimal(in_row[4])
+    if data_row.row[2] == "Buy":
+        sell_quantity = Decimal(row_dict['Amount']) * Decimal(row_dict['Rate'])
 
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[3],
-                                                 buy_asset=in_row[1].split('/')[0],
+                                                 buy_quantity=row_dict['Amount'],
+                                                 buy_asset=row_dict['TradePair'].split('/')[0],
                                                  sell_quantity=sell_quantity. \
-                                                         quantize(PRECISION, rounding=ROUND_DOWN),
-                                                 sell_asset=in_row[1].split('/')[1],
-                                                 fee_quantity=in_row[5],
-                                                 fee_asset=in_row[1].split('/')[1],
+                                                     quantize(PRECISION, rounding=ROUND_DOWN),
+                                                 sell_asset=row_dict['TradePair'].split('/')[1],
+                                                 fee_quantity=row_dict['Fee'],
+                                                 fee_asset=row_dict['TradePair'].split('/')[1],
                                                  wallet=WALLET)
-    elif in_row[2] == "Sell":
-        buy_quantity = Decimal(in_row[3]) * Decimal(in_row[4])
+    elif data_row.row[2] == "Sell":
+        buy_quantity = Decimal(row_dict['Amount']) * Decimal(row_dict['Rate'])
 
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=buy_quantity. \
-                                                         quantize(PRECISION, rounding=ROUND_DOWN),
-                                                 buy_asset=in_row[1].split('/')[1],
-                                                 sell_quantity=in_row[3],
-                                                 sell_asset=in_row[1].split('/')[0],
-                                                 fee_quantity=in_row[5],
-                                                 fee_asset=in_row[1].split('/')[1],
+                                                     quantize(PRECISION, rounding=ROUND_DOWN),
+                                                 buy_asset=row_dict['TradePair'].split('/')[1],
+                                                 sell_quantity=row_dict['Amount'],
+                                                 sell_asset=row_dict['TradePair'].split('/')[0],
+                                                 fee_quantity=row_dict['Fee'],
+                                                 fee_asset=row_dict['TradePair'].split('/')[1],
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
+        raise UnexpectedTypeError(2, parser.in_header[2], data_row.row_dict[2])
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "TradeSatoshi Deposits",

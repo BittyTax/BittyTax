@@ -7,32 +7,32 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "KuCoin"
 
-def parse_kucoin_trades(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0], tz='Asia/Hong_Kong')
+def parse_kucoin_trades(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['tradeCreatedAt'], tz='Asia/Hong_Kong')
 
-    if in_row[3] == "buy":
+    if row_dict['side'] == "buy":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[5],
-                                                 buy_asset=in_row[2].split('-')[0],
-                                                 sell_quantity=in_row[6],
-                                                 sell_asset=in_row[2].split('-')[1],
-                                                 fee_quantity=in_row[7],
-                                                 fee_asset=in_row[9],
+                                                 buy_quantity=row_dict['size'],
+                                                 buy_asset=row_dict['symbol'].split('-')[0],
+                                                 sell_quantity=row_dict['funds'],
+                                                 sell_asset=row_dict['symbol'].split('-')[1],
+                                                 fee_quantity=row_dict['fee'],
+                                                 fee_asset=row_dict['feeCurrency'],
                                                  wallet=WALLET)
-    elif in_row[3] == "sell":
+    elif row_dict['side'] == "sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[6],
-                                                 buy_asset=in_row[2].split('-')[1],
-                                                 sell_quantity=in_row[5],
-                                                 sell_asset=in_row[2].split('-')[0],
-                                                 fee_quantity=in_row[7],
-                                                 fee_asset=in_row[9],
+                                                 buy_quantity=row_dict['funds'],
+                                                 buy_asset=row_dict['symbol'].split('-')[1],
+                                                 sell_quantity=row_dict['size'],
+                                                 sell_asset=row_dict['symbol'].split('-')[0],
+                                                 fee_quantity=row_dict['fee'],
+                                                 fee_asset=row_dict['feeCurrency'],
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(3, parser.in_header[3], in_row[3])
+        raise UnexpectedTypeError(parser.in_header.index('side'), 'side', row_dict['side'])
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "KuCoin",

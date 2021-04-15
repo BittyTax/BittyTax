@@ -7,30 +7,30 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Wirex"
 
-def parse_wirex(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[2])
+def parse_wirex(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Time'])
 
-    if in_row[1] == "Create":
+    if row_dict[''] == "Create":
         return
 
-    if in_row[1] == "In":
+    if row_dict[''] == "In":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[3].split(' ')[0],
-                                                 buy_asset=in_row[3].split(' ')[1],
+                                                 buy_quantity=row_dict['Amount'].split(' ')[0],
+                                                 buy_asset=row_dict['Amount'].split(' ')[1],
                                                  wallet=WALLET)
-    elif in_row[1] == "Out":
+    elif row_dict[''] == "Out":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=in_row[3].split(' ')[0],
-                                                 sell_asset=in_row[3].split(' ')[1],
+                                                 sell_quantity=row_dict['Amount'].split(' ')[0],
+                                                 sell_asset=row_dict['Amount'].split(' ')[1],
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(1, parser.in_header[1], in_row[1])
+        raise UnexpectedTypeError(parser.in_header.index(''), '', row_dict[''])
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Wirex",
-           ['# ', None, 'Time ', 'Amount', 'Available'],
+           ['#', '', 'Time', 'Amount', 'Available'],
            worksheet_name="Wirex",
            row_handler=parse_wirex)

@@ -8,49 +8,60 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Circle"
 
-def parse_circle(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+def parse_circle(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'])
 
-    if in_row[2] in ("deposit", "internal_switch_currency", "switch_currency"):
+    if row_dict['Transaction Type'] in ("deposit", "internal_switch_currency", "switch_currency"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[7].strip('£€$').split(' ')[0],
-                                                 buy_asset=in_row[8],
-                                                 sell_quantity=in_row[5].strip('£€$').split(' ')[0],
-                                                 sell_asset=in_row[6],
+                                                 buy_quantity= \
+                                                     row_dict['To Amount'].strip('£€$'). \
+                                                     split(' ')[0],
+                                                 buy_asset=row_dict['To Currency'],
+                                                 sell_quantity= \
+                                                     row_dict['From Amount'].strip('£€$'). \
+                                                     split(' ')[0],
+                                                 sell_asset=row_dict['From Currency'],
                                                  wallet=WALLET)
-    elif in_row[2] == "spend":
+    elif row_dict['Transaction Type'] == "spend":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=in_row[5].strip('£€$').split(' ')[0],
-                                                 sell_asset=in_row[6],
-                                                 sell_value=in_row[7].strip('£€$') if in_row[8] == \
-                                                                                       config.ccy \
-                                                                                   else None,
+                                                 sell_quantity= \
+                                                     row_dict['From Amount'].strip('£€$'). \
+                                                     split(' ')[0],
+                                                 sell_asset=row_dict['From Currency'],
+                                                 sell_value=row_dict['To Amount'].strip('£€$') \
+                                                     if row_dict['To Currency'] == \
+                                                         config.ccy \
+                                                     else None,
                                                  wallet=WALLET)
-    elif in_row[2] == "receive":
+    elif row_dict['Transaction Type'] == "receive":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[7].strip('£€$').split(' ')[0],
-                                                 buy_asset=in_row[8],
-                                                 buy_value=in_row[5].strip('£€$') if in_row[6] == \
-                                                                                      config.ccy \
-                                                                                  else None,
+                                                 buy_quantity=row_dict['To Amount'].strip('£€$'). \
+                                                                                  split(' ')[0],
+                                                 buy_asset=row_dict['To Currency'],
+                                                 buy_value=row_dict['From Amount'].strip('£€$') \
+                                                    if row_dict['From Currency'] == \
+                                                        config.ccy \
+                                                    else None,
                                                  wallet=WALLET)
-    elif in_row[2] == "fork":
+    elif row_dict['Transaction Type'] == "fork":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[7].strip('£€$').split(' ')[0],
-                                                 buy_asset=in_row[8],
+                                                 buy_quantity=row_dict['To Amount'].strip('£€$'). \
+                                                                                  split(' ')[0],
+                                                 buy_asset=row_dict['To Currency'],
                                                  buy_value=0,
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
+        raise UnexpectedTypeError(parser.in_header.index('Transaction Type'), 'Transaction Type',
+                                  row_dict['Transaction Type'])
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Circle",
-           ['Date', ' Reference ID', ' Transaction Type', ' From Account', ' To Account',
-            ' From Amount', ' From Currency', ' To Amount', ' To Currency', ' Status'],
+           ['Date', 'Reference ID', 'Transaction Type', 'From Account', 'To Account',
+            'From Amount', 'From Currency', 'To Amount', 'To Currency', 'Status'],
            worksheet_name="Circle",
            row_handler=parse_circle)

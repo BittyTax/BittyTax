@@ -7,51 +7,55 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Coinfloor"
 
-def parse_coinfloor_trades(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+def parse_coinfloor_trades(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date & Time'])
 
-    if in_row[7] == "Buy":
+    base_asset = row_dict['Base Asset'].replace('XBT', 'BTC')
+    counter_asset = row_dict['Counter Asset'].replace('XBT', 'BTC')
+
+    if row_dict['Order Type'] == "Buy":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[3],
-                                                 buy_asset=in_row[1].replace('XBT', 'BTC'),
-                                                 sell_quantity=in_row[5],
-                                                 sell_asset=in_row[2].replace('XBT', 'BTC'),
-                                                 fee_quantity=in_row[6],
-                                                 fee_asset=in_row[2].replace('XBT', 'BTC'),
+                                                 buy_quantity=row_dict['Amount'],
+                                                 buy_asset=base_asset,
+                                                 sell_quantity=row_dict['Total'],
+                                                 sell_asset=counter_asset,
+                                                 fee_quantity=row_dict['Fee'],
+                                                 fee_asset=counter_asset,
                                                  wallet=WALLET)
-    elif in_row[7] == "Sell":
+    elif row_dict['Order Type'] == "Sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[5],
-                                                 buy_asset=in_row[2].replace('XBT', 'BTC'),
-                                                 sell_quantity=in_row[3],
-                                                 sell_asset=in_row[1].replace('XBT', 'BTC'),
-                                                 fee_quantity=in_row[6],
-                                                 fee_asset=in_row[2].replace('XBT', 'BTC'),
+                                                 buy_quantity=row_dict['Total'],
+                                                 buy_asset=counter_asset,
+                                                 sell_quantity=row_dict['Amount'],
+                                                 sell_asset=base_asset,
+                                                 fee_quantity=row_dict['Fee'],
+                                                 fee_asset=counter_asset,
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(7, parser.in_header[7], in_row[7])
+        raise UnexpectedTypeError(parser.in_header.index('Order Type'), 'Order Type',
+                                  row_dict['Order Type'])
 
-def parse_coinfloor_deposits_withdrawals(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+def parse_coinfloor_deposits_withdrawals(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date & Time'])
 
-    if in_row[3] == "Deposit":
+    if row_dict['Type'] == "Deposit":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[1],
-                                                 buy_asset=in_row[2],
+                                                 buy_quantity=row_dict['Amount'],
+                                                 buy_asset=row_dict['Asset'],
                                                  wallet=WALLET)
-    elif in_row[3] == "Withdrawal":
+    elif row_dict['Type'] == "Withdrawal":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=in_row[1],
-                                                 sell_asset=in_row[2],
+                                                 sell_quantity=row_dict['Amount'],
+                                                 sell_asset=row_dict['Asset'],
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(3, parser.in_header[3], in_row[3])
+        raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Coinfloor Trades",

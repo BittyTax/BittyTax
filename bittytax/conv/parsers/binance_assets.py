@@ -14,4 +14,9 @@ if response:
         if quote not in quote_assets:
             quote_assets.append(quote)
 
-    print("QUOTE_ASSETS = %s" % sorted(quote_assets))
+    rows = []
+    for i in range(0, len(quote_assets), 10):
+        rows.append(", ".join("\'{}\'".format(v)
+                for v in sorted(quote_assets)[i:i+10]))
+
+    print("QUOTE_ASSETS = [%s]\n" % (',\n                '.join(rows)))

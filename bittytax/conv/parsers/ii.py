@@ -8,33 +8,34 @@ from ..exceptions import MissingValueError
 
 WALLET = "ii"
 
-def parse_ii(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[1])
+def parse_ii(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'])
 
-    if not in_row[2]:
+    if not row_dict['Symbol']:
         return
 
-    if not in_row[5]:
-        raise MissingValueError(5, parser.in_header[5])
+    if not row_dict['Quantity']:
+        raise MissingValueError(parser.in_header.index('Quantity'), 'Quantity',
+                                row_dict['Quantity'])
 
-    if in_row[9]:
+    if row_dict['Debit']:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[5],
-                                                 buy_asset=in_row[2],
-                                                 sell_quantity=in_row[9].
-                                                 strip('£').replace(',', ''),
+                                                 buy_quantity=row_dict['Quantity'],
+                                                 buy_asset=row_dict['Symbol'],
+                                                 sell_quantity=row_dict['Debit'].strip('£'). \
+                                                     replace(',', ''),
                                                  sell_asset=config.ccy,
                                                  wallet=WALLET)
-    elif in_row[10]:
+    elif row_dict['Credit']:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[10].
-                                                 strip('£').replace(',', ''),
+                                                 buy_quantity=row_dict['Credit'].strip('£'). \
+                                                     replace(',', ''),
                                                  buy_asset=config.ccy,
-                                                 sell_quantity=in_row[5],
-                                                 sell_asset=in_row[2],
+                                                 sell_quantity=row_dict['Quantity'],
+                                                 sell_asset=row_dict['Symbol'],
                                                  wallet=WALLET)
 
 DataParser(DataParser.TYPE_SHARES,

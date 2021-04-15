@@ -18,7 +18,12 @@ if response:
             if quote not in quote_assets:
                 quote_assets.append(quote)
 
-    print("QUOTE_ASSETS = %s\n" % sorted(quote_assets))
+    rows = []
+    for i in range(0, len(quote_assets), 10):
+        rows.append(", ".join("\'{}\'".format(v)
+                for v in sorted(quote_assets)[i:i+10]))
+
+    print("QUOTE_ASSETS = [%s]\n" % (',\n                '.join(rows)))
 
 response = requests.get("https://api.kraken.com/0/public/Assets")
 
@@ -29,6 +34,9 @@ if response:
         if asset != alt:
             alt_assets[asset] = alt
 
+    rows = []
+    for i in range(0, len(alt_assets), 5):
+        rows.append(", ".join("\'{}\': \'{}\'".format(k, v)
+                for k, v in sorted(alt_assets.items())[i:i+5]))
 
-    print("ALT_ASSETS = {%s}" % ", ".join("\"{}\": \"{}\"".format(k, v)
-                                          for k, v in sorted(alt_assets.items())))
+    print("ALT_ASSETS = {%s}" % (',\n              '.join(rows)))

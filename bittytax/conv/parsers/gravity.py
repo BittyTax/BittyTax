@@ -14,9 +14,9 @@ from ..exceptions import DataParserError, UnexpectedTypeError
 WALLET = "Gravity"
 SYSTEM_ACCOUNT = "00000000-0000-0000-0000-000000000000"
 
-def parse_gravity(data_rows, parser, _filename):
+def parse_gravity(data_rows, parser, _filename, _args):
     for data_row in data_rows:
-        if config.args.debug:
+        if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
                 Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row))
 
@@ -29,8 +29,8 @@ def parse_gravity(data_rows, parser, _filename):
             data_row.failure = e
 
 def parse_gravity_row(data_rows, parser, data_row):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[3])
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['date utc'])
     data_row.parsed = True
 
     t_type = ""
@@ -41,21 +41,21 @@ def parse_gravity_row(data_rows, parser, data_row):
     fee_quantity = None
     fee_asset = ""
 
-    if in_row[4] == "deposit":
-        if in_row[1] == SYSTEM_ACCOUNT:
+    if row_dict['transaction type'] == "deposit":
+        if row_dict['from account'] == SYSTEM_ACCOUNT:
             t_type = TransactionOutRecord.TYPE_DEPOSIT
-            buy_quantity = in_row[6]
-            buy_asset = in_row[7]
+            buy_quantity = row_dict['amount']
+            buy_asset = row_dict['currency']
         else:
             return
 
-    elif in_row[4] == "withdrawal":
-        if in_row[2] == SYSTEM_ACCOUNT:
+    elif row_dict['transaction type'] == "withdrawal":
+        if row_dict['to account'] == SYSTEM_ACCOUNT:
             t_type = TransactionOutRecord.TYPE_WITHDRAWAL
-            sell_quantity = in_row[6]
-            sell_asset = in_row[7]
-            quantity, asset = find_same_tx(data_rows, in_row[0],
-                                           "withdrawal", 2)
+            sell_quantity = row_dict['amount']
+            sell_asset = row_dict['currency']
+            quantity, asset = find_same_tx(data_rows, row_dict['transaction id'], "withdrawal",
+                                           'to account')
             if Decimal(sell_quantity) < Decimal(quantity):
                 #swap sell/fee around
                 fee_quantity = sell_quantity
@@ -68,32 +68,33 @@ def parse_gravity_row(data_rows, parser, data_row):
 
         else:
             return
-    elif in_row[4] == "trade" and in_row[1] == SYSTEM_ACCOUNT:
+    elif row_dict['transaction type'] == "trade" and row_dict['from account'] == SYSTEM_ACCOUNT:
         t_type = TransactionOutRecord.TYPE_TRADE
-        buy_quantity = in_row[6]
-        buy_asset = in_row[7]
+        buy_quantity = row_dict['amount']
+        buy_asset = row_dict['currency']
 
-        sell_quantity, sell_asset = find_same_tx(data_rows, in_row[0],
-                                                 "trade", 2)
+        sell_quantity, sell_asset = find_same_tx(data_rows, row_dict['transaction id'], "trade",
+                                                 'to account')
         if sell_quantity is None:
             return
-    elif in_row[4] == "trade" and in_row[2] == SYSTEM_ACCOUNT:
+    elif row_dict['transaction type'] == "trade" and row_dict['to account'] == SYSTEM_ACCOUNT:
         t_type = TransactionOutRecord.TYPE_TRADE
-        sell_quantity = in_row[6]
-        sell_asset = in_row[7]
+        sell_quantity = row_dict['amount']
+        sell_asset = row_dict['currency']
 
-        buy_quantity, buy_asset = find_same_tx(data_rows, in_row[0],
-                                               "trade", 1)
+        buy_quantity, buy_asset = find_same_tx(data_rows, row_dict['transaction id'], "trade",
+                                               'from account')
         if buy_quantity is None:
             return
-    elif in_row[4] == "referral fees grouping":
+    elif row_dict['transaction type'] == "referral fees grouping":
         t_type = TransactionOutRecord.TYPE_GIFT_RECEIVED
-        buy_quantity = in_row[6]
-        buy_asset = in_row[7]
-    elif in_row[4] in ("referral fees collection", "referral fees transfer"):
+        buy_quantity = row_dict['amount']
+        buy_asset = row_dict['currency']
+    elif row_dict['transaction type'] in ("referral fees collection", "referral fees transfer"):
         return
     else:
-        raise UnexpectedTypeError(4, parser.in_header[4], in_row[4])
+        raise UnexpectedTypeError(parser.in_header.index('transaction type'), 'transaction type',
+                                  row_dict['transaction type'])
 
     data_row.t_record = TransactionOutRecord(t_type,
                                              data_row.timestamp,
@@ -110,12 +111,13 @@ def find_same_tx(data_rows, tx_hash, tx_type, system_acc):
     asset = ""
 
     data_rows = [data_row for data_row in data_rows
-                 if data_row.in_row[0] == tx_hash and not data_row.parsed]
+                 if data_row.row_dict['transaction id'] == tx_hash and not data_row.parsed]
     for data_row in data_rows:
-        if tx_type == data_row.in_row[4] and data_row.in_row[system_acc] == SYSTEM_ACCOUNT:
-            quantity = data_row.in_row[6]
-            asset = data_row.in_row[7]
-            data_row.timestamp = DataParser.parse_timestamp(data_row.in_row[3])
+        if tx_type == data_row.row_dict['transaction type'] and \
+                      data_row.row_dict[system_acc] == SYSTEM_ACCOUNT:
+            quantity = data_row.row_dict['amount']
+            asset = data_row.row_dict['currency']
+            data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['date utc'])
             data_row.parsed = True
             break
 

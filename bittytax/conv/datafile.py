@@ -19,23 +19,25 @@ class DataFile(object):
 
     CSV_DELIMITERS = (',', ';')
 
+    remove_duplicates = False
     data_files = {}
     data_files_ordered = []
 
-    def __init__(self, file_format, filename, parser, reader):
+    def __init__(self, file_format, filename, args, parser, reader):
         self.parser = parser
-        self.data_rows = [DataRow(line_num + 1, in_row) for line_num, in_row in enumerate(reader)]
+        self.data_rows = [DataRow(line_num + 1, row, parser.in_header)
+                          for line_num, row in enumerate(reader)]
 
         if parser.row_handler:
             for data_row in self.data_rows:
-                if config.args.debug:
+                if config.debug:
                     sys.stderr.write("%sconv: row[%s] %s\n" % (
                         Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row))
 
-                data_row.parse(parser, filename)
+                data_row.parse(parser, filename, args)
         else:
             # all rows handled together
-            DataRow.parse_all(self.data_rows, parser, filename)
+            DataRow.parse_all(self.data_rows, parser, filename, args)
 
         failures = [data_row for data_row in self.data_rows if data_row.failure is not None]
         if failures:
@@ -58,7 +60,7 @@ class DataFile(object):
         if len(other.parser.header) > len(self.parser.header):
             self.parser = other.parser
 
-        if config.args.duplicates:
+        if self.remove_duplicates:
             self.data_rows += [data_row
                                for data_row in other.data_rows if data_row not in self.data_rows]
         else:
@@ -67,9 +69,9 @@ class DataFile(object):
         return self
 
     @classmethod
-    def read_excel(cls, filename):
+    def read_excel(cls, filename, args):
         workbook = xlrd.open_workbook(filename)
-        if config.args.debug:
+        if config.debug:
             sys.stderr.write("%sconv: EXCEL\n" % Fore.CYAN)
 
         sheet = workbook.sheet_by_index(0)
@@ -79,7 +81,7 @@ class DataFile(object):
         if parser is not None:
             sys.stderr.write("%sfile: %s%s %smatched as %s\"%s\"\n" % (
                 Fore.WHITE, Fore.YELLOW, filename, Fore.WHITE, Fore.CYAN, parser.worksheet_name))
-            data_file = DataFile(cls.FORMAT_EXCEL, filename, parser, reader)
+            data_file = DataFile(cls.FORMAT_EXCEL, filename, args, parser, reader)
             cls.consolidate_datafiles(data_file)
         else:
             raise DataFormatUnrecognised
@@ -109,10 +111,10 @@ class DataFile(object):
         return value
 
     @classmethod
-    def read_csv(cls, filename):
+    def read_csv(cls, filename, args):
         with io.open(filename, newline='', encoding='utf-8-sig') as csv_file:
             for delimiter in cls.CSV_DELIMITERS:
-                if config.args.debug:
+                if config.debug:
                     sys.stderr.write("%sconv: CSV delimiter='%s'\n" % (Fore.CYAN, delimiter))
 
                 if sys.version_info[0] < 3:
@@ -126,11 +128,11 @@ class DataFile(object):
                     sys.stderr.write("%sfile: %s%s %smatched as %s\"%s\"\n" % (
                         Fore.WHITE, Fore.YELLOW, filename, Fore.WHITE,
                         Fore.CYAN, parser.worksheet_name))
-                    data_file = DataFile(cls.FORMAT_CSV, filename, parser, reader)
+                    data_file = DataFile(cls.FORMAT_CSV, filename, args, parser, reader)
                     cls.consolidate_datafiles(data_file)
                     break
-                else:
-                    csv_file.seek(0)
+
+                csv_file.seek(0)
 
         if parser is None:
             raise DataFormatUnrecognised

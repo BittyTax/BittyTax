@@ -3,24 +3,29 @@
 
 import datetime
 import sys
+from decimal import Decimal
 
-from colorama import Fore
+from colorama import Fore, Style
 import dateutil.parser
 import dateutil.tz
 
 from ..config import config
+from ..price.pricedata import PriceData
 
 TERM_WIDTH = 69
 
 class DataParser(object):
     TYPE_WALLET = 'Wallets'
     TYPE_EXCHANGE = 'Exchanges'
+    TYPE_SAVINGS = 'Savings & Loans'
     TYPE_EXPLORER = 'Explorers'
     TYPE_ACCOUNTING = 'Accounting'
     TYPE_SHARES = 'Stocks & Shares'
 
-    LIST_ORDER = (TYPE_WALLET, TYPE_EXCHANGE, TYPE_EXPLORER, TYPE_ACCOUNTING, TYPE_SHARES)
+    LIST_ORDER = (TYPE_WALLET, TYPE_EXCHANGE, TYPE_SAVINGS, TYPE_EXPLORER, TYPE_ACCOUNTING,
+                  TYPE_SHARES)
 
+    price_data = PriceData(config.data_source_fiat)
     parsers = []
 
     def __init__(self, p_type, name, header, delimiter=',',
@@ -78,8 +83,33 @@ class DataParser(object):
         return timestamp
 
     @classmethod
+    def convert_currency(cls, value, from_currency, timestamp):
+        if config.ccy == from_currency:
+            return value
+
+        rate_ccy, _, _, _ = cls.price_data.get_historical(from_currency, config.ccy, timestamp)
+        value_in_ccy = Decimal(value) * rate_ccy
+
+        if config.debug:
+            print("%sprice: %s, 1 %s=%s %s, %s %s=%s%s %s%s" % (
+                    Fore.YELLOW,
+                    timestamp.strftime('%Y-%m-%d'),
+                    from_currency,
+                    config.sym() + '{:0,.2f}'.format(rate_ccy),
+                    config.ccy,
+                    '{:0,f}'.format(Decimal(value).normalize()),
+                    from_currency,
+                    Style.BRIGHT,
+                    config.sym() + '{:0,.2f}'.format(value_in_ccy),
+                    config.ccy,
+                    Style.NORMAL))
+
+        return value_in_ccy
+
+    @classmethod
     def match_header(cls, row, row_num):
-        if config.args.debug:
+        row = [col.strip() for col in row]
+        if config.debug:
             sys.stderr.write("%sheader: row[%s] TRY: %s\n" % (
                 Fore.YELLOW, row_num+1, cls.format_row(row)))
 
@@ -97,16 +127,16 @@ class DataParser(object):
                     break
 
             if match:
-                if config.args.debug:
+                if config.debug:
                     sys.stderr.write("%sheader: row[%s] MATCHED: %s as '%s'\n" % (
                         Fore.CYAN, row_num+1, cls.format_row(parser.header), parser.name))
                 parser.in_header = row
                 parser.in_header_row_num = row_num + 1
                 return parser
-            else:
-                if config.args.debug:
-                    sys.stderr.write("%sheader: row[%s] NO MATCH: %s '%s'\n" % (
-                        Fore.BLUE, row_num+1, cls.format_row(parser.header), parser.name))
+
+            if config.debug:
+                sys.stderr.write("%sheader: row[%s] NO MATCH: %s '%s'\n" % (
+                    Fore.BLUE, row_num+1, cls.format_row(parser.header), parser.name))
 
         raise KeyError
 
@@ -114,7 +144,7 @@ class DataParser(object):
     def format_parsers(cls):
         txt = ''
         for p_type in cls.LIST_ORDER:
-            txt += ' ' * 2 + p_type + ':\n'
+            txt += ' ' * 2 + p_type.upper() + ':\n'
             prev_name = None
             for parser in sorted([parser for parser in cls.parsers if parser.p_type == p_type]):
                 if parser.name != prev_name:

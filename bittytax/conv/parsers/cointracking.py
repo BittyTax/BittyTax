@@ -20,57 +20,57 @@ COINTRACKING_TYPE_MAPPING = {'Trade': TransactionOutRecord.TYPE_TRADE,
                              'Stolen': TransactionOutRecord.TYPE_TRADE,
                              'Lost': TransactionOutRecord.TYPE_TRADE}
 
-def parse_cointracking(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[12], dayfirst=True)
+def parse_cointracking(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'], dayfirst=True)
 
-    if in_row[0] == "Trade":
+    if row_dict['Type'] == "Trade":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[1],
-                                                 buy_asset=in_row[2],
-                                                 buy_value=in_row[4],
-                                                 sell_quantity=in_row[5],
-                                                 sell_asset=in_row[6],
-                                                 sell_value=in_row[8],
-                                                 wallet=wallet_name(in_row[10]))
-    elif in_row[0] in ("Gift/Tip", "Income", "Mining"):
-        data_row.t_record = TransactionOutRecord(map_type(in_row[0]),
+                                                 buy_quantity=row_dict['Buy'],
+                                                 buy_asset=data_row.row[2],
+                                                 buy_value=data_row.row[4],
+                                                 sell_quantity=row_dict['Sell'],
+                                                 sell_asset=data_row.row[6],
+                                                 sell_value=data_row.row[8],
+                                                 wallet=wallet_name(row_dict['Exchange']))
+    elif row_dict['Type'] in ("Gift/Tip", "Income", "Mining"):
+        data_row.t_record = TransactionOutRecord(map_type(row_dict['Type']),
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[1],
-                                                 buy_asset=in_row[2],
-                                                 buy_value=in_row[4],
-                                                 wallet=wallet_name(in_row[10]))
-    elif in_row[0] in ("Lost", "Stolen"):
+                                                 buy_quantity=row_dict['Buy'],
+                                                 buy_asset=data_row.row[2],
+                                                 buy_value=data_row.row[4],
+                                                 wallet=wallet_name(row_dict['Exchange']))
+    elif row_dict['Type'] in ("Lost", "Stolen"):
         # No direct mapping, map as a trade for 0 GBP
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=0,
                                                  buy_asset=config.ccy,
-                                                 sell_quantity=in_row[5],
-                                                 sell_asset=in_row[6],
-                                                 wallet=wallet_name(in_row[10]))
-    elif in_row[0] in ("Spend", "Gift", "Donation"):
-        data_row.t_record = TransactionOutRecord(map_type(in_row[0]),
+                                                 sell_quantity=row_dict['Sell'],
+                                                 sell_asset=data_row.row[6],
+                                                 wallet=wallet_name(row_dict['Exchange']))
+    elif row_dict['Type'] in ("Spend", "Gift", "Donation"):
+        data_row.t_record = TransactionOutRecord(map_type(row_dict['Type']),
                                                  data_row.timestamp,
-                                                 sell_quantity=in_row[5],
-                                                 sell_asset=in_row[6],
-                                                 sell_value=in_row[8],
-                                                 wallet=wallet_name(in_row[10]))
-    elif in_row[0] == "Deposit":
+                                                 sell_quantity=row_dict['Sell'],
+                                                 sell_asset=data_row.row[6],
+                                                 sell_value=data_row.row[8],
+                                                 wallet=wallet_name(row_dict['Exchange']))
+    elif row_dict['Type'] == "Deposit":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[1],
-                                                 buy_asset=in_row[2],
-                                                 wallet=wallet_name(in_row[10]))
-    elif in_row[0] == "Withdrawal":
+                                                 buy_quantity=row_dict['Buy'],
+                                                 buy_asset=data_row.row[2],
+                                                 wallet=wallet_name(row_dict['Exchange']))
+    elif row_dict['Type'] == "Withdrawal":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=in_row[5],
-                                                 sell_asset=in_row[6],
-                                                 wallet=wallet_name(in_row[10]))
+                                                 sell_quantity=row_dict['Sell'],
+                                                 sell_asset=data_row.row[6],
+                                                 wallet=wallet_name(row_dict['Exchange']))
     else:
-        raise UnexpectedTypeError(0, parser.in_header[0], in_row[0])
+        raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 
 def wallet_name(wallet):
     if not wallet:

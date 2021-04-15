@@ -14,9 +14,9 @@ from ..exceptions import DataParserError, UnexpectedTypeError, \
 
 WALLET = "GateHub"
 
-def parse_gatehub(data_rows, parser, _filename):
+def parse_gatehub(data_rows, parser, _filename, _args):
     for data_row in data_rows:
-        if config.args.debug:
+        if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
                 Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row))
 
@@ -29,8 +29,8 @@ def parse_gatehub(data_rows, parser, _filename):
             data_row.failure = e
 
 def parse_gatehub_row(data_rows, parser, data_row):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Time'])
     data_row.parsed = True
 
     t_type = ""
@@ -41,49 +41,46 @@ def parse_gatehub_row(data_rows, parser, data_row):
     fee_quantity = None
     fee_asset = ""
 
-    if not in_row[3]:
-        raise MissingValueError(3, parser.in_header[3])
+    if not row_dict['Amount']:
+        raise MissingValueError(parser.in_header.index('Amount'), 'Amount', row_dict['Amount'])
 
-    if in_row[2] == "payment":
-        if Decimal(in_row[3]) < 0:
+    if row_dict['Type'] == "payment":
+        if Decimal(row_dict['Amount']) < 0:
             t_type = TransactionOutRecord.TYPE_WITHDRAWAL
-            sell_quantity = abs(Decimal(in_row[3]))
-            sell_asset = in_row[4]
+            sell_quantity = abs(Decimal(row_dict['Amount']))
+            sell_asset = row_dict['Currency']
         else:
             t_type = TransactionOutRecord.TYPE_DEPOSIT
-            buy_quantity = in_row[3]
-            buy_asset = in_row[4]
+            buy_quantity = row_dict['Amount']
+            buy_asset = row_dict['Currency']
 
-        fee_quantity, fee_asset = find_same_tx(data_rows, in_row[1],
-                                               "network_fee")
-    elif in_row[2] == "exchange":
+        fee_quantity, fee_asset = find_same_tx(data_rows, row_dict['TX hash'], "network_fee")
+    elif row_dict['Type'] == "exchange":
         t_type = TransactionOutRecord.TYPE_TRADE
-        if Decimal(in_row[3]) < 0:
-            sell_quantity = abs(Decimal(in_row[3]))
-            sell_asset = in_row[4]
+        if Decimal(row_dict['Amount']) < 0:
+            sell_quantity = abs(Decimal(row_dict['Amount']))
+            sell_asset = row_dict['Currency']
 
-            buy_quantity, buy_asset = find_same_tx(data_rows, in_row[1],
-                                                   "exchange")
+            buy_quantity, buy_asset = find_same_tx(data_rows, row_dict['TX hash'], "exchange")
         else:
-            buy_quantity = in_row[3]
-            buy_asset = in_row[4]
+            buy_quantity = row_dict['Amount']
+            buy_asset = row_dict['Currency']
 
-            sell_quantity, sell_asset = find_same_tx(data_rows, in_row[1],
-                                                     "exchange")
+            sell_quantity, sell_asset = find_same_tx(data_rows, row_dict['TX hash'], "exchange")
 
         if sell_quantity is None or buy_quantity is None:
-            raise MissingComponentError(1, parser.in_header[1], in_row[1])
+            raise MissingComponentError(parser.in_header.index('TX hash'), 'TX hash',
+                                        row_dict['TX hash'])
 
-        fee_quantity, fee_asset = find_same_tx(data_rows, in_row[1],
-                                               "network_fee")
-    elif "network_fee" in in_row[2]:
+        fee_quantity, fee_asset = find_same_tx(data_rows, row_dict['TX hash'], "network_fee")
+    elif "network_fee" in row_dict['Type']:
         # Fees which are not associated with a payment or exchange are added
         # as a Spend
         t_type = TransactionOutRecord.TYPE_SPEND
-        sell_quantity = abs(Decimal(in_row[3]))
-        sell_asset = in_row[4]
+        sell_quantity = abs(Decimal(row_dict['Amount']))
+        sell_asset = row_dict['Currency']
     else:
-        raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
+        raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 
     data_row.t_record = TransactionOutRecord(t_type,
                                              data_row.timestamp,
@@ -100,12 +97,12 @@ def find_same_tx(data_rows, tx_hash, tx_type):
     asset = ""
 
     data_rows = [data_row for data_row in data_rows
-                 if data_row.in_row[1] == tx_hash and not data_row.parsed]
+                 if data_row.row_dict['TX hash'] == tx_hash and not data_row.parsed]
     for data_row in data_rows:
-        if tx_type in data_row.in_row[2]:
-            quantity = abs(Decimal(data_row.in_row[3]))
-            asset = data_row.in_row[4]
-            data_row.timestamp = DataParser.parse_timestamp(data_row.in_row[0])
+        if tx_type in data_row.row_dict['Type']:
+            quantity = abs(Decimal(data_row.row_dict['Amount']))
+            asset = data_row.row_dict['Currency']
+            data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['Time'])
             data_row.parsed = True
             break
 

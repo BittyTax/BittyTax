@@ -15,9 +15,9 @@ from ..exceptions import DataParserError, UnexpectedTypeError
 
 WALLET = "HitBTC"
 
-def parse_hitbtc_trades2(data_rows, parser, _filename):
+def parse_hitbtc_trades2(data_rows, parser, _filename, _args):
     for row_index, data_row in enumerate(data_rows):
-        if config.args.debug:
+        if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
                 Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row))
 
@@ -30,117 +30,115 @@ def parse_hitbtc_trades2(data_rows, parser, _filename):
             data_row.failure = e
 
 def parse_hitbtc_trades_row(data_rows, parser, data_row, row_index):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[1])
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date (UTC)'])
     data_row.parsed = True
 
-
     # Negative fees are rebates, add as gift-received
-    if Decimal(in_row[9]) < 0:
+    if Decimal(row_dict['Fee']) < 0:
         dup_data_row = copy.copy(data_row)
-        dup_data_row.in_row = []
+        dup_data_row.row = []
         dup_data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                      data_row.timestamp,
-                                                     buy_quantity=abs(Decimal(in_row[9])),
-                                                     buy_asset=in_row[2].split('/')[1],
+                                                     buy_quantity=abs(Decimal(row_dict['Fee'])),
+                                                     buy_asset=row_dict['Instrument'].split('/')[1],
                                                      wallet=WALLET)
         data_rows.insert(row_index + 1, dup_data_row)
 
-        fee_quantity = Decimal(0)
+        fee_quantity = 0
     else:
-        fee_quantity = in_row[9]
+        fee_quantity = row_dict['Fee']
 
-    fee_asset = in_row[2].split('/')[1]
+    fee_asset = row_dict['Instrument'].split('/')[1]
 
-    if in_row[5] == "buy":
+    if row_dict['Side'] == "buy":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[6],
-                                                 buy_asset=in_row[2].split('/')[0],
-                                                 sell_quantity=Decimal(in_row[6]) * \
-                                                               Decimal(in_row[7]),
-                                                 sell_asset=in_row[2].split('/')[1],
+                                                 buy_quantity=row_dict['Quantity'],
+                                                 buy_asset=row_dict['Instrument'].split('/')[0],
+                                                 sell_quantity=Decimal(row_dict['Quantity']) * \
+                                                               Decimal(row_dict['Price']),
+                                                 sell_asset=row_dict['Instrument'].split('/')[1],
                                                  fee_quantity=fee_quantity,
                                                  fee_asset=fee_asset,
                                                  wallet=WALLET)
-    elif in_row[5] == "sell":
+    elif row_dict['Side'] == "sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=Decimal(in_row[6]) * \
-                                                              Decimal(in_row[7]),
-                                                 buy_asset=in_row[2].split('/')[1],
-                                                 sell_quantity=in_row[6],
-                                                 sell_asset=in_row[2].split('/')[0],
+                                                 buy_quantity=Decimal(row_dict['Quantity']) * \
+                                                              Decimal(row_dict['Price']),
+                                                 buy_asset=row_dict['Instrument'].split('/')[1],
+                                                 sell_quantity=row_dict['Quantity'],
+                                                 sell_asset=row_dict['Instrument'].split('/')[0],
                                                  fee_quantity=fee_quantity,
                                                  fee_asset=fee_asset,
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(5, parser.in_header[5], in_row[5])
+        raise UnexpectedTypeError(parser.in_header.index('Side'), 'Side', row_dict['Side'])
 
-def parse_hitbtc_trades(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+def parse_hitbtc_trades(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date (UTC)'])
 
-    if in_row[4] == "buy":
+    if row_dict['Side'] == "buy":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[5],
-                                                 buy_asset=in_row[1].split('/')[0],
-                                                 sell_quantity=Decimal(in_row[7]) - \
-                                                               Decimal(in_row[9]),
-                                                 sell_asset=in_row[1].split('/')[1],
-                                                 fee_quantity=in_row[8],
-                                                 fee_asset=in_row[1].split('/')[1],
+                                                 buy_quantity=row_dict['Quantity'],
+                                                 buy_asset=row_dict['Instrument'].split('/')[0],
+                                                 sell_quantity=Decimal(row_dict['Volume']) - \
+                                                               Decimal(row_dict['Rebate']),
+                                                 sell_asset=row_dict['Instrument'].split('/')[1],
+                                                 fee_quantity=row_dict['Fee'],
+                                                 fee_asset=row_dict['Instrument'].split('/')[1],
                                                  wallet=WALLET)
-    elif in_row[4] == "sell":
+    elif row_dict['Side'] == "sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=Decimal(in_row[7]) + \
-                                                              Decimal(in_row[9]),
-                                                 buy_asset=in_row[1].split('/')[1],
-                                                 sell_quantity=in_row[5],
-                                                 sell_asset=in_row[1].split('/')[0],
-                                                 fee_quantity=in_row[8],
-                                                 fee_asset=in_row[1].split('/')[1],
+                                                 buy_quantity=Decimal(row_dict['Volume']) + \
+                                                              Decimal(row_dict['Rebate']),
+                                                 buy_asset=row_dict['Instrument'].split('/')[1],
+                                                 sell_quantity=row_dict['Quantity'],
+                                                 sell_asset=row_dict['Instrument'].split('/')[0],
+                                                 fee_quantity=row_dict['Fee'],
+                                                 fee_asset=row_dict['Instrument'].split('/')[1],
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(4, parser.in_header[4], in_row[4])
+        raise UnexpectedTypeError(parser.in_header.index('Side'), 'Side', row_dict['Side'])
 
-
-def parse_hitbtc_deposits_withdrawals2(data_row, _parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[1])
+def parse_hitbtc_deposits_withdrawals2(data_row, _parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date (UTC)'])
 
     # Looks like a bug in the exporter, Withdrawals are blank
     # Failed transactions have no transaction hash
-    if in_row[3] in ("Withdraw", "") and in_row[5] != "":
+    if row_dict['Type'] in ("Withdraw", "") and row_dict['Transaction hash'] != "":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=abs(Decimal(in_row[4])),
-                                                 sell_asset=in_row[7].upper(),
+                                                 sell_quantity=abs(Decimal(row_dict['Amount'])),
+                                                 sell_asset=row_dict['Currency'].upper(),
                                                  wallet=WALLET)
-    elif in_row[3] == "Deposit" and in_row[5] != "":
+    elif row_dict['Type'] == "Deposit" and row_dict['Transaction hash'] != "":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[4],
-                                                 buy_asset=in_row[7].upper(),
+                                                 buy_quantity=row_dict['Amount'],
+                                                 buy_asset=row_dict['Currency'].upper(),
                                                  wallet=WALLET)
 
-def parse_hitbtc_deposits_withdrawals(data_row, _parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+def parse_hitbtc_deposits_withdrawals(data_row, _parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date (UTC)'])
 
-    if in_row[2] == "Withdraw":
+    if row_dict['Type'] == "Withdraw":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=abs(Decimal(in_row[3])),
-                                                 sell_asset=in_row[6],
+                                                 sell_quantity=abs(Decimal(row_dict['Amount'])),
+                                                 sell_asset=data_row.row[6],
                                                  wallet=WALLET)
-    elif in_row[2] == "Deposit":
+    elif row_dict['Type'] == "Deposit":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[3],
-                                                 buy_asset=in_row[6],
+                                                 buy_quantity=row_dict['Amount'],
+                                                 buy_asset=data_row.row[6],
                                                  wallet=WALLET)
 
 DataParser(DataParser.TYPE_EXCHANGE,

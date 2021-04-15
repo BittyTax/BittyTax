@@ -61,7 +61,7 @@ def main():
                         choices=[config.FORMAT_EXCEL, config.FORMAT_CSV, config.FORMAT_RECAP],
                         default=config.FORMAT_EXCEL,
                         type=str.upper,
-                        help="specify the output format")
+                        help="specify the output format, default: EXCEL")
     parser.add_argument('-nh',
                         '--noheader',
                         action='store_true',
@@ -79,21 +79,23 @@ def main():
                         type=str,
                         help="specify the output filename")
 
-    config.args = parser.parse_args()
+    args = parser.parse_args()
+    config.debug = args.debug
+    DataFile.remove_duplicates = args.duplicates
 
-    if config.args.debug:
+    if config.debug:
         sys.stderr.write("%s%s v%s\n" % (Fore.YELLOW, parser.prog, __version__))
         sys.stderr.write("%spython: v%s\n" % (Fore.GREEN, platform.python_version()))
         sys.stderr.write("%ssystem: %s, release: %s\n" % (
             Fore.GREEN, platform.system(), platform.release()))
 
-    for filename in config.args.filename:
+    for filename in args.filename:
         for pathname in glob.iglob(filename):
             try:
                 try:
-                    DataFile.read_excel(pathname)
+                    DataFile.read_excel(pathname, args)
                 except xlrd.XLRDError:
-                    DataFile.read_csv(pathname)
+                    DataFile.read_csv(pathname, args)
             except UnknownCryptoassetError:
                 sys.stderr.write(Fore.RESET)
                 parser.error("cryptoasset cannot be identified for data file: %s, "
@@ -114,11 +116,11 @@ def main():
                     Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, pathname))
 
     if DataFile.data_files:
-        if config.args.format == config.FORMAT_EXCEL:
-            output = OutputExcel(parser.prog, DataFile.data_files_ordered)
+        if args.format == config.FORMAT_EXCEL:
+            output = OutputExcel(parser.prog, DataFile.data_files_ordered, args)
             output.write_excel()
         else:
-            output = OutputCsv(DataFile.data_files_ordered)
+            output = OutputCsv(DataFile.data_files_ordered, args)
             sys.stderr.write(Fore.RESET)
             sys.stderr.flush()
             output.write_csv()

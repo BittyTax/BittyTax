@@ -13,81 +13,85 @@ from ..exceptions import UnexpectedTypeError, UnexpectedContentError
 WALLET = "Coinbase"
 DUPLICATE = "Duplicate"
 
-def parse_coinbase(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+def parse_coinbase(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
 
-    if in_row[1] == "Receive":
-        if "Coinbase Referral" in in_row[8]:
+    if row_dict['Transaction Type'] == "Receive":
+        if "Coinbase Referral" in row_dict['Notes']:
             # We can calculate the exact buy_value from the spot price
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
-                                                     data_row.timestamp,
-                                                     buy_quantity=in_row[3],
-                                                     buy_asset=in_row[2],
-                                                     buy_value=Decimal(in_row[4]) * \
-                                                               Decimal(in_row[3]),
-                                                     wallet=WALLET)
+                                 data_row.timestamp,
+                                 buy_quantity=row_dict['Quantity Transacted'],
+                                 buy_asset=row_dict['Asset'],
+                                 buy_value=Decimal(row_dict['GBP Spot Price at Transaction']) * \
+                                           Decimal(row_dict['Quantity Transacted']),
+                                 wallet=WALLET)
         else:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                      data_row.timestamp,
-                                                     buy_quantity=in_row[3],
-                                                     buy_asset=in_row[2],
+                                                     buy_quantity=row_dict['Quantity Transacted'],
+                                                     buy_asset=row_dict['Asset'],
                                                      wallet=WALLET)
-    elif in_row[1] in ("Coinbase Earn", "Rewards Income"):
+    elif row_dict['Transaction Type'] in ("Coinbase Earn", "Rewards Income"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INCOME,
-                                                 data_row.timestamp,
-                                                 buy_quantity=in_row[3],
-                                                 buy_asset=in_row[2],
-                                                 buy_value=in_row[6],
-                                                 wallet=WALLET)
-    elif in_row[1] == "Send":
+                                             data_row.timestamp,
+                                             buy_quantity=row_dict['Quantity Transacted'],
+                                             buy_asset=row_dict['Asset'],
+                                             buy_value=row_dict['GBP Total (inclusive of fees)'],
+                                             wallet=WALLET)
+    elif row_dict['Transaction Type'] == "Send":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=in_row[3],
-                                                 sell_asset=in_row[2],
+                                                 sell_quantity=row_dict['Quantity Transacted'],
+                                                 sell_asset=row_dict['Asset'],
                                                  wallet=WALLET)
-    elif in_row[1] == "Buy":
-        currency = get_currency(in_row[8])
+    elif row_dict['Transaction Type'] == "Buy":
+        currency = get_currency(row_dict['Notes'])
         if currency is None:
-            raise UnexpectedContentError(8, parser.in_header[8], in_row[8])
+            raise UnexpectedContentError(parser.in_header.index('Notes'), 'Notes',
+                                         row_dict['Notes'])
 
-        if config.coinbase_zero_fees_are_gifts and Decimal(in_row[7]) == 0:
+        if config.coinbase_zero_fees_are_gifts and Decimal(row_dict['GBP Fees']) == 0:
             # Zero fees "may" indicate an early referral reward, or airdrop
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
-                                                     data_row.timestamp,
-                                                     buy_quantity=in_row[3],
-                                                     buy_asset=in_row[2],
-                                                     buy_value=in_row[6] if Decimal(in_row[6]) > 0
-                                                                         else None,
-                                                     wallet=WALLET)
+                                 data_row.timestamp,
+                                 buy_quantity=row_dict['Quantity Transacted'],
+                                 buy_asset=row_dict['Asset'],
+                                 buy_value=row_dict['GBP Total (inclusive of fees)'] \
+                                         if Decimal(row_dict['GBP Total (inclusive of fees)']) > 0 \
+                                         else None,
+                                 wallet=WALLET)
         else:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                      data_row.timestamp,
-                                                     buy_quantity=in_row[3],
-                                                     buy_asset=in_row[2],
-                                                     sell_quantity=in_row[5],
+                                                     buy_quantity=row_dict['Quantity Transacted'],
+                                                     buy_asset=row_dict['Asset'],
+                                                     sell_quantity=row_dict['GBP Subtotal'],
                                                      sell_asset=currency,
-                                                     fee_quantity=in_row[7],
+                                                     fee_quantity=row_dict['GBP Fees'],
                                                      fee_asset=currency,
                                                      wallet=WALLET)
-    elif in_row[1] == "Sell":
-        currency = get_currency(in_row[8])
+    elif row_dict['Transaction Type'] == "Sell":
+        currency = get_currency(row_dict['Notes'])
         if currency is None:
-            raise UnexpectedContentError(8, parser.in_header[8], in_row[8])
+            raise UnexpectedContentError(parser.in_header.index('Notes'), 'Notes',
+                                         row_dict['Notes'])
 
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[5],
+                                                 buy_quantity=row_dict['GBP Subtotal'],
                                                  buy_asset=currency,
-                                                 sell_quantity=in_row[3],
-                                                 sell_asset=in_row[2],
-                                                 fee_quantity=in_row[7],
+                                                 sell_quantity=row_dict['Quantity Transacted'],
+                                                 sell_asset=row_dict['Asset'],
+                                                 fee_quantity=row_dict['GBP Fees'],
                                                  fee_asset=currency,
                                                  wallet=WALLET)
-    elif in_row[1] == "Convert":
-        convert_info = get_convert_info(in_row[8])
+    elif row_dict['Transaction Type'] == "Convert":
+        convert_info = get_convert_info(row_dict['Notes'])
         if convert_info is None:
-            raise UnexpectedContentError(8, parser.in_header[8], in_row[8])
+            raise UnexpectedContentError(parser.in_header.index('Notes'), 'Notes',
+                                         row_dict['Notes'])
 
         buy_quantity = convert_info[2]
         buy_asset = convert_info[3]
@@ -95,14 +99,15 @@ def parse_coinbase(data_row, parser, _filename):
                                                  data_row.timestamp,
                                                  buy_quantity=buy_quantity,
                                                  buy_asset=buy_asset,
-                                                 buy_value=in_row[6],
-                                                 sell_quantity=in_row[3],
-                                                 sell_asset=in_row[2],
-                                                 sell_value=in_row[6],
+                                                 buy_value=row_dict[6],
+                                                 sell_quantity=row_dict['Quantity Transacted'],
+                                                 sell_asset=row_dict['Asset'],
+                                                 sell_value=row_dict[6],
                                                  wallet=WALLET)
 
     else:
-        raise UnexpectedTypeError(1, parser.in_header[1], in_row[1])
+        raise UnexpectedTypeError(parser.in_header.index('Transaction Type'), 'Transaction Type',
+                                  row_dict['Transaction Type'])
 
 def get_convert_info(notes):
     if sys.version_info[0] < 3:
@@ -124,144 +129,146 @@ def get_currency(notes):
         return match.group(1)
     return None
 
-def parse_coinbase_transfers(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+def parse_coinbase_transfers(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
 
-    if in_row[1] == "Deposit":
+    if row_dict['Type'] == "Deposit":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[5],
-                                                 buy_asset=in_row[6],
-                                                 fee_quantity=in_row[4],
-                                                 fee_asset=in_row[6],
+                                                 buy_quantity=row_dict['Total'],
+                                                 buy_asset=row_dict['Currency'],
+                                                 fee_quantity=row_dict['Fees'],
+                                                 fee_asset=row_dict['Currency'],
                                                  wallet=WALLET)
-    elif in_row[1] == "Withdrawal":
+    elif row_dict['Type'] == "Withdrawal":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=in_row[5],
-                                                 sell_asset=in_row[6],
-                                                 fee_quantity=in_row[4],
-                                                 fee_asset=in_row[6],
+                                                 sell_quantity=row_dict['Total'],
+                                                 sell_asset=row_dict['Currency'],
+                                                 fee_quantity=row_dict['Fees'],
+                                                 fee_asset=row_dict['Currency'],
                                                  wallet=WALLET)
-    elif in_row[1] == "Buy":
+    elif row_dict['Type'] == "Buy":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[2],
-                                                 buy_asset="BTC",
-                                                 sell_quantity=in_row[3],
-                                                 sell_asset=in_row[6],
-                                                 fee_quantity=in_row[4],
-                                                 fee_asset=in_row[6],
+                                                 buy_quantity=row_dict[parser.in_header[2]],
+                                                 buy_asset=parser.in_header[2],
+                                                 sell_quantity=row_dict['Subtotal'],
+                                                 sell_asset=row_dict['Currency'],
+                                                 fee_quantity=row_dict['Fees'],
+                                                 fee_asset=row_dict['Currency'],
                                                  wallet=WALLET)
-    elif in_row[1] == "Sell":
+    elif row_dict['Type'] == "Sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[3],
-                                                 buy_asset=in_row[6],
-                                                 sell_quantity=in_row[2],
-                                                 sell_asset="BTC",
-                                                 fee_quantity=in_row[4],
-                                                 fee_asset=in_row[6],
+                                                 buy_quantity=row_dict['Subtotal'],
+                                                 buy_asset=row_dict['Currency'],
+                                                 sell_quantity=row_dict[parser.in_header[2]],
+                                                 sell_asset=parser.in_header[2],
+                                                 fee_quantity=row_dict['Fees'],
+                                                 fee_asset=row_dict['Currency'],
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(1, parser.in_header[1], in_row[1])
+        raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 
-def parse_coinbase_transactions(data_row, _parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+def parse_coinbase_transactions(data_row, _parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
 
-    if in_row[21] != "":
+    if data_row.row[21] != "":
         # Hash so must be external crypto deposit or withdrawal
-        if Decimal(in_row[2]) < 0:
+        if Decimal(row_dict['Amount']) < 0:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                      data_row.timestamp,
-                                                     sell_quantity=abs(Decimal(in_row[2])),
-                                                     sell_asset=in_row[3],
+                                                     sell_quantity=abs(Decimal(row_dict['Amount'])),
+                                                     sell_asset=row_dict['Currency'],
                                                      wallet=WALLET)
         else:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                      data_row.timestamp,
-                                                     buy_quantity=in_row[2],
-                                                     buy_asset=in_row[3],
+                                                     buy_quantity=row_dict['Amount'],
+                                                     buy_asset=row_dict['Currency'],
                                                      wallet=WALLET)
-    elif in_row[12] != "":
+    elif row_dict['Transfer ID'] != "":
         # Transfer ID so could be a trade or external fiat deposit/withdrawal
-        if in_row[3] != in_row[8]:
+        if row_dict['Currency'] != row_dict['Transfer Total Currency']:
             # Currencies are different so must be a trade
-            if Decimal(in_row[2]) < 0:
+            if Decimal(row_dict['Amount']) < 0:
                 data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                         data_row.timestamp,
-                                                         buy_quantity=Decimal(in_row[7]) + \
-                                                                      Decimal(in_row[9]),
-                                                         buy_asset=in_row[8],
-                                                         sell_quantity=abs(Decimal(in_row[2])),
-                                                         sell_asset=in_row[3],
-                                                         fee_quantity=in_row[9],
-                                                         fee_asset=in_row[10],
-                                                         wallet=WALLET)
+                                                 data_row.timestamp,
+                                                 buy_quantity= \
+                                                     Decimal(row_dict['Transfer Total']) + \
+                                                     Decimal(row_dict['Transfer Fee']),
+                                                 buy_asset=row_dict['Transfer Total Currency'],
+                                                 sell_quantity=abs(Decimal(row_dict['Amount'])),
+                                                 sell_asset=row_dict['Currency'],
+                                                 fee_quantity=row_dict['Transfer Fee'],
+                                                 fee_asset=row_dict['Transfer Fee Currency'],
+                                                 wallet=WALLET)
             else:
                 data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                         data_row.timestamp,
-                                                         buy_quantity=in_row[2],
-                                                         buy_asset=in_row[3],
-                                                         sell_quantity=Decimal(in_row[7]) - \
-                                                                       Decimal(in_row[9]),
-                                                         sell_asset=in_row[8],
-                                                         fee_quantity=in_row[9],
-                                                         fee_asset=in_row[10],
-                                                         wallet=WALLET)
+                                                     data_row.timestamp,
+                                                     buy_quantity=row_dict['Amount'],
+                                                     buy_asset=row_dict['Currency'],
+                                                     sell_quantity=
+                                                         Decimal(row_dict['Transfer Total']) - \
+                                                         Decimal(row_dict['Transfer Fee']),
+                                                     sell_asset=row_dict['Transfer Total Currency'],
+                                                     fee_quantity=row_dict['Transfer Fee'],
+                                                     fee_asset=row_dict['Transfer Fee Currency'],
+                                                     wallet=WALLET)
         else:
-            if Decimal(in_row[2]) < 0:
+            if Decimal(row_dict['Amount']) < 0:
                 data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
-                                                         data_row.timestamp,
-                                                         sell_quantity=in_row[7],
-                                                         sell_asset=in_row[3],
-                                                         fee_quantity=in_row[9],
-                                                         fee_asset=in_row[10],
-                                                         wallet=WALLET)
+                                                     data_row.timestamp,
+                                                     sell_quantity=row_dict['Transfer Total'],
+                                                     sell_asset=row_dict['Currency'],
+                                                     fee_quantity=row_dict['Transfer Fee'],
+                                                     fee_asset=row_dict['Transfer Fee Currency'],
+                                                     wallet=WALLET)
             else:
                 data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                                         data_row.timestamp,
-                                                         buy_quantity=in_row[7],
-                                                         buy_asset=in_row[3],
-                                                         fee_quantity=in_row[9],
-                                                         fee_asset=in_row[10],
-                                                         wallet=WALLET)
+                                                     data_row.timestamp,
+                                                     buy_quantity=row_dict['Transfer Total'],
+                                                     buy_asset=row_dict['Currency'],
+                                                     fee_quantity=row_dict['Transfer Fee'],
+                                                     fee_asset=row_dict['Transfer Fee Currency'],
+                                                     wallet=WALLET)
     else:
         # Could be a referral bonus or deposit/withdrawal to/from Coinbase Pro
-        if in_row[5] != "" and in_row[3] == "BTC":
+        if row_dict['Notes'] != "" and row_dict['Currency'] == "BTC":
             # Bonus is always in BTC
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                      data_row.timestamp,
-                                                     buy_quantity=in_row[2],
-                                                     buy_asset=in_row[3],
+                                                     buy_quantity=row_dict['Amount'],
+                                                     buy_asset=row_dict['Currency'],
                                                      wallet=WALLET)
-        elif in_row[5] != "" and in_row[3] != "BTC":
+        elif row_dict['Notes'] != "" and row_dict['Currency'] != "BTC":
             # Special case, flag as duplicate entry, trade will be in BTC Wallet Transactions Report
-            if Decimal(in_row[2]) < 0:
+            if Decimal(row_dict['Amount']) < 0:
                 data_row.t_record = TransactionOutRecord(DUPLICATE,
-                                                         data_row.timestamp,
-                                                         sell_quantity=abs(Decimal(in_row[2])),
-                                                         sell_asset=in_row[3],
-                                                         wallet=WALLET)
+                                                     data_row.timestamp,
+                                                     sell_quantity=abs(Decimal(row_dict['Amount'])),
+                                                     sell_asset=row_dict['Currency'],
+                                                     wallet=WALLET)
             else:
                 data_row.t_record = TransactionOutRecord(DUPLICATE,
                                                          data_row.timestamp,
-                                                         buy_quantity=in_row[2],
-                                                         buy_asset=in_row[3],
+                                                         buy_quantity=row_dict['Amount'],
+                                                         buy_asset=row_dict['Currency'],
                                                          wallet=WALLET)
-        elif Decimal(in_row[2]) < 0:
+        elif Decimal(row_dict['Amount']) < 0:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                      data_row.timestamp,
-                                                     sell_quantity=abs(Decimal(in_row[2])),
-                                                     sell_asset=in_row[3],
+                                                     sell_quantity=abs(Decimal(row_dict['Amount'])),
+                                                     sell_asset=row_dict['Currency'],
                                                      wallet=WALLET)
         else:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                      data_row.timestamp,
-                                                     buy_quantity=in_row[2],
-                                                     buy_asset=in_row[3],
+                                                     buy_quantity=row_dict['Amount'],
+                                                     buy_asset=row_dict['Currency'],
                                                      wallet=WALLET)
 
 DataParser(DataParser.TYPE_EXCHANGE,

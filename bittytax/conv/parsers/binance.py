@@ -13,40 +13,41 @@ from ..exceptions import UnexpectedTypeError, UnexpectedTradingPairError, \
                          UnexpectedContentError, MissingComponentError, DataFilenameError
 
 WALLET = "Binance"
-QUOTE_ASSETS = ['AUD', 'BIDR', 'BKRW', 'BNB', 'BRL', 'BTC', 'BUSD', 'BVND', 'DAI', 'ETH', 'EUR',
-                'GBP', 'IDRT', 'NGN', 'PAX', 'RUB', 'TRX', 'TRY', 'TUSD', 'UAH', 'USDC', 'USDS',
-                'USDT', 'XRP', 'ZAR']
+QUOTE_ASSETS = ['AUD', 'BIDR', 'BKRW', 'BNB', 'BRL', 'BTC', 'BUSD', 'BVND', 'DAI', 'ETH',
+                'EUR', 'GBP', 'IDRT', 'NGN', 'PAX', 'RUB', 'TRX', 'TRY', 'TUSD', 'UAH',
+                'USDC', 'USDS', 'USDT', 'VAI', 'XRP', 'ZAR']
 
-def parse_binance_trades(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+def parse_binance_trades(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date(UTC)'])
 
-    base_asset, quote_asset = split_trading_pair(in_row[1])
+    base_asset, quote_asset = split_trading_pair(row_dict['Market'])
     if base_asset is None or quote_asset is None:
-        raise UnexpectedTradingPairError(1, parser.in_header[1], in_row[1])
+        raise UnexpectedTradingPairError(parser.in_header.index('Market'), 'Market',
+                                         row_dict['Market'])
 
-    if in_row[2] == "BUY":
+    if row_dict['Type'] == "BUY":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[4],
+                                                 buy_quantity=row_dict['Amount'],
                                                  buy_asset=base_asset,
-                                                 sell_quantity=in_row[5],
+                                                 sell_quantity=row_dict['Total'],
                                                  sell_asset=quote_asset,
-                                                 fee_quantity=in_row[6],
-                                                 fee_asset=in_row[7],
+                                                 fee_quantity=row_dict['Fee'],
+                                                 fee_asset=row_dict['Fee Coin'],
                                                  wallet=WALLET)
-    elif in_row[2] == "SELL":
+    elif row_dict['Type'] == "SELL":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[5],
+                                                 buy_quantity=row_dict['Total'],
                                                  buy_asset=quote_asset,
-                                                 sell_quantity=in_row[4],
+                                                 sell_quantity=row_dict['Amount'],
                                                  sell_asset=base_asset,
-                                                 fee_quantity=in_row[6],
-                                                 fee_asset=in_row[7],
+                                                 fee_quantity=row_dict['Fee'],
+                                                 fee_asset=row_dict['Fee Coin'],
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
+        raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 
 def split_trading_pair(trading_pair):
     for quote_asset in QUOTE_ASSETS:
@@ -55,85 +56,86 @@ def split_trading_pair(trading_pair):
 
     return None, None
 
-def parse_binance_deposits_withdrawals_crypto(data_row, _parser, filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+def parse_binance_deposits_withdrawals_crypto(data_row, _parser, filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(data_row.row[0])
 
-    if in_row[8] != "Completed":
+    if row_dict['Status'] != "Completed":
         return
 
     if "deposit" in filename.lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[2],
-                                                 buy_asset=in_row[1],
-                                                 fee_quantity=in_row[3],
-                                                 fee_asset=in_row[1],
+                                                 buy_quantity=row_dict['Amount'],
+                                                 buy_asset=row_dict['Coin'],
+                                                 fee_quantity=row_dict['TransactionFee'],
+                                                 fee_asset=row_dict['Coin'],
                                                  wallet=WALLET)
     elif "withdrawal" in filename.lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=in_row[2],
-                                                 sell_asset=in_row[1],
-                                                 fee_quantity=in_row[3],
-                                                 fee_asset=in_row[1],
+                                                 sell_quantity=row_dict['Amount'],
+                                                 sell_asset=row_dict['Coin'],
+                                                 fee_quantity=row_dict['TransactionFee'],
+                                                 fee_asset=row_dict['Coin'],
                                                  wallet=WALLET)
     else:
         raise DataFilenameError(filename, "Transaction Type (Deposit or Withdrawal)")
 
-def parse_binance_deposits_withdrawals_cash(data_row, _parser, filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+def parse_binance_deposits_withdrawals_cash(data_row, _parser, filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date(UTC)'])
 
-    if in_row[3] != "Successful":
+    if row_dict['Status'] != "Successful":
         return
 
     if "deposit" in filename.lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[2],
-                                                 buy_asset=in_row[1],
-                                                 fee_quantity=in_row[6],
-                                                 fee_asset=in_row[1],
+                                                 buy_quantity=row_dict['Amount'],
+                                                 buy_asset=row_dict['Coin'],
+                                                 fee_quantity=row_dict['Fee'],
+                                                 fee_asset=row_dict['Coin'],
                                                  wallet=WALLET)
     elif "withdrawal" in filename.lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=in_row[2],
-                                                 sell_asset=in_row[1],
-                                                 fee_quantity=in_row[6],
-                                                 fee_asset=in_row[1],
+                                                 buy_quantity=row_dict['Amount'],
+                                                 buy_asset=row_dict['Coin'],
+                                                 fee_quantity=row_dict['Fee'],
+                                                 fee_asset=row_dict['Coin'],
                                                  wallet=WALLET)
     else:
         raise DataFilenameError(filename, "Transaction Type (Deposit or Withdrawal)")
 
-def parse_binance_statements(data_rows, parser, _filename):
+def parse_binance_statements(data_rows, parser, _filename, _args):
     for data_row in data_rows:
-        if config.args.debug:
+        if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
                 Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row))
 
-        in_row = data_row.in_row
-        data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+        row_dict = data_row.row_dict
+        data_row.timestamp = DataParser.parse_timestamp(row_dict['UTC_Time'])
 
-        if in_row[2] in ("Distribution", "Commission History", "Referrer rebates"):
+        if row_dict['Operation'] in ("Distribution", "Commission History", "Referrer rebates"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                      data_row.timestamp,
-                                                     buy_quantity=in_row[4],
-                                                     buy_asset=in_row[3],
+                                                     buy_quantity=row_dict['Change'],
+                                                     buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
-        elif in_row[2] == "Small assets exchange BNB":
-            bnb_convert(data_rows, parser, in_row[0], in_row[2])
+        elif row_dict['Operation'] == "Small assets exchange BNB":
+            bnb_convert(data_rows, parser, row_dict['UTC_Time'], row_dict['Operation'])
 
 def bnb_convert(data_rows, parser, utc_time, operation):
     matching_rows = [data_row for data_row in data_rows
-                     if data_row.in_row[0] == utc_time and data_row.in_row[2] == operation]
+                     if data_row.row_dict['UTC_Time'] == utc_time and
+                     data_row.row_dict['Operation'] == operation]
 
     bnb_found, buy_quantity = get_bnb_quantity(matching_rows, parser)
 
     for data_row in matching_rows:
         if not data_row.parsed:
-            data_row.timestamp = DataParser.parse_timestamp(data_row.in_row[0])
+            data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['UTC_Time'])
             data_row.parsed = True
 
             if bnb_found:
@@ -141,12 +143,14 @@ def bnb_convert(data_rows, parser, utc_time, operation):
                                                          data_row.timestamp,
                                                          buy_quantity=buy_quantity,
                                                          buy_asset="BNB",
-                                                         sell_quantity= \
-                                                                 abs(Decimal(data_row.in_row[4])),
-                                                         sell_asset=data_row.in_row[3],
+                                                         sell_quantity=abs(Decimal(data_row. \
+                                                             row_dict['Change'])),
+                                                         sell_asset=data_row.row_dict['Coin'],
                                                          wallet=WALLET)
             else:
-                data_row.failure = MissingComponentError(2, parser.in_header[2], data_row.in_row[2])
+                data_row.failure = MissingComponentError(parser.in_header.index('Operation'),
+                                                         'Operation',
+                                                         data_row.row_dict['Operation'])
 
 def get_bnb_quantity(matching_rows, parser):
     bnb_found = False
@@ -154,17 +158,17 @@ def get_bnb_quantity(matching_rows, parser):
     assets = 0
 
     for data_row in matching_rows:
-        if data_row.in_row[3] == "BNB":
-            data_row.timestamp = DataParser.parse_timestamp(data_row.in_row[0])
+        if data_row.row_dict['Coin'] == "BNB":
+            data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['UTC_Time'])
             data_row.parsed = True
 
             if not bnb_found:
-                buy_quantity = data_row.in_row[4]
+                buy_quantity = data_row.row_dict['Change']
                 bnb_found = True
             else:
                 # Multiple BNB values?
-                data_row.failure = UnexpectedContentError(3, parser.in_header[3],
-                                                          data_row.in_row[3])
+                data_row.failure = UnexpectedContentError(parser.in_header.index('Coin'), 'Coin',
+                                                          data_row.row_dict['Coin'])
                 buy_quantity = None
         else:
             assets += 1

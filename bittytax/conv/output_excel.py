@@ -29,9 +29,9 @@ class OutputExcel(OutputBase):
     TITLE = 'BittyTax Records'
     PROJECT_URL = 'https://github.com/BittyTax/BittyTax'
 
-    def __init__(self, progname, data_files):
+    def __init__(self, progname, data_files, args):
         super(OutputExcel, self).__init__(data_files)
-        self.filename = self.get_output_filename(self.FILE_EXTENSION)
+        self.filename = self.get_output_filename(args.output_filename, self.FILE_EXTENSION)
         self.workbook = xlsxwriter.Workbook(self.filename)
         self.workbook.set_size(1800, 1200)
         self.workbook.formats[0].set_font_size(FONT_SIZE)
@@ -209,9 +209,9 @@ class Worksheet(object):
             self._xl_note(data_row.t_record.note, row_num, 12)
 
         if sys.version_info[0] < 3:
-            in_row = [r.decode('utf8') for r in data_row.in_row]
+            in_row = [r.decode('utf8') for r in data_row.row]
         else:
-            in_row = data_row.in_row
+            in_row = data_row.row
 
         # Add original data
         for col_num, col_data in enumerate(in_row):
@@ -258,6 +258,8 @@ class Worksheet(object):
             self._autofit_calc(col_num, len('{:0,f}'.format(quantity.normalize())))
 
     def _xl_asset(self, asset, row_num, col_num):
+        if sys.version_info[0] < 3:
+            asset = asset.decode('utf8')
         self.worksheet.write_string(row_num, col_num, asset)
         self._autofit_calc(col_num, len(asset))
 
@@ -270,6 +272,8 @@ class Worksheet(object):
             self.worksheet.write_blank(row_num, col_num, None, self.output.format_currency)
 
     def _xl_wallet(self, wallet, row_num, col_num):
+        if sys.version_info[0] < 3:
+            wallet = wallet.decode('utf8')
         self.worksheet.write_string(row_num, col_num, wallet)
         self._autofit_calc(col_num, len(wallet))
 
@@ -293,6 +297,8 @@ class Worksheet(object):
             self._autofit_calc(col_num, len(self.output.DATE_FORMAT))
 
     def _xl_note(self, note, row_num, col_num):
+        if sys.version_info[0] < 3:
+            note = note.decode('utf8')
         self.worksheet.write_string(row_num, col_num, note)
         self._autofit_calc(col_num, len(note) if note else self.MAX_COL_WIDTH)
 

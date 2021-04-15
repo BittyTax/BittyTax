@@ -21,9 +21,9 @@ class ReportPdf(object):
     FILE_EXTENSION = 'pdf'
     TEMPLATE_FILE = 'tax_report.html'
 
-    def __init__(self, progname, audit, tax_report, price_report, holdings_report):
+    def __init__(self, progname, audit, tax_report, price_report, holdings_report, args):
         self.env = jinja2.Environment(loader=jinja2.PackageLoader('bittytax', 'templates'))
-        self.filename = self.get_output_filename(self.FILE_EXTENSION)
+        self.filename = self.get_output_filename(args.output_filename, self.FILE_EXTENSION)
 
         self.env.filters['datefilter'] = self.datefilter
         self.env.filters['datefilter2'] = self.datefilter2
@@ -40,7 +40,8 @@ class ReportPdf(object):
                                 'audit': audit,
                                 'tax_report': tax_report,
                                 'price_report': price_report,
-                                'holdings_report': holdings_report})
+                                'holdings_report': holdings_report,
+                                'args': args})
 
         with ProgressSpinner():
             pdf_file = open(self.filename, 'w+b')
@@ -72,11 +73,11 @@ class ReportPdf(object):
     def valuefilter(value):
         if config.ccy == 'GBP':
             return '&pound;{:0,.2f}'.format(value)
-        elif config.ccy == 'EUR':
+        if config.ccy == 'EUR':
             return '&euro;{:0,.2f}'.format(value)
-        elif config.ccy in ('USD', 'AUD', 'NZD'):
+        if config.ccy in ('USD', 'AUD', 'NZD'):
             return '&dollar;{:0,.2f}'.format(value)
-        elif config.ccy in ('DKK', 'NOK', 'SEK'):
+        if config.ccy in ('DKK', 'NOK', 'SEK'):
             return 'kr.{:0,.2f}'.format(value)
         raise ValueError("Currency not supported")
 
@@ -95,9 +96,9 @@ class ReportPdf(object):
         return text.replace(' ', '&nbsp;')
 
     @staticmethod
-    def get_output_filename(extension_type):
-        if config.args.output_filename:
-            filepath, file_extension = os.path.splitext(config.args.output_filename)
+    def get_output_filename(filename, extension_type):
+        if filename:
+            filepath, file_extension = os.path.splitext(filename)
             if file_extension != extension_type:
                 filepath = filepath + '.' + extension_type
         else:
@@ -120,30 +121,30 @@ class ReportLog(object):
     MAX_NAME_LEN = 32
     ASSET_WIDTH = MAX_SYMBOL_LEN + MAX_NAME_LEN + 3
 
-    def __init__(self, audit, tax_report, price_report, holdings_report):
+    def __init__(self, audit, tax_report, price_report, holdings_report, args):
         self.audit_report = audit
         self.tax_report = tax_report
         self.price_report = price_report
         self.holdings_report = holdings_report
 
         print("%stax report output:" % Fore.WHITE)
-        if config.args.taxyear:
-            if not config.args.summary:
+        if args.taxyear:
+            if not args.summary:
                 self.audit()
 
             print("\n%sTax Year - %s (%s to %s)%s" % (
                 Fore.CYAN+Style.BRIGHT,
-                config.format_tax_year(config.args.taxyear),
-                self.format_date2(config.get_tax_year_start(config.args.taxyear)),
-                self.format_date2(config.get_tax_year_end(config.args.taxyear)),
+                config.format_tax_year(args.taxyear),
+                self.format_date2(config.get_tax_year_start(args.taxyear)),
+                self.format_date2(config.get_tax_year_end(args.taxyear)),
                 Style.NORMAL))
-            self.capital_gains(config.args.taxyear)
-            if not config.args.summary:
-                self.income(config.args.taxyear)
+            self.capital_gains(args.taxyear, args.tax_rules, args.summary)
+            if not args.summary:
+                self.income(args.taxyear)
                 print("\n%sAppendix%s" % (Fore.CYAN+Style.BRIGHT, Style.NORMAL))
-                self.price_data(config.args.taxyear)
+                self.price_data(args.taxyear)
         else:
-            if not config.args.summary:
+            if not args.summary:
                 self.audit()
 
             for tax_year in sorted(tax_report):
@@ -153,11 +154,11 @@ class ReportLog(object):
                     self.format_date2(config.get_tax_year_start(tax_year)),
                     self.format_date2(config.get_tax_year_end(tax_year)),
                     Style.NORMAL))
-                self.capital_gains(tax_year)
-                if not config.args.summary:
+                self.capital_gains(tax_year, args.tax_rules, args.summary)
+                if not args.summary:
                     self.income(tax_year)
 
-            if not config.args.summary:
+            if not args.summary:
                 print("\n%sAppendix%s" % (Fore.CYAN+Style.BRIGHT, Style.NORMAL))
                 for tax_year in sorted(tax_report):
                     self.price_data(tax_year)
@@ -181,10 +182,10 @@ class ReportLog(object):
                     asset.ljust(self.MAX_SYMBOL_LEN),
                     self.format_quantity(self.audit_report.wallets[wallet][asset])))
 
-    def capital_gains(self, tax_year):
+    def capital_gains(self, tax_year, tax_rules, summary):
         cgains = self.tax_report[tax_year]['CapitalGains']
 
-        if config.tax_rules in config.TAX_RULES_UK_COMPANY:
+        if tax_rules in config.TAX_RULES_UK_COMPANY:
             print("%sChargeable Gains" % Fore.CYAN)
         else:
             print("%sCapital Gains" % Fore.CYAN)
@@ -274,8 +275,8 @@ class ReportLog(object):
                   "this needs to be reported to HMRC" % (
                       Fore.YELLOW, self.format_value(cgains.estimate['allowance'] * 4)))
 
-        if not config.args.summary:
-            if config.tax_rules in config.TAX_RULES_UK_COMPANY:
+        if not summary:
+            if tax_rules in config.TAX_RULES_UK_COMPANY:
                 self.ct_estimate(tax_year)
             else:
                 self.cgt_estimate(tax_year)

@@ -10,6 +10,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Coinbase Pro parser: fills export, buy quantity missing fee.
 - Price tool: list command returns error. ([#86](https://github.com/BittyTax/BittyTax/issues/86))
 - Price tool: -ds option returns "KeyError: 'price'" exception.
+- Conversion tool: strip whitespace from header.
 ### Added
 - Etherscan parser: added internal transactions export.
 - Binance parser: added cash deposit and withdrawal exports.
@@ -38,6 +39,9 @@ Important:- A new Note field has been added to the end of the transaction record
 - Local currency support.
 - Accounting tool: new config "transfer_fee_allowable_cost" added.
 - Conversion tool: allow wildcards in filenames.
+- Conversion tool: added dictionary to DataRow.
+- Conversion tool: "Savings & Loans" parser category added.
+- Conversion tool: convert_currency method added to DataParser.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
@@ -60,6 +64,11 @@ Important:- A new Note field has been added to the end of the transaction record
 - Accounting tool: ordering of all transactions when transfers_include=False.
 - Ledger Live parser: added "FEES" and "REVEAL" operation types. ([#79](https://github.com/BittyTax/BittyTax/issues/79))
 - Binance parser: added "Referrer rebates" operation type.
+- Command line arguments now used locally instead of stored globally.
+- Price tool: PriceData requires data source list to initialise.
+- Conversion tool: all parsers updated to use DataRow dictionary.
+- Crypto.com parser: added "crypto_to_van_sell_order" transaction type.
+- Nexo parser: check for unconfirmed transactions.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.

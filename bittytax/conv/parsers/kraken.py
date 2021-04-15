@@ -9,67 +9,66 @@ from ..exceptions import UnexpectedTypeError, UnexpectedTradingPairError
 
 WALLET = "Kraken"
 
-QUOTE_ASSETS =  ['AUD', 'CAD', 'CHF', 'DAI', 'ETH', 'EUR', 'GBP', 'JPY', 'USD', 'USDC',
-                 'USDT', 'XBT', 'XETH', 'XXBT', 'ZCAD', 'ZEUR', 'ZGBP', 'ZJPY', 'ZUSD']
+QUOTE_ASSETS = ['AUD', 'CAD', 'CHF', 'DAI', 'ETH', 'EUR', 'GBP', 'JPY', 'USD', 'USDC',
+                'USDT', 'XBT', 'XETH', 'XXBT', 'ZAUD', 'ZCAD', 'ZEUR', 'ZGBP', 'ZJPY', 'ZUSD']
 
-ALT_ASSETS = {"KFEE": "FEE", "XETC": "ETC", "XETH": "ETH", "XLTC": "LTC", "XMLN": "MLN",
-              "XREP": "REP", "XXBT": "XBT", "XXDG": "XDG", "XXLM": "XLM", "XXMR": "XMR",
-              "XXRP": "XRP", "XZEC": "ZEC", "ZAUD": "AUD", "ZCAD": "CAD", "ZEUR": "EUR",
-              "ZGBP": "GBP", "ZJPY": "JPY", "ZUSD": "USD"}
+ALT_ASSETS = {'KFEE': 'FEE', 'XETC': 'ETC', 'XETH': 'ETH', 'XLTC': 'LTC', 'XMLN': 'MLN',
+              'XREP': 'REP', 'XXBT': 'XBT', 'XXDG': 'XDG', 'XXLM': 'XLM', 'XXMR': 'XMR',
+              'XXRP': 'XRP', 'XZEC': 'ZEC', 'ZAUD': 'AUD', 'ZCAD': 'CAD', 'ZEUR': 'EUR',
+              'ZGBP': 'GBP', 'ZJPY': 'JPY', 'ZUSD': 'USD'}
 
-def parse_kraken_deposits_withdrawals(data_row, _parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[2])
+def parse_kraken_deposits_withdrawals(data_row, _parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['time'])
 
-    if in_row[3] == "deposit" and in_row[0] != "":
+    if row_dict['type'] == "deposit" and row_dict['txid'] != "":
         # Check for txid to filter failed transactions
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[7],
-                                                 buy_asset=normalise_asset(in_row[6]),
-                                                 fee_quantity=in_row[8],
-                                                 fee_asset=normalise_asset(in_row[6]),
+                                                 buy_quantity=row_dict['amount'],
+                                                 buy_asset=normalise_asset(row_dict['asset']),
+                                                 fee_quantity=row_dict['fee'],
+                                                 fee_asset=normalise_asset(row_dict['asset']),
                                                  wallet=WALLET)
-    elif in_row[3] == "withdrawal" and in_row[0] != "":
+    elif row_dict['type'] == "withdrawal" and row_dict['txid'] != "":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=abs(Decimal(in_row[7])),
-                                                 sell_asset=normalise_asset(in_row[6]),
-                                                 fee_quantity=in_row[8],
-                                                 fee_asset=normalise_asset(in_row[6]),
+                                                 sell_quantity=abs(Decimal(row_dict['amount'])),
+                                                 sell_asset=normalise_asset(row_dict['asset']),
+                                                 fee_quantity=row_dict['fee'],
+                                                 fee_asset=normalise_asset(row_dict['asset']),
                                                  wallet=WALLET)
 
-def parse_kraken_trades(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[3])
+def parse_kraken_trades(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['time'])
 
-    base_asset, quote_asset = split_trading_pair(in_row[2])
+    base_asset, quote_asset = split_trading_pair(row_dict['pair'])
     if base_asset is None or quote_asset is None:
-        raise UnexpectedTradingPairError(2, parser.in_header[2], in_row[2])
+        raise UnexpectedTradingPairError(parser.in_header.index('pair'), 'pair', row_dict['pair'])
 
-    if in_row[4] == "buy":
+    if row_dict['type'] == "buy":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[9],
+                                                 buy_quantity=row_dict['vol'],
                                                  buy_asset=normalise_asset(base_asset),
-                                                 sell_quantity=in_row[7],
+                                                 sell_quantity=row_dict['cost'],
                                                  sell_asset=normalise_asset(quote_asset),
-                                                 fee_quantity=in_row[8],
+                                                 fee_quantity=row_dict['fee'],
                                                  fee_asset=normalise_asset(quote_asset),
                                                  wallet=WALLET)
-    elif in_row[4] == "sell":
+    elif row_dict['type'] == "sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[7],
+                                                 buy_quantity=row_dict['cost'],
                                                  buy_asset=normalise_asset(quote_asset),
-                                                 sell_quantity=in_row[9],
+                                                 sell_quantity=row_dict['vol'],
                                                  sell_asset=normalise_asset(base_asset),
-                                                 fee_quantity=in_row[8],
+                                                 fee_quantity=row_dict['fee'],
                                                  fee_asset=normalise_asset(quote_asset),
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(4, parser.in_header[4], in_row[4])
-
+        raise UnexpectedTypeError(parser.in_header.index('type'), 'type', row_dict['type'])
 
 def split_trading_pair(trading_pair):
     for quote_asset in sorted(QUOTE_ASSETS, reverse=True):

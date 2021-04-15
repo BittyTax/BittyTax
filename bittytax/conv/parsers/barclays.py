@@ -6,31 +6,32 @@ from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError
 
-def parse_barclays(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[1])
+def parse_barclays(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'])
 
-    if in_row[2] != "Completed":
+    if row_dict['Order Status'] != "Completed":
         return
 
-    if in_row[4] == "Buy":
+    if row_dict['Buy/Sell'] == "Buy":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[5],
-                                                 buy_asset=in_row[0],
-                                                 sell_quantity=in_row[6],
+                                                 buy_quantity=row_dict['Quantity'],
+                                                 buy_asset=row_dict['Investment'],
+                                                 sell_quantity=row_dict['Cost/Proceeds'],
                                                  sell_asset=config.ccy,
-                                                 wallet=in_row[3])
-    elif in_row[4] == "Sell":
+                                                 wallet=row_dict['Account'])
+    elif row_dict['Buy/Sell'] == "Sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[6],
+                                                 buy_quantity=row_dict['Cost/Proceeds'],
                                                  buy_asset=config.ccy,
-                                                 sell_quantity=in_row[5],
-                                                 sell_asset=in_row[0],
-                                                 wallet=in_row[3])
+                                                 sell_quantity=row_dict['Quantity'],
+                                                 sell_asset=row_dict['Investment'],
+                                                 wallet=row_dict['Account'])
     else:
-        raise UnexpectedTypeError(4, parser.in_header[4], in_row[4])
+        raise UnexpectedTypeError(parser.in_header.index('Buy/Sell'), 'Buy/Sell',
+                                  row_dict['Buy/Sell'])
 
 DataParser(DataParser.TYPE_SHARES,
            "Barclays Smart Investor",

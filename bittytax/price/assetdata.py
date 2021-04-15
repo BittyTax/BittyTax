@@ -19,7 +19,7 @@ class AssetData(object):
         for data_source_class in DataSourceBase.__subclasses__():
             self.data_sources[data_source_class.__name__.upper()] = data_source_class()
 
-    def get_assets(self, req_symbol, req_data_source, search):
+    def get_assets(self, req_symbol, req_data_source, search_terms):
         if not req_data_source or req_data_source == 'ALL':
             data_sources = self.data_sources
         else:
@@ -34,8 +34,8 @@ class AssetData(object):
                 assets[req_symbol] = self.data_sources[ds].get_list().get(req_symbol, [])
             for symbol in assets:
                 for asset_id in assets[symbol]:
-                    if search:
-                        match = self.do_search(symbol, asset_id['name'])
+                    if search_terms:
+                        match = self.do_search(symbol, asset_id['name'], search_terms)
                     else:
                         match = True
 
@@ -69,9 +69,9 @@ class AssetData(object):
         return False
 
     @staticmethod
-    def do_search(symbol, name):
-        for string in config.args.search:
-            if string.upper() not in symbol.upper() + ' ' + name.upper():
+    def do_search(symbol, name, search_terms):
+        for search_term in search_terms:
+            if search_term.upper() not in symbol.upper() + ' ' + name.upper():
                 return False
 
         return True
@@ -102,7 +102,7 @@ class AssetData(object):
                 all_assets.append(asset_id)
         return all_assets
 
-    def get_historic_price_ds(self, req_symbol, req_date, req_data_source):
+    def get_historic_price_ds(self, req_symbol, req_date, req_data_source, no_cache=False):
         if req_data_source == 'ALL':
             data_sources = self.data_sources
         else:
@@ -125,7 +125,7 @@ class AssetData(object):
                 date = req_date.strftime('%Y-%m-%d')
                 pair = req_symbol + '/' + asset_id['quote']
 
-                if not config.args.nocache:
+                if not no_cache:
                     # check cache first
                     if pair in self.data_sources[ds].prices and \
                             date in self.data_sources[ds].prices[pair]:

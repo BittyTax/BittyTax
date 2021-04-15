@@ -7,32 +7,33 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Cryptsy"
 
-def parse_cryptsy(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[8], tz='US/Eastern')
+def parse_cryptsy(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'], tz='US/Eastern')
 
-    if in_row[1] == "Buy":
+    if row_dict['OrderType'] == "Buy":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[4],
-                                                 buy_asset=in_row[2].split('/')[0],
-                                                 sell_quantity=in_row[5],
-                                                 sell_asset=in_row[2].split('/')[1],
-                                                 fee_quantity=in_row[6],
-                                                 fee_asset=in_row[2].split('/')[1],
+                                                 buy_quantity=row_dict['Quantity'],
+                                                 buy_asset=row_dict['Market'].split('/')[0],
+                                                 sell_quantity=row_dict['Total'],
+                                                 sell_asset=row_dict['Market'].split('/')[1],
+                                                 fee_quantity=row_dict['Fee'],
+                                                 fee_asset=row_dict['Market'].split('/')[1],
                                                  wallet=WALLET)
-    elif in_row[1] == "Sell":
+    elif row_dict['OrderType'] == "Sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[5],
-                                                 buy_asset=in_row[2].split('/')[1],
-                                                 sell_quantity=in_row[4],
-                                                 sell_asset=in_row[2].split('/')[0],
-                                                 fee_quantity=in_row[6],
-                                                 fee_asset=in_row[2].split('/')[1],
+                                                 buy_quantity=row_dict['Total'],
+                                                 buy_asset=row_dict['Market'].split('/')[1],
+                                                 sell_quantity=row_dict['Quantity'],
+                                                 sell_asset=row_dict['Market'].split('/')[0],
+                                                 fee_quantity=row_dict['Fee'],
+                                                 fee_asset=row_dict['Market'].split('/')[1],
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(1, parser.in_header[1], in_row[1])
+        raise UnexpectedTypeError(parser.in_header.index('OrderType'), 'OrderType',
+                                  row_dict['OrderType'])
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Cryptsy",

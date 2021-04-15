@@ -15,14 +15,14 @@ class TransactionHistory(object):
         self.value_asset = value_asset
         self.transactions = []
 
-        if config.args.debug:
+        if config.debug:
             print("%ssplit transaction records" % Fore.CYAN)
 
         for tr in tqdm(transaction_records,
                        unit='tr',
                        desc="%ssplit transaction records%s" % (Fore.CYAN, Fore.GREEN),
-                       disable=bool(config.args.debug or not sys.stdout.isatty())):
-            if config.args.debug:
+                       disable=bool(config.debug or not sys.stdout.isatty())):
+            if config.debug:
                 print("%ssplit: TR %s" % (Fore.MAGENTA, tr))
 
             self.get_all_values(tr)
@@ -66,23 +66,23 @@ class TransactionHistory(object):
                     tr.buy.asset not in config.fiat_list:
                 tr.buy.set_tid()
                 self.transactions.append(tr.buy)
-                if config.args.debug:
+                if config.debug:
                     print("%ssplit:   %s" % (Fore.GREEN, tr.buy))
 
             if tr.sell and (tr.sell.quantity or tr.sell.fee_value) and \
                     tr.sell.asset not in config.fiat_list:
                 tr.sell.set_tid()
                 self.transactions.append(tr.sell)
-                if config.args.debug:
+                if config.debug:
                     print("%ssplit:   %s" % (Fore.GREEN, tr.sell))
 
             if tr.fee and tr.fee.quantity and tr.fee.asset not in config.fiat_list:
                 tr.fee.set_tid()
                 self.transactions.append(tr.fee)
-                if config.args.debug:
+                if config.debug:
                     print("%ssplit:   %s" % (Fore.GREEN, tr.fee))
 
-        if config.args.debug:
+        if config.debug:
             print("%ssplit: total transactions=%d" % (Fore.CYAN, len(self.transactions)))
 
     def get_all_values(self, tr):

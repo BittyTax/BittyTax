@@ -81,63 +81,65 @@ def main():
                         action='store_true',
                         help="export your transaction records populated with price data")
 
-    config.args = parser.parse_args()
-    config.args.nocache = False
+    args = parser.parse_args()
+    config.debug = args.debug
 
-    if config.args.debug:
+    if config.debug:
         print("%s%s v%s" % (Fore.YELLOW, parser.prog, __version__))
         print("%spython: v%s" % (Fore.GREEN, platform.python_version()))
         print("%ssystem: %s, release: %s" % (Fore.GREEN, platform.system(), platform.release()))
         config.output_config()
 
-    if config.args.tax_rules in config.TAX_RULES_UK_COMPANY:
-        config.start_of_year_month = config.TAX_RULES_UK_COMPANY.index(config.args.tax_rules) + 1
+    if args.tax_rules in config.TAX_RULES_UK_COMPANY:
+        config.start_of_year_month = config.TAX_RULES_UK_COMPANY.index(args.tax_rules) + 1
         config.start_of_year_day = 1
 
     try:
-        transaction_records = do_import(config.args.filename)
+        transaction_records = do_import(args.filename)
     except IOError:
         parser.exit("%sERROR%s File could not be read: %s" % (
-            Back.RED+Fore.BLACK, Back.RESET+Fore.RED, config.args.filename))
+            Back.RED+Fore.BLACK, Back.RESET+Fore.RED, args.filename))
     except ImportFailureError:
         parser.exit()
 
-    if config.args.export:
+    if args.export:
         do_export(transaction_records)
         parser.exit()
 
     audit = AuditRecords(transaction_records)
 
     try:
-        tax, value_asset = do_tax(transaction_records)
-        if not config.args.skip_integrity:
+        tax, value_asset = do_tax(transaction_records, args.tax_rules, args.skip_integrity)
+        if not args.skip_integrity:
             int_passed = do_integrity_check(audit, tax.holdings)
             if not int_passed:
                 parser.exit()
 
-        if not config.args.summary:
+        if not args.summary:
             tax.process_income()
 
         do_each_tax_year(tax,
-                         config.args.taxyear,
-                         config.args.summary,
+                         args.taxyear,
+                         args.summary,
                          value_asset)
 
     except DataSourceError as e:
         parser.exit("%sERROR%s %s" % (
             Back.RED+Fore.BLACK, Back.RESET+Fore.RED, e))
 
-    if config.args.nopdf:
+    if args.nopdf:
         ReportLog(audit,
                   tax.tax_report,
                   value_asset.price_report,
-                  tax.holdings_report)
+                  tax.holdings_report,
+                  args)
     else:
         ReportPdf(parser.prog,
                   audit,
                   tax.tax_report,
                   value_asset.price_report,
-                  tax.holdings_report)
+                  tax.holdings_report,
+                  args)
 
 def validate_year(value):
     year = int(value)
@@ -174,20 +176,20 @@ def do_import(filename):
 
     return import_records.get_records()
 
-def do_tax(transaction_records):
+def do_tax(transaction_records, tax_rules, skip_integrity_check):
     value_asset = ValueAsset()
     transaction_history = TransactionHistory(transaction_records, value_asset)
 
-    tax = TaxCalculator(transaction_history.transactions)
+    tax = TaxCalculator(transaction_history.transactions, tax_rules)
     tax.pool_same_day()
     tax.match(tax.DISPOSAL_SAME_DAY)
 
-    if config.args.tax_rules == config.TAX_RULES_UK_INDIVIDUAL:
+    if tax_rules == config.TAX_RULES_UK_INDIVIDUAL:
         tax.match(tax.DISPOSAL_BED_AND_BREAKFAST)
-    elif config.args.tax_rules in config.TAX_RULES_UK_COMPANY:
+    elif tax_rules in config.TAX_RULES_UK_COMPANY:
         tax.match(tax.DISPOSAL_TEN_DAY)
 
-    tax.process_section104()
+    tax.process_section104(skip_integrity_check)
     return tax, value_asset
 
 def do_integrity_check(audit, holdings):

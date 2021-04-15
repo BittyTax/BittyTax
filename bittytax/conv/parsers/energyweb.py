@@ -9,26 +9,28 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Energy Web"
 
-def parse_energy_web(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[2])
+def parse_energy_web(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['UnixTimestamp'])
 
-    if in_row[6] == "IN":
+    if row_dict['Type'] == "IN":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=Decimal(in_row[7]) / 10 ** 18,
+                                                 buy_quantity= \
+                                                     Decimal(row_dict['Value']) / 10 ** 18,
                                                  buy_asset="EWT",
                                                  wallet=WALLET)
-    elif in_row[6] == "OUT":
+    elif row_dict['Type'] == "OUT":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=Decimal(in_row[7]) / 10 ** 18,
+                                                 sell_quantity= \
+                                                     Decimal(row_dict['Value']) / 10 ** 18,
                                                  sell_asset="EWT",
-                                                 fee_quantity=Decimal(in_row[8]) / 10 ** 18,
+                                                 fee_quantity=Decimal(row_dict['Fee']) / 10 ** 18,
                                                  fee_asset="EWT",
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(6, parser.in_header[6], in_row[6])
+        raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 
 DataParser(DataParser.TYPE_EXPLORER,
            "Energy Web",

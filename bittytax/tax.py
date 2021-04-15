@@ -27,8 +27,9 @@ class TaxCalculator(object):
     INCOME_TYPES = (Buy.TYPE_MINING, Buy.TYPE_STAKING, Buy.TYPE_DIVIDEND, Buy.TYPE_INTEREST,
                     Buy.TYPE_INCOME)
 
-    def __init__(self, transactions):
+    def __init__(self, transactions, tax_rules):
         self.transactions = transactions
+        self.tax_rules = tax_rules
         self.buys_ordered = []
         self.sells_ordered = []
         self.other_transactions = []
@@ -44,13 +45,13 @@ class TaxCalculator(object):
         buy_transactions = {}
         sell_transactions = {}
 
-        if config.args.debug:
+        if config.debug:
             print("%spool same day transactions" % Fore.CYAN)
 
         for t in tqdm(transactions,
                       unit='t',
                       desc="%spool same day%s" % (Fore.CYAN, Fore.GREEN),
-                      disable=bool(config.args.debug or not sys.stdout.isatty())):
+                      disable=bool(config.debug or not sys.stdout.isatty())):
             if isinstance(t, Buy) and t.acquisition:
                 if (t.asset, t.timestamp.date()) not in buy_transactions:
                     buy_transactions[(t.asset, t.timestamp.date())] = t
@@ -67,14 +68,14 @@ class TaxCalculator(object):
         self.buys_ordered = sorted(buy_transactions.values())
         self.sells_ordered = sorted(sell_transactions.values())
 
-        if config.args.debug:
+        if config.debug:
             for t in sorted(self.all_transactions()):
                 if len(t.pooled) > 1:
                     print("%spool: %s" % (Fore.GREEN, t.__str__(pooled_bold=True)))
                     for tp in t.pooled:
                         print("%spool:   (%s)" % (Fore.BLUE, tp))
 
-        if config.args.debug:
+        if config.debug:
             print("%spool: total transactions=%d" % (Fore.CYAN, len(self.all_transactions())))
 
     def match(self, rule):
@@ -83,13 +84,13 @@ class TaxCalculator(object):
         if not self.buys_ordered:
             return
 
-        if config.args.debug:
+        if config.debug:
             print("%smatch %s transactions" % (Fore.CYAN, rule.lower()))
 
         pbar = tqdm(total=len(self.sells_ordered),
                     unit='t',
                     desc="%smatch %s transactions%s" % (Fore.CYAN, rule.lower(), Fore.GREEN),
-                    disable=bool(config.args.debug or not sys.stdout.isatty()))
+                    disable=bool(config.debug or not sys.stdout.isatty()))
 
         while sell_index < len(self.sells_ordered):
             s = self.sells_ordered[sell_index]
@@ -97,7 +98,7 @@ class TaxCalculator(object):
 
             if (not s.matched and not b.matched and s.asset == b.asset and
                     self._rule_match(s.timestamp, b.timestamp, rule)):
-                if config.args.debug:
+                if config.debug:
                     if b.quantity > s.quantity:
                         print("%smatch: %s" % (Fore.GREEN, s.__str__(quantity_bold=True)))
                         print("%smatch: %s" % (Fore.GREEN, b))
@@ -111,13 +112,13 @@ class TaxCalculator(object):
                 if b.quantity > s.quantity:
                     b_remainder = b.split_buy(s.quantity)
                     self.buys_ordered.insert(buy_index + 1, b_remainder)
-                    if config.args.debug:
+                    if config.debug:
                         print("%smatch:   split: %s" % (Fore.YELLOW, b.__str__(quantity_bold=True)))
                         print("%smatch:   split: %s" % (Fore.YELLOW, b_remainder))
                 elif s.quantity > b.quantity:
                     s_remainder = s.split_sell(b.quantity)
                     self.sells_ordered.insert(sell_index + 1, s_remainder)
-                    if config.args.debug:
+                    if config.debug:
                         print("%smatch:   split: %s" % (Fore.YELLOW, s.__str__(quantity_bold=True)))
                         print("%smatch:   split: %s" % (Fore.YELLOW, s_remainder))
                     pbar.total += 1
@@ -127,7 +128,7 @@ class TaxCalculator(object):
                                                  (b.fee_value or Decimal(0)) +
                                                  (s.fee_value or Decimal(0)))
                 self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
-                if config.args.debug:
+                if config.debug:
                     print("%smatch:   %s" % (Fore.CYAN, tax_event))
 
                 # Find next sell
@@ -143,7 +144,7 @@ class TaxCalculator(object):
 
         pbar.close()
 
-        if config.args.debug:
+        if config.debug:
             print("%smatch: total transactions=%d" % (Fore.CYAN, len(self.all_transactions())))
 
     def _rule_match(self, s_timestamp, b_timestamp, rule):
@@ -157,34 +158,34 @@ class TaxCalculator(object):
                     b_timestamp.date() <= s_timestamp.date() + timedelta(days=30))
         raise Exception
 
-    def process_section104(self):
-        if config.args.debug:
+    def process_section104(self, skip_integrity_check):
+        if config.debug:
             print("%sprocess section 104" % Fore.CYAN)
 
         for t in tqdm(sorted(self.all_transactions()),
                       unit='t',
                       desc="%sprocess section 104%s" % (Fore.CYAN, Fore.GREEN),
-                      disable=bool(config.args.debug or not sys.stdout.isatty())):
+                      disable=bool(config.debug or not sys.stdout.isatty())):
             if t.asset not in self.holdings:
                 self.holdings[t.asset] = Holdings(t.asset)
 
             if t.matched:
-                if config.args.debug:
+                if config.debug:
                     print("%ssection104: //%s <- matched" % (Fore.BLUE, t))
                 continue
 
             if not config.transfers_include and t.t_type in self.TRANSFER_TYPES:
-                if config.args.debug:
+                if config.debug:
                     print("%ssection104: //%s <- transfer" % (Fore.BLUE, t))
                 continue
 
-            if config.args.debug:
+            if config.debug:
                 print("%ssection104: %s" % (Fore.GREEN, t))
 
             if isinstance(t, Buy):
                 self._add_tokens(t)
             elif isinstance(t, Sell):
-                self._subtract_tokens(t)
+                self._subtract_tokens(t, skip_integrity_check)
 
     def _add_tokens(self, t):
         if not t.acquisition:
@@ -196,7 +197,7 @@ class TaxCalculator(object):
         self.holdings[t.asset].add_tokens(t.quantity, cost, fees,
                                           t.t_type == Buy.TYPE_DEPOSIT)
 
-    def _subtract_tokens(self, t):
+    def _subtract_tokens(self, t, skip_integrity_check):
         if not t.disposal:
             cost = fees = Decimal(0)
         else:
@@ -224,20 +225,20 @@ class TaxCalculator(object):
                                                  None, t, cost, fees + (t.fee_value or Decimal(0)))
 
             self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
-            if config.args.debug:
+            if config.debug:
                 print("%ssection104:   %s" % (Fore.CYAN, tax_event))
 
-            if config.transfers_include and not config.args.skip_integrity:
+            if config.transfers_include and not skip_integrity_check:
                 self.holdings[t.asset].check_transfer_mismatch()
 
     def process_income(self):
-        if config.args.debug:
+        if config.debug:
             print("%sprocess income" % Fore.CYAN)
 
         for t in tqdm(self.transactions,
                       unit='t',
                       desc="%sprocess income%s" % (Fore.CYAN, Fore.GREEN),
-                      disable=bool(config.args.debug or not sys.stdout.isatty())):
+                      disable=bool(config.debug or not sys.stdout.isatty())):
             if t.t_type in self.INCOME_TYPES:
                 tax_event = TaxEventIncome(t)
                 self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
@@ -250,14 +251,14 @@ class TaxCalculator(object):
 
     def calculate_capital_gains(self, tax_year):
         self.tax_report[tax_year] = {}
-        self.tax_report[tax_year]['CapitalGains'] = CalculateCapitalGains(tax_year)
+        self.tax_report[tax_year]['CapitalGains'] = CalculateCapitalGains(tax_year, self.tax_rules)
 
         if tax_year in self.tax_events:
             for te in sorted(self.tax_events[tax_year]):
                 if isinstance(te, TaxEventCapitalGains):
                     self.tax_report[tax_year]['CapitalGains'].tax_summary(te)
 
-        if config.tax_rules in config.TAX_RULES_UK_COMPANY:
+        if self.tax_rules in config.TAX_RULES_UK_COMPANY:
             self.tax_report[tax_year]['CapitalGains'].tax_estimate_ct(tax_year)
         else:
             self.tax_report[tax_year]['CapitalGains'].tax_estimate_cgt(tax_year)
@@ -278,13 +279,13 @@ class TaxCalculator(object):
                   'value': Decimal(0),
                   'gain': Decimal(0)}
 
-        if config.args.debug:
+        if config.debug:
             print("%scalculating holdings" % Fore.CYAN)
 
         for h in tqdm(self.holdings,
                       unit='h',
                       desc="%scalculating holdings%s" % (Fore.CYAN, Fore.GREEN),
-                      disable=bool(config.args.debug or not sys.stdout.isatty())):
+                      disable=bool(config.debug or not sys.stdout.isatty())):
             if self.holdings[h].quantity > 0 or config.show_empty_wallets:
                 holdings[h] = {}
                 holdings[h]['asset'] = self.holdings[h].asset
@@ -403,7 +404,7 @@ class CalculateCapitalGains(object):
                        2020: {'small_rate': None, 'main_rate': 19},
                        2021: {'small_rate': None, 'main_rate': 19}}
 
-    def __init__(self, tax_year):
+    def __init__(self, tax_year, tax_rules):
         self.totals = {'cost': Decimal(0),
                        'fees': Decimal(0),
                        'proceeds': Decimal(0),
@@ -412,7 +413,7 @@ class CalculateCapitalGains(object):
                         'total_gain': Decimal(0),
                         'total_loss': Decimal(0)}
 
-        if config.tax_rules in config.TAX_RULES_UK_COMPANY:
+        if tax_rules in config.TAX_RULES_UK_COMPANY:
             self.estimate = {'proceeds_warning': False,
                              'ct_small_rates': [],
                              'ct_main_rates': [],

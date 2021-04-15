@@ -9,54 +9,58 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Ledger Live"
 
-def parse_ledger_live(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[0])
+AMOUNT = 'Operation Amount'
+FEES = 'Operation Fees'
 
-    if in_row[2] == "IN":
-        if in_row[4]:
+def parse_ledger_live(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Operation Date'])
+
+    if row_dict['Operation Type'] == "IN":
+        if row_dict['Operation Fees']:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                      data_row.timestamp,
-                                                     buy_quantity=Decimal(in_row[3]) + \
-                                                                  Decimal(in_row[4]),
-                                                     buy_asset=in_row[1],
-                                                     fee_quantity=in_row[4],
-                                                     fee_asset=in_row[1],
+                                                     buy_quantity=Decimal(row_dict[AMOUNT]) + \
+                                                                  Decimal(row_dict[FEES]),
+                                                     buy_asset=row_dict['Currency Ticker'],
+                                                     fee_quantity=row_dict['Operation Fees'],
+                                                     fee_asset=row_dict['Currency Ticker'],
                                                      wallet=WALLET)
         else:
             # ERC-20 tokens don't include fees
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                      data_row.timestamp,
-                                                     buy_quantity=in_row[3],
-                                                     buy_asset=in_row[1],
+                                                     buy_quantity=row_dict['Operation Amount'],
+                                                     buy_asset=row_dict['Currency Ticker'],
                                                      wallet=WALLET)
-    elif in_row[2] == "OUT":
-        if in_row[4]:
+    elif row_dict['Operation Type'] == "OUT":
+        if row_dict['Operation Fees']:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                      data_row.timestamp,
-                                                     sell_quantity=Decimal(in_row[3]) - \
-                                                                   Decimal(in_row[4]),
-                                                     sell_asset=in_row[1],
-                                                     fee_quantity=in_row[4],
-                                                     fee_asset=in_row[1],
+                                                     sell_quantity=Decimal(row_dict[AMOUNT]) - \
+                                                                   Decimal(row_dict[FEES]),
+                                                     sell_asset=row_dict['Currency Ticker'],
+                                                     fee_quantity=row_dict['Operation Fees'],
+                                                     fee_asset=row_dict['Currency Ticker'],
                                                      wallet=WALLET)
         else:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                      data_row.timestamp,
-                                                     sell_quantity=in_row[3],
-                                                     sell_asset=in_row[1],
+                                                     sell_quantity=row_dict['Operation Amount'],
+                                                     sell_asset=row_dict['Currency Ticker'],
                                                      wallet=WALLET)
-    elif in_row[2] in ("FEES", "REVEAL"):
+    elif row_dict['Operation Type'] in ("FEES", "REVEAL"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
                                                  data_row.timestamp,
-                                                 sell_quantity=Decimal(in_row[3]) - \
-                                                               Decimal(in_row[4]),
-                                                 sell_asset=in_row[1],
-                                                 fee_quantity=in_row[4],
-                                                 fee_asset=in_row[1],
+                                                 sell_quantity=Decimal(row_dict[AMOUNT]) - \
+                                                               Decimal(row_dict[FEES]),
+                                                 sell_asset=row_dict['Currency Ticker'],
+                                                 fee_quantity=row_dict['Operation Fees'],
+                                                 fee_asset=row_dict['Currency Ticker'],
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(2, parser.in_header[2], in_row[2])
+        raise UnexpectedTypeError(parser.in_header.index('Operation Type'), 'Operation Type',
+                                  row_dict['Operation Type'])
 
 DataParser(DataParser.TYPE_WALLET,
            "Ledger Live",

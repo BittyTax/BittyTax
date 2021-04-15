@@ -28,7 +28,7 @@ class DataSourceBase(object):
         self.prices = self.load_prices()
 
         for pair in sorted(self.prices):
-            if config.args.debug:
+            if config.debug:
                 print("%sprice: %s (%s) data cache loaded" % (Fore.YELLOW, self.name(), pair))
 
         atexit.register(self.dump_prices)
@@ -37,7 +37,7 @@ class DataSourceBase(object):
         return self.__class__.__name__
 
     def get_json(self, url):
-        if config.args.debug:
+        if config.debug:
             print("%sprice: GET %s" % (Fore.YELLOW, url))
 
         response = requests.get(url, headers={'User-Agent': self.USER_AGENT}, timeout=self.TIME_OUT)
@@ -108,7 +108,7 @@ class DataSourceBase(object):
         if asset_id in self.ids and self.ids[asset_id]['symbol'] == symbol:
             self.assets[symbol] = {'id': asset_id, 'name': self.ids[asset_id]['name']}
 
-            if config.args.debug:
+            if config.debug:
                 print("%sprice: %s updated as %s [ID:%s] (%s)" % (
                     Fore.YELLOW,
                     symbol,
@@ -125,7 +125,7 @@ class DataSourceBase(object):
             self.assets[symbol] = {'id': asset_id, 'name': self.ids[asset_id]['name']}
             self.ids[asset_id] = {'symbol': symbol, 'name': self.ids[asset_id]['name']}
 
-            if config.args.debug:
+            if config.debug:
                 print("%sprice: %s added as %s [ID:%s] (%s)" % (
                     Fore.YELLOW,
                     symbol,

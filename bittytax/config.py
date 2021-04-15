@@ -62,7 +62,7 @@ class Config(object):
     }
 
     def __init__(self):
-        self.args = None
+        self.debug = False
         self.start_of_year_month = 4
         self.start_of_year_day = 6
 
@@ -106,12 +106,12 @@ class Config(object):
     def sym(self):
         if self.ccy == 'GBP':
             return u'\xA3' # £
-        elif self.ccy == 'EUR':
+        if self.ccy == 'EUR':
             return u'\u20AC' # €
-        elif self.ccy in ('USD', 'AUD', 'NZD'):
+        if self.ccy in ('USD', 'AUD', 'NZD'):
             return '$'
-        elif self.ccy in ('DKK', 'NOK', 'SEK'):
-             return 'kr.'
+        if self.ccy in ('DKK', 'NOK', 'SEK'):
+            return 'kr.'
 
         raise ValueError("Currency not supported")
 

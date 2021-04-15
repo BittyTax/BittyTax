@@ -7,54 +7,55 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Bitstamp"
 
-def parse_bitstamp(data_row, parser, _filename):
-    in_row = data_row.in_row
-    data_row.timestamp = DataParser.parse_timestamp(in_row[1])
+def parse_bitstamp(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Datetime'])
 
-    if in_row[0] in ("Ripple deposit", "Deposit"):
+    if row_dict['Type'] in ("Ripple deposit", "Deposit"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=in_row[3].split(' ')[0],
-                                                 buy_asset=in_row[3].split(' ')[1],
+                                                 buy_quantity=row_dict['Amount'].split(' ')[0],
+                                                 buy_asset=row_dict['Amount'].split(' ')[1],
                                                  wallet=WALLET)
-    elif in_row[0] in ("Ripple payment", "Withdrawal"):
+    elif row_dict['Type'] in ("Ripple payment", "Withdrawal"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=in_row[3].split(' ')[0],
-                                                 sell_asset=in_row[3].split(' ')[1],
+                                                 sell_quantity=row_dict['Amount'].split(' ')[0],
+                                                 sell_asset=row_dict['Amount'].split(' ')[1],
                                                  wallet=WALLET)
-    elif in_row[0] == "Market":
-        if in_row[6]:
-            fee_quantity = in_row[6].split(' ')[0]
-            fee_asset = in_row[6].split(' ')[1]
+    elif row_dict['Type'] == "Market":
+        if row_dict['Fee']:
+            fee_quantity = row_dict['Fee'].split(' ')[0]
+            fee_asset = row_dict['Fee'].split(' ')[1]
         else:
             fee_quantity = None
             fee_asset = ''
 
-        if in_row[7] == "Buy":
+        if row_dict['Sub Type'] == "Buy":
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                      data_row.timestamp,
-                                                     buy_quantity=in_row[3].split(' ')[0],
-                                                     buy_asset=in_row[3].split(' ')[1],
-                                                     sell_quantity=in_row[4].split(' ')[0],
-                                                     sell_asset=in_row[4].split(' ')[1],
+                                                     buy_quantity=row_dict['Amount'].split(' ')[0],
+                                                     buy_asset=row_dict['Amount'].split(' ')[1],
+                                                     sell_quantity=row_dict['Value'].split(' ')[0],
+                                                     sell_asset=row_dict['Value'].split(' ')[1],
                                                      fee_quantity=fee_quantity,
                                                      fee_asset=fee_asset,
                                                      wallet=WALLET)
-        elif in_row[7] == "Sell":
+        elif row_dict['Sub Type'] == "Sell":
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                      data_row.timestamp,
-                                                     buy_quantity=in_row[4].split(' ')[0],
-                                                     buy_asset=in_row[4].split(' ')[1],
-                                                     sell_quantity=in_row[3].split(' ')[0],
-                                                     sell_asset=in_row[3].split(' ')[1],
+                                                     buy_quantity=row_dict['Value'].split(' ')[0],
+                                                     buy_asset=row_dict['Value'].split(' ')[1],
+                                                     sell_quantity=row_dict['Amount'].split(' ')[0],
+                                                     sell_asset=row_dict['Amount'].split(' ')[1],
                                                      fee_quantity=fee_quantity,
                                                      fee_asset=fee_asset,
                                                      wallet=WALLET)
         else:
-            raise UnexpectedTypeError(7, parser.in_header[7], in_row[7])
+            raise UnexpectedTypeError(parser.in_header.index('Sub Type'), 'Sub Type',
+                                      row_dict['Sub Type'])
     else:
-        raise UnexpectedTypeError(0, parser.in_header[0], in_row[0])
+        raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bitstamp",
