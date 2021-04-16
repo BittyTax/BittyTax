@@ -73,6 +73,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Crypto.com parser: added "crypto_to_van_sell_order" transaction type.
 - Nexo parser: check for unconfirmed transactions.
 - Qt Wallet parser: added "Masternode Reward" type.
+- Qt Wallet parser: added support for VeriCoin-Qt wallet.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.

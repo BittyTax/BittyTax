@@ -91,9 +91,40 @@ def get_amount(amount):
         return abs(Decimal(amount)), symbol
     return abs(Decimal(amount)), None
 
+def parse_vericoin_qt_wallet(data_row, parser, _filename, _args):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date/Time'], tz='Europe/London')
+
+    if row_dict['Type'] == "Receive":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                                 data_row.timestamp,
+                                                 buy_quantity=row_dict['Amount'],
+                                                 buy_asset='VRC',
+                                                 wallet=WALLET)
+    elif row_dict['Type'] == "Send":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                 data_row.timestamp,
+                                                 sell_quantity=abs(Decimal(row_dict['Amount'])),
+                                                 sell_asset='VRC',
+                                                 wallet=WALLET)
+    elif row_dict['Type'] == "Stake":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_STAKING,
+                                                 data_row.timestamp,
+                                                 buy_quantity=row_dict['Amount'],
+                                                 buy_asset='VRC',
+                                                 wallet=WALLET)
+    else:
+        raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
+
 DataParser(DataParser.TYPE_WALLET,
            "Qt Wallet (i.e. Bitcoin Core, etc)",
            ['Confirmed', 'Date', 'Type', 'Label', 'Address',
             lambda c: re.match(r"Amount( \((\w+)\))?", c), 'ID'],
            worksheet_name="Qt Wallet",
            row_handler=parse_qt_wallet)
+
+DataParser(DataParser.TYPE_WALLET,
+           "Qt Wallet (i.e. Bitcoin Core, etc)",
+           ['Transaction', 'Block', 'Date/Time', 'Type', 'Amount', 'Total'],
+           worksheet_name="Qt Wallet",
+           row_handler=parse_vericoin_qt_wallet)
