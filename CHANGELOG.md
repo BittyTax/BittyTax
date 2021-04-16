@@ -44,6 +44,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Conversion tool: convert_currency method added to DataParser.
 - Conversion tool: added parser for BlockFi.
 - Conversion tool: added parser for Celsius.
+- Conversion tool: added parser for Coinomi wallet.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.

@@ -22,7 +22,7 @@ def parse_electrum(data_row, _parser, _filename, args):
     if Decimal(row_dict['value']) > 0:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=Decimal(row_dict['value']),
+                                                 buy_quantity=row_dict['value'],
                                                  buy_asset=args.cryptoasset,
                                                  wallet=WALLET,
                                                  note=row_dict['label'])
