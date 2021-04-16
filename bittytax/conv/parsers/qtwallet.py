@@ -56,6 +56,13 @@ def parse_qt_wallet(data_row, parser, _filename, args):
                                                  buy_asset=symbol,
                                                  wallet=WALLET,
                                                  note=row_dict['Label'])
+    elif row_dict['Type'] == "Masternode Reward":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_STAKING,
+                                                 data_row.timestamp,
+                                                 buy_quantity=amount,
+                                                 buy_asset=symbol,
+                                                 wallet=WALLET,
+                                                 note=row_dict['Label'])
     elif row_dict['Type'] == "Payment to yourself":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,

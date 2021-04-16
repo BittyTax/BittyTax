@@ -72,6 +72,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Conversion tool: all parsers updated to use DataRow dictionary.
 - Crypto.com parser: added "crypto_to_van_sell_order" transaction type.
 - Nexo parser: check for unconfirmed transactions.
+- Qt Wallet parser: added "Masternode Reward" type.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.
