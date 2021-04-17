@@ -85,7 +85,7 @@ class DataParser(object):
     @classmethod
     def convert_currency(cls, value, from_currency, timestamp):
         if config.ccy == from_currency:
-            return value
+            return Decimal(value)
 
         rate_ccy, _, _, _ = cls.price_data.get_historical(from_currency, config.ccy, timestamp)
         value_in_ccy = Decimal(value) * rate_ccy
