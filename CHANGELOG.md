@@ -75,7 +75,8 @@ Important:- A new Note field has been added to the end of the transaction record
 - Nexo parser: check for unconfirmed transactions.
 - Qt Wallet parser: added "Masternode Reward" type.
 - Qt Wallet parser: added support for VeriCoin-Qt wallet.
-- Bittrex parser: filter unauthorised/cancelled withdrawals. ([#108](https://github.com/BittyTax/BittyTax/issues/108)).
+- Bittrex parser: filter unauthorised/cancelled withdrawals. ([#108](https://github.com/BittyTax/BittyTax/issues/108))
+- Coinbase parser: added EUR and USD accounts.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.

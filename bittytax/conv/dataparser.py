@@ -84,6 +84,12 @@ class DataParser(object):
 
     @classmethod
     def convert_currency(cls, value, from_currency, timestamp):
+        if not value or value is None:
+            return None
+
+        if not Decimal(value):
+            return Decimal(0)
+
         if config.ccy == from_currency:
             return Decimal(value)
 
