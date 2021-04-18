@@ -88,29 +88,23 @@ def parse_bittrex_deposits(data_row, _parser, _filename, _args):
                                              buy_asset=row_dict['Currency'],
                                              wallet=WALLET)
 
-def parse_bittrex_withdrawals2(data_row, _parser, _filename, _args):
-    row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict['OpenedDate'])
-
-    data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
-                                             data_row.timestamp,
-                                             sell_quantity=row_dict['Amount'],
-                                             sell_asset=row_dict['Currency'],
-                                             fee_quantity=row_dict['TxFee'],
-                                             fee_asset=row_dict['Currency'],
-                                             wallet=WALLET)
-
 def parse_bittrex_withdrawals(data_row, _parser, _filename, _args):
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(data_row.row[4]) # Opened/OpenDate
 
-    data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
-                                             data_row.timestamp,
-                                             sell_quantity=row_dict['Amount'],
-                                             sell_asset=row_dict['Currency'],
-                                             fee_quantity=data_row.row[7], # TxCost/TxFee
-                                             fee_asset=row_dict['Currency'],
-                                             wallet=WALLET)
+    if 'Opened' in row_dict:
+        row_dict['OpenedDate'] = row_dict['Opened']
+        row_dict['TxFee'] = row_dict['TxCost']
+
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['OpenedDate'])
+
+    if row_dict['Authorized'].lower() == 'true' and row_dict['Canceled'].lower() == 'false':
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                 data_row.timestamp,
+                                                 sell_quantity=row_dict['Amount'],
+                                                 sell_asset=row_dict['Currency'],
+                                                 fee_quantity=row_dict['TxFee'],
+                                                 fee_asset=row_dict['Currency'],
+                                                 wallet=WALLET)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bittrex Trades",
