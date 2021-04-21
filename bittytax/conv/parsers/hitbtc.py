@@ -11,11 +11,11 @@ from colorama import Fore
 from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
-from ..exceptions import DataParserError, UnexpectedTypeError
+from ..exceptions import DataRowError, UnexpectedTypeError
 
 WALLET = "HitBTC"
 
-def parse_hitbtc_trades2(data_rows, parser, _filename, _args):
+def parse_hitbtc_trades2(data_rows, parser, **_kwargs):
     for row_index, data_row in enumerate(data_rows):
         if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
@@ -26,7 +26,7 @@ def parse_hitbtc_trades2(data_rows, parser, _filename, _args):
 
         try:
             parse_hitbtc_trades_row(data_rows, parser, data_row, row_index)
-        except DataParserError as e:
+        except DataRowError as e:
             data_row.failure = e
 
 def parse_hitbtc_trades_row(data_rows, parser, data_row, row_index):
@@ -76,7 +76,7 @@ def parse_hitbtc_trades_row(data_rows, parser, data_row, row_index):
     else:
         raise UnexpectedTypeError(parser.in_header.index('Side'), 'Side', row_dict['Side'])
 
-def parse_hitbtc_trades(data_row, parser, _filename, _args):
+def parse_hitbtc_trades(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date (UTC)'])
 
@@ -105,7 +105,7 @@ def parse_hitbtc_trades(data_row, parser, _filename, _args):
     else:
         raise UnexpectedTypeError(parser.in_header.index('Side'), 'Side', row_dict['Side'])
 
-def parse_hitbtc_deposits_withdrawals2(data_row, _parser, _filename, _args):
+def parse_hitbtc_deposits_withdrawals2(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date (UTC)'])
 
@@ -124,7 +124,7 @@ def parse_hitbtc_deposits_withdrawals2(data_row, _parser, _filename, _args):
                                                  buy_asset=row_dict['Currency'].upper(),
                                                  wallet=WALLET)
 
-def parse_hitbtc_deposits_withdrawals(data_row, _parser, _filename, _args):
+def parse_hitbtc_deposits_withdrawals(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date (UTC)'])
 

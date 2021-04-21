@@ -92,28 +92,23 @@ def main():
     for filename in args.filename:
         for pathname in glob.iglob(filename):
             try:
-                try:
-                    DataFile.read_excel(pathname, args)
-                except xlrd.XLRDError:
-                    DataFile.read_csv(pathname, args)
-            except UnknownCryptoassetError:
+                do_read_file(pathname, args)
+            except UnknownCryptoassetError as e:
                 sys.stderr.write(Fore.RESET)
-                parser.error("cryptoasset cannot be identified for data file: %s, "
-                             "please specify using the [-ca CRYPTOASSET] option" % pathname)
-            except UnknownUsernameError:
+                parser.error("%s, please specify using the [-ca CRYPTOASSET] option" % e)
+            except UnknownUsernameError as e:
                 sys.stderr.write(Fore.RESET)
-                parser.exit("%s: error: username cannot be identified in data file: %s, "
-                            "please specify usernames in the %s file" % (
-                                parser.prog, pathname, config.BITTYTAX_CONFIG))
+                parser.exit("%s: error: %s, please specify usernames in the %s file" % (
+                                parser.prog, e, config.BITTYTAX_CONFIG))
             except DataFilenameError as e:
                 sys.stderr.write(Fore.RESET)
                 parser.exit("%s: error: %s" % (parser.prog, e))
-            except DataFormatUnrecognised:
-                sys.stderr.write("%sWARNING%s File format is unrecognised: %s\n" % (
-                    Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, pathname))
+            except DataFormatUnrecognised as e:
+                sys.stderr.write("%sWARNING%s %s\n" % (
+                    Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, e))
             except IOError:
                 sys.stderr.write("%sWARNING%s File could not be read: %s\n" % (
-                    Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, pathname))
+                Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, pathname))
 
     if DataFile.data_files:
         if args.format == config.FORMAT_EXCEL:
@@ -124,3 +119,14 @@ def main():
             sys.stderr.write(Fore.RESET)
             sys.stderr.flush()
             output.write_csv()
+
+def do_read_file(pathname, args):
+    try:
+        for (worksheet, datemode) in DataFile.read_excel(pathname):
+            try:
+                DataFile.read_worksheet(worksheet, datemode, pathname, args)
+            except DataFormatUnrecognised as e:
+                sys.stderr.write("%sWARNING%s %s\n" % (
+                    Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, e))
+    except xlrd.XLRDError:
+        DataFile.read_csv(pathname, args)

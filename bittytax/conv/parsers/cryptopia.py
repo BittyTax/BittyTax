@@ -11,7 +11,7 @@ WALLET = "Cryptopia"
 
 PRECISION = Decimal('0.00000000')
 
-def parse_cryptopia_deposits(data_row, _parser, _filename, _args):
+def parse_cryptopia_deposits(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
 
@@ -21,7 +21,7 @@ def parse_cryptopia_deposits(data_row, _parser, _filename, _args):
                                              buy_asset=row_dict['Currency'],
                                              wallet=WALLET)
 
-def parse_cryptopia_withdrawals(data_row, _parser, _filename, _args):
+def parse_cryptopia_withdrawals(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
 
@@ -34,7 +34,7 @@ def parse_cryptopia_withdrawals(data_row, _parser, _filename, _args):
                                              fee_asset=row_dict['Currency'],
                                              wallet=WALLET)
 
-def parse_cryptopia_trades(data_row, parser, _filename, _args):
+def parse_cryptopia_trades(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
 

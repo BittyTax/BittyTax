@@ -13,23 +13,23 @@ from ..exceptions import UnexpectedTypeError, UnexpectedContentError
 WALLET = "Coinbase"
 DUPLICATE = "Duplicate"
 
-def parse_coinbase_gbp(data_row, parser, filename, args):
+def parse_coinbase_gbp(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
     fiat_values = get_fiat_values(row_dict, 'GBP', data_row.timestamp)
-    parse_coinbase(data_row, parser, filename, args, fiat_values)
+    parse_coinbase(data_row, parser, fiat_values)
 
-def parse_coinbase_eur(data_row, parser, filename, args):
+def parse_coinbase_eur(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
     fiat_values = get_fiat_values(row_dict, 'EUR', data_row.timestamp)
-    parse_coinbase(data_row, parser, filename, args, fiat_values)
+    parse_coinbase(data_row, parser, fiat_values)
 
-def parse_coinbase_usd(data_row, parser, filename, args):
+def parse_coinbase_usd(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
     fiat_values = get_fiat_values(row_dict, 'USD', data_row.timestamp)
-    parse_coinbase(data_row, parser, filename, args, fiat_values)
+    parse_coinbase(data_row, parser, fiat_values)
 
 def get_fiat_values(row_dict, currency, timestamp):
     sp_header = '%s Spot Price at Transaction' % currency
@@ -43,7 +43,7 @@ def get_fiat_values(row_dict, currency, timestamp):
     fees = DataParser.convert_currency(row_dict[f_header], currency, timestamp)
     return (spot_price, subtotal, total, fees)
 
-def parse_coinbase(data_row, parser, _filename, _args, fiat_values):
+def parse_coinbase(data_row, parser, fiat_values):
     (spot_price, subtotal, total, fees) = fiat_values
     row_dict = data_row.row_dict
 
@@ -156,7 +156,7 @@ def get_currency(notes):
         return match.group(1)
     return None
 
-def parse_coinbase_transfers(data_row, parser, _filename, _args):
+def parse_coinbase_transfers(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
 
@@ -199,7 +199,7 @@ def parse_coinbase_transfers(data_row, parser, _filename, _args):
     else:
         raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 
-def parse_coinbase_transactions(data_row, _parser, _filename, _args):
+def parse_coinbase_transactions(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
 

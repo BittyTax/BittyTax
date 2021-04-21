@@ -20,7 +20,7 @@ COINTRACKING_TYPE_MAPPING = {'Trade': TransactionOutRecord.TYPE_TRADE,
                              'Stolen': TransactionOutRecord.TYPE_TRADE,
                              'Lost': TransactionOutRecord.TYPE_TRADE}
 
-def parse_cointracking(data_row, parser, _filename, _args):
+def parse_cointracking(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'], dayfirst=True)
 

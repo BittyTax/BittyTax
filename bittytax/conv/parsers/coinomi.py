@@ -7,7 +7,7 @@ from ..dataparser import DataParser
 
 WALLET = "Coinomi"
 
-def parse_coinomi(data_row, _parser, _filename, _args):
+def parse_coinomi(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Time(ISO8601-UTC)'])
 

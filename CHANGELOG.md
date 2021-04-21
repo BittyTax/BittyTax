@@ -46,6 +46,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Conversion tool: added parser for Celsius.
 - Conversion tool: added parser for Coinomi wallet.
 - Conversion tool: added parser for Blockchain.com wallet.
+- Conversion tool: convert multiple Excel worksheets.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
@@ -77,6 +78,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Qt Wallet parser: added support for VeriCoin-Qt wallet.
 - Bittrex parser: filter unauthorised/cancelled withdrawals. ([#108](https://github.com/BittyTax/BittyTax/issues/108))
 - Coinbase parser: added EUR and USD accounts.
+- Conversion tool: refactored parsers to use kwargs.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.

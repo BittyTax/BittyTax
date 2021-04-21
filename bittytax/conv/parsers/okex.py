@@ -10,12 +10,12 @@ import dateutil.tz
 from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
-from ..exceptions import DataParserError, UnexpectedTypeError
+from ..exceptions import DataRowError, UnexpectedTypeError
 
 WALLET = "OKEx"
 TZ_INFOS = {'CST': dateutil.tz.gettz('Asia/Shanghai')}
 
-def parse_okex_trades(data_rows, parser, _filename, _args):
+def parse_okex_trades(data_rows, parser, **_kwargs):
     for buy_row, sell_row in zip(data_rows[0::2], data_rows[1::2]):
         try:
             if config.debug:
@@ -25,7 +25,7 @@ def parse_okex_trades(data_rows, parser, _filename, _args):
                     Fore.YELLOW, parser.in_header_row_num + sell_row.line_num, sell_row))
 
             parse_okex_trades_row(buy_row, sell_row, parser)
-        except DataParserError as e:
+        except DataRowError as e:
             buy_row.failure = e
 
 def parse_okex_trades_row(buy_row, sell_row, parser):

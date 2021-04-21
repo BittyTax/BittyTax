@@ -10,10 +10,10 @@ WALLET = "Bitfinex"
 
 PRECISION = Decimal('0.00000000')
 
-def parse_bitfinex_trades2(data_row, _parser, _filename, _args):
-    parse_bitfinex_trades(data_row, _parser, _filename, _args)
+def parse_bitfinex_trades_v2(data_row, _parser, **_kwargs):
+    parse_bitfinex_trades_v1(data_row, _parser, **_kwargs)
 
-def parse_bitfinex_trades(data_row, _parser, _filename, _args):
+def parse_bitfinex_trades_v1(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['DATE'], dayfirst=True)
 
@@ -42,7 +42,7 @@ def parse_bitfinex_trades(data_row, _parser, _filename, _args):
                                                  fee_asset=row_dict['FEE CURRENCY'],
                                                  wallet=WALLET)
 
-def parse_bitfinex_deposits_withdrawals(data_row, _parser, _filename, _args):
+def parse_bitfinex_deposits_withdrawals(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['DATE'], dayfirst=True)
 
@@ -71,13 +71,13 @@ DataParser(DataParser.TYPE_EXCHANGE,
            ['#', 'PAIR', 'AMOUNT', 'PRICE', 'FEE', 'FEE PERC', 'FEE CURRENCY', 'DATE', 'ORDER ID'],
            worksheet_name="Bitfinex T",
            # Different handler name used to prevent data file consolidation
-           row_handler=parse_bitfinex_trades2)
+           row_handler=parse_bitfinex_trades_v2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bitfinex Trades",
            ['#', 'PAIR', 'AMOUNT', 'PRICE', 'FEE', 'FEE CURRENCY', 'DATE', 'ORDER ID'],
            worksheet_name="Bitfinex T",
-           row_handler=parse_bitfinex_trades)
+           row_handler=parse_bitfinex_trades_v1)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bitfinex Deposits/Withdrawals",

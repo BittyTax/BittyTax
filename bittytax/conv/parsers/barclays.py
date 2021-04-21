@@ -6,7 +6,7 @@ from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError
 
-def parse_barclays(data_row, parser, _filename, _args):
+def parse_barclays(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'])
 

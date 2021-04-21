@@ -17,7 +17,7 @@ QUOTE_ASSETS = ['AUD', 'BIDR', 'BKRW', 'BNB', 'BRL', 'BTC', 'BUSD', 'BVND', 'DAI
                 'EUR', 'GBP', 'IDRT', 'NGN', 'PAX', 'RUB', 'TRX', 'TRY', 'TUSD', 'UAH',
                 'USDC', 'USDS', 'USDT', 'VAI', 'XRP', 'ZAR']
 
-def parse_binance_trades(data_row, parser, _filename, _args):
+def parse_binance_trades(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date(UTC)'])
 
@@ -56,14 +56,14 @@ def split_trading_pair(trading_pair):
 
     return None, None
 
-def parse_binance_deposits_withdrawals_crypto(data_row, _parser, filename, _args):
+def parse_binance_deposits_withdrawals_crypto(data_row, _parser, **kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(data_row.row[0])
 
     if row_dict['Status'] != "Completed":
         return
 
-    if "deposit" in filename.lower():
+    if "deposit" in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Amount'],
@@ -71,7 +71,7 @@ def parse_binance_deposits_withdrawals_crypto(data_row, _parser, filename, _args
                                                  fee_quantity=row_dict['TransactionFee'],
                                                  fee_asset=row_dict['Coin'],
                                                  wallet=WALLET)
-    elif "withdrawal" in filename.lower():
+    elif "withdrawal" in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=row_dict['Amount'],
@@ -80,16 +80,16 @@ def parse_binance_deposits_withdrawals_crypto(data_row, _parser, filename, _args
                                                  fee_asset=row_dict['Coin'],
                                                  wallet=WALLET)
     else:
-        raise DataFilenameError(filename, "Transaction Type (Deposit or Withdrawal)")
+        raise DataFilenameError(kwargs['filename'], "Transaction Type (Deposit or Withdrawal)")
 
-def parse_binance_deposits_withdrawals_cash(data_row, _parser, filename, _args):
+def parse_binance_deposits_withdrawals_cash(data_row, _parser, **kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date(UTC)'])
 
     if row_dict['Status'] != "Successful":
         return
 
-    if "deposit" in filename.lower():
+    if "deposit" in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Amount'],
@@ -97,7 +97,7 @@ def parse_binance_deposits_withdrawals_cash(data_row, _parser, filename, _args):
                                                  fee_quantity=row_dict['Fee'],
                                                  fee_asset=row_dict['Coin'],
                                                  wallet=WALLET)
-    elif "withdrawal" in filename.lower():
+    elif "withdrawal" in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Amount'],
@@ -106,9 +106,9 @@ def parse_binance_deposits_withdrawals_cash(data_row, _parser, filename, _args):
                                                  fee_asset=row_dict['Coin'],
                                                  wallet=WALLET)
     else:
-        raise DataFilenameError(filename, "Transaction Type (Deposit or Withdrawal)")
+        raise DataFilenameError(kwargs['filename'], "Transaction Type (Deposit or Withdrawal)")
 
-def parse_binance_statements(data_rows, parser, _filename, _args):
+def parse_binance_statements(data_rows, parser, **_kwargs):
     for data_row in data_rows:
         if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (

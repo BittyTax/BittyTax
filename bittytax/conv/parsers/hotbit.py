@@ -11,7 +11,7 @@ from colorama import Fore
 from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
-from ..exceptions import DataParserError, UnexpectedTypeError
+from ..exceptions import DataRowError, UnexpectedTypeError
 
 WALLET = "Hotbit"
 
@@ -19,7 +19,7 @@ PRECISION = Decimal('0.00000000')
 MAKER_FEE = Decimal(0.0005)
 TAKER_FEE = Decimal(0.002)
 
-def parse_hotbit_trades(data_rows, parser, _filename, _args):
+def parse_hotbit_trades(data_rows, parser, **_kwargs):
     for row_index, data_row in enumerate(data_rows):
         if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
@@ -30,7 +30,7 @@ def parse_hotbit_trades(data_rows, parser, _filename, _args):
 
         try:
             parse_hotbit_trades_row(data_rows, parser, data_row, row_index)
-        except DataParserError as e:
+        except DataRowError as e:
             data_row.failure = e
 
 def parse_hotbit_trades_row(data_rows, parser, data_row, row_index):

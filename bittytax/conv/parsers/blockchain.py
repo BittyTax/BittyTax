@@ -7,7 +7,7 @@ from ..dataparser import DataParser
 
 WALLET = "Blockchain.com"
 
-def parse_blockchain(data_row, _parser, _filename, _args):
+def parse_blockchain(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['date'] + ' ' + row_dict['time'])
 
@@ -38,10 +38,10 @@ def parse_blockchain(data_row, _parser, _filename, _args):
                                                  wallet=WALLET,
                                                  note=row_dict['note'])
 
-def parse_blockchain_btc(data_row, parser, filename, args):
+def parse_blockchain_btc(data_row, parser, **kwargs):
     data_row.row_dict['token'] = 'BTC'
     data_row.row_dict['amount'] = data_row.row_dict['amount_btc']
-    parse_blockchain(data_row, parser, filename, args)
+    parse_blockchain(data_row, parser, **kwargs)
 
 DataParser(DataParser.TYPE_WALLET,
            "Blockchain.com",

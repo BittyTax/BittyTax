@@ -7,7 +7,7 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Coinfloor"
 
-def parse_coinfloor_trades(data_row, parser, _filename, _args):
+def parse_coinfloor_trades(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date & Time'])
 
@@ -38,7 +38,7 @@ def parse_coinfloor_trades(data_row, parser, _filename, _args):
         raise UnexpectedTypeError(parser.in_header.index('Order Type'), 'Order Type',
                                   row_dict['Order Type'])
 
-def parse_coinfloor_deposits_withdrawals(data_row, parser, _filename, _args):
+def parse_coinfloor_deposits_withdrawals(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date & Time'])
 

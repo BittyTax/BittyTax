@@ -8,7 +8,7 @@ from ..exceptions import MissingValueError
 
 WALLET = "ii"
 
-def parse_ii(data_row, parser, _filename, _args):
+def parse_ii(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'])
 

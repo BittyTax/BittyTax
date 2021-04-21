@@ -11,7 +11,7 @@ from ..exceptions import UnknownUsernameError
 WALLET = "ChangeTip"
 AMOUNT = 'Amount in Satoshi'
 
-def parse_changetip(data_row, _parser, _filename, _args):
+def parse_changetip(data_row, _parser, **kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['When'])
 
@@ -31,7 +31,7 @@ def parse_changetip(data_row, _parser, _filename, _args):
                                                      sell_asset="BTC",
                                                      wallet=WALLET)
         else:
-            raise UnknownUsernameError
+            raise UnknownUsernameError(kwargs['filename'], kwargs.get('worksheet'))
     else:
         return
 

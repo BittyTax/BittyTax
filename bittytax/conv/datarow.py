@@ -7,7 +7,7 @@ from colorama import Back
 
 from .parsers import *
 from ..config import config
-from .exceptions import DataParserError
+from .exceptions import DataRowError
 
 DEFAULT_TIMESTAMP = datetime.datetime(datetime.MINYEAR, 1, 1, tzinfo=config.TZ_UTC)
 
@@ -21,10 +21,10 @@ class DataRow(object):
         self.parsed = False
         self.failure = None
 
-    def parse(self, parser, filename, args):
+    def parse(self, parser, **kwargs):
         try:
-            parser.row_handler(self, parser, filename, args)
-        except DataParserError as e:
+            parser.row_handler(self, parser, **kwargs)
+        except DataRowError as e:
             self.failure = e
 
     def __eq__(self, other):
@@ -34,8 +34,8 @@ class DataRow(object):
         return hash(self.row)
 
     @staticmethod
-    def parse_all(data_rows, parser, filename, args):
-        parser.all_handler(data_rows, parser, filename, args)
+    def parse_all(data_rows, parser, **kwargs):
+        parser.all_handler(data_rows, parser, **kwargs)
 
     def __str__(self):
         if self.failure is not None:

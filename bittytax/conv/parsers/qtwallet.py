@@ -13,21 +13,21 @@ from ..exceptions import UnknownCryptoassetError, UnexpectedTypeError
 
 WALLET = "Qt Wallet"
 
-def parse_qt_wallet(data_row, parser, _filename, args):
+def parse_qt_wallet(data_row, parser, **kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'], tz='Europe/London')
 
     amount, symbol = get_amount(data_row.row[5])
 
-    if not args.cryptoasset:
+    if not kwargs['cryptoasset']:
         if parser.args[0].group(2):
             symbol = parser.args[0].group(2)
         elif not symbol:
-            raise UnknownCryptoassetError
+            raise UnknownCryptoassetError(kwargs['filename'], kwargs.get('worksheet'))
     else:
-        symbol = args.cryptoasset
+        symbol = kwargs['cryptoasset']
 
-    if row_dict['Confirmed'] == "false" and not args.unconfirmed:
+    if row_dict['Confirmed'] == "false" and not kwargs['unconfirmed']:
         sys.stderr.write("%srow[%s] %s\n" % (
             Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row))
         sys.stderr.write("%sWARNING%s Skipping unconfirmed transaction, "
@@ -91,7 +91,7 @@ def get_amount(amount):
         return abs(Decimal(amount)), symbol
     return abs(Decimal(amount)), None
 
-def parse_vericoin_qt_wallet(data_row, parser, _filename, _args):
+def parse_vericoin_qt_wallet(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date/Time'], tz='Europe/London')
 

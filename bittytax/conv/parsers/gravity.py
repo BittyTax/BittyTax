@@ -9,12 +9,12 @@ from colorama import Fore
 from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
-from ..exceptions import DataParserError, UnexpectedTypeError
+from ..exceptions import DataRowError, UnexpectedTypeError
 
 WALLET = "Gravity"
 SYSTEM_ACCOUNT = "00000000-0000-0000-0000-000000000000"
 
-def parse_gravity(data_rows, parser, _filename, _args):
+def parse_gravity(data_rows, parser, **_kwargs):
     for data_row in data_rows:
         if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
@@ -25,7 +25,7 @@ def parse_gravity(data_rows, parser, _filename, _args):
 
         try:
             parse_gravity_row(data_rows, parser, data_row)
-        except DataParserError as e:
+        except DataRowError as e:
             data_row.failure = e
 
 def parse_gravity_row(data_rows, parser, data_row):

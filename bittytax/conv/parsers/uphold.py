@@ -9,7 +9,7 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Uphold"
 
-def parse_uphold2(data_row, parser, _filename, _args):
+def parse_uphold_v2(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'])
 
@@ -49,7 +49,7 @@ def parse_uphold2(data_row, parser, _filename, _args):
     else:
         raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 
-def parse_uphold(data_row, parser, _filename, _args):
+def parse_uphold_v1(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['date'])
 
@@ -97,7 +97,7 @@ DataParser(DataParser.TYPE_EXCHANGE,
            ['Date', 'Destination', 'Destination Amount', 'Destination Currency', 'Fee Amount',
             'Fee Currency', 'Id', 'Origin', 'Origin Amount', 'Origin Currency', 'Status', 'Type'],
            worksheet_name="Uphold",
-           row_handler=parse_uphold2)
+           row_handler=parse_uphold_v2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Uphold",
@@ -105,4 +105,4 @@ DataParser(DataParser.TYPE_EXCHANGE,
             'origin_currency', 'origin_amount', 'origin_commission', 'destination_currency',
             'destination_amount', 'destination_commission'],
            worksheet_name="Uphold",
-           row_handler=parse_uphold)
+           row_handler=parse_uphold_v1)

@@ -9,11 +9,11 @@ from colorama import Fore
 from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
-from ..exceptions import DataParserError, UnexpectedTypeError, MissingComponentError
+from ..exceptions import DataRowError, UnexpectedTypeError, MissingComponentError
 
 WALLET = "Coinbase Pro"
 
-def parse_coinbase_pro(data_rows, parser, _filename, _args):
+def parse_coinbase_pro(data_rows, parser, **_kwargs):
     for data_row in data_rows:
         if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
@@ -24,7 +24,7 @@ def parse_coinbase_pro(data_rows, parser, _filename, _args):
 
         try:
             parse_coinbase_pro_row(data_rows, parser, data_row)
-        except DataParserError as e:
+        except DataRowError as e:
             data_row.failure = e
 
 def parse_coinbase_pro_row(data_rows, parser, data_row):
@@ -90,7 +90,7 @@ def find_same_trade(data_rows, trade_id, t_type):
 
     return quantity, asset
 
-def parse_coinbase_pro_deposits_withdrawals(data_row, parser, _filename, _args):
+def parse_coinbase_pro_deposits_withdrawals(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['time'])
 
@@ -112,10 +112,10 @@ def parse_coinbase_pro_deposits_withdrawals(data_row, parser, _filename, _args):
     else:
         raise UnexpectedTypeError(parser.in_header.index('type'), 'type', row_dict['type'])
 
-def parse_coinbase_pro_trades2(data_row, parser, _filename, _args):
-    parse_coinbase_pro_trades(data_row, parser, _filename, _args)
+def parse_coinbase_pro_trades_v2(data_row, parser, **kwargs):
+    parse_coinbase_pro_trades_v1(data_row, parser, **kwargs)
 
-def parse_coinbase_pro_trades(data_row, parser, _filename, _args):
+def parse_coinbase_pro_trades_v1(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['created at'])
 
@@ -157,14 +157,14 @@ DataParser(DataParser.TYPE_EXCHANGE,
             'fee', 'total', 'price/fee/total unit'],
            worksheet_name="Coinbase Pro T",
            # Different handler name used to prevent data file consolidation
-           row_handler=parse_coinbase_pro_trades2)
+           row_handler=parse_coinbase_pro_trades_v2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Coinbase Pro Trades",
            ['trade id', 'product', 'side', 'created at', 'size', 'size unit', 'price', 'fee',
             'total', 'price/fee/total unit'],
            worksheet_name="Coinbase Pro T",
-           row_handler=parse_coinbase_pro_trades)
+           row_handler=parse_coinbase_pro_trades_v1)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Coinbase Pro Deposits/Withdrawals",

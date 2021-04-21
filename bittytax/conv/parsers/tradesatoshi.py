@@ -11,10 +11,10 @@ WALLET = "TradeSatoshi"
 
 PRECISION = Decimal('0.00000000')
 
-def parse_tradesatoshi_deposits2(data_row, _parser, _filename, _args):
-    parse_tradesatoshi_deposits(data_row, _parser, _filename, _args)
+def parse_tradesatoshi_deposits_v2(data_row, _parser, **kwargs):
+    parse_tradesatoshi_deposits_v1(data_row, _parser, **kwargs)
 
-def parse_tradesatoshi_deposits(data_row, _parser, _filename, _args):
+def parse_tradesatoshi_deposits_v1(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['TimeStamp'])
 
@@ -24,7 +24,7 @@ def parse_tradesatoshi_deposits(data_row, _parser, _filename, _args):
                                              buy_asset=row_dict['Symbol'],
                                              wallet=WALLET)
 
-def parse_tradesatoshi_withdrawals2(data_row, _parser, _filename, _args):
+def parse_tradesatoshi_withdrawals_v2(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['TimeStamp'])
 
@@ -34,7 +34,7 @@ def parse_tradesatoshi_withdrawals2(data_row, _parser, _filename, _args):
                                              sell_asset=row_dict['Symbol'],
                                              wallet=WALLET)
 
-def parse_tradesatoshi_withdrawals(data_row, _parser, _filename, _args):
+def parse_tradesatoshi_withdrawals_v1(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['TimeStamp'])
 
@@ -47,7 +47,7 @@ def parse_tradesatoshi_withdrawals(data_row, _parser, _filename, _args):
                                              fee_asset=row_dict['Symbol'],
                                              wallet=WALLET)
 
-def parse_tradesatoshi_trades(data_row, parser, _filename, _args):
+def parse_tradesatoshi_trades(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(data_row.row[6])
 
@@ -84,27 +84,27 @@ DataParser(DataParser.TYPE_EXCHANGE,
            "TradeSatoshi Deposits",
            ['TimeStamp', 'Currency', 'Symbol', 'Amount', 'Confirmation', 'TxId'],
            worksheet_name="TradeSatoshi D",
-           row_handler=parse_tradesatoshi_deposits2)
+           row_handler=parse_tradesatoshi_deposits_v2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "TradeSatoshi Deposits",
            ['Id', 'Currency', 'Symbol', 'Amount', 'Status', 'Confirmations', 'TxId', 'TimeStamp'],
            worksheet_name="TradeSatoshi D",
-           row_handler=parse_tradesatoshi_deposits)
+           row_handler=parse_tradesatoshi_deposits_v1)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "TradeSatoshi Withdrawals",
            ['TimeStamp', 'Currency', 'Symbol', 'Amount', 'Confirmation', 'TxId', 'Address',
             'PaymentId', 'Status'],
            worksheet_name="TradeSatoshi W",
-           row_handler=parse_tradesatoshi_withdrawals2)
+           row_handler=parse_tradesatoshi_withdrawals_v2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "TradeSatoshi Withdrawals",
            ['Id', 'User', 'Symbol', 'Amount', 'Fee', 'Net Amount', 'Status', 'Confirmations',
             'TxId', 'Address', 'TimeStamp'],
            worksheet_name="TradeSatoshi W",
-           row_handler=parse_tradesatoshi_withdrawals)
+           row_handler=parse_tradesatoshi_withdrawals_v1)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "TradeSatoshi Trades",

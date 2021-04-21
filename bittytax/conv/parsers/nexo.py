@@ -12,11 +12,11 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Nexo"
 
-def parse_nexo(data_row, parser, _filename, args):
+def parse_nexo(data_row, parser, **kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date / Time'])
 
-    if "rejected" in row_dict['Details'] and not args.unconfirmed:
+    if "rejected" in row_dict['Details'] and not kwargs['unconfirmed']:
         sys.stderr.write("%srow[%s] %s\n" % (
             Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row))
         sys.stderr.write("%sWARNING%s Skipping unconfirmed transaction, "

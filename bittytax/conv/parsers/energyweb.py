@@ -9,7 +9,7 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Energy Web"
 
-def parse_energy_web(data_row, parser, _filename, _args):
+def parse_energy_web(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['UnixTimestamp'])
 

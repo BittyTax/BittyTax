@@ -9,7 +9,7 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Bittrex"
 
-def parse_bittrex_trades2(data_row, parser, _filename, _args):
+def parse_bittrex_trades_v2(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['TimeStamp'])
 
@@ -41,7 +41,7 @@ def parse_bittrex_trades2(data_row, parser, _filename, _args):
         raise UnexpectedTypeError(parser.in_header.index('OrderType'), 'OrderType',
                                   row_dict['OrderType'])
 
-def parse_bittrex_trades(data_row, parser, _filename, _args):
+def parse_bittrex_trades_v1(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Opened'])
 
@@ -68,7 +68,7 @@ def parse_bittrex_trades(data_row, parser, _filename, _args):
     else:
         raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 
-def parse_bittrex_deposits2(data_row, _parser, _filename, _args):
+def parse_bittrex_deposits_v2(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['LastUpdatedDate'])
 
@@ -78,7 +78,7 @@ def parse_bittrex_deposits2(data_row, _parser, _filename, _args):
                                              buy_asset=row_dict['Currency'],
                                              wallet=WALLET)
 
-def parse_bittrex_deposits(data_row, _parser, _filename, _args):
+def parse_bittrex_deposits_v1(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['LastUpdated'])
 
@@ -88,7 +88,7 @@ def parse_bittrex_deposits(data_row, _parser, _filename, _args):
                                              buy_asset=row_dict['Currency'],
                                              wallet=WALLET)
 
-def parse_bittrex_withdrawals(data_row, _parser, _filename, _args):
+def parse_bittrex_withdrawals(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
 
     if 'Opened' in row_dict:
@@ -112,7 +112,7 @@ DataParser(DataParser.TYPE_EXCHANGE,
             'Commission', 'Price', 'PricePerUnit', 'IsConditional', 'Condition', 'ConditionTarget',
             'ImmediateOrCancel', 'Closed', 'TimeInForceTypeId', 'TimeInForce'],
            worksheet_name="Bittrex T",
-           row_handler=parse_bittrex_trades2)
+           row_handler=parse_bittrex_trades_v2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bittrex Trades",
@@ -120,34 +120,34 @@ DataParser(DataParser.TYPE_EXCHANGE,
             'Commission', 'Price', 'PricePerUnit', 'IsConditional', 'Condition', 'ConditionTarget',
             'ImmediateOrCancel', 'Closed'],
            worksheet_name="Bittrex T",
-           row_handler=parse_bittrex_trades2)
+           row_handler=parse_bittrex_trades_v2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bittrex Trades",
            ['OrderUuid', 'Exchange', 'Type', 'Quantity', 'Limit', 'CommissionPaid', 'Price',
             'Opened', 'Closed'],
            worksheet_name="Bittrex T",
-           row_handler=parse_bittrex_trades)
+           row_handler=parse_bittrex_trades_v1)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bittrex Deposits",
            ['Id', 'Currency', 'Amount', 'Confirmations', 'LastUpdatedDate', 'TxId',
             'CryptoAddress', 'Source'],
            worksheet_name="Bittrex D",
-           row_handler=parse_bittrex_deposits2)
+           row_handler=parse_bittrex_deposits_v2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bittrex Deposits",
            ['Id', 'Currency', 'Amount', 'Confirmations', 'LastUpdatedDate', 'TxId',
             'CryptoAddress'],
            worksheet_name="Bittrex D",
-           row_handler=parse_bittrex_deposits2)
+           row_handler=parse_bittrex_deposits_v2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bittrex Deposits",
            ['Id', 'Amount', 'Currency', 'Confirmations', 'LastUpdated', 'TxId', 'CryptoAddress'],
            worksheet_name="Bittrex D",
-           row_handler=parse_bittrex_deposits)
+           row_handler=parse_bittrex_deposits_v1)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bittrex Withdrawals",
