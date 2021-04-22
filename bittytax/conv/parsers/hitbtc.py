@@ -15,7 +15,7 @@ from ..exceptions import DataRowError, UnexpectedTypeError
 
 WALLET = "HitBTC"
 
-def parse_hitbtc_trades2(data_rows, parser, **_kwargs):
+def parse_hitbtc_trades_v2(data_rows, parser, **_kwargs):
     for row_index, data_row in enumerate(data_rows):
         if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
@@ -76,7 +76,7 @@ def parse_hitbtc_trades_row(data_rows, parser, data_row, row_index):
     else:
         raise UnexpectedTypeError(parser.in_header.index('Side'), 'Side', row_dict['Side'])
 
-def parse_hitbtc_trades(data_row, parser, **_kwargs):
+def parse_hitbtc_trades_v1(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date (UTC)'])
 
@@ -105,7 +105,7 @@ def parse_hitbtc_trades(data_row, parser, **_kwargs):
     else:
         raise UnexpectedTypeError(parser.in_header.index('Side'), 'Side', row_dict['Side'])
 
-def parse_hitbtc_deposits_withdrawals2(data_row, _parser, **_kwargs):
+def parse_hitbtc_deposits_withdrawals_v2(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date (UTC)'])
 
@@ -124,7 +124,7 @@ def parse_hitbtc_deposits_withdrawals2(data_row, _parser, **_kwargs):
                                                  buy_asset=row_dict['Currency'].upper(),
                                                  wallet=WALLET)
 
-def parse_hitbtc_deposits_withdrawals(data_row, _parser, **_kwargs):
+def parse_hitbtc_deposits_withdrawals_v1(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date (UTC)'])
 
@@ -140,31 +140,37 @@ def parse_hitbtc_deposits_withdrawals(data_row, _parser, **_kwargs):
                                                  buy_quantity=row_dict['Amount'],
                                                  buy_asset=data_row.row[6],
                                                  wallet=WALLET)
+DataParser(DataParser.TYPE_EXCHANGE,
+           "HitBTC Trades",
+           ['Email', 'Date (UTC)', 'Instrument', 'Trade ID', 'Order ID', 'Side', 'Quantity',
+            'Price', 'Volume', 'Fee', 'Rebate', 'Total', 'Taker'],
+           worksheet_name="HitBTC T",
+           all_handler=parse_hitbtc_trades_v2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "HitBTC Trades",
            ['Email', 'Date (UTC)', 'Instrument', 'Trade ID', 'Order ID', 'Side', 'Quantity',
             'Price', 'Volume', 'Fee', 'Rebate', 'Total'],
            worksheet_name="HitBTC T",
-           all_handler=parse_hitbtc_trades2)
+           all_handler=parse_hitbtc_trades_v2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "HitBTC Trades",
            ['Date (UTC)', 'Instrument', 'Trade ID', 'Order ID', 'Side', 'Quantity', 'Price',
             'Volume', 'Fee', 'Rebate', 'Total'],
            worksheet_name="HitBTC T",
-           row_handler=parse_hitbtc_trades)
+           row_handler=parse_hitbtc_trades_v1)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "HitBTC Deposits/Withdrawals",
            ['Email', 'Date (UTC)', 'Operation id', 'Type', 'Amount', 'Transaction hash',
             'Main account balance', 'Currency'],
            worksheet_name="HitBTC D,W",
-           row_handler=parse_hitbtc_deposits_withdrawals2)
+           row_handler=parse_hitbtc_deposits_withdrawals_v2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "HitBTC Deposits/Withdrawals",
            ['Date (UTC)', 'Operation id', 'Type', 'Amount', 'Transaction Hash',
             'Main account balance'],
            worksheet_name="HitBTC D,W",
-           row_handler=parse_hitbtc_deposits_withdrawals)
+           row_handler=parse_hitbtc_deposits_withdrawals_v1)
