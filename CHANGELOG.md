@@ -47,6 +47,8 @@ Important:- A new Note field has been added to the end of the transaction record
 - Conversion tool: added parser for Coinomi wallet.
 - Conversion tool: added parser for Blockchain.com wallet.
 - Conversion tool: convert multiple Excel worksheets.
+- Kucoin parser: added new trade history exports.
+- Kucoin parser: added deposit/withdrawal exports.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
