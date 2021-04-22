@@ -6,6 +6,7 @@ import sys
 import codecs
 import platform
 import glob
+import errno
 
 import colorama
 from colorama import Fore, Back
@@ -90,7 +91,11 @@ def main():
             Fore.GREEN, platform.system(), platform.release()))
 
     for filename in args.filename:
-        for pathname in glob.iglob(filename):
+        pathnames = glob.glob(filename)
+        if not pathnames:
+            pathnames = [filename]
+
+        for pathname in pathnames:
             try:
                 do_read_file(pathname, args)
             except UnknownCryptoassetError as e:
@@ -99,16 +104,23 @@ def main():
             except UnknownUsernameError as e:
                 sys.stderr.write(Fore.RESET)
                 parser.exit("%s: error: %s, please specify usernames in the %s file" % (
-                                parser.prog, e, config.BITTYTAX_CONFIG))
+                    parser.prog, e, config.BITTYTAX_CONFIG))
             except DataFilenameError as e:
                 sys.stderr.write(Fore.RESET)
                 parser.exit("%s: error: %s" % (parser.prog, e))
             except DataFormatUnrecognised as e:
                 sys.stderr.write("%sWARNING%s %s\n" % (
                     Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, e))
-            except IOError:
-                sys.stderr.write("%sWARNING%s File could not be read: %s\n" % (
-                Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, pathname))
+            except IOError as e:
+                if e.errno == errno.ENOENT:
+                    sys.stderr.write("%sWARNING%s File does not exist: %s\n" % (
+                        Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, pathname))
+                elif e.errno == errno.EISDIR:
+                    sys.stderr.write("%sWARNING%s File is a directory: %s\n" % (
+                        Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, pathname))
+                else:
+                    sys.stderr.write("%sWARNING%s File could not be read: %s\n" % (
+                        Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, pathname))
 
     if DataFile.data_files:
         if args.format == config.FORMAT_EXCEL:
@@ -122,7 +134,7 @@ def main():
 
 def do_read_file(pathname, args):
     try:
-        for (worksheet, datemode) in DataFile.read_excel(pathname):
+        for worksheet, datemode in DataFile.read_excel(pathname):
             try:
                 DataFile.read_worksheet(worksheet, datemode, pathname, args)
             except DataFormatUnrecognised as e:

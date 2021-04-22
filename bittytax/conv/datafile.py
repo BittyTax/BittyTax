@@ -66,7 +66,7 @@ class DataFile(object):
                 sys.stderr.write("%sconv: EXCEL\n" % Fore.CYAN)
 
             for worksheet in workbook.sheets():
-                yield (worksheet, workbook.datemode)
+                yield worksheet, workbook.datemode
 
     @classmethod
     def read_worksheet(cls, worksheet, datemode, filename, args):

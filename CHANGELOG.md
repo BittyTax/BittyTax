@@ -82,6 +82,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Bittrex parser: filter unauthorised/cancelled withdrawals. ([#108](https://github.com/BittyTax/BittyTax/issues/108))
 - Coinbase parser: added EUR and USD accounts.
 - Conversion tool: refactored parsers to use kwargs.
+- Conversion tool: better error handling for IOError.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.
