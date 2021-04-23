@@ -50,6 +50,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - KuCoin parser: added new trade history exports.
 - KuCoin parser: added deposit/withdrawal exports.
 - HitBTC parser: added new trade history export.
+- Electrum parser: new data file format added.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
@@ -83,6 +84,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Coinbase parser: added EUR and USD accounts.
 - Conversion tool: refactored parsers to use kwargs.
 - Conversion tool: better error handling for IOError.
+- Increase data source API timeout to 30 seconds.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.

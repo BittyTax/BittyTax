@@ -20,7 +20,7 @@ COINPAPRIKA_MAX_DAYS = 5000
 
 class DataSourceBase(object):
     USER_AGENT = 'BittyTax/v%s' % __version__
-    TIME_OUT = 20
+    TIME_OUT = 30
 
     def __init__(self):
         self.assets = {}
