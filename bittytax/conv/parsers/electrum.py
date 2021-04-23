@@ -9,6 +9,31 @@ from ..exceptions import UnknownCryptoassetError
 
 WALLET = "Electrum"
 
+def parse_electrum_v3(data_row, _parser, **kwargs):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['timestamp'], tz='Europe/London')
+
+    if not kwargs['cryptoasset']:
+        raise UnknownCryptoassetError(kwargs['filename'], kwargs.get('worksheet'))
+
+    if Decimal(row_dict['value']) > 0:
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                                 data_row.timestamp,
+                                                 buy_quantity=row_dict['value'],
+                                                 buy_asset=kwargs['cryptoasset'],
+                                                 wallet=WALLET,
+                                                 note=row_dict['label'])
+    else:
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                 data_row.timestamp,
+                                                 sell_quantity=abs(Decimal(row_dict['value'])) - \
+                                                               Decimal(row_dict['fee']),
+                                                 sell_asset=kwargs['cryptoasset'],
+                                                 fee_quantity=row_dict['fee'],
+                                                 fee_asset=kwargs['cryptoasset'],
+                                                 wallet=WALLET,
+                                                 note=row_dict['label'])
+
 def parse_electrum_v2(data_row, _parser, **kwargs):
     parse_electrum_v1(data_row, _parser, **kwargs)
 
@@ -33,6 +58,13 @@ def parse_electrum_v1(data_row, _parser, **kwargs):
                                                  sell_asset=kwargs['cryptoasset'],
                                                  wallet=WALLET,
                                                  note=row_dict['label'])
+
+DataParser(DataParser.TYPE_WALLET,
+           "Electrum",
+           ['transaction_hash', 'label', 'confirmations', 'value', 'fiat_value', 'fee', 'fiat_fee',
+            'timestamp'],
+           worksheet_name="Electrum",
+           row_handler=parse_electrum_v3)
 
 DataParser(DataParser.TYPE_WALLET,
            "Electrum",
