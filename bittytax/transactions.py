@@ -192,8 +192,20 @@ class TransactionBase(object):
             return ''
         return '{:0,f}'.format(self.quantity.normalize())
 
+    def _format_asset(self):
+        if sys.version_info[0] < 3:
+            return self.asset.decode('utf8')
+        return self.asset
+
+    def _format_wallet(self):
+        if sys.version_info[0] < 3:
+            return self.wallet.decode('utf8')
+        return self.wallet
+
     def _format_note(self):
         if self.note:
+            if sys.version_info[0] < 3:
+                return "'%s' " % self.note.decode('utf8')
             return "'%s' " % self.note
         return ''
 
@@ -217,8 +229,7 @@ class TransactionBase(object):
     def _format_timestamp(self):
         if self.timestamp.microsecond:
             return self.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f %Z')
-        else:
-            return self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
+        return self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
 
     def __eq__(self, other):
         return (self.asset, self.timestamp) == (other.asset, other.timestamp)
@@ -333,11 +344,11 @@ class Buy(TransactionBase):
             self.t_type,
             Style.BRIGHT if quantity_bold else '',
             self._format_quantity(),
-            self.asset,
+            self._format_asset(),
             Style.NORMAL if quantity_bold else '',
             self._format_cost(),
             self._format_fee(),
-            self.wallet,
+            self._format_wallet(),
             self._format_timestamp(),
             self._format_note(),
             self._format_tid(),
@@ -432,11 +443,11 @@ class Sell(TransactionBase):
             self.t_type,
             Style.BRIGHT if quantity_bold else '',
             self._format_quantity(),
-            self.asset,
+            self._format_asset(),
             Style.NORMAL if quantity_bold else '',
             self._format_proceeds(),
             self._format_fee(),
-            self.wallet,
+            self._format_wallet(),
             self._format_timestamp(),
             self._format_note(),
             self._format_tid(),

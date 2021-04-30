@@ -382,13 +382,18 @@ class TransactionRow(object):
         else:
             worksheet_str = ''
 
+        if sys.version_info[0] < 3:
+            row = [r.decode('utf8') for r in self.row]
+        else:
+            row = self.row
+
         if self.failure is not None:
             row_str = ', '.join(["%s'%s'%s" % (Back.RED, data, Back.RESET)
                                  if self.failure.col_num == num
                                  else "'%s'" % data
-                                 for num, data in enumerate(self.row)])
+                                 for num, data in enumerate(row)])
         else:
-            row_str = "'%s'" % '\', \''.join(self.row)
+            row_str = "'%s'" % '\', \''.join(row)
 
         return "%srow[%s] [%s]%s" % (
             worksheet_str,
