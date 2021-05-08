@@ -85,6 +85,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Conversion tool: refactored parsers to use kwargs.
 - Conversion tool: better error handling for IOError.
 - Increase data source API timeout to 30 seconds.
+- Accounting tool: use fixed value (when specified) for counter asset prices.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.

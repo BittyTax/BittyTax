@@ -141,13 +141,19 @@ class TransactionHistory(object):
                                                                      tr.fee.quantity)
     def which_asset_value(self, tr):
         if config.trade_asset_type == config.TRADE_ASSET_TYPE_BUY:
-            value, fixed = self.value_asset.get_value(tr.buy.asset,
-                                                      tr.buy.timestamp,
-                                                      tr.buy.quantity)
+            if tr.buy.cost is None:
+                value, fixed = self.value_asset.get_value(tr.buy.asset,
+                                                          tr.buy.timestamp,
+                                                          tr.buy.quantity)
+            else:
+                value, fixed = tr.buy.cost, tr.buy.cost_fixed
         elif config.trade_asset_type == config.TRADE_ASSET_TYPE_SELL:
-            value, fixed = self.value_asset.get_value(tr.sell.asset,
-                                                      tr.sell.timestamp,
-                                                      tr.sell.quantity)
+            if tr.sell.proceeds is None:
+                value, fixed = self.value_asset.get_value(tr.sell.asset,
+                                                          tr.sell.timestamp,
+                                                          tr.sell.quantity)
+            else:
+                value, fixed = tr.sell.proceeds, tr.sell.proceeds_fixed
         else:
             pos_sell_asset = pos_buy_asset = len(config.asset_priority) + 1
 
@@ -157,13 +163,20 @@ class TransactionHistory(object):
                 pos_buy_asset = config.asset_priority.index(tr.buy.asset)
 
             if pos_sell_asset <= pos_buy_asset:
-                value, fixed = self.value_asset.get_value(tr.sell.asset,
-                                                          tr.sell.timestamp,
-                                                          tr.sell.quantity)
+                if tr.sell.proceeds is None:
+                    value, fixed = self.value_asset.get_value(tr.sell.asset,
+                                                              tr.sell.timestamp,
+                                                              tr.sell.quantity)
+                else:
+                    value, fixed = tr.sell.proceeds, tr.sell.proceeds_fixed
             else:
-                value, fixed = self.value_asset.get_value(tr.buy.asset,
-                                                          tr.buy.timestamp,
-                                                          tr.buy.quantity)
+                if tr.buy.cost is None:
+                    value, fixed = self.value_asset.get_value(tr.buy.asset,
+                                                              tr.buy.timestamp,
+                                                              tr.buy.quantity)
+                else:
+                    value, fixed = tr.buy.cost, tr.buy.cost_fixed
+
         return value, fixed
 
 class TransactionBase(object):
