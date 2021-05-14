@@ -37,14 +37,12 @@ def get_fiat_values(row_dict, currency, timestamp):
     t_header = '%s Total (inclusive of fees)' % currency
     f_header = '%s Fees' % currency
 
-    spot_price = DataParser.convert_currency(row_dict[sp_header], currency, timestamp)
-    subtotal = DataParser.convert_currency(row_dict[st_header], currency, timestamp)
-    total = DataParser.convert_currency(row_dict[t_header], currency, timestamp)
-    fees = DataParser.convert_currency(row_dict[f_header], currency, timestamp)
-    return (spot_price, subtotal, total, fees)
+    spot_price_ccy = DataParser.convert_currency(row_dict[sp_header], currency, timestamp)
+    total_ccy= DataParser.convert_currency(row_dict[t_header], currency, timestamp)
+    return (spot_price_ccy, row_dict[st_header], total_ccy, row_dict[f_header])
 
 def parse_coinbase(data_row, parser, fiat_values):
-    (spot_price, subtotal, total, fees) = fiat_values
+    (spot_price_ccy, subtotal, total_ccy, fees) = fiat_values
     row_dict = data_row.row_dict
 
     if row_dict['Transaction Type'] == "Receive":
@@ -54,7 +52,8 @@ def parse_coinbase(data_row, parser, fiat_values):
                                  data_row.timestamp,
                                  buy_quantity=row_dict['Quantity Transacted'],
                                  buy_asset=row_dict['Asset'],
-                                 buy_value=spot_price * Decimal(row_dict['Quantity Transacted']),
+                                 buy_value=spot_price_ccy * \
+                                           Decimal(row_dict['Quantity Transacted']),
                                  wallet=WALLET)
         else:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
@@ -67,7 +66,7 @@ def parse_coinbase(data_row, parser, fiat_values):
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Quantity Transacted'],
                                                  buy_asset=row_dict['Asset'],
-                                                 buy_value=total,
+                                                 buy_value=total_ccy,
                                                  wallet=WALLET)
     elif row_dict['Transaction Type'] == "Send":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
@@ -81,13 +80,13 @@ def parse_coinbase(data_row, parser, fiat_values):
             raise UnexpectedContentError(parser.in_header.index('Notes'), 'Notes',
                                          row_dict['Notes'])
 
-        if config.coinbase_zero_fees_are_gifts and not fees:
+        if config.coinbase_zero_fees_are_gifts and Decimal(fees) == 0:
             # Zero fees "may" indicate an early referral reward, or airdrop
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['Quantity Transacted'],
                                                      buy_asset=row_dict['Asset'],
-                                                     buy_value=total if total > 0 else None,
+                                                     buy_value=total_ccy if total_ccy > 0 else None,
                                                      wallet=WALLET)
         else:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
@@ -126,10 +125,10 @@ def parse_coinbase(data_row, parser, fiat_values):
                                                  data_row.timestamp,
                                                  buy_quantity=buy_quantity,
                                                  buy_asset=buy_asset,
-                                                 buy_value=total,
+                                                 buy_value=total_ccy,
                                                  sell_quantity=row_dict['Quantity Transacted'],
                                                  sell_asset=row_dict['Asset'],
-                                                 sell_value=total,
+                                                 sell_value=total_ccy,
                                                  wallet=WALLET)
 
     else:
