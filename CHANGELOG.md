@@ -1,6 +1,11 @@
 # Change Log
 ## [Unreleased]
-Important:- A new Note field has been added to the end of the transaction record format (column M), this is used to add a description to a transaction. It is recommended that you add the additional Note column to all your existing transaction records.
+Important:-
+
+1. A new Note field has been added to the end of the transaction record format (column M), this is used to add a description to a transaction. It is recommended that you add the additional Note column to all your existing transaction records.
+
+2. The `Charity-Sent` transaction type has been changed from a normal disposal (same as a `Gift-Sent`) to being a "*No Gain/No Loss*" disposal, the same as a `Gift-Spouse`. If you have used this transaction type previously we recommend you re-generate your tax reports as you may have overpaid capital gains tax.
+
 ### Fixed
 - Accounting tool: "xlrd.biffh.XLRDError: Excel xlsx file; not supported" Exception. ([#36](https://github.com/BittyTax/BittyTax/issues/36))
 - Coinbase parser: added support for Convert transactions. ([#46](https://github.com/BittyTax/BittyTax/issues/46))
@@ -11,6 +16,7 @@ Important:- A new Note field has been added to the end of the transaction record
 - Price tool: list command returns error. ([#86](https://github.com/BittyTax/BittyTax/issues/86))
 - Price tool: -ds option returns "KeyError: 'price'" exception.
 - Conversion tool: strip whitespace from header.
+- Accounting tool: Charity-Sent should be a "No Gain/No Loss" disposal. ([#77](https://github.com/BittyTax/BittyTax/issues/77))
 ### Added
 - Etherscan parser: added internal transactions export.
 - Binance parser: added cash deposit and withdrawal exports.

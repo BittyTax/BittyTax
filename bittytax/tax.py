@@ -27,6 +27,8 @@ class TaxCalculator(object):
     INCOME_TYPES = (Buy.TYPE_MINING, Buy.TYPE_STAKING, Buy.TYPE_DIVIDEND, Buy.TYPE_INTEREST,
                     Buy.TYPE_INCOME)
 
+    NO_GAIN_NO_LOSS_TYPES = (Sell.TYPE_GIFT_SPOUSE, Sell.TYPE_CHARITY_SENT)
+
     def __init__(self, transactions, tax_rules):
         self.transactions = transactions
         self.tax_rules = tax_rules
@@ -57,7 +59,7 @@ class TaxCalculator(object):
                     buy_transactions[(t.asset, t.timestamp.date())] = t
                 else:
                     buy_transactions[(t.asset, t.timestamp.date())] += t
-            elif isinstance(t, Sell) and t.disposal and t.t_type != t.TYPE_GIFT_SPOUSE:
+            elif isinstance(t, Sell) and t.disposal and t.t_type not in self.NO_GAIN_NO_LOSS_TYPES:
                 if (t.asset, t.timestamp.date()) not in sell_transactions:
                     sell_transactions[(t.asset, t.timestamp.date())] = t
                 else:
@@ -214,9 +216,10 @@ class TaxCalculator(object):
                                                t.t_type == Sell.TYPE_WITHDRAWAL)
 
         if t.disposal:
-            if t.t_type == Sell.TYPE_GIFT_SPOUSE:
+            if t.t_type in self.NO_GAIN_NO_LOSS_TYPES:
                 # Change proceeds to make sure it balances
-                t.proceeds = cost + fees + (t.fee_value or Decimal(0))
+                t.proceeds = cost.quantize(PRECISION) + (fees + (t.fee_value or
+                                                                 Decimal(0))).quantize(PRECISION)
                 t.proceeds_fixed = True
                 tax_event = TaxEventCapitalGains(self.DISPOSAL_NO_GAIN_NO_LOSS,
                                                  None, t, cost, fees + (t.fee_value or Decimal(0)))
