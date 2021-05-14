@@ -280,13 +280,13 @@ class Buy(TransactionBase):
 
     def __init__(self, t_type, buy_quantity, buy_asset, buy_value):
         super(Buy, self).__init__(t_type, buy_asset, buy_quantity)
-        self.cost = buy_value
-        if self.cost is not None:
-            self.cost_fixed = True
-        else:
-            self.cost_fixed = False
-
         self.acquisition = bool(self.t_type in self.ACQUISITION_TYPES)
+        self.cost = None
+        self.cost_fixed = False
+
+        if self.acquisition and buy_value is not None:
+            self.cost = buy_value
+            self.cost_fixed = True
 
     def __iadd__(self, other):
         if not self.pooled:
@@ -379,13 +379,13 @@ class Sell(TransactionBase):
 
     def __init__(self, t_type, sell_quantity, sell_asset, sell_value):
         super(Sell, self).__init__(t_type, sell_asset, sell_quantity)
-        self.proceeds = sell_value
-        if self.proceeds is not None:
-            self.proceeds_fixed = True
-        else:
-            self.proceeds_fixed = False
-
         self.disposal = bool(self.t_type in self.DISPOSAL_TYPES)
+        self.proceeds = None
+        self.proceeds_fixed = False
+
+        if self.disposal and sell_value is not None:
+            self.proceeds = sell_value
+            self.proceeds_fixed = True
 
     def __iadd__(self, other):
         if not self.pooled:
