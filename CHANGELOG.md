@@ -57,6 +57,7 @@ Important:-
 - KuCoin parser: added deposit/withdrawal exports.
 - HitBTC parser: added new trade history export.
 - Electrum parser: new data file format added.
+- Accounting tool: added dictionary to TransactionRow.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
@@ -93,6 +94,7 @@ Important:-
 - Increase data source API timeout to 30 seconds.
 - Accounting tool: use fixed value (when specified) for counter asset prices.
 - Accounting tool: don't store fixed value for transfers.
+- Accounting tool: refactored import_records.py to use dictionary.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.
