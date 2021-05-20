@@ -20,6 +20,7 @@ from . import cryptsy
 from . import electrum
 from . import energyweb
 from . import etherscan
+from . import exodus
 from . import gatehub
 from . import gravity
 from . import handcash
