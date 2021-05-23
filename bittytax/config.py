@@ -42,7 +42,7 @@ class Config(object):
     TRADE_ALLOWABLE_COST_SELL = 1
     TRADE_ALLOWABLE_COST_SPLIT = 2
 
-    DATA_SOURCE_FIAT = ['RatesAPI']
+    DATA_SOURCE_FIAT = ['Frankfurter']
     DATA_SOURCE_CRYPTO = ['CryptoCompare', 'CoinGecko']
 
     DEFAULT_CONFIG = {

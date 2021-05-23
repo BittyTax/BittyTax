@@ -4,11 +4,11 @@
 import os
 
 from ..config import config
-from .datasource import DataSourceBase, ExchangeRatesAPI, RatesAPI
+from .datasource import DataSourceBase, ExchangeRatesAPI, RatesAPI, Frankfurter
 from .exceptions import UnexpectedDataSourceError
 
 class AssetData(object):
-    FIAT_DATASOURCES = (ExchangeRatesAPI.__name__, RatesAPI.__name__)
+    FIAT_DATASOURCES = (ExchangeRatesAPI.__name__, RatesAPI.__name__, Frankfurter.__name__)
 
     def __init__(self):
         self.data_sources = {}

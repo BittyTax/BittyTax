@@ -58,6 +58,7 @@ Important:-
 - HitBTC parser: added new trade history export.
 - Electrum parser: new data file format added.
 - Accounting tool: added dictionary to TransactionRow.
+- New data source "Frankfurter" added for fiat exchange rates.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.

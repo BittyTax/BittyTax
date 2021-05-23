@@ -235,6 +235,37 @@ class RatesAPI(DataSourceBase):
                                'url': url}},
                            timestamp)
 
+class Frankfurter(DataSourceBase):
+    def __init__(self):
+        super(Frankfurter, self).__init__()
+        currencies = ['EUR', 'USD', 'JPY', 'BGN', 'CYP', 'CZK', 'DKK', 'EEK', 'GBP', 'HUF',
+                      'LTL', 'LVL', 'MTL', 'PLN', 'ROL', 'RON', 'SEK', 'SIT', 'SKK', 'CHF',
+                      'ISK', 'NOK', 'HRK', 'RUB', 'TRL', 'TRY', 'AUD', 'BRL', 'CAD', 'CNY',
+                      'HKD', 'IDR', 'ILS', 'INR', 'KRW', 'MXN', 'MYR', 'NZD', 'PHP', 'SGD',
+                      'THB', 'ZAR']
+        self.assets = {c: {'name': 'Fiat ' + c} for c in currencies}
+
+    def get_latest(self, asset, quote, _asset_id=None):
+        json_resp = self.get_json(
+            "https://api.frankfurter.app/latest?from=%s&to=%s" % (asset, quote)
+        )
+        return Decimal(repr(json_resp['rates'][quote])) \
+                if 'rates' in json_resp and quote in json_resp['rates'] else None
+
+    def get_historical(self, asset, quote, timestamp, _asset_id=None):
+        url = "https://api.frankfurter.app/%s?from=%s&to=%s" % (
+            timestamp.strftime('%Y-%m-%d'), asset, quote)
+        json_resp = self.get_json(url)
+        pair = self.pair(asset, quote)
+        # Date returned in response might not be date requested due to weekends/holidays
+        self.update_prices(pair,
+                           {timestamp.strftime('%Y-%m-%d'): {
+                               'price': Decimal(repr(json_resp['rates'][quote])) \
+                                        if 'rates' in json_resp and quote \
+                                        in json_resp['rates'] else None,
+                               'url': url}},
+                           timestamp)
+
 class CoinDesk(DataSourceBase):
     def __init__(self):
         super(CoinDesk, self).__init__()
