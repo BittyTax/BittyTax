@@ -59,6 +59,7 @@ Important:-
 - Electrum parser: new data file format added.
 - Accounting tool: added dictionary to TransactionRow.
 - New data source "Frankfurter" added for fiat exchange rates.
+- Ledger Live parser: new data file format added.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
