@@ -21,11 +21,12 @@ TYPE = 'type'
 #      for on-chain burning of Data Credits.
 #
 # Therefore, the currency for all asset values output should be hardcoded to USD.
+# See https://docs.helium.com/blockchain/oracles/ for more information.
 
 # FIXME: Should the wallet be the actual Helium wallet id (payee or payer), or just "Helium"?
 # Some miners have many wallets for privacy, scaling, hosting agreements, and other reasons.
 
-# See https://www.fairspot.host/hnt-export-mining-tax
+# Supports Helium transaction exports from https://www.fairspot.host/hnt-export-mining-tax
 def parse_helium_fairspot(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['date'])
