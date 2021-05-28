@@ -23,6 +23,7 @@ from . import etherscan
 from . import gatehub
 from . import gravity
 from . import handcash
+from . import helium
 from . import hitbtc
 from . import hotbit
 from . import ii
