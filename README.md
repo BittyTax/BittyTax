@@ -552,13 +552,13 @@ The converter takes care of all the cell formatting to ensure that all decimal p
 For most wallet files, transactions can only be categorised as deposits or withdrawals. You will need to edit these to reflect your real transactions (i.e. spends, gifts, income, etc.). This is easy with Excel, as the valid options are selectable via a dropdown menu.
 
 **Wallets:**
-- Electrum
-- HandCash
-- Helium
-- Ledger Live
-- Nexo
+- [Electrum](https://electrum.org/)
+- [HandCash](https://handcash.io/)
+- [Helium](https://www.helium.com/)
+- [Ledger Live](https://www.ledger.com/ledger-live)
+- [Nexo](https://nexo.io/)
 - Qt Wallet (i.e. Bitcoin Core)
-- Trezor
+- [Trezor](https://trezor.io/)
 
 **Exchanges:**
 - Binance
