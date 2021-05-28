@@ -20,7 +20,7 @@ TYPE = 'type'
 #   2. The decentralized Helium HNT Price Oracles supply the USD $ to HNT prices
 #      for on-chain burning of Data Credits.
 #
-# Therefore, the currency for all asset values output should be hardcoded to USD.
+# Therefore, the fiat currency for all asset values output should be hardcoded to USD.
 # See https://docs.helium.com/blockchain/oracles/ for more information.
 
 # FIXME: Should the wallet be the actual Helium wallet id (payee or payer), or just "Helium"?
@@ -40,7 +40,7 @@ def parse_helium_fairspot(data_row, parser, **_kwargs):
                                                 buy_quantity=quantity,
                                                 buy_asset=HNT,
                                                 buy_value=usd_price * quantity,
-                                                #value_currency='USD',
+                                                #value_fiat='USD',
                                                 note='USD Values',
                                                 wallet=WALLET)
 
@@ -56,7 +56,7 @@ def parse_helium_fairspot(data_row, parser, **_kwargs):
                                                 fee_quantity=hnt_fee,
                                                 fee_asset=HNT,
                                                 fee_value=usd_price * hnt_fee,
-                                                #value_currency='USD',
+                                                #value_fiat='USD',
                                                 note='USD Values',
                                                 wallet=WALLET)
 
@@ -72,7 +72,7 @@ def parse_helium_fairspot(data_row, parser, **_kwargs):
                                                 fee_quantity=hnt_fee,
                                                 fee_asset=HNT,
                                                 fee_value=usd_price * hnt_fee,
-                                                #value_currency='USD',
+                                                #value_fiat='USD',
                                                 note='USD Values',
                                                 wallet=WALLET)
 
