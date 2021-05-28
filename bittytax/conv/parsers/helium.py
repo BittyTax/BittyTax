@@ -41,7 +41,7 @@ def parse_helium_fairspot(data_row, parser, **_kwargs):
                                                 buy_asset=HNT,
                                                 buy_value=usd_price * quantity,
                                                 #value_fiat='USD',
-                                                note='USD Values',
+                                                note='USD Fiat',
                                                 wallet=WALLET)
 
     elif row_dict[TYPE] == 'payment_v1':
@@ -57,7 +57,7 @@ def parse_helium_fairspot(data_row, parser, **_kwargs):
                                                 fee_asset=HNT,
                                                 fee_value=usd_price * hnt_fee,
                                                 #value_fiat='USD',
-                                                note='USD Values',
+                                                note='USD Fiat',
                                                 wallet=WALLET)
 
     elif row_dict[TYPE] == 'payment_v2':
@@ -73,7 +73,7 @@ def parse_helium_fairspot(data_row, parser, **_kwargs):
                                                 fee_asset=HNT,
                                                 fee_value=usd_price * hnt_fee,
                                                 #value_fiat='USD',
-                                                note='USD Values',
+                                                note='USD Fiat',
                                                 wallet=WALLET)
 
     else:
