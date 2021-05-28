@@ -554,6 +554,7 @@ For most wallet files, transactions can only be categorised as deposits or withd
 **Wallets:**
 - Electrum
 - HandCash
+- Helium
 - Ledger Live
 - Nexo
 - Qt Wallet (i.e. Bitcoin Core)
