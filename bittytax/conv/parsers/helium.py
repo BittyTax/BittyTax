@@ -111,12 +111,13 @@ def parse_helium_fairspot(data_row, parser, **_kwargs):
     elif row_dict[TYPE] == 'payment_v1':
         wallet = row_dict['payee']
         hnt_fee = Decimal(row_dict['hnt_fee'])
+        gross_quantity = quantity + hnt_fee
 
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                 data_row.timestamp,
-                                                buy_quantity=quantity,
+                                                buy_quantity=gross_quantity,
                                                 buy_asset=HNT,
-                                                buy_value=usd_price * quantity,
+                                                buy_value=usd_price * gross_quantity,
                                                 fee_quantity=hnt_fee,
                                                 fee_asset=HNT,
                                                 fee_value=usd_price * hnt_fee,
@@ -127,12 +128,13 @@ def parse_helium_fairspot(data_row, parser, **_kwargs):
     elif row_dict[TYPE] == 'payment_v2':
         wallet = row_dict['payer']
         hnt_fee = Decimal(row_dict['hnt_fee'])
+        gross_quantity = quantity + hnt_fee
 
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                 data_row.timestamp,
-                                                sell_quantity=quantity,
+                                                sell_quantity=gross_quantity,
                                                 sell_asset=HNT,
-                                                sell_value=usd_price * quantity,
+                                                sell_value=usd_price * gross_quantity,
                                                 fee_quantity=hnt_fee,
                                                 fee_asset=HNT,
                                                 fee_value=usd_price * hnt_fee,
