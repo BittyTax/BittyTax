@@ -4,14 +4,14 @@ from decimal import Decimal
 
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
-from ..exceptions import UnexpectedTypeError
+from ..exceptions import UnexpectedTypeError, UnexpectedContentError
 
 WALLET = 'Helium'
-
 HNT = 'HNT'
-ASSETS = [ HNT, 'HST', 'DC' ]
 
 TYPE = 'type'
+TAG = 'Tag'
+REWARD_TYPE = 'Reward Type'
 
 # By its design the Helium blockchain has been tied to USD:
 #
@@ -23,11 +23,74 @@ TYPE = 'type'
 # Therefore, the fiat currency for all asset values output should be hardcoded to USD.
 # See https://docs.helium.com/blockchain/oracles/ for more information.
 
-# TODO:
-# - Should the wallet be the actual Helium wallet id (payee or payer), or just "Helium"?
-#   Some miners have many wallets for privacy, scaling, hosting agreements, and other reasons.
+# Parse transaction exports from Helium Explorer (use HNT fees instead of DC)
+# NOTE: The Explorer export does not include HNT/USD Oracle pricing associated with the block
+def parse_helium_explorer_export(data_row, parser, **_kwargs):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'])
 
-# Supports Helium transaction exports from https://www.fairspot.host/hnt-export-mining-tax
+    note = 'Block ' + row_dict['Block']
+    if row_dict['Note']:
+        note = note + '; Note=' + row_dict['Note']
+
+    if row_dict['Received Quantity']:
+        received_quantity = Decimal(row_dict['Received Quantity'])
+    else:
+        received_quantity = 0
+
+    if row_dict['Sent Quantity']:
+        sent_quantity = Decimal(row_dict['Sent Quantity'])
+    else:
+        sent_quantity = 0
+
+    if row_dict[TAG] == 'mined':
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_MINING,
+                                                data_row.timestamp,
+                                                buy_quantity=received_quantity,
+                                                buy_asset=row_dict['Received Currency'],
+                                                note=note,
+                                                wallet=WALLET)
+
+    elif row_dict[TAG] == 'payment' and received_quantity > 0:
+        note = note + '; Received from ' + row_dict['Received From']
+        fee = Decimal(row_dict['Fee Amount'])
+
+        # only fee currency in HNT is supported to ensure gross calculation is correct
+        if row_dict['Fee Currency'] != row_dict['Received Currency']:
+            raise UnexpectedContentError(parser.in_header.index('Fee Currency'), 'Fee Currency',
+                                         row_dict['Fee Currency'])
+
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                                data_row.timestamp,
+                                                buy_quantity=received_quantity + fee,
+                                                buy_asset=row_dict['Received Currency'],
+                                                fee_quantity=fee,
+                                                fee_asset=row_dict['Fee Currency'],
+                                                note=note,
+                                                wallet=WALLET)
+
+    elif row_dict[TAG] == 'payment' and sent_quantity > 0:
+        note = note + '; Sent to ' + row_dict['Sent To']
+        fee = Decimal(row_dict['Fee Amount'])
+
+        # only fee currency in HNT is supported to ensure gross calculation is correct
+        if row_dict['Fee Currency'] != row_dict['Sent Currency']:
+            raise UnexpectedContentError(parser.in_header.index('Fee Currency'), 'Fee Currency',
+                                         row_dict['Fee Currency'])
+
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                data_row.timestamp,
+                                                sell_quantity=sent_quantity + fee,
+                                                sell_asset=row_dict['Sent Currency'],
+                                                fee_quantity=fee,
+                                                fee_asset=row_dict['Fee Currency'],
+                                                note=note,
+                                                wallet=WALLET)
+
+    else:
+        raise UnexpectedTypeError(parser.in_header.index(TAG), TAG, row_dict[TAG])
+
+# Parse Fairspot Helium transaction exports from https://www.fairspot.host/hnt-export-mining-tax
 def parse_helium_fairspot(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['date'])
@@ -48,13 +111,12 @@ def parse_helium_fairspot(data_row, parser, **_kwargs):
     elif row_dict[TYPE] == 'payment_v1':
         wallet = row_dict['payee']
         hnt_fee = Decimal(row_dict['hnt_fee'])
-        gross_quantity = quantity + hnt_fee
 
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                 data_row.timestamp,
-                                                buy_quantity=gross_quantity,
+                                                buy_quantity=quantity,
                                                 buy_asset=HNT,
-                                                buy_value=usd_price * gross_quantity,
+                                                buy_value=usd_price * quantity,
                                                 fee_quantity=hnt_fee,
                                                 fee_asset=HNT,
                                                 fee_value=usd_price * hnt_fee,
@@ -65,13 +127,12 @@ def parse_helium_fairspot(data_row, parser, **_kwargs):
     elif row_dict[TYPE] == 'payment_v2':
         wallet = row_dict['payer']
         hnt_fee = Decimal(row_dict['hnt_fee'])
-        gross_quantity = quantity + hnt_fee
 
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                 data_row.timestamp,
-                                                sell_quantity=gross_quantity,
+                                                sell_quantity=quantity,
                                                 sell_asset=HNT,
-                                                sell_value=usd_price * gross_quantity,
+                                                sell_value=usd_price * quantity,
                                                 fee_quantity=hnt_fee,
                                                 fee_asset=HNT,
                                                 fee_value=usd_price * hnt_fee,
@@ -81,6 +142,16 @@ def parse_helium_fairspot(data_row, parser, **_kwargs):
 
     else:
         raise UnexpectedTypeError(parser.in_header.index(TYPE), TYPE, row_dict[TYPE])
+
+
+
+DataParser(DataParser.TYPE_WALLET,
+           'Helium',
+           [ 'Date', 'Received Quantity', 'Received From', 'Received Currency', 
+             'Sent Quantity', 'Sent To', 'Sent Currency', 'Fee Amount', 'Fee Currency', 
+             'Tag', 'Note', 'Hotspot', 'Reward Type', 'Block', 'Hash' ],
+           worksheet_name='Helium',
+           row_handler=parse_helium_explorer_export)
 
 DataParser(DataParser.TYPE_WALLET,
            'Helium',

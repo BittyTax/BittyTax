@@ -1,0 +1,4 @@
+﻿Date,Received Quantity,Received From,Received Currency,Sent Quantity,Sent To,Sent Currency,Fee Amount,Fee Currency,Tag,Note,Hotspot,Reward Type,Block,Hash
+"2021-01-28T16:50:07.000Z","0.21465359","Helium Network","HNT","","","",0,"HNT","mined","","Flaky Cloud Wolverine","poc_witnesses",362690,"lhLuNI4f2ObfSnk1s13yIKk2AW72DHIskg2y492yZnb"
+"2021-01-26T16:37:00.000Z","","","","102.02725290","23SA2LZkqiuUP1bIZzbaBCDy3KUFTLHQV3k5rC5tZSVFAC1TY4k","HNT","0.02467947","HNT","payment","","","",360611,"g2ILz_tdwbbGO14_ABnGrho2xKL0VFSE07AhtLZq12P"
+"2021-01-27T16:32:00.000Z","9.02","Helium Network","HNT","","","","0.01","HNT","payment","","","",360611,"g2ILz_tdwbbGO14_ABnGrho2xKL0VFSE07AhtLZq12P"
