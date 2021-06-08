@@ -98,7 +98,7 @@ DataParser(DataParser.TYPE_EXPLORER,
            "Etherscan (Ethereum Transactions)",
            ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
             'Value_IN(ETH)', 'Value_OUT(ETH)', None, 'TxnFee(ETH)', 'TxnFee(USD)',
-            'Historical $Price/Eth', 'Status', 'ErrCode'],
+            'Historical $Price/Eth', 'Status', 'ErrCode', 'Method'],
            worksheet_name="Etherscan",
            row_handler=parse_etherscan)
 
@@ -106,7 +106,7 @@ DataParser(DataParser.TYPE_EXPLORER,
            "Etherscan (Ethereum Transactions)",
            ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
             'Value_IN(ETH)', 'Value_OUT(ETH)', None, 'TxnFee(ETH)', 'TxnFee(USD)',
-            'Historical $Price/Eth', 'Status', 'ErrCode', 'PrivateNote'],
+            'Historical $Price/Eth', 'Status', 'ErrCode', 'Method', 'PrivateNote'],
            worksheet_name="Etherscan",
            row_handler=parse_etherscan)
 
