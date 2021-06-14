@@ -17,6 +17,13 @@ QUOTE_ASSETS = ['AUD', 'BIDR', 'BKRW', 'BNB', 'BRL', 'BTC', 'BUSD', 'BVND', 'DAI
                 'EUR', 'GBP', 'IDRT', 'NGN', 'PAX', 'RUB', 'TRX', 'TRY', 'TUSD', 'UAH',
                 'USDC', 'USDS', 'USDT', 'VAI', 'XRP', 'ZAR']
 
+class SmallAssetBnbExTrans(object):
+    def __init__(self, bnb_found, buy_quantity, sell_quantity, sell_asset):
+        self.bnb_found = bnb_found
+        self.buy_quantity = buy_quantity
+        self.sell_quantity = sell_quantity
+        self.sell_asset = sell_asset
+        
 def parse_binance_trades(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date(UTC)'])
@@ -131,53 +138,51 @@ def bnb_convert(data_rows, parser, utc_time, operation):
                      if data_row.row_dict['UTC_Time'] == utc_time and
                      data_row.row_dict['Operation'] == operation]
 
-    bnb_found, buy_quantity = get_bnb_quantity(matching_rows, parser)
+    bnb_ex_list = get_bnb_quantity(matching_rows)
 
     for data_row in matching_rows:
         if not data_row.parsed:
             data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['UTC_Time'])
             data_row.parsed = True
 
-            if bnb_found:
-                data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                         data_row.timestamp,
-                                                         buy_quantity=buy_quantity,
-                                                         buy_asset="BNB",
-                                                         sell_quantity=abs(Decimal(data_row. \
-                                                             row_dict['Change'])),
-                                                         sell_asset=data_row.row_dict['Coin'],
-                                                         wallet=WALLET)
-            else:
-                data_row.failure = MissingComponentError(parser.in_header.index('Operation'),
-                                                         'Operation',
-                                                         data_row.row_dict['Operation'])
+            for item in bnb_ex_list:
+                if item.sell_asset == data_row.row_dict['Coin']:
+                    if item.bnb_found:
+                        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                                data_row.timestamp,
+                                                                buy_quantity=item.buy_quantity,
+                                                                buy_asset="BNB",
+                                                                sell_quantity=item.sell_quantity,
+                                                                sell_asset=item.sell_asset,
+                                                                wallet=WALLET)
+                    else:
+                        data_row.failure = MissingComponentError(parser.in_header.index('Operation'),
+                                                                'Operation',
+                                                                data_row.row_dict['Operation'])
 
-def get_bnb_quantity(matching_rows, parser):
-    bnb_found = False
-    buy_quantity = None
-    assets = 0
-
+def get_bnb_quantity(matching_rows):
+    bnb_ex_list = []
+    buy_quantity = []
+    sell_asset = []
+    sell_quantity = []
+    
     for data_row in matching_rows:
         if data_row.row_dict['Coin'] == "BNB":
             data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['UTC_Time'])
             data_row.parsed = True
-
-            if not bnb_found:
-                buy_quantity = data_row.row_dict['Change']
-                bnb_found = True
-            else:
-                # Multiple BNB values?
-                data_row.failure = UnexpectedContentError(parser.in_header.index('Coin'), 'Coin',
-                                                          data_row.row_dict['Coin'])
-                buy_quantity = None
+            buy_quantity.append(data_row.row_dict['Change'])
         else:
-            assets += 1
+            sell_asset.append(data_row.row_dict['Coin'])
+            sell_quantity.append(abs(Decimal(data_row. row_dict['Change'])))
 
-    if assets > 1:
-        # Multiple assets converted, BNB quantities will need to be added manually
-        buy_quantity = None
+        if len(buy_quantity) > 0 and len(sell_quantity) > 0:
+            bnb_ex_list.append(SmallAssetBnbExTrans(True, buy_quantity.pop(0), sell_quantity.pop(0), sell_asset.pop(0)))
 
-    return bnb_found, buy_quantity
+    # Unmapped Bnb transactions marked as bnb_found: False
+    for index in range(len(sell_quantity)):
+        bnb_ex_list.append(SmallAssetBnbExTrans(False, None, sell_quantity.pop(0), sell_asset.pop(0)))
+    
+    return bnb_ex_list
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Binance Trades",
