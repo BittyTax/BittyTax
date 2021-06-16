@@ -4,6 +4,7 @@
 import os
 import atexit
 import json
+import platform
 from decimal import Decimal
 from datetime import datetime, timedelta
 
@@ -19,7 +20,9 @@ CRYPTOCOMPARE_MAX_DAYS = 2000
 COINPAPRIKA_MAX_DAYS = 5000
 
 class DataSourceBase(object):
-    USER_AGENT = 'BittyTax/v%s' % __version__
+    USER_AGENT = 'BittyTax/%s Python/%s %s/%s' % (__version__,
+                                                  platform.python_version(),
+                                                  platform.system(), platform.release())
     TIME_OUT = 30
 
     def __init__(self):
@@ -170,59 +173,22 @@ class DataSourceBase(object):
         epoch = (timestamp - datetime(1970, 1, 1, tzinfo=config.TZ_UTC)).total_seconds()
         return int(epoch)
 
-class ExchangeRatesAPI(DataSourceBase):
+class BittyTaxAPI(DataSourceBase):
     def __init__(self):
-        super(ExchangeRatesAPI, self).__init__()
-        currencies = ['EUR', 'USD', 'JPY', 'BGN', 'CYP', 'CZK', 'DKK', 'EEK', 'GBP', 'HUF',
-                      'LTL', 'LVL', 'MTL', 'PLN', 'ROL', 'RON', 'SEK', 'SIT', 'SKK', 'CHF',
-                      'ISK', 'NOK', 'HRK', 'RUB', 'TRL', 'TRY', 'AUD', 'BRL', 'CAD', 'CNY',
-                      'HKD', 'IDR', 'ILS', 'INR', 'KRW', 'MXN', 'MYR', 'NZD', 'PHP', 'SGD',
-                      'THB', 'ZAR']
-        self.assets = {c: {'name': 'Fiat ' + c} for c in currencies}
-
-    def get_latest(self, asset, quote, _asset_id=None):
-        url = "https://api.exchangeratesapi.io/latest?base=%s&symbols=%s" % (asset, quote)
-        json_resp = self.get_json(url)
-        return Decimal(repr(json_resp['rates'][quote])) \
-                if 'rates' in json_resp and quote in json_resp['rates'] else None
-
-    def get_historical(self, asset, quote, timestamp, _asset_id=None):
-        url = "https://api.exchangeratesapi.io/%s?base=%s&symbols=%s" % (
-            timestamp.strftime('%Y-%m-%d'), asset, quote)
-        json_resp = self.get_json(url)
-        pair = self.pair(asset, quote)
-        # Date returned in response might not be date requested due to weekends/holidays
-        self.update_prices(pair,
-                           {timestamp.strftime('%Y-%m-%d'): {
-                               'price': Decimal(repr(json_resp['rates'][quote])) \
-                                        if 'rates' in json_resp and quote \
-                                        in json_resp['rates'] else None,
-                               'url': url}},
-                           timestamp)
-
-    def get_list(self):
-        return {k: [{'id':None, 'name': v['name']}] for k, v in self.assets.items()}
-
-class RatesAPI(DataSourceBase):
-    def __init__(self):
-        super(RatesAPI, self).__init__()
-        # https://github.com/MicroPyramid/ratesapi/blob/master/scripts/pusher.py
-        currencies = ['EUR', 'USD', 'JPY', 'BGN', 'CYP', 'CZK', 'DKK', 'EEK', 'GBP', 'HUF',
-                      'LTL', 'LVL', 'MTL', 'PLN', 'ROL', 'RON', 'SEK', 'SIT', 'SKK', 'CHF',
-                      'ISK', 'NOK', 'HRK', 'RUB', 'TRL', 'TRY', 'AUD', 'BRL', 'CAD', 'CNY',
-                      'HKD', 'IDR', 'ILS', 'INR', 'KRW', 'MXN', 'MYR', 'NZD', 'PHP', 'SGD',
-                      'THB', 'ZAR']
-        self.assets = {c: {'name': 'Fiat ' + c} for c in currencies}
+        super(BittyTaxAPI, self).__init__()
+        json_resp = self.get_json("https://api.bitty.tax/v1/symbols")
+        self.assets = {k: {'name': v}
+                       for k, v in json_resp['symbols'].items()}
 
     def get_latest(self, asset, quote, _asset_id=None):
         json_resp = self.get_json(
-            "https://api.ratesapi.io/api/latest?base=%s&symbols=%s" % (asset, quote)
+            "https://api.bitty.tax/v1/latest?base=%s&symbols=%s" % (asset, quote)
         )
         return Decimal(repr(json_resp['rates'][quote])) \
                 if 'rates' in json_resp and quote in json_resp['rates'] else None
 
     def get_historical(self, asset, quote, timestamp, _asset_id=None):
-        url = "https://api.ratesapi.io/api/%s?base=%s&symbols=%s" % (
+        url = "https://api.bitty.tax/v1/%s?base=%s&symbols=%s" % (
             timestamp.strftime('%Y-%m-%d'), asset, quote)
         json_resp = self.get_json(url)
         pair = self.pair(asset, quote)

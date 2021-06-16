@@ -6,6 +6,13 @@ Important:-
 
 2. The `Charity-Sent` transaction type has been changed from a normal disposal (same as a `Gift-Sent`) to being a "*No Gain/No Loss*" disposal, the same as a `Gift-Spouse`. If you have used this transaction type previously we recommend you re-generate your tax reports as you may have overpaid capital gains tax.
 
+3. The ExchangeRatesAPI and RatesAPI data sources are no longer available. Please update your `bittytax.conf` file to use the new BittyTaxAPI as shown below, this file resides in your .bittytax folder within your home directory.
+
+```
+data_source_fiat:
+    ['BittyTaxAPI']
+```
+
 ### Fixed
 - Accounting tool: "xlrd.biffh.XLRDError: Excel xlsx file; not supported" Exception. ([#36](https://github.com/BittyTax/BittyTax/issues/36))
 - Coinbase parser: added support for Convert transactions. ([#46](https://github.com/BittyTax/BittyTax/issues/46))
@@ -60,6 +67,7 @@ Important:-
 - Accounting tool: added dictionary to TransactionRow.
 - New data source "Frankfurter" added for fiat exchange rates.
 - Ledger Live parser: new data file format added.
+- New data source "BittyTaxAPI" added for fiat exchange rates.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
