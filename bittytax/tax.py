@@ -80,7 +80,7 @@ class TaxCalculator(object):
         if config.debug:
             print("%spool: total transactions=%d" % (Fore.CYAN, len(self.all_transactions())))
 
-    def match(self, rule):
+    def match_buyback(self, rule):
         sell_index = buy_index = 0
 
         if not self.buys_ordered:
@@ -99,7 +99,7 @@ class TaxCalculator(object):
             b = self.buys_ordered[buy_index]
 
             if (not s.matched and not b.matched and s.asset == b.asset and
-                    self._rule_match(s.timestamp, b.timestamp, rule)):
+                    self._rule_match(b.timestamp, s.timestamp, rule)):
                 if config.debug:
                     if b.quantity > s.quantity:
                         print("%smatch: %s" % (Fore.GREEN, s.__str__(quantity_bold=True)))
@@ -149,15 +149,89 @@ class TaxCalculator(object):
         if config.debug:
             print("%smatch: total transactions=%d" % (Fore.CYAN, len(self.all_transactions())))
 
-    def _rule_match(self, s_timestamp, b_timestamp, rule):
+    def match_sell(self, rule):
+        buy_index = sell_index = 0
+
+        if not self.sells_ordered:
+            return
+
+        if config.debug:
+            print("%smatch %s transactions" % (Fore.CYAN, rule.lower()))
+
+        pbar = tqdm(total=len(self.buys_ordered),
+                    unit='t',
+                    desc="%smatch %s transactions%s" % (Fore.CYAN, rule.lower(), Fore.GREEN),
+                    disable=bool(config.debug or not sys.stdout.isatty()))
+
+        while buy_index < len(self.buys_ordered):
+            b = self.buys_ordered[buy_index]
+            s = self.sells_ordered[sell_index]
+
+            if (not b.matched and not s.matched and b.asset == s.asset and
+                    self._rule_match(b.timestamp, s.timestamp, rule)):
+                if config.debug:
+                    if b.quantity > s.quantity:
+                        print("%smatch: %s" % (Fore.GREEN, b))
+                        print("%smatch: %s" % (Fore.GREEN, s.__str__(quantity_bold=True)))
+                    elif s.quantity > b.quantity:
+                        print("%smatch: %s" % (Fore.GREEN, b.__str__(quantity_bold=True)))
+                        print("%smatch: %s" % (Fore.GREEN, s))
+                    else:
+                        print("%smatch: %s" % (Fore.GREEN, b.__str__(quantity_bold=True)))
+                        print("%smatch: %s" % (Fore.GREEN, s.__str__(quantity_bold=True)))
+
+                if b.quantity > s.quantity:
+                    b_remainder = b.split_buy(s.quantity)
+                    self.buys_ordered.insert(buy_index + 1, b_remainder)
+                    if config.debug:
+                        print("%smatch:   split: %s" % (Fore.YELLOW, b.__str__(quantity_bold=True)))
+                        print("%smatch:   split: %s" % (Fore.YELLOW, b_remainder))
+                    pbar.total += 1
+                elif s.quantity > b.quantity:
+                    s_remainder = s.split_sell(b.quantity)
+                    self.sells_ordered.insert(sell_index + 1, s_remainder)
+                    if config.debug:
+                        print("%smatch:   split: %s" % (Fore.YELLOW, s.__str__(quantity_bold=True)))
+                        print("%smatch:   split: %s" % (Fore.YELLOW, s_remainder))
+
+                b.matched = s.matched = True
+                tax_event = TaxEventCapitalGains(rule, b, s, b.cost,
+                                                 (b.fee_value or Decimal(0)) +
+                                                 (s.fee_value or Decimal(0)))
+                self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
+                if config.debug:
+                    print("%smatch:   %s" % (Fore.CYAN, tax_event))
+
+                # Find next buy
+                buy_index += 1
+                pbar.update(1)
+                sell_index = 0
+            else:
+                sell_index += 1
+                if sell_index >= len(self.sells_ordered):
+                    buy_index += 1
+                    pbar.update(1)
+                    sell_index = 0
+
+        pbar.close()
+
+        if config.debug:
+            print("%smatch: total transactions=%d" % (Fore.CYAN, len(self.all_transactions())))
+
+    def _rule_match(self, b_timestamp, s_timestamp, rule):
         if rule == self.DISPOSAL_SAME_DAY:
             return b_timestamp.date() == s_timestamp.date()
         if rule == self.DISPOSAL_TEN_DAY:
-            return (s_timestamp.date() < b_timestamp.date() and
-                    b_timestamp.date() <= s_timestamp.date() + timedelta(days=10))
+            # 10 days between buy and sell
+            return (b_timestamp.date() < s_timestamp.date() and
+                    s_timestamp.date() <= b_timestamp.date() + timedelta(days=10))
         if rule == self.DISPOSAL_BED_AND_BREAKFAST:
+            # 30 days between sell and buy-back
             return (s_timestamp.date() < b_timestamp.date() and
                     b_timestamp.date() <= s_timestamp.date() + timedelta(days=30))
+        if not rule:
+            return True
+
         raise Exception
 
     def process_section104(self, skip_integrity_check):
