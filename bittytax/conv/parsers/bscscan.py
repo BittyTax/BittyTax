@@ -134,7 +134,7 @@ DataParser(DataParser.TYPE_EXPLORER,
 DataParser(DataParser.TYPE_EXPLORER,
            "Bscscan (BNB)",
            ['Txhash','Blockno','UnixTimestamp','DateTime','ParentTxFrom','ParentTxTo','ParentTxETH_Value','From','TxTo',
-            'ContractAddress','Value_IN(BNB)','Value_OUT(BNB)','CurrentValue @ $392.14/BNB','Historical $Price/BNB',
+            'ContractAddress','Value_IN(BNB)','Value_OUT(BNB)',None,'Historical $Price/BNB',
             'Status','ErrCode','Type'],
            worksheet_name="Bscscan",
            row_handler=parse_bscscan_internal)
