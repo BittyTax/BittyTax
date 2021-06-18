@@ -5,6 +5,7 @@ from . import bitstamp
 from . import bittrex
 from . import blockchain
 from . import blockfi
+from . import bscscan
 from . import celsius
 from . import cgtcalculator
 from . import changetip
