@@ -73,6 +73,7 @@ data_source_fiat:
 - Coinfloor parser: new "trades" data file format added.
 - Gravity parser: new data file format added.
 - Etherscan parser: new "Transactions" data file format added.
+- Conversion tool: added parser for BscScan explorer.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
