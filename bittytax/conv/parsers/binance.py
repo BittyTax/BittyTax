@@ -123,6 +123,12 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      buy_quantity=row_dict['Change'],
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
+        elif row_dict['Operation'] == "Super BNB Mining":
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_MINING,
+                                                     data_row.timestamp,
+                                                     buy_quantity=row_dict['Change'],
+                                                     buy_asset=row_dict['Coin'],
+                                                     wallet=WALLET)
         elif row_dict['Operation'] == "Savings Interest":
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INTEREST,
                                                      data_row.timestamp,
@@ -137,6 +143,10 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      wallet=WALLET)
         elif row_dict['Operation'] == "Small assets exchange BNB":
             bnb_convert(data_rows, parser, row_dict['UTC_Time'], row_dict['Operation'])
+        elif row_dict['Operation'] in ("Savings purchase", "Savings Principal redemption",
+                                       "POS savings purchase", "POS savings redemption"):
+            # Skip not taxable events
+            return
 
 def bnb_convert(data_rows, parser, utc_time, operation):
     matching_rows = [data_row for data_row in data_rows
