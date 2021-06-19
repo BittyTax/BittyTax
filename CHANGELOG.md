@@ -25,6 +25,7 @@ data_source_fiat:
 - Conversion tool: strip whitespace from header.
 - Accounting tool: Charity-Sent should be a "No Gain/No Loss" disposal. ([#77](https://github.com/BittyTax/BittyTax/issues/77))
 - Accounting tool: The "ten day" rule for companies, should match the buy to sell, not sell to buy-back. ([#131](https://github.com/BittyTax/BittyTax/issues/131))
+- Kraken parser: Trading pair split broken for XTZ/GBP. ([#124](https://github.com/BittyTax/BittyTax/issues/124))
 ### Added
 - Etherscan parser: added internal transactions export.
 - Binance parser: added cash deposit and withdrawal exports.
