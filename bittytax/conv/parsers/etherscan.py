@@ -95,7 +95,7 @@ def parse_etherscan_nfts(data_row, _parser, **kwargs):
         raise DataFilenameError(kwargs['filename'], "Ethereum address")
 
 DataParser(DataParser.TYPE_EXPLORER,
-           "Etherscan (Ethereum Transactions)",
+           "Etherscan (ETH Transactions)",
            ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
             'Value_IN(ETH)', 'Value_OUT(ETH)', None, 'TxnFee(ETH)', 'TxnFee(USD)',
             'Historical $Price/Eth', 'Status', 'ErrCode'],
@@ -103,7 +103,7 @@ DataParser(DataParser.TYPE_EXPLORER,
            row_handler=parse_etherscan)
 
 DataParser(DataParser.TYPE_EXPLORER,
-           "Etherscan (Ethereum Transactions)",
+           "Etherscan (ETH Transactions)",
            ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
             'Value_IN(ETH)', 'Value_OUT(ETH)', None, 'TxnFee(ETH)', 'TxnFee(USD)',
             'Historical $Price/Eth', 'Status', 'ErrCode', 'PrivateNote'],
@@ -111,7 +111,23 @@ DataParser(DataParser.TYPE_EXPLORER,
            row_handler=parse_etherscan)
 
 DataParser(DataParser.TYPE_EXPLORER,
-           "Etherscan (Internal Transactions)",
+           "Etherscan (ETH Transactions)",
+           ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
+            'Value_IN(ETH)', 'Value_OUT(ETH)', None, 'TxnFee(ETH)', 'TxnFee(USD)',
+            'Historical $Price/Eth', 'Status', 'ErrCode', 'Method'],
+           worksheet_name="Etherscan",
+           row_handler=parse_etherscan)
+
+DataParser(DataParser.TYPE_EXPLORER,
+           "Etherscan (ETH Transactions)",
+           ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
+            'Value_IN(ETH)', 'Value_OUT(ETH)', None, 'TxnFee(ETH)', 'TxnFee(USD)',
+            'Historical $Price/Eth', 'Status', 'ErrCode', 'Method', 'PrivateNote'],
+           worksheet_name="Etherscan",
+           row_handler=parse_etherscan)
+
+DataParser(DataParser.TYPE_EXPLORER,
+           "Etherscan (ETH Internal Transactions)",
            ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'ParentTxFrom', 'ParentTxTo',
             'ParentTxETH_Value', 'From', 'TxTo', 'ContractAddress', 'Value_IN(ETH)',
             'Value_OUT(ETH)', None, 'Historical $Price/Eth', 'Status', 'ErrCode', 'Type'],

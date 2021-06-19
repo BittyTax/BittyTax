@@ -72,6 +72,7 @@ data_source_fiat:
 - New data source "BittyTaxAPI" added for fiat exchange rates.
 - Coinfloor parser: new "trades" data file format added.
 - Gravity parser: new data file format added.
+- Etherscan parser: new "Transactions" data file format added.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
