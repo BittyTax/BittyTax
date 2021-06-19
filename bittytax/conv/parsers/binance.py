@@ -10,7 +10,7 @@ from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError, UnexpectedTradingPairError, \
-                         UnexpectedContentError, MissingComponentError, DataFilenameError
+                         MissingComponentError, DataFilenameError
 
 WALLET = "Binance"
 QUOTE_ASSETS = ['AUD', 'BIDR', 'BKRW', 'BNB', 'BRL', 'BTC', 'BUSD', 'BVND', 'DAI', 'ETH',
@@ -143,7 +143,7 @@ def bnb_convert(data_rows, parser, utc_time, operation):
                      if data_row.row_dict['UTC_Time'] == utc_time and
                      data_row.row_dict['Operation'] == operation]
 
-    bnb_found, buy_quantity = get_bnb_quantity(matching_rows, parser)
+    bnb_found, buy_quantity = get_bnb_quantity(matching_rows)
 
     for data_row in matching_rows:
         if not data_row.parsed:
@@ -164,7 +164,7 @@ def bnb_convert(data_rows, parser, utc_time, operation):
                                                          'Operation',
                                                          data_row.row_dict['Operation'])
 
-def get_bnb_quantity(matching_rows, parser):
+def get_bnb_quantity(matching_rows):
     bnb_found = False
     buy_quantity = None
     assets = 0
@@ -178,9 +178,7 @@ def get_bnb_quantity(matching_rows, parser):
                 buy_quantity = data_row.row_dict['Change']
                 bnb_found = True
             else:
-                # Multiple BNB values?
-                data_row.failure = UnexpectedContentError(parser.in_header.index('Coin'), 'Coin',
-                                                          data_row.row_dict['Coin'])
+                # Multiple BNB quantities, will need to be added manually
                 buy_quantity = None
         else:
             assets += 1
