@@ -71,6 +71,7 @@ data_source_fiat:
 - Ledger Live parser: new data file format added.
 - New data source "BittyTaxAPI" added for fiat exchange rates.
 - Coinfloor parser: new "trades" data file format added.
+- Gravity parser: new data file format added.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
