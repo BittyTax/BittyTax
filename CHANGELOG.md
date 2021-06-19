@@ -111,6 +111,7 @@ data_source_fiat:
 - Accounting tool: use fixed value (when specified) for counter asset prices.
 - Accounting tool: don't store fixed value for transfers.
 - Accounting tool: refactored import_records.py to use dictionary.
+- Binance parser: added "POS savings interest" and "Savings Interest" operations. ([#137](https://github.com/BittyTax/BittyTax/issues/137))
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.

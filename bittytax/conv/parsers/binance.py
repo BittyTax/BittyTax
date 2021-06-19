@@ -14,8 +14,8 @@ from ..exceptions import UnexpectedTypeError, UnexpectedTradingPairError, \
 
 WALLET = "Binance"
 QUOTE_ASSETS = ['AUD', 'BIDR', 'BKRW', 'BNB', 'BRL', 'BTC', 'BUSD', 'BVND', 'DAI', 'ETH',
-                'EUR', 'GBP', 'IDRT', 'NGN', 'PAX', 'RUB', 'TRX', 'TRY', 'TUSD', 'UAH',
-                'USDC', 'USDS', 'USDT', 'VAI', 'XRP', 'ZAR']
+                'EUR', 'GBP', 'GYEN', 'IDRT', 'NGN', 'PAX', 'RUB', 'TRX', 'TRY', 'TUSD',
+                'UAH', 'USDC', 'USDS', 'USDT', 'VAI', 'XRP', 'ZAR']
 
 def parse_binance_trades(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
@@ -100,8 +100,8 @@ def parse_binance_deposits_withdrawals_cash(data_row, _parser, **kwargs):
     elif "withdrawal" in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 buy_quantity=row_dict['Amount'],
-                                                 buy_asset=row_dict['Coin'],
+                                                 sell_quantity=row_dict['Amount'],
+                                                 sell_asset=row_dict['Coin'],
                                                  fee_quantity=row_dict['Fee'],
                                                  fee_asset=row_dict['Coin'],
                                                  wallet=WALLET)
@@ -119,6 +119,18 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
 
         if row_dict['Operation'] in ("Distribution", "Commission History", "Referrer rebates"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
+                                                     data_row.timestamp,
+                                                     buy_quantity=row_dict['Change'],
+                                                     buy_asset=row_dict['Coin'],
+                                                     wallet=WALLET)
+        elif row_dict['Operation'] == "Savings Interest":
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INTEREST,
+                                                     data_row.timestamp,
+                                                     buy_quantity=row_dict['Change'],
+                                                     buy_asset=row_dict['Coin'],
+                                                     wallet=WALLET)
+        elif row_dict['Operation'] == "POS savings interest":
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_STAKING,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['Change'],
                                                      buy_asset=row_dict['Coin'],
