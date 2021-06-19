@@ -100,8 +100,8 @@ def parse_binance_deposits_withdrawals_cash(data_row, _parser, **kwargs):
     elif "withdrawal" in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 buy_quantity=row_dict['Amount'],
-                                                 buy_asset=row_dict['Coin'],
+                                                 sell_quantity=row_dict['Amount'],
+                                                 sell_asset=row_dict['Coin'],
                                                  fee_quantity=row_dict['Fee'],
                                                  fee_asset=row_dict['Coin'],
                                                  wallet=WALLET)
