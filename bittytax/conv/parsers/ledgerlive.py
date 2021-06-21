@@ -65,6 +65,14 @@ def parse_ledger_live(data_row, parser, **_kwargs):
 DataParser(DataParser.TYPE_WALLET,
            "Ledger Live",
            ['Operation Date', 'Currency Ticker', 'Operation Type', 'Operation Amount',
+            'Operation Fees', 'Operation Hash', 'Account Name', 'Account xpub',
+            'Countervalue Ticker', 'Countervalue at Operation Date', 'Countervalue at CSV Export'],
+           worksheet_name="Ledger",
+           row_handler=parse_ledger_live)
+
+DataParser(DataParser.TYPE_WALLET,
+           "Ledger Live",
+           ['Operation Date', 'Currency Ticker', 'Operation Type', 'Operation Amount',
             'Operation Fees', 'Operation Hash', 'Account Name', 'Account xpub'],
            worksheet_name="Ledger",
            row_handler=parse_ledger_live)

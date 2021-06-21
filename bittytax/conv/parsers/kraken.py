@@ -9,13 +9,16 @@ from ..exceptions import UnexpectedTypeError, UnexpectedTradingPairError
 
 WALLET = "Kraken"
 
-QUOTE_ASSETS = ['AUD', 'CAD', 'CHF', 'DAI', 'ETH', 'EUR', 'GBP', 'JPY', 'USD', 'USDC',
-                'USDT', 'XBT', 'XETH', 'XXBT', 'ZAUD', 'ZCAD', 'ZEUR', 'ZGBP', 'ZJPY', 'ZUSD']
+QUOTE_ASSETS = ['AUD', 'CAD', 'CHF', 'DAI', 'DOT', 'ETH', 'EUR', 'GBP', 'JPY', 'USD',
+                'USDC', 'USDT', 'XBT', 'XETH', 'XXBT', 'ZAUD', 'ZCAD', 'ZEUR', 'ZGBP', 'ZJPY',
+                'ZUSD']
 
 ALT_ASSETS = {'KFEE': 'FEE', 'XETC': 'ETC', 'XETH': 'ETH', 'XLTC': 'LTC', 'XMLN': 'MLN',
               'XREP': 'REP', 'XXBT': 'XBT', 'XXDG': 'XDG', 'XXLM': 'XLM', 'XXMR': 'XMR',
               'XXRP': 'XRP', 'XZEC': 'ZEC', 'ZAUD': 'AUD', 'ZCAD': 'CAD', 'ZEUR': 'EUR',
               'ZGBP': 'GBP', 'ZJPY': 'JPY', 'ZUSD': 'USD'}
+
+ASSETS_2CHARS = ['SC']
 
 def parse_kraken_deposits_withdrawals(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
@@ -72,7 +75,8 @@ def parse_kraken_trades(data_row, parser, **_kwargs):
 
 def split_trading_pair(trading_pair):
     for quote_asset in sorted(QUOTE_ASSETS, reverse=True):
-        if trading_pair.endswith(quote_asset):
+        if trading_pair.endswith(quote_asset) and (len(trading_pair)-len(quote_asset) >= 3 \
+                or trading_pair[:2] in ASSETS_2CHARS):
             return trading_pair[:-len(quote_asset)], quote_asset
 
     return None, None

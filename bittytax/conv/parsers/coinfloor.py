@@ -65,6 +65,13 @@ DataParser(DataParser.TYPE_EXCHANGE,
            row_handler=parse_coinfloor_trades)
 
 DataParser(DataParser.TYPE_EXCHANGE,
+           "Coinfloor Trades",
+           ['Date & Time', 'Base Asset', 'Counter Asset', 'Amount', 'Price', 'Total', 'Fee',
+            'Order Type', 'Trade ID', 'Order ID'],
+           worksheet_name="Coinfloor T",
+           row_handler=parse_coinfloor_trades)
+
+DataParser(DataParser.TYPE_EXCHANGE,
            "Coinfloor Deposits/Withdrawals",
            ['Date & Time', 'Amount', 'Asset', 'Type'],
            worksheet_name="Coinfloor D,W",

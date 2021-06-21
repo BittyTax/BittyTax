@@ -14,9 +14,9 @@ class OutputBase(object):
     DEFAULT_FILENAME = 'BittyTax_Records'
     EXCEL_PRECISION = 15
     BITTYTAX_OUT_HEADER = ['Type',
-                           'Buy Quantity', 'Buy Asset', 'Buy Value',
-                           'Sell Quantity', 'Sell Asset', 'Sell Value',
-                           'Fee Quantity', 'Fee Asset', 'Fee Value',
+                           'Buy Quantity', 'Buy Asset', 'Buy Value in ' + config.ccy,
+                           'Sell Quantity', 'Sell Asset', 'Sell Value in ' + config.ccy,
+                           'Fee Quantity', 'Fee Asset', 'Fee Value in ' + config.ccy,
                            'Wallet', 'Timestamp', 'Note']
 
     def __init__(self, data_files):

@@ -10,12 +10,12 @@ from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError, UnexpectedTradingPairError, \
-                         UnexpectedContentError, MissingComponentError, DataFilenameError
+                         MissingComponentError, DataFilenameError
 
 WALLET = "Binance"
 QUOTE_ASSETS = ['AUD', 'BIDR', 'BKRW', 'BNB', 'BRL', 'BTC', 'BUSD', 'BVND', 'DAI', 'ETH',
-                'EUR', 'GBP', 'IDRT', 'NGN', 'PAX', 'RUB', 'TRX', 'TRY', 'TUSD', 'UAH',
-                'USDC', 'USDS', 'USDT', 'VAI', 'XRP', 'ZAR']
+                'EUR', 'GBP', 'GYEN', 'IDRT', 'NGN', 'PAX', 'RUB', 'TRX', 'TRY', 'TUSD',
+                'UAH', 'USDC', 'USDS', 'USDT', 'VAI', 'XRP', 'ZAR']
 
 def parse_binance_trades(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
@@ -100,8 +100,8 @@ def parse_binance_deposits_withdrawals_cash(data_row, _parser, **kwargs):
     elif "withdrawal" in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 buy_quantity=row_dict['Amount'],
-                                                 buy_asset=row_dict['Coin'],
+                                                 sell_quantity=row_dict['Amount'],
+                                                 sell_asset=row_dict['Coin'],
                                                  fee_quantity=row_dict['Fee'],
                                                  fee_asset=row_dict['Coin'],
                                                  wallet=WALLET)
@@ -123,15 +123,37 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      buy_quantity=row_dict['Change'],
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
+        elif row_dict['Operation'] == "Super BNB Mining":
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_MINING,
+                                                     data_row.timestamp,
+                                                     buy_quantity=row_dict['Change'],
+                                                     buy_asset=row_dict['Coin'],
+                                                     wallet=WALLET)
+        elif row_dict['Operation'] == "Savings Interest":
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INTEREST,
+                                                     data_row.timestamp,
+                                                     buy_quantity=row_dict['Change'],
+                                                     buy_asset=row_dict['Coin'],
+                                                     wallet=WALLET)
+        elif row_dict['Operation'] == "POS savings interest":
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_STAKING,
+                                                     data_row.timestamp,
+                                                     buy_quantity=row_dict['Change'],
+                                                     buy_asset=row_dict['Coin'],
+                                                     wallet=WALLET)
         elif row_dict['Operation'] == "Small assets exchange BNB":
             bnb_convert(data_rows, parser, row_dict['UTC_Time'], row_dict['Operation'])
+        elif row_dict['Operation'] in ("Savings purchase", "Savings Principal redemption",
+                                       "POS savings purchase", "POS savings redemption"):
+            # Skip not taxable events
+            return
 
 def bnb_convert(data_rows, parser, utc_time, operation):
     matching_rows = [data_row for data_row in data_rows
                      if data_row.row_dict['UTC_Time'] == utc_time and
                      data_row.row_dict['Operation'] == operation]
 
-    bnb_found, buy_quantity = get_bnb_quantity(matching_rows, parser)
+    bnb_found, buy_quantity = get_bnb_quantity(matching_rows)
 
     for data_row in matching_rows:
         if not data_row.parsed:
@@ -152,7 +174,7 @@ def bnb_convert(data_rows, parser, utc_time, operation):
                                                          'Operation',
                                                          data_row.row_dict['Operation'])
 
-def get_bnb_quantity(matching_rows, parser):
+def get_bnb_quantity(matching_rows):
     bnb_found = False
     buy_quantity = None
     assets = 0
@@ -166,9 +188,7 @@ def get_bnb_quantity(matching_rows, parser):
                 buy_quantity = data_row.row_dict['Change']
                 bnb_found = True
             else:
-                # Multiple BNB values?
-                data_row.failure = UnexpectedContentError(parser.in_header.index('Coin'), 'Coin',
-                                                          data_row.row_dict['Coin'])
+                # Multiple BNB quantities, will need to be added manually
                 buy_quantity = None
         else:
             assets += 1

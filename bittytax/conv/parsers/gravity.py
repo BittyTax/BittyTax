@@ -14,7 +14,10 @@ from ..exceptions import DataRowError, UnexpectedTypeError
 WALLET = "Gravity"
 SYSTEM_ACCOUNT = "00000000-0000-0000-0000-000000000000"
 
-def parse_gravity(data_rows, parser, **_kwargs):
+def parse_gravity_v2(data_row, _parser, **_kwargs):
+    parse_gravity_v1(data_row, _parser, **_kwargs)
+
+def parse_gravity_v1(data_rows, parser, **_kwargs):
     for data_row in data_rows:
         if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
@@ -90,7 +93,8 @@ def parse_gravity_row(data_rows, parser, data_row):
         t_type = TransactionOutRecord.TYPE_GIFT_RECEIVED
         buy_quantity = row_dict['amount']
         buy_asset = row_dict['currency']
-    elif row_dict['transaction type'] in ("referral fees collection", "referral fees transfer"):
+    elif row_dict['transaction type'] in ("referral fees collection", "referral fees transfer",
+                                          "internal transfer"):
         return
     else:
         raise UnexpectedTypeError(parser.in_header.index('transaction type'), 'transaction type',
@@ -125,7 +129,14 @@ def find_same_tx(data_rows, tx_hash, tx_type, system_acc):
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Gravity (Bitstocks)",
+           ['transaction id', 'from account', 'to account', 'from account type', 'to account type',
+            'date utc', 'transaction type', 'status', 'amount', 'currency', 'withdrawal_address'],
+           worksheet_name="Gravity",
+           all_handler=parse_gravity_v2)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Gravity (Bitstocks)",
            ['transaction id', 'from account', 'to account', 'date utc', 'transaction type',
             'status', 'amount', 'currency'],
            worksheet_name="Gravity",
-           all_handler=parse_gravity)
+           all_handler=parse_gravity_v1)
