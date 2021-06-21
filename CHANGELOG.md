@@ -76,6 +76,7 @@ data_source_fiat:
 - Etherscan parser: new "Transactions" data file format added.
 - Conversion tool: added parser for BscScan explorer.
 - Conversion tool: specify the local currency of the "Value" headers.
+- Conversion tool: added parser for Exodus wallet.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
