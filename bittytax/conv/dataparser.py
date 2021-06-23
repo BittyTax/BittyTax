@@ -85,6 +85,9 @@ class DataParser(object):
 
     @classmethod
     def convert_currency(cls, value, from_currency, timestamp):
+        if from_currency not in config.fiat_list:
+            return None
+
         if not value or value is None:
             return None
 

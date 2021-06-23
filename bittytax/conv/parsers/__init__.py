@@ -40,3 +40,4 @@ from . import tradesatoshi
 from . import trezor
 from . import uphold
 from . import wirex
+from . import zerion
