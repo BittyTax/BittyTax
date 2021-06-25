@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import datetime
 import sys
 from decimal import Decimal
+from datetime import datetime
 
 from colorama import Fore, Style
 import dateutil.parser
@@ -97,7 +97,11 @@ class DataParser(object):
         if config.ccy == from_currency:
             return Decimal(value)
 
-        rate_ccy, _, _, _ = cls.price_data.get_historical(from_currency, config.ccy, timestamp)
+        if timestamp.date() >= datetime.now().date():
+            rate_ccy, _, _ = cls.price_data.get_latest(from_currency, config.ccy)
+        else:
+            rate_ccy, _, _, _ = cls.price_data.get_historical(from_currency, config.ccy, timestamp)
+
         value_in_ccy = Decimal(value) * rate_ccy
 
         if config.debug:
