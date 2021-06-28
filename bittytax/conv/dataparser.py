@@ -67,7 +67,7 @@ class DataParser(object):
     @classmethod
     def parse_timestamp(cls, timestamp_str, tzinfos=None, tz=None, dayfirst=False, fuzzy=False):
         if isinstance(timestamp_str, int):
-            timestamp = datetime.datetime.utcfromtimestamp(timestamp_str)
+            timestamp = datetime.utcfromtimestamp(timestamp_str)
         else:
             timestamp = dateutil.parser.parse(timestamp_str,
                                               tzinfos=tzinfos, dayfirst=dayfirst, fuzzy=fuzzy)
