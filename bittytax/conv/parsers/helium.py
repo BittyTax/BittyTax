@@ -29,6 +29,10 @@ def parse_helium_fairspot(data_row, parser, **_kwargs):
                                                  note=note,
                                                  wallet=WALLET)
     elif row_dict['type'] == 'payment_v2':
+        # to support auditing, include wallet id where payment was received from                                                                       
+        if row_dict['Received From']:                                                                                                                  
+            note += f"; Received from {row_dict['Received From']}"
+            
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['hnt_amount'],
@@ -40,6 +44,10 @@ def parse_helium_fairspot(data_row, parser, **_kwargs):
                                                  note=note,
                                                  wallet=WALLET)
     elif row_dict['type'] == 'payment_v1':
+        # to support auditing, include wallet id where payment was sent to                                                                       
+        if row_dict['Sent To']:                                                                                                                        
+            note += f"; Sent to {row_dict['Sent To']}"
+        
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=row_dict['hnt_amount'],
@@ -75,6 +83,10 @@ def parse_helium_explorer(data_row, parser, **_kwargs):
                                                  wallet=WALLET)
 
     elif row_dict['Tag'] == 'payment' and row_dict['Received Quantity']:
+        # to support auditing, include wallet id where payment was received from                                                                       
+        if row_dict['Received From']:                                                                                                                  
+            note += f"; Received from {row_dict['Received From']}"
+        
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Received Quantity'],
@@ -85,6 +97,10 @@ def parse_helium_explorer(data_row, parser, **_kwargs):
                                                  wallet=WALLET)
 
     elif row_dict['Tag'] == 'payment' and row_dict['Sent Quantity']:
+        # to support auditing, include wallet id where payment was sent to                                                                       
+        if row_dict['Sent To']:                                                                                                                        
+            note += f"; Sent to {row_dict['Sent To']}"      
+        
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=row_dict['Sent Quantity'],
