@@ -79,6 +79,7 @@ data_source_fiat:
 - Conversion tool: added parser for Exodus wallet.
 - Conversion tool: added parser for Zerion explorer.
 - Conversion tool: added parser for Helium wallet and explorer.
+- Conversion tool: added parser for Accointing accounting data.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
