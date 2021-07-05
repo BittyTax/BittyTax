@@ -81,6 +81,13 @@ DataParser(DataParser.TYPE_EXCHANGE,
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Bitfinex Deposits/Withdrawals",
+           ['#', 'DATE', 'CURRENCY', 'STATUS', 'AMOUNT', 'FEES', 'DESCRIPTION', 'TRANSACTION ID',
+            'NOTE'],
+           worksheet_name="Bitfinex D,W",
+           row_handler=parse_bitfinex_deposits_withdrawals)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Bitfinex Deposits/Withdrawals",
            ['#', 'DATE', 'CURRENCY', 'STATUS', 'AMOUNT', 'FEES', 'DESCRIPTION', 'TRANSACTION ID'],
            worksheet_name="Bitfinex D,W",
            row_handler=parse_bitfinex_deposits_withdrawals)
