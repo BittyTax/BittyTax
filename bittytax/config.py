@@ -55,6 +55,7 @@ class Config(object):
         'transfers_include': True,
         'transfer_fee_disposal': False,
         'transfer_fee_allowable_cost': False,
+        'lost_buyback': True,
         'data_source_select': {},
         'data_source_fiat': DATA_SOURCE_FIAT,
         'data_source_crypto': DATA_SOURCE_CRYPTO,

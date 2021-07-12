@@ -57,11 +57,13 @@ class OutputCsv(OutputBase):
                           TransactionOutRecord.TYPE_DIVIDEND: 'Income',
                           TransactionOutRecord.TYPE_INCOME: 'Income',
                           TransactionOutRecord.TYPE_GIFT_RECEIVED: 'Gift',
+                          TransactionOutRecord.TYPE_AIRDROP: 'Airdrop',
                           TransactionOutRecord.TYPE_WITHDRAWAL: 'Withdrawal',
                           TransactionOutRecord.TYPE_SPEND: 'Purchase',
                           TransactionOutRecord.TYPE_GIFT_SENT: 'Gift',
-                          TransactionOutRecord.TYPE_GIFT_SPOUSE: 'Gift',
+                          TransactionOutRecord.TYPE_GIFT_SPOUSE: 'Spouse',
                           TransactionOutRecord.TYPE_CHARITY_SENT: 'Donation',
+                          TransactionOutRecord.TYPE_LOST: 'Lost',
                           TransactionOutRecord.TYPE_TRADE: 'Trade'}
 
     def __init__(self, data_files, args):

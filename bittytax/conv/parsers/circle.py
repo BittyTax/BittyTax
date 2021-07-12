@@ -48,7 +48,7 @@ def parse_circle(data_row, parser, **_kwargs):
                                                     else None,
                                                  wallet=WALLET)
     elif row_dict['Transaction Type'] == "fork":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_AIRDROP,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['To Amount'].strip('£€$'). \
                                                                                   split(' ')[0],

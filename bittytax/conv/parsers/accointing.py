@@ -6,7 +6,7 @@ from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError
 
 ACCOINTING_D_MAPPING = {'add_funds': TransactionOutRecord.TYPE_DEPOSIT,
-                        'airdrop': TransactionOutRecord.TYPE_GIFT_RECEIVED,
+                        'airdrop': TransactionOutRecord.TYPE_AIRDROP,
                         'bounty': TransactionOutRecord.TYPE_INCOME,
                         'gambling_income': TransactionOutRecord.TYPE_GIFT_RECEIVED,
                         'gift_received': TransactionOutRecord.TYPE_GIFT_RECEIVED,
@@ -30,7 +30,7 @@ ACCOINTING_W_MAPPING = {'remove_funds': TransactionOutRecord.TYPE_WITHDRAWAL,
                         'interest_paid': TransactionOutRecord.TYPE_SPEND,
                         'internal': TransactionOutRecord.TYPE_WITHDRAWAL,
                         'lending': None,
-                        'lost': None,
+                        'lost': TransactionOutRecord.TYPE_LOST,
                         'margin_fee': None,
                         'margin_loss': None,
                         'payment': TransactionOutRecord.TYPE_SPEND}

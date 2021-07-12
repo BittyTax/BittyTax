@@ -117,8 +117,14 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
         row_dict = data_row.row_dict
         data_row.timestamp = DataParser.parse_timestamp(row_dict['UTC_Time'])
 
-        if row_dict['Operation'] in ("Distribution", "Commission History", "Referrer rebates"):
+        if row_dict['Operation'] in ("Commission History", "Referrer rebates"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
+                                                     data_row.timestamp,
+                                                     buy_quantity=row_dict['Change'],
+                                                     buy_asset=row_dict['Coin'],
+                                                     wallet=WALLET)
+        elif row_dict['Operation'] == "Distribution":
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_AIRDROP,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['Change'],
                                                      buy_asset=row_dict['Coin'],

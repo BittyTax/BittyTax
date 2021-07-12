@@ -81,7 +81,7 @@ def parse_poloniex_distributions(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['date'])
 
-    data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
+    data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_AIRDROP,
                                              data_row.timestamp,
                                              buy_quantity=row_dict['amount'],
                                              buy_asset=row_dict['currency'],

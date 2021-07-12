@@ -29,6 +29,9 @@ class TaxCalculator(object):
 
     NO_GAIN_NO_LOSS_TYPES = (Sell.TYPE_GIFT_SPOUSE, Sell.TYPE_CHARITY_SENT)
 
+    # These transactions are except from the "same day" & "bnb" rule
+    NO_MATCH_TYPES = (Sell.TYPE_GIFT_SPOUSE, Sell.TYPE_CHARITY_SENT, Sell.TYPE_LOST)
+
     def __init__(self, transactions, tax_rules):
         self.transactions = transactions
         self.tax_rules = tax_rules
@@ -54,12 +57,12 @@ class TaxCalculator(object):
                       unit='t',
                       desc="%spool same day%s" % (Fore.CYAN, Fore.GREEN),
                       disable=bool(config.debug or not sys.stdout.isatty())):
-            if isinstance(t, Buy) and t.acquisition:
+            if isinstance(t, Buy) and t.acquisition and t.t_type not in self.NO_MATCH_TYPES:
                 if (t.asset, t.timestamp.date()) not in buy_transactions:
                     buy_transactions[(t.asset, t.timestamp.date())] = t
                 else:
                     buy_transactions[(t.asset, t.timestamp.date())] += t
-            elif isinstance(t, Sell) and t.disposal and t.t_type not in self.NO_GAIN_NO_LOSS_TYPES:
+            elif isinstance(t, Sell) and t.disposal and t.t_type not in self.NO_MATCH_TYPES:
                 if (t.asset, t.timestamp.date()) not in sell_transactions:
                     sell_transactions[(t.asset, t.timestamp.date())] = t
                 else:

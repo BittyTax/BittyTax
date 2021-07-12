@@ -273,10 +273,11 @@ class Buy(TransactionBase):
     TYPE_DIVIDEND = TransactionRecord.TYPE_DIVIDEND
     TYPE_INCOME = TransactionRecord.TYPE_INCOME
     TYPE_GIFT_RECEIVED = TransactionRecord.TYPE_GIFT_RECEIVED
+    TYPE_AIRDROP = TransactionRecord.TYPE_AIRDROP
     TYPE_TRADE = TransactionRecord.TYPE_TRADE
 
-    ACQUISITION_TYPES = {TYPE_MINING, TYPE_STAKING, TYPE_INCOME, TYPE_INTEREST,
-                         TYPE_DIVIDEND, TYPE_GIFT_RECEIVED, TYPE_TRADE}
+    ACQUISITION_TYPES = {TYPE_MINING, TYPE_STAKING, TYPE_INTEREST, TYPE_DIVIDEND,
+                         TYPE_INCOME, TYPE_GIFT_RECEIVED, TYPE_AIRDROP, TYPE_TRADE}
 
     def __init__(self, t_type, buy_quantity, buy_asset, buy_value):
         super(Buy, self).__init__(t_type, buy_asset, buy_quantity)
@@ -373,9 +374,11 @@ class Sell(TransactionBase):
     TYPE_GIFT_SENT = TransactionRecord.TYPE_GIFT_SENT
     TYPE_GIFT_SPOUSE = TransactionRecord.TYPE_GIFT_SPOUSE
     TYPE_CHARITY_SENT = TransactionRecord.TYPE_CHARITY_SENT
+    TYPE_LOST = TransactionRecord.TYPE_LOST
     TYPE_TRADE = TransactionRecord.TYPE_TRADE
 
-    DISPOSAL_TYPES = {TYPE_SPEND, TYPE_GIFT_SENT, TYPE_GIFT_SPOUSE, TYPE_CHARITY_SENT, TYPE_TRADE}
+    DISPOSAL_TYPES = {TYPE_SPEND, TYPE_GIFT_SENT, TYPE_GIFT_SPOUSE, TYPE_CHARITY_SENT,
+                      TYPE_LOST, TYPE_TRADE}
 
     def __init__(self, t_type, sell_quantity, sell_asset, sell_value):
         super(Sell, self).__init__(t_type, sell_asset, sell_quantity)

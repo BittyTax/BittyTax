@@ -13,11 +13,13 @@ class TransactionOutRecord(object):
     TYPE_DIVIDEND = TransactionRecord.TYPE_DIVIDEND
     TYPE_INCOME = TransactionRecord.TYPE_INCOME
     TYPE_GIFT_RECEIVED = TransactionRecord.TYPE_GIFT_RECEIVED
+    TYPE_AIRDROP = TransactionRecord.TYPE_AIRDROP
     TYPE_WITHDRAWAL = TransactionRecord.TYPE_WITHDRAWAL
     TYPE_SPEND = TransactionRecord.TYPE_SPEND
     TYPE_GIFT_SENT = TransactionRecord.TYPE_GIFT_SENT
     TYPE_GIFT_SPOUSE = TransactionRecord.TYPE_GIFT_SPOUSE
     TYPE_CHARITY_SENT = TransactionRecord.TYPE_CHARITY_SENT
+    TYPE_LOST = TransactionRecord.TYPE_LOST
     TYPE_TRADE = TransactionRecord.TYPE_TRADE
 
     def __init__(self, t_type, timestamp,

@@ -13,11 +13,13 @@ class TransactionRecord(object):
     TYPE_DIVIDEND = 'Dividend'
     TYPE_INCOME = 'Income'
     TYPE_GIFT_RECEIVED = 'Gift-Received'
+    TYPE_AIRDROP = 'Airdrop'
     TYPE_WITHDRAWAL = 'Withdrawal'
     TYPE_SPEND = 'Spend'
     TYPE_GIFT_SENT = 'Gift-Sent'
     TYPE_GIFT_SPOUSE = 'Gift-Spouse'
     TYPE_CHARITY_SENT = 'Charity-Sent'
+    TYPE_LOST = 'Lost'
     TYPE_TRADE = 'Trade'
 
     ALL_TYPES = (TYPE_DEPOSIT,
@@ -27,11 +29,13 @@ class TransactionRecord(object):
                  TYPE_INTEREST,
                  TYPE_DIVIDEND,
                  TYPE_GIFT_RECEIVED,
+                 TYPE_AIRDROP,
                  TYPE_WITHDRAWAL,
                  TYPE_SPEND,
                  TYPE_GIFT_SENT,
                  TYPE_GIFT_SPOUSE,
                  TYPE_CHARITY_SENT,
+                 TYPE_LOST,
                  TYPE_TRADE)
 
     cnt = 0
