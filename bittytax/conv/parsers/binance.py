@@ -2,6 +2,7 @@
 # (c) Nano Nano Ltd 2019
 
 import sys
+import re
 from decimal import Decimal
 
 from colorama import Fore
@@ -49,12 +50,53 @@ def parse_binance_trades(data_row, parser, **_kwargs):
     else:
         raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 
+def parse_binance_trades_statement(data_row, parser, **_kwargs):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date(UTC)'])
+    fee_quantity, fee_asset = split_asset(row_dict['Fee'])
+
+    if row_dict['Side'] == "BUY":
+        buy_quantity, buy_asset = split_asset(row_dict['Executed'])
+        sell_quantity, sell_asset = split_asset(row_dict['Amount'])
+
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                 data_row.timestamp,
+                                                 buy_quantity=buy_quantity,
+                                                 buy_asset=buy_asset,
+                                                 sell_quantity=sell_quantity,
+                                                 sell_asset=sell_asset,
+                                                 fee_quantity=fee_quantity,
+                                                 fee_asset=fee_asset,
+                                                 wallet=WALLET)
+    elif row_dict['Side'] == "SELL":
+        buy_quantity, buy_asset = split_asset(row_dict['Amount'])
+        sell_quantity, sell_asset = split_asset(row_dict['Executed'])
+
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                 data_row.timestamp,
+                                                 buy_quantity=buy_quantity,
+                                                 buy_asset=buy_asset,
+                                                 sell_quantity=sell_quantity,
+                                                 sell_asset=sell_asset,
+                                                 fee_quantity=fee_quantity,
+                                                 fee_asset=fee_asset,
+                                                 wallet=WALLET)
+    else:
+        raise UnexpectedTypeError(parser.in_header.index('Side'), 'Side', row_dict['Side'])
+
 def split_trading_pair(trading_pair):
     for quote_asset in QUOTE_ASSETS:
         if trading_pair.endswith(quote_asset):
             return trading_pair[:-len(quote_asset)], quote_asset
 
     return None, None
+
+def split_asset(amount):
+    match = re.match(r'([\d|,]*\.\d+)(\w+)$', amount)
+
+    if match:
+        return match.group(1), match.group(2)
+    return None, ''
 
 def parse_binance_deposits_withdrawals_crypto(data_row, _parser, **kwargs):
     row_dict = data_row.row_dict
@@ -210,6 +252,12 @@ DataParser(DataParser.TYPE_EXCHANGE,
            ['Date(UTC)', 'Market', 'Type', 'Price', 'Amount', 'Total', 'Fee', 'Fee Coin'],
            worksheet_name="Binance T",
            row_handler=parse_binance_trades)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Binance Trades",
+           ['Date(UTC)', 'Pair', 'Side', 'Price', 'Executed', 'Amount', 'Fee'],
+           worksheet_name="Binance T",
+           row_handler=parse_binance_trades_statement)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Binance Deposits/Withdrawals",

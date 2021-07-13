@@ -82,6 +82,7 @@ data_source_fiat:
 - Conversion tool: added parser for Accointing accounting data.
 - Bitfinex parser: new "movements" data file format added.
 - Accounting tool: new transaction types Lost and Airdrop added.
+- Binance parser: added trades statement export format.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
