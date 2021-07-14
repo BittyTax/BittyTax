@@ -26,6 +26,7 @@ from . import exodus
 from . import gatehub
 from . import gravity
 from . import handcash
+from . import hecoinfo
 from . import helium
 from . import hitbtc
 from . import hotbit
