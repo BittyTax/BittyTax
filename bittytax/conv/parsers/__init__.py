@@ -41,6 +41,7 @@ from . import poloniex
 from . import qtwallet
 from . import tradesatoshi
 from . import trezor
+from . import trezorsuite
 from . import uphold
 from . import wirex
 from . import zerion

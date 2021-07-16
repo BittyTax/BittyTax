@@ -15,7 +15,8 @@ def parse_trezor_labeled(data_row, parser, **kwargs):
 
 def parse_trezor(data_row, parser, **kwargs):
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'] + 'T' + row_dict['Time'])
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'] + 'T' + row_dict['Time'],
+                                                    tz='GMT+1')
 
     if not kwargs['cryptoasset']:
         match = re.match(r".+_(\w{3,4})\.csv$", kwargs['filename'])

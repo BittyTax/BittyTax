@@ -27,6 +27,7 @@ data_source_fiat:
 - Accounting tool: The "ten day" rule for companies, should match the buy to sell, not sell to buy-back. ([#131](https://github.com/BittyTax/BittyTax/issues/131))
 - Kraken parser: Trading pair split broken for XTZ/GBP. ([#124](https://github.com/BittyTax/BittyTax/issues/124))
 - Binance parser: Removed "Unexpected Coin content" error. ([#132](https://github.com/BittyTax/BittyTax/issues/132)) 
+- Trezor parser: Timestamp is GMT+1.
 ### Added
 - Etherscan parser: added internal transactions export.
 - Binance parser: added cash deposit and withdrawal exports.
@@ -84,6 +85,7 @@ data_source_fiat:
 - Accounting tool: new transaction types Lost and Airdrop added.
 - Binance parser: added trades statement export format.
 - Conversion tool: added parser for HecoInfo explorer.
+- Conversion tool: added parser for Trezor Suite.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
