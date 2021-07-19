@@ -6,7 +6,8 @@
 [![Stars badge][github-stars-badge]][github-stars]
 [![Twitter badge][twitter-badge]][twitter]
 [![Discord badge][discord-badge]][discord]
-[![Donation badge][donation-badge]][PayPal]
+[![PayPal badge][paypal-badge]][PayPal]
+[![Bitcoin badge][bitcoin-badge]][bitcoin]
 # BittyTax
 BittyTax is a collection of command-line tools to help you calculate your cryptoasset taxes in the UK.
 
@@ -919,7 +920,8 @@ Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of thi
 [github-stars-badge]: https://img.shields.io/github/stars/BittyTax/BittyTax?color=yellow
 [twitter-badge]: https://img.shields.io/twitter/follow/bitty_tax?color=%231DA1F2&style=flat
 [discord-badge]: https://img.shields.io/discord/581493570112847872.svg
-[donation-badge]: https://img.shields.io/badge/donate-PayPal-179bd7.svg
+[paypal-badge]: https://img.shields.io/badge/donate-PayPal-179bd7.svg
+[bitcoin-badge]: https://img.shields.io/badge/donate-bitcoin-orange.svg
 [version]: https://pypi.org/project/BittyTax/
 [license]: https://github.com/BittyTax/BittyTax/blob/master/LICENSE
 [python]: https://wiki.python.org/moin/BeginnersGuide/Download
@@ -928,3 +930,4 @@ Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of thi
 [twitter]: https://twitter.com/intent/follow?screen_name=bitty_tax
 [discord]: https://discord.gg/NHE3QFt
 [PayPal]: https://www.paypal.com/donate?hosted_button_id=HVBQW8TBEHXLC
+[bitcoin]: https://donate.bitty.tax 
