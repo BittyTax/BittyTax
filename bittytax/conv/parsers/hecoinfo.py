@@ -79,6 +79,14 @@ heco_internal = DataParser(DataParser.TYPE_EXPLORER,
            worksheet_name="HecoInfo",
            row_handler=parse_hecoinfo_internal)
 
+heco_internal = DataParser(DataParser.TYPE_EXPLORER,
+           "HecoInfo (HECO Internal Transactions)",
+           ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'ParentTxFrom', 'ParentTxTo',
+            'ParentTxETH_Value', 'From', 'TxTo', 'ContractAddress', 'Value_IN(HT)', 'Value_OUT(HT)',
+            None, 'Historical $Price/HT', 'Status', 'ErrCode', 'Type', 'PrivateNote'],
+           worksheet_name="HecoInfo",
+           row_handler=parse_hecoinfo_internal)
+
 def find_same_tx(data_file, tx_hash):
     for data_row in data_file.data_rows:
         if data_row.t_record and data_row.row_dict['Txhash'] == tx_hash:

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# (c) Nano Nano Ltd 2019
+# (c) Nano Nano Ltd 2021
 
 from decimal import Decimal
 
@@ -76,6 +76,15 @@ DataParser(DataParser.TYPE_EXPLORER,
            ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'ParentTxFrom', 'ParentTxTo',
             'ParentTxETH_Value', 'From', 'TxTo', 'ContractAddress', 'Value_IN(BNB)',
             'Value_OUT(BNB)', None, 'Historical $Price/BNB', 'Status', 'ErrCode', 'Type'],
+           worksheet_name="BscScan",
+           row_handler=parse_bscscan_internal)
+
+DataParser(DataParser.TYPE_EXPLORER,
+           "BscScan (BSC Internal Transactions)",
+           ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'ParentTxFrom', 'ParentTxTo',
+            'ParentTxETH_Value', 'From', 'TxTo', 'ContractAddress', 'Value_IN(BNB)',
+            'Value_OUT(BNB)', None, 'Historical $Price/BNB', 'Status', 'ErrCode', 'Type',
+            'PrivateNote'],
            worksheet_name="BscScan",
            row_handler=parse_bscscan_internal)
 

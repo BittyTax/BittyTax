@@ -135,6 +135,15 @@ DataParser(DataParser.TYPE_EXPLORER,
            row_handler=parse_etherscan_internal)
 
 DataParser(DataParser.TYPE_EXPLORER,
+           "Etherscan (ETH Internal Transactions)",
+           ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'ParentTxFrom', 'ParentTxTo',
+            'ParentTxETH_Value', 'From', 'TxTo', 'ContractAddress', 'Value_IN(ETH)',
+            'Value_OUT(ETH)', None, 'Historical $Price/Eth', 'Status', 'ErrCode', 'Type',
+            'PrivateNote'],
+           worksheet_name="Etherscan",
+           row_handler=parse_etherscan_internal)
+
+DataParser(DataParser.TYPE_EXPLORER,
            "Etherscan (ERC-20 Tokens)",
            ['Txhash', 'UnixTimestamp', 'DateTime', 'From', 'To', 'Value', 'ContractAddress',
             'TokenName', 'TokenSymbol'],
