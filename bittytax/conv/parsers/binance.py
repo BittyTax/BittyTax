@@ -53,11 +53,11 @@ def parse_binance_trades(data_row, parser, **_kwargs):
 def parse_binance_trades_statement(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date(UTC)'])
-    fee_quantity, fee_asset = split_asset(row_dict['Fee'])
+    fee_quantity, fee_asset = split_asset(row_dict['Fee'].replace(',', ''))
 
     if row_dict['Side'] == "BUY":
-        buy_quantity, buy_asset = split_asset(row_dict['Executed'])
-        sell_quantity, sell_asset = split_asset(row_dict['Amount'])
+        buy_quantity, buy_asset = split_asset(row_dict['Executed'].replace(',', ''))
+        sell_quantity, sell_asset = split_asset(row_dict['Amount'].replace(',', ''))
 
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
@@ -69,8 +69,8 @@ def parse_binance_trades_statement(data_row, parser, **_kwargs):
                                                  fee_asset=fee_asset,
                                                  wallet=WALLET)
     elif row_dict['Side'] == "SELL":
-        buy_quantity, buy_asset = split_asset(row_dict['Amount'])
-        sell_quantity, sell_asset = split_asset(row_dict['Executed'])
+        buy_quantity, buy_asset = split_asset(row_dict['Amount'].replace(',', ''))
+        sell_quantity, sell_asset = split_asset(row_dict['Executed'].replace(',', ''))
 
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
@@ -113,7 +113,7 @@ def parse_binance_deposits_withdrawals_crypto(data_row, _parser, **kwargs):
                                                  fee_quantity=row_dict['TransactionFee'],
                                                  fee_asset=row_dict['Coin'],
                                                  wallet=WALLET)
-    elif "withdrawal" in kwargs['filename'].lower():
+    elif "withdraw" in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=row_dict['Amount'],
