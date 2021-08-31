@@ -20,8 +20,8 @@ def parse_qt_wallet(data_row, parser, **kwargs):
     amount, symbol = get_amount(data_row.row[5])
 
     if not kwargs['cryptoasset']:
-        if parser.args[0].group(2):
-            symbol = parser.args[0].group(2)
+        if parser.args[0].group(1):
+            symbol = parser.args[0].group(1)
         elif not symbol:
             raise UnknownCryptoassetError(kwargs['filename'], kwargs.get('worksheet'))
     else:
@@ -119,7 +119,7 @@ def parse_vericoin_qt_wallet(data_row, parser, **_kwargs):
 DataParser(DataParser.TYPE_WALLET,
            "Qt Wallet (i.e. Bitcoin Core, etc)",
            ['Confirmed', 'Date', 'Type', 'Label', 'Address',
-            lambda c: re.match(r"Amount( \((\w+)\))?", c), 'ID'],
+            lambda c: re.match(r"Amount \((\w+)\)?", c), 'ID'],
            worksheet_name="Qt Wallet",
            row_handler=parse_qt_wallet)
 
