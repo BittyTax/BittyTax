@@ -139,7 +139,7 @@ def parse_binance_deposits_withdrawals_cash(data_row, _parser, **kwargs):
                                                  fee_quantity=row_dict['Fee'],
                                                  fee_asset=row_dict['Coin'],
                                                  wallet=WALLET)
-    elif "withdrawal" in kwargs['filename'].lower():
+    elif "withdraw" in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=row_dict['Amount'],
@@ -279,6 +279,12 @@ DataParser(DataParser.TYPE_EXCHANGE,
             'Order ID'],
            worksheet_name="Binance D,W",
            row_handler=parse_binance_deposits_withdrawals_cash)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Binance Statements",
+           ['User_ID', 'UTC_Time', 'Account', 'Operation', 'Coin', 'Change', 'Remark'],
+           worksheet_name="Binance S",
+           all_handler=parse_binance_statements)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Binance Statements",
