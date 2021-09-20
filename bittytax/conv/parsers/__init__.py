@@ -39,6 +39,7 @@ from . import nexo
 from . import okex
 from . import poloniex
 from . import qtwallet
+from . import staketax
 from . import tradesatoshi
 from . import trezor
 from . import trezorsuite
