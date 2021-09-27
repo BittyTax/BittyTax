@@ -11,15 +11,22 @@ from ..exceptions import UnexpectedTypeError
 
 WALLET = "Nexo"
 
+ASSET_NORMALISE = {'NEXONEXO': 'NEXO',
+                   'NEXOBNB': 'NEXO',
+                   'NEXOBEP2': 'NEXO',
+                   'USDTERC': 'USDT'}
+
 def parse_nexo(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date / Time'])
 
     if "rejected" in row_dict['Details']:
+        # Skip failed transactions
         return
 
-    # Workaround: this looks like a bug in the exporter
-    asset = row_dict['Currency'].replace('NEXONEXO', 'NEXO')
+    asset = row_dict['Currency']
+    for local_asset in ASSET_NORMALISE:
+        asset = asset.replace(local_asset, ASSET_NORMALISE[local_asset])
 
     if row_dict.get('USD Equivalent') and asset != config.ccy:
         value = DataParser.convert_currency(row_dict['USD Equivalent'].strip('$'),
@@ -34,13 +41,17 @@ def parse_nexo(data_row, parser, **_kwargs):
                                                  buy_asset=asset,
                                                  buy_value=value,
                                                  wallet=WALLET)
-    elif row_dict['Type'] == "Interest" and Decimal(row_dict['Amount']) > 0:
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INTEREST,
-                                                 data_row.timestamp,
-                                                 buy_quantity=row_dict['Amount'],
-                                                 buy_asset=asset,
-                                                 buy_value=value,
-                                                 wallet=WALLET)
+    elif row_dict['Type'] in ("Interest", "FixedTermInterest", "InterestAdditional"):
+        if Decimal(row_dict['Amount']) > 0:
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INTEREST,
+                                                     data_row.timestamp,
+                                                     buy_quantity=row_dict['Amount'],
+                                                     buy_asset=asset,
+                                                     buy_value=value,
+                                                     wallet=WALLET)
+        else:
+            # Interest on loan is just informational
+            return
     elif row_dict['Type'] == "Dividend":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DIVIDEND,
                                                  data_row.timestamp,
@@ -81,13 +92,24 @@ def parse_nexo(data_row, parser, **_kwargs):
                                                  sell_asset=asset,
                                                  sell_value=value,
                                                  wallet=WALLET)
+    elif row_dict['Type'] == "Liquidation":
+        # Repayment of loan
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
+                                                 data_row.timestamp,
+                                                 sell_quantity=abs(Decimal(row_dict['Amount'])),
+                                                 sell_asset=asset,
+                                                 sell_value=value,
+                                                 wallet=WALLET)
+    elif row_dict['Type'] in ("WithdrawalCredit", "UnlockingTermDeposit", "LockingTermDeposit",
+                              "Repayment"):
+        # Skip loan operations which are not disposals or are just informational
+        return
     elif row_dict['Type'] in ("DepositToExchange", "ExchangeToWithdraw",
                               "TransferIn", "TransferOut"):
-        # Skip internal
+        # Skip internal operations
         return
     else:
         raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
-
 
 DataParser(DataParser.TYPE_SAVINGS,
            "Nexo",
