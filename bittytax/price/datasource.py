@@ -123,8 +123,7 @@ class DataSourceBase(object):
 
     def _add_asset(self, symbol, data_source):
         asset_id = data_source.split(':')[1]
-        # You can only add a new symbol for an id not being used
-        if asset_id in self.ids and self.assets[self.ids[asset_id]['symbol']]['id'] != asset_id:
+        if asset_id in self.ids:
             self.assets[symbol] = {'id': asset_id, 'name': self.ids[asset_id]['name']}
             self.ids[asset_id] = {'symbol': symbol, 'name': self.ids[asset_id]['name']}
 
@@ -147,6 +146,12 @@ class DataSourceBase(object):
                     asset_list[symbol] = []
 
                 asset_list[symbol].append({'id': c, 'name': self.ids[c]['name']})
+
+            # Include any custom symbols as well
+            for symbol in asset_list:
+                if self.assets[symbol] not in asset_list[symbol]:
+                    asset_list[symbol].append(self.assets[symbol])
+
             return asset_list
         return {k: [{'id':None, 'name': v['name']}] for k, v in self.assets.items()}
 
@@ -284,9 +289,6 @@ class CryptoCompare(DataSourceBase):
                                            d['close'] else None,
                                    'url': url} for d in json_resp['Data']},
                                timestamp)
-
-    def get_list(self):
-        return {k: [{'id':None, 'name': v['name']}] for k, v in self.assets.items()}
 
 class CoinGecko(DataSourceBase):
     def __init__(self):
