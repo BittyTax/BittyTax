@@ -11,7 +11,7 @@ from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError, UnexpectedTradingPairError, \
-                         MissingComponentError, DataFilenameError
+                         DataFilenameError
 
 WALLET = "Binance"
 QUOTE_ASSETS = ['AUD', 'BIDR', 'BKRW', 'BNB', 'BRL', 'BTC', 'BUSD', 'BVND', 'DAI', 'ETH',
@@ -190,37 +190,32 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
         elif row_dict['Operation'] == "Small assets exchange BNB":
-            bnb_convert(data_rows, parser, row_dict['UTC_Time'], row_dict['Operation'])
+            bnb_convert(data_rows, row_dict['UTC_Time'], row_dict['Operation'])
         elif row_dict['Operation'] in ("Savings purchase", "Savings Principal redemption",
                                        "POS savings purchase", "POS savings redemption"):
             # Skip not taxable events
             return
 
-def bnb_convert(data_rows, parser, utc_time, operation):
+def bnb_convert(data_rows, utc_time, operation):
     matching_rows = [data_row for data_row in data_rows
                      if data_row.row_dict['UTC_Time'] == utc_time and
                      data_row.row_dict['Operation'] == operation]
 
-    bnb_found, buy_quantity = get_bnb_quantity(matching_rows)
+    buy_quantity = get_bnb_quantity(matching_rows)
 
     for data_row in matching_rows:
         if not data_row.parsed:
             data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['UTC_Time'])
             data_row.parsed = True
 
-            if bnb_found:
-                data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                         data_row.timestamp,
-                                                         buy_quantity=buy_quantity,
-                                                         buy_asset="BNB",
-                                                         sell_quantity=abs(Decimal(data_row. \
-                                                             row_dict['Change'])),
-                                                         sell_asset=data_row.row_dict['Coin'],
-                                                         wallet=WALLET)
-            else:
-                data_row.failure = MissingComponentError(parser.in_header.index('Operation'),
-                                                         'Operation',
-                                                         data_row.row_dict['Operation'])
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                     data_row.timestamp,
+                                                     buy_quantity=buy_quantity,
+                                                     buy_asset="BNB",
+                                                     sell_quantity=abs(Decimal(data_row. \
+                                                         row_dict['Change'])),
+                                                     sell_asset=data_row.row_dict['Coin'],
+                                                     wallet=WALLET)
 
 def get_bnb_quantity(matching_rows):
     bnb_found = False
@@ -245,7 +240,7 @@ def get_bnb_quantity(matching_rows):
         # Multiple assets converted, BNB quantities will need to be added manually
         buy_quantity = None
 
-    return bnb_found, buy_quantity
+    return buy_quantity
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Binance Trades",
