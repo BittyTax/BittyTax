@@ -81,6 +81,14 @@ DataParser(DataParser.TYPE_EXPLORER,
            row_handler=parse_bscscan)
 
 DataParser(DataParser.TYPE_EXPLORER,
+           "BscScan (BSC Transactions)",
+           ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
+            'Value_IN(BNB)', 'Value_OUT(BNB)', None, 'TxnFee(BNB)', 'TxnFee(USD)',
+            'Historical $Price/BNB', 'Status', 'ErrCode', 'Method'],
+           worksheet_name="BscScan",
+           row_handler=parse_bscscan)
+
+DataParser(DataParser.TYPE_EXPLORER,
            "BscScan (BSC Internal Transactions)",
            ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'ParentTxFrom', 'ParentTxTo',
             'ParentTxETH_Value', 'From', 'TxTo', 'ContractAddress', 'Value_IN(BNB)',
