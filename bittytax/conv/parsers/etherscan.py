@@ -66,6 +66,8 @@ def parse_etherscan_tokens(data_row, _parser, **kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict['UnixTimestamp']))
 
+    if row_dict['TokenSymbol'] == 'Cake-LP': row_dict['TokenSymbol'] = (f"{row_dict['TokenSymbol']}-{row_dict['ContractAddress']}")
+
     if row_dict['To'].lower() in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,

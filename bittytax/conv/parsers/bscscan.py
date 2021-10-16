@@ -12,6 +12,8 @@ def parse_bscscan(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict['UnixTimestamp']))
 
+    if row_dict['Status'] != '': row_dict['Value_OUT(BNB)'] = 0
+
     if Decimal(row_dict['Value_IN(BNB)']) > 0:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
