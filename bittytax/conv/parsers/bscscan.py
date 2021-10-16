@@ -18,7 +18,7 @@ def parse_bscscan(data_row, _parser, **_kwargs):
                                                  buy_quantity=row_dict['Value_IN(BNB)'],
                                                  buy_asset="BNB",
                                                  wallet=WALLET,
-                                                 note=row_dict.get('PrivateNote', ''))
+                                                 note=get_note(row_dict))
     elif Decimal(row_dict['Value_OUT(BNB)']) > 0:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
@@ -27,7 +27,7 @@ def parse_bscscan(data_row, _parser, **_kwargs):
                                                  fee_quantity=row_dict['TxnFee(BNB)'],
                                                  fee_asset="BNB",
                                                  wallet=WALLET,
-                                                 note=row_dict.get('PrivateNote', ''))
+                                                 note=get_note(row_dict))
     else:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
                                                  data_row.timestamp,
@@ -36,7 +36,13 @@ def parse_bscscan(data_row, _parser, **_kwargs):
                                                  fee_quantity=row_dict['TxnFee(BNB)'],
                                                  fee_asset="BNB",
                                                  wallet=WALLET,
-                                                 note=row_dict.get('PrivateNote', ''))
+                                                 note=get_note(row_dict))
+
+def get_note(row_dict):
+    if row_dict['Status'] != '':
+        return "Failure"
+
+    return row_dict.get('PrivateNote', '')
 
 def parse_bscscan_internal(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
@@ -55,19 +61,20 @@ def parse_bscscan_internal(data_row, _parser, **_kwargs):
                                                  sell_asset="BNB",
                                                  wallet=WALLET)
 
-DataParser(DataParser.TYPE_EXPLORER,
-           "BscScan (BSC Transactions)",
-           ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
-             'Value_IN(BNB)', 'Value_OUT(BNB)', None, 'TxnFee(BNB)', 'TxnFee(USD)',
-             'Historical $Price/BNB', 'Status', 'ErrCode'],
-           worksheet_name="BscScan",
-           row_handler=parse_bscscan)
+bsc_txns = DataParser(
+        DataParser.TYPE_EXPLORER,
+        "BscScan (BSC Transactions)",
+        ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
+         'Value_IN(BNB)', 'Value_OUT(BNB)', None, 'TxnFee(BNB)', 'TxnFee(USD)',
+         'Historical $Price/BNB', 'Status', 'ErrCode'],
+        worksheet_name="BscScan",
+        row_handler=parse_bscscan)
 
 DataParser(DataParser.TYPE_EXPLORER,
            "BscScan (BSC Transactions)",
            ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
-             'Value_IN(BNB)', 'Value_OUT(BNB)', None, 'TxnFee(BNB)', 'TxnFee(USD)',
-             'Historical $Price/BNB', 'Status', 'ErrCode', 'PrivateNote'],
+            'Value_IN(BNB)', 'Value_OUT(BNB)', None, 'TxnFee(BNB)', 'TxnFee(USD)',
+            'Historical $Price/BNB', 'Status', 'ErrCode', 'PrivateNote'],
            worksheet_name="BscScan",
            row_handler=parse_bscscan)
 

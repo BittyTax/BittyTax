@@ -88,6 +88,9 @@ data_source_fiat:
 - Conversion tool: added parser for Trezor Suite.
 - Binance parser: added new statement export format.
 - Nexo parser: added new export format.
+- Conversion tool: added merge parser for Etherscan.
+- Conversion tool: added merge parser for BscScan.
+- Conversion tool: added merge parser for HecoInfo.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.

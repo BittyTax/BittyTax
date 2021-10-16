@@ -13,8 +13,7 @@ def get_version():
     version = re.search(r'^__version__ = [\'"]([^\'"]*)[\'"]', line, re.MULTILINE)
     if version:
         return version.group(1)
-    else:
-        raise RuntimeError('Unable to find version string in ' + VERSION_FILE)
+    raise RuntimeError('Unable to find version string in ' + VERSION_FILE)
 
 def get_long_description():
     with io.open('README.md', encoding='utf8') as ld:
@@ -51,7 +50,11 @@ setup(
         'Programming Language :: Python :: 3.9',
     ],
     keywords='bittytax cryptoasset cryptocurrency crypto tax',
-    packages=['bittytax', 'bittytax.conv', 'bittytax.conv.parsers', 'bittytax.price'],
+    packages=['bittytax',
+              'bittytax.conv',
+              'bittytax.conv.parsers',
+              'bittytax.conv.mergers',
+              'bittytax.price'],
     package_data={'bittytax': ['templates/*.html']},
     install_requires=[
         'python-dateutil>=2.7.0',
