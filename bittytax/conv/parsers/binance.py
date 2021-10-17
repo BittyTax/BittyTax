@@ -195,7 +195,7 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
         elif row_dict['Operation'] in ("Savings purchase", "Savings Principal redemption",
                                        "POS savings purchase", "POS savings redemption"):
             # Skip not taxable events
-            return
+            continue
 
 def bnb_convert(data_rows, utc_time, operation):
     matching_rows = [data_row for data_row in data_rows
