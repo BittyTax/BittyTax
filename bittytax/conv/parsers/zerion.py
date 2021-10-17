@@ -12,7 +12,7 @@ from colorama import Fore
 from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
-from ..exceptions import DataRowError, UnexpectedTypeError
+from ..exceptions import DataRowError, UnexpectedTypeError, UnexpectedContentError
 
 PRECISION = Decimal('0.' + '0' * 18)
 
@@ -46,13 +46,13 @@ def parse_zerion_row(data_rows, parser, data_row, row_index):
 
     if row_dict['Status'] != 'Confirmed':
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
-                                                  data_row.timestamp,
-                                                  sell_quantity=Decimal(0),
-                                                  sell_asset=fee_asset,
-                                                  fee_quantity=fee_quantity,
-                                                  fee_asset=fee_asset,
-                                                  fee_value=fee_value,
-                                                  wallet=WALLET)
+                                                 data_row.timestamp,
+                                                 sell_quantity=Decimal(0),
+                                                 sell_asset=fee_asset,
+                                                 fee_quantity=fee_quantity,
+                                                 fee_asset=fee_asset,
+                                                 fee_value=fee_value,
+                                                 wallet=WALLET)
         return
 
     changes = json.loads(row_dict['Changes JSON'])
@@ -115,8 +115,9 @@ def parse_zerion_row(data_rows, parser, data_row, row_index):
             # Multi-buy
             do_zerion_multi_buy(data_row, data_rows, row_index, t_ins, t_outs)
         else:
-            # Multi-to-Multi trade not supported
-            raise Exception
+            # Multi-sell to Multi-buy trade not supported
+            raise UnexpectedContentError(parser.in_header.index('Changes JSON'), 'Changes JSON',
+                                         row_dict['Changes JSON'])
     else:
         raise UnexpectedTypeError(parser.in_header.index('Accounting Type'), 'Accounting Type',
                                   row_dict['Accounting Type'])
