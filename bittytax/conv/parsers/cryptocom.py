@@ -30,7 +30,8 @@ def parse_crypto_com(data_row, parser, **_kwargs):
                                                      sell_value=get_value(row_dict),
                                                      wallet=WALLET)
     elif row_dict['Transaction Kind'] in ("crypto_earn_interest_paid", "mco_stake_reward",
-                                          "crypto_earn_extra_interest_paid"):
+                                          "crypto_earn_extra_interest_paid",
+                                          "supercharger_reward_to_app_credited"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INTEREST,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Amount'],
