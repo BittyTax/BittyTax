@@ -164,6 +164,13 @@ DataParser(DataParser.TYPE_EXCHANGE,
 DataParser(DataParser.TYPE_EXCHANGE,
            "KuCoin Trades",
            ['tradeCreatedAt', 'orderId', 'symbol', 'side', 'price', 'size', 'funds', 'fee',
+            'liquidity', 'feeCurrency', 'orderType', ''],
+           worksheet_name="KuCoin T",
+           row_handler=parse_kucoin_trades_v3)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "KuCoin Trades",
+           ['tradeCreatedAt', 'orderId', 'symbol', 'side', 'price', 'size', 'funds', 'fee',
             'liquidity', 'feeCurrency', 'orderType'],
            worksheet_name="KuCoin T",
            row_handler=parse_kucoin_trades_v3)

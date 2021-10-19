@@ -96,6 +96,7 @@ data_source_fiat:
 - Conversion tool: added merge parser for HecoInfo.
 - BscScan parser: new "Transactions" data file format added.
 - HecoInfo parser: new "Transactions" data file format added.
+- KuCoin parser: added new trade history export.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
