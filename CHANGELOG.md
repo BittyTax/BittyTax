@@ -30,6 +30,7 @@ data_source_fiat:
 - Trezor parser: Timestamp is GMT+1.
 - Etherscan parser: "Sell Quantity" should be zero for failed withdrawals.
 - BscScan parser: "Sell Quantity" should be zero for failed withdrawals.
+- HecoInfo parser: "Sell Quantity" should be zero for failed withdrawals.
 ### Added
 - Etherscan parser: added internal transactions export.
 - Binance parser: added cash deposit and withdrawal exports.
@@ -94,6 +95,7 @@ data_source_fiat:
 - Conversion tool: added merge parser for BscScan.
 - Conversion tool: added merge parser for HecoInfo.
 - BscScan parser: new "Transactions" data file format added.
+- HecoInfo parser: new "Transactions" data file format added.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
