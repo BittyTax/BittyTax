@@ -11,7 +11,7 @@ from ...config import config
 from ..out_record import TransactionOutRecord
 from ..datamerge import DataMerge
 from ..exceptions import UnexpectedContentError
-from ..parsers.etherscan import etherscan_txns, etherscan_tokens
+from ..parsers.etherscan import etherscan_txns, etherscan_tokens, get_note
 
 PRECISION = Decimal('0.' + '0' * 18)
 
@@ -123,6 +123,7 @@ def do_etherscan_multi_deposit(t_ins, data_row):
 
         t_in.t_record.fee_quantity = split_fee_quantity
         t_in.t_record.fee_asset = fee_asset
+        t_in.t_record.note = get_note(data_row.row_dict)
 
     # Remove TR for fee now it's been added to each withdrawal
     if data_row.t_record and data_row not in t_ins:
@@ -156,6 +157,7 @@ def do_etherscan_multi_withdrawal(t_outs, data_row):
 
         t_out.t_record.fee_quantity = split_fee_quantity
         t_out.t_record.fee_asset = fee_asset
+        t_out.t_record.note = get_note(data_row.row_dict)
 
     # Remove TR for fee now it's been added to each withdrawal
     if data_row.t_record and data_row not in t_outs:
@@ -210,6 +212,7 @@ def do_etherscan_multi_sell(t_ins, t_outs, data_row):
         t_out.t_record.buy_asset = buy_asset
         t_out.t_record.fee_quantity = split_fee_quantity
         t_out.t_record.fee_asset = fee_asset
+        t_out.t_record.note = get_note(data_row.row_dict)
 
     # Remove TR for buy now it's been added to each sell
     t_ins[0].t_record = None
@@ -266,6 +269,7 @@ def do_etherscan_multi_buy(t_ins, t_outs, data_row):
         t_in.t_record.sell_asset = sell_asset
         t_in.t_record.fee_quantity = split_fee_quantity
         t_in.t_record.fee_asset = fee_asset
+        t_in.t_record.note = get_note(data_row.row_dict)
 
     # Remove TR for sell now it's been added to each buy
     t_outs[0].t_record = None

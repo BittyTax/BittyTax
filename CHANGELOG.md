@@ -139,6 +139,7 @@ data_source_fiat:
 - Crypto.com parser: added "supercharger_reward_to_app_credited" transaction type.
 - Crypto.com parser: improved 'Native Amount' handling.
 - Crypto.com parser: added "council_node_deposit_created" transaction type.
+- Etherscan parser: add "Method" as a note.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.

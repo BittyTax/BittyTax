@@ -45,7 +45,12 @@ def parse_etherscan(data_row, _parser, **_kwargs):
 
 def get_note(row_dict):
     if row_dict['Status'] != '':
+        if row_dict.get('Method'):
+            return "Failure (%s)" % row_dict['Method']
         return "Failure"
+
+    if row_dict.get('Method'):
+        return row_dict['Method']
 
     return row_dict.get('PrivateNote', '')
 
