@@ -140,6 +140,7 @@ data_source_fiat:
 - Crypto.com parser: improved 'Native Amount' handling.
 - Crypto.com parser: added "council_node_deposit_created" transaction type.
 - Etherscan parser: add "Method" as a note.
+- BscScan parser: add "Method" as a note.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.

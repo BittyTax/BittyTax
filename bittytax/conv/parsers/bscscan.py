@@ -3,6 +3,7 @@
 
 from decimal import Decimal
 
+from .etherscan import get_note
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 
@@ -41,12 +42,6 @@ def parse_bscscan(data_row, _parser, **_kwargs):
                                                  fee_asset="BNB",
                                                  wallet=WALLET,
                                                  note=get_note(row_dict))
-
-def get_note(row_dict):
-    if row_dict['Status'] != '':
-        return "Failure"
-
-    return row_dict.get('PrivateNote', '')
 
 def parse_bscscan_internal(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
