@@ -28,6 +28,7 @@ data_source_fiat:
 - Kraken parser: Trading pair split broken for XTZ/GBP. ([#124](https://github.com/BittyTax/BittyTax/issues/124))
 - Binance parser: Removed "Unexpected Coin content" error. ([#132](https://github.com/BittyTax/BittyTax/issues/132)) 
 - Trezor parser: Timestamp is GMT+1.
+- Etherscan parser: "Sell Quantity" should be zero for failed withdrawals.
 ### Added
 - Etherscan parser: added internal transactions export.
 - Binance parser: added cash deposit and withdrawal exports.

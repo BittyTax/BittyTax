@@ -13,6 +13,10 @@ def parse_etherscan(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict['UnixTimestamp']))
 
+    if row_dict['Status'] != '':
+        # Failed txns should not have a Value_OUT
+        row_dict['Value_OUT(ETH)'] = 0
+
     if Decimal(row_dict['Value_IN(ETH)']) > 0:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
