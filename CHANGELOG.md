@@ -29,6 +29,7 @@ data_source_fiat:
 - Binance parser: Removed "Unexpected Coin content" error. ([#132](https://github.com/BittyTax/BittyTax/issues/132)) 
 - Trezor parser: Timestamp is GMT+1.
 - Etherscan parser: "Sell Quantity" should be zero for failed withdrawals.
+- BscScan parser: "Sell Quantity" should be zero for failed withdrawals.
 ### Added
 - Etherscan parser: added internal transactions export.
 - Binance parser: added cash deposit and withdrawal exports.
@@ -92,6 +93,7 @@ data_source_fiat:
 - Conversion tool: added merge parser for Etherscan.
 - Conversion tool: added merge parser for BscScan.
 - Conversion tool: added merge parser for HecoInfo.
+- BscScan parser: new "Transactions" data file format added.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
