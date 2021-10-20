@@ -3,6 +3,7 @@
 
 from decimal import Decimal
 
+from .etherscan import get_note
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 
@@ -12,7 +13,9 @@ def parse_bscscan(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict['UnixTimestamp']))
 
-    if row_dict['Status'] != '': row_dict['Value_OUT(BNB)'] = 0
+    if row_dict['Status'] != '':
+        # Failed txns should not have a Value_OUT
+        row_dict['Value_OUT(BNB)'] = 0
 
     if Decimal(row_dict['Value_IN(BNB)']) > 0:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
@@ -39,12 +42,6 @@ def parse_bscscan(data_row, _parser, **_kwargs):
                                                  fee_asset="BNB",
                                                  wallet=WALLET,
                                                  note=get_note(row_dict))
-
-def get_note(row_dict):
-    if row_dict['Status'] != '':
-        return "Failure"
-
-    return row_dict.get('PrivateNote', '')
 
 def parse_bscscan_internal(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
@@ -85,6 +82,14 @@ DataParser(DataParser.TYPE_EXPLORER,
            ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
             'Value_IN(BNB)', 'Value_OUT(BNB)', None, 'TxnFee(BNB)', 'TxnFee(USD)',
             'Historical $Price/BNB', 'Status', 'ErrCode', 'Method'],
+           worksheet_name="BscScan",
+           row_handler=parse_bscscan)
+
+DataParser(DataParser.TYPE_EXPLORER,
+           "BscScan (BSC Transactions)",
+           ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
+            'Value_IN(BNB)', 'Value_OUT(BNB)', None, 'TxnFee(BNB)', 'TxnFee(USD)',
+            'Historical $Price/BNB', 'Status', 'ErrCode', 'Method', 'PrivateNote'],
            worksheet_name="BscScan",
            row_handler=parse_bscscan)
 

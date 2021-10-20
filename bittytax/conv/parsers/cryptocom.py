@@ -14,20 +14,26 @@ def parse_crypto_com(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp (UTC)'])
 
+    if row_dict['Currency'] != config.ccy:
+        value = DataParser.convert_currency(abs(Decimal(row_dict['Native Amount'])),
+                                            row_dict['Native Currency'], data_row.timestamp)
+    else:
+        value = None
+
     if row_dict['Transaction Kind'] == "crypto_transfer":
         if Decimal(row_dict['Amount']) > 0:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['Amount'],
                                                      buy_asset=row_dict['Currency'],
-                                                     buy_value=get_value(row_dict),
+                                                     buy_value=value,
                                                      wallet=WALLET)
         else:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_SENT,
                                                      data_row.timestamp,
                                                      sell_quantity=abs(Decimal(row_dict['Amount'])),
                                                      sell_asset=row_dict['Currency'],
-                                                     sell_value=get_value(row_dict),
+                                                     sell_value=value,
                                                      wallet=WALLET)
     elif row_dict['Transaction Kind'] in ("crypto_earn_interest_paid", "mco_stake_reward",
                                           "crypto_earn_extra_interest_paid",
@@ -36,7 +42,7 @@ def parse_crypto_com(data_row, parser, **_kwargs):
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Amount'],
                                                  buy_asset=row_dict['Currency'],
-                                                 buy_value=get_value(row_dict),
+                                                 buy_value=value,
                                                  wallet=WALLET)
     elif row_dict['Transaction Kind'] in ("viban_purchase", "van_purchase",
                                           "crypto_viban_exchange", "crypto_exchange",
@@ -47,7 +53,7 @@ def parse_crypto_com(data_row, parser, **_kwargs):
                                                  buy_asset=row_dict['To Currency'],
                                                  sell_quantity=abs(Decimal(row_dict['Amount'])),
                                                  sell_asset=row_dict['Currency'],
-                                                 sell_value=get_value(row_dict),
+                                                 sell_value=value,
                                                  wallet=WALLET)
     elif row_dict['Transaction Kind'] in ("crypto_purchase", "dust_conversion_debited",
                                           "dust_conversion_credited"):
@@ -76,7 +82,7 @@ def parse_crypto_com(data_row, parser, **_kwargs):
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Amount'],
                                                  buy_asset=row_dict['Currency'],
-                                                 buy_value=get_value(row_dict),
+                                                 buy_value=value,
                                                  wallet=WALLET)
 
     elif row_dict['Transaction Kind'] in ("card_cashback_reverted", "reimbursement_reverted"):
@@ -84,28 +90,28 @@ def parse_crypto_com(data_row, parser, **_kwargs):
                                                  data_row.timestamp,
                                                  sell_quantity=abs(Decimal(row_dict['Amount'])),
                                                  sell_asset=row_dict['Currency'],
-                                                 sell_value=get_value(row_dict),
+                                                 sell_value=value,
                                                  wallet=WALLET)
     elif row_dict['Transaction Kind'] in ("crypto_payment", "card_top_up"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
                                                  data_row.timestamp,
                                                  sell_quantity=abs(Decimal(row_dict['Amount'])),
                                                  sell_asset=row_dict['Currency'],
-                                                 sell_value=get_value(row_dict),
+                                                 sell_value=value,
                                                  wallet=WALLET)
     elif row_dict['Transaction Kind'] in ("crypto_withdrawal", "crypto_to_exchange_transfer"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=abs(Decimal(row_dict['Amount'])),
                                                  sell_asset=row_dict['Currency'],
-                                                 sell_value=get_value(row_dict),
+                                                 sell_value=value,
                                                  wallet=WALLET)
     elif row_dict['Transaction Kind'] in ("crypto_deposit", "exchange_to_crypto_transfer"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Amount'],
                                                  buy_asset=row_dict['Currency'],
-                                                 buy_value=get_value(row_dict),
+                                                 buy_value=value,
                                                  wallet=WALLET)
     elif row_dict['Transaction Kind'] in ("crypto_earn_program_created",
                                           "crypto_earn_program_withdrawn",
@@ -116,7 +122,8 @@ def parse_crypto_com(data_row, parser, **_kwargs):
                                           "interest_swap_credited", "interest_swap_debited",
                                           "crypto_wallet_swap_credited",
                                           "crypto_wallet_swap_debited",
-                                          "supercharger_deposit", "supercharger_withdrawal"):
+                                          "supercharger_deposit", "supercharger_withdrawal",
+                                          "council_node_deposit_created"):
         return
     elif row_dict['Transaction Kind'] == "":
         # Could be a fiat transaction
@@ -135,11 +142,6 @@ def parse_crypto_com(data_row, parser, **_kwargs):
     else:
         raise UnexpectedTypeError(parser.in_header.index('Transaction Kind'), 'Transaction Kind',
                                   row_dict['Transaction Kind'])
-
-def get_value(row_dict):
-    if row_dict['Native Currency'] == config.ccy:
-        return abs(Decimal(row_dict['Native Amount']))
-    return None
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Crypto.com",

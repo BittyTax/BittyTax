@@ -28,6 +28,9 @@ data_source_fiat:
 - Kraken parser: Trading pair split broken for XTZ/GBP. ([#124](https://github.com/BittyTax/BittyTax/issues/124))
 - Binance parser: Removed "Unexpected Coin content" error. ([#132](https://github.com/BittyTax/BittyTax/issues/132)) 
 - Trezor parser: Timestamp is GMT+1.
+- Etherscan parser: "Sell Quantity" should be zero for failed withdrawals.
+- BscScan parser: "Sell Quantity" should be zero for failed withdrawals.
+- HecoInfo parser: "Sell Quantity" should be zero for failed withdrawals.
 ### Added
 - Etherscan parser: added internal transactions export.
 - Binance parser: added cash deposit and withdrawal exports.
@@ -91,6 +94,9 @@ data_source_fiat:
 - Conversion tool: added merge parser for Etherscan.
 - Conversion tool: added merge parser for BscScan.
 - Conversion tool: added merge parser for HecoInfo.
+- BscScan parser: new "Transactions" data file format added.
+- HecoInfo parser: new "Transactions" data file format added.
+- KuCoin parser: added new trade history export.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
@@ -131,6 +137,11 @@ data_source_fiat:
 - Binance parser: added "POS savings interest" and "Savings Interest" operations. ([#137](https://github.com/BittyTax/BittyTax/issues/137))
 - Binance parser: added "Super BNB Mining" operation.
 - Crypto.com parser: added "supercharger_reward_to_app_credited" transaction type.
+- Crypto.com parser: improved 'Native Amount' handling.
+- Crypto.com parser: added "council_node_deposit_created" transaction type.
+- Etherscan parser: add "Method" as a note.
+- BscScan parser: add "Method" as a note.
+- HecoInfo parser: add "Method" as a note.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.
