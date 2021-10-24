@@ -160,7 +160,7 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
         row_dict = data_row.row_dict
         data_row.timestamp = DataParser.parse_timestamp(row_dict['UTC_Time'])
 
-        if row_dict['Operation'] in ("Commission History", "Referrer rebates"):
+        if row_dict['Operation'] in ("Commission History", "Referrer rebates", "Commission Fee Shared With You", "Cash Voucher distribution", "Referral Kickback"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['Change'],
@@ -184,7 +184,7 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      buy_quantity=row_dict['Change'],
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
-        elif row_dict['Operation'] == "POS savings interest":
+        elif row_dict['Operation'] in ("POS savings interest", "ETH 2.0 Staking Rewards", "Liquid Swap rewards"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_STAKING,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['Change'],
