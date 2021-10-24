@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2021
 
-from .etherscan import merge_etherscan
+from .etherscan import do_merge_etherscan
 from ..datamerge import DataMerge
 from ..parsers.bscscan import bsc_txns, WALLET
 from ..parsers.etherscan import etherscan_tokens
 
+STAKE_ADDRESSES = ['0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82', #PancakeSwap
+                  ]
+
 def merge_bscscan(data_files):
     # Do same merge as Etherscan
-    merge = merge_etherscan(data_files)
+    merge = do_merge_etherscan(data_files, STAKE_ADDRESSES)
 
     if merge:
         # Change Etherscan to BscScan
