@@ -97,6 +97,7 @@ data_source_fiat:
 - BscScan parser: new "Transactions" data file format added.
 - HecoInfo parser: new "Transactions" data file format added.
 - KuCoin parser: added new trade history export.
+- Coinbase parser: new "Transaction history" data file format added.
 ### Changed
 - Conversion tool: UnknownAddressError exception changed to generic DataFilenameError.
 - Binance parser: use filename to determine if deposits or withdrawals.
