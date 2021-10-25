@@ -13,23 +13,37 @@ from ..exceptions import UnexpectedTypeError, UnexpectedContentError
 WALLET = "Coinbase"
 DUPLICATE = "Duplicate"
 
+def parse_coinbase(data_row, parser, **_kwargs):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
+
+    spot_price_ccy = DataParser.convert_currency(row_dict['Spot Price at Transaction'],
+                                                 row_dict['Spot Price Currency'],
+                                                 data_row.timestamp)
+    total_ccy = DataParser.convert_currency(row_dict['Total (inclusive of fees)'],
+                                            row_dict['Spot Price Currency'],
+                                            data_row.timestamp)
+
+    do_parse_coinbase(data_row, parser, (spot_price_ccy, row_dict['Subtotal'],
+                                         total_ccy, row_dict['Fees']))
+
 def parse_coinbase_gbp(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
     fiat_values = get_fiat_values(row_dict, 'GBP', data_row.timestamp)
-    parse_coinbase(data_row, parser, fiat_values)
+    do_parse_coinbase(data_row, parser, fiat_values)
 
 def parse_coinbase_eur(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
     fiat_values = get_fiat_values(row_dict, 'EUR', data_row.timestamp)
-    parse_coinbase(data_row, parser, fiat_values)
+    do_parse_coinbase(data_row, parser, fiat_values)
 
 def parse_coinbase_usd(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
     fiat_values = get_fiat_values(row_dict, 'USD', data_row.timestamp)
-    parse_coinbase(data_row, parser, fiat_values)
+    do_parse_coinbase(data_row, parser, fiat_values)
 
 def get_fiat_values(row_dict, currency, timestamp):
     sp_header = '%s Spot Price at Transaction' % currency
@@ -38,10 +52,10 @@ def get_fiat_values(row_dict, currency, timestamp):
     f_header = '%s Fees' % currency
 
     spot_price_ccy = DataParser.convert_currency(row_dict[sp_header], currency, timestamp)
-    total_ccy= DataParser.convert_currency(row_dict[t_header], currency, timestamp)
+    total_ccy = DataParser.convert_currency(row_dict[t_header], currency, timestamp)
     return (spot_price_ccy, row_dict[st_header], total_ccy, row_dict[f_header])
 
-def parse_coinbase(data_row, parser, fiat_values):
+def do_parse_coinbase(data_row, parser, fiat_values):
     (spot_price_ccy, subtotal, total_ccy, fees) = fiat_values
     row_dict = data_row.row_dict
 
@@ -296,6 +310,14 @@ def parse_coinbase_transactions(data_row, _parser, **_kwargs):
                                                      buy_quantity=row_dict['Amount'],
                                                      buy_asset=row_dict['Currency'],
                                                      wallet=WALLET)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Coinbase",
+           ['Timestamp', 'Transaction Type', 'Asset', 'Quantity Transacted',
+            'Spot Price Currency', 'Spot Price at Transaction', 'Subtotal',
+            'Total (inclusive of fees)', 'Fees', 'Notes'],
+           worksheet_name="Coinbase",
+           row_handler=parse_coinbase)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Coinbase",
