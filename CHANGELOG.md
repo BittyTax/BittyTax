@@ -31,6 +31,7 @@ data_source_fiat:
 - Etherscan parser: "Sell Quantity" should be zero for failed withdrawals.
 - BscScan parser: "Sell Quantity" should be zero for failed withdrawals.
 - HecoInfo parser: "Sell Quantity" should be zero for failed withdrawals.
+- Nexo parser: Timestamp is CET. ([#188](https://github.com/BittyTax/BittyTax/issues/188))
 ### Added
 - Etherscan parser: added internal transactions export.
 - Binance parser: added cash deposit and withdrawal exports.
