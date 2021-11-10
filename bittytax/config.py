@@ -101,6 +101,8 @@ class Config(object):
             return getattr(self.args, name)
 
     def output_config(self):
+        print("%sconfig: \"%s\"" % (
+            Fore.GREEN, os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG)))
         for name in sorted(self.DEFAULT_CONFIG):
             print("%sconfig: %s = %s" % (Fore.GREEN, name, self.config[name]))
 
