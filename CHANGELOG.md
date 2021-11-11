@@ -144,6 +144,8 @@ data_source_fiat:
 - Etherscan parser: add "Method" as a note.
 - BscScan parser: add "Method" as a note.
 - HecoInfo parser: add "Method" as a note.
+- Config: transfers_include to False.
+- Config: transfer_fee_allowable_cost to True.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.
