@@ -62,12 +62,12 @@ class Config(object):
         'data_source_crypto': DATA_SOURCE_CRYPTO,
         'coinbase_zero_fees_are_gifts': False,
         'tax_rules': TAX_RULES_UK_INDIVIDUAL,
+        'start_of_year_day': 6,
+        'start_of_year_month': 4,
     }
 
     def __init__(self):
         self.debug = False
-        self.start_of_year_month = 4
-        self.start_of_year_day = 6
 
         if not os.path.exists(Config.BITTYTAX_PATH):
             os.mkdir(Config.BITTYTAX_PATH)
