@@ -1,5 +1,7 @@
 # Change Log
 ## [Unreleased]
+
+## Version [0.5.0] Beta (2021-11-11)
 Important:-
 
 1. A new Note field has been added to the end of the transaction record format (column M), this is used to add a description to a transaction. It is recommended that you add the additional Note column to all your existing transaction records.
@@ -31,6 +33,7 @@ data_source_fiat:
 - Etherscan parser: "Sell Quantity" should be zero for failed withdrawals.
 - BscScan parser: "Sell Quantity" should be zero for failed withdrawals.
 - HecoInfo parser: "Sell Quantity" should be zero for failed withdrawals.
+- Nexo parser: Timestamp is CET. ([#188](https://github.com/BittyTax/BittyTax/issues/188))
 ### Added
 - Etherscan parser: added internal transactions export.
 - Binance parser: added cash deposit and withdrawal exports.
@@ -143,6 +146,8 @@ data_source_fiat:
 - Etherscan parser: add "Method" as a note.
 - BscScan parser: add "Method" as a note.
 - HecoInfo parser: add "Method" as a note.
+- Config: transfers_include to False.
+- Config: transfer_fee_allowable_cost to True.
 ### Removed
 - Accounting tool: skip audit (-s or --skipaudit) option removed.
 - Accounting tool: updated transactions debug removed.
@@ -360,7 +365,8 @@ This is the initial beta release. Although it has been throughly tested, it's po
 - Exchange data files supported: Bitstamp, Bittrex, ChangeTip, Circle, Coinbase, Coinbase Pro, Coinfloor, Cryptopia, Cryptsy, Gatehub, OKEx, Poloniex, TradeSatoshi, Uphold.
 - Explorer data files supported: Etherscan.
 
-[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/BittyTax/BittyTax/compare/v0.4.3...v0.5.0
 [0.4.3]: https://github.com/BittyTax/BittyTax/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/BittyTax/BittyTax/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/BittyTax/BittyTax/compare/v0.4.0...v0.4.1

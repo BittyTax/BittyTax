@@ -18,7 +18,7 @@ ASSET_NORMALISE = {'NEXONEXO': 'NEXO',
 
 def parse_nexo(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date / Time'])
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date / Time'], tz='Europe/Zurich')
 
     if "rejected" in row_dict['Details']:
         # Skip failed transactions
