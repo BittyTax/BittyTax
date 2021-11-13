@@ -9,11 +9,12 @@
 [![PayPal badge][paypal-badge]][PayPal]
 [![Bitcoin badge][bitcoin-badge]][bitcoin]
 # BittyTax
+
+## Overview
+
 BittyTax is a collection of command-line tools to help you calculate your cryptoasset taxes in the UK.
 
-It's open-source, free to use, fully transparent, and protects your privacy since there is no need to share data with a 3rd party.
-
-Although UK focused, many of the tools can be used for other countries and currencies, see [International support](https://github.com/BittyTax/BittyTax/wiki/International-Support).
+This tool is designed to be used by someone who is already familiar with cryptoasset taxation rules in the UK. HMRC has published guidance on this. We've collected some useful links in the [Resources](#resources) section at the end.
 
 BittyTax comprises of the following tools.
 
@@ -23,7 +24,16 @@ BittyTax comprises of the following tools.
 
 3. `bittytax_price` - (optional) lookup historic price data for cryptoassets and foreign currencies (see [Price Tool](#price-tool))
 
-This tool is designed to be used by someone who is already familiar with cryptoasset taxation rules in the UK. HMRC has published guidance on this. We've collected some useful links in the [Resources](#resources) section at the end.
+Although UK focused, many of the tools can be used for other countries and currencies, see [International support](https://github.com/BittyTax/BittyTax/wiki/International-Support).
+
+## Why use BittyTax?
+
+* Open-source: growing community of users
+* Free to use: no subscriptions, no transaction limits
+* Protects your privacy: no need to share your data with a 3rd party
+* Fully transparent: all calculations and data sources are provided
+* Accuracy: built in integrity check, passes all the [HMRC example test cases](https://github.com/BittyTax/BittyTax/wiki/HMRC-Example-Test-Cases)
+* Auditability: compliant with HMRC auditing requirements
 
 ## Disclaimer
 This software is copyright (c) Nano Nano Ltd, and licensed for use under the AGPLv3 License, see [LICENSE](https://github.com/BittyTax/BittyTax/blob/master/LICENSE) file for details.
