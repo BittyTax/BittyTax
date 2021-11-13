@@ -167,11 +167,23 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
         elif row_dict['Operation'] == "Distribution":
-            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_AIRDROP,
-                                                     data_row.timestamp,
-                                                     buy_quantity=row_dict['Change'],
-                                                     buy_asset=row_dict['Coin'],
-                                                     wallet=WALLET)
+            # this could be in or out
+            if float(row_dict['Change']) > 0:
+                # and row_dict['Coin'] not in ("USDT","BUSD","BTC","ETH"):
+                data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
+                                                         data_row.timestamp,
+                                                         buy_quantity=row_dict['Change'],
+                                                         buy_asset=row_dict['Coin'],
+                                                         note='MANUAL CHECK',
+                                                         wallet=WALLET)
+            else:
+                data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
+                                                         data_row.timestamp,
+                                                         sell_quantity=abs(row_dict['Change']),
+                                                         sell_asset=row_dict['Coin'],
+                                                         note='MANUAL CHECK',
+                                                         wallet=WALLET)
+
         elif row_dict['Operation'] == "Super BNB Mining":
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_MINING,
                                                      data_row.timestamp,
@@ -193,7 +205,7 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
         elif row_dict['Operation'] == "Small assets exchange BNB":
             bnb_convert(data_rows, row_dict['UTC_Time'], row_dict['Operation'])
         elif row_dict['Operation'] in ("Savings purchase", "Savings Principal redemption",
-                                       "POS savings purchase", "POS savings redemption"):
+                                       "POS savings purchase", "POS savings redemption","Distribution"):
             # Skip not taxable events
             continue
 
