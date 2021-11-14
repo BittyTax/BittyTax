@@ -33,7 +33,7 @@ class Config(object):
     TAX_RULES_UK_COMPANY = ['UK_COMPANY_JAN', 'UK_COMPANY_FEB', 'UK_COMPANY_MAR', 'UK_COMPANY_APR',
                             'UK_COMPANY_MAY', 'UK_COMPANY_JUN', 'UK_COMPANY_JUL', 'UK_COMPANY_AUG',
                             'UK_COMPANY_SEP', 'UK_COMPANY_OCT', 'UK_COMPANY_NOV', 'UK_COMPANY_DEC']
-    TAX_RULES_FIFO = 'FIFO'                        
+    TAX_RULES_NZ = 'NZ'
 
     TRADE_ASSET_TYPE_BUY = 0
     TRADE_ASSET_TYPE_SELL = 1
@@ -62,6 +62,7 @@ class Config(object):
         'data_source_crypto': DATA_SOURCE_CRYPTO,
         'coinbase_zero_fees_are_gifts': False,
         'tax_rules': TAX_RULES_UK_INDIVIDUAL,
+        'tax_fixed_rate': 33,
         'start_of_year_day': 6,
         'start_of_year_month': 4,
     }

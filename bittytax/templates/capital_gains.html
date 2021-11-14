@@ -111,7 +111,9 @@
 {% if not args.summary %}
     {% if args.tax_rules in config.TAX_RULES_UK_COMPANY %}
         {% include "ct_estimate.html" %}
-    {% else %}
+    {% elif args.tax_rules == config.TAX_RULES_UK_INDIVIDUAL %}
         {% include "cgt_estimate.html" %}
+    {% elif args.tax_rules == config.TAX_RULES_NZ %}
+        {% include "fixed_estimate.html" %}
     {% endif %}
 {% endif %}
