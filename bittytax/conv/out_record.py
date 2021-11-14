@@ -8,6 +8,8 @@ from decimal import Decimal
 from ..config import config
 from ..record import TransactionRecord
 
+STR_PRECISION = '{:0,.5f}'
+
 class TransactionOutRecord(object):
     TYPE_DEPOSIT = TransactionRecord.TYPE_DEPOSIT
     TYPE_MINING = TransactionRecord.TYPE_MINING
@@ -115,7 +117,7 @@ class TransactionOutRecord(object):
     def format_value(value):
         if value is not None:
             return " (%s %s)" % (
-                config.sym() + '{:0,.2f}'.format(value),
+                config.sym() + STR_PRECISION.format(value),
                 config.ccy)
         return ''
 

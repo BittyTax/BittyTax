@@ -8,6 +8,8 @@ from tqdm import tqdm
 
 from .config import config
 
+STR_PRECISION = '{:0,.5f}'
+
 class Holdings(object):
     def __init__(self, asset):
         self.asset = asset
@@ -32,13 +34,13 @@ class Holdings(object):
                 self.asset,
                 '{:0,f}'.format(self.quantity.normalize()),
                 '{:0,f}'.format(quantity.normalize()),
-                config.sym() + '{:0,.2f}'.format(self.cost),
+                config.sym() + STR_PRECISION.format(self.cost),
                 config.ccy,
-                config.sym() + '{:0,.2f}'.format(cost),
+                config.sym() + STR_PRECISION.format(cost),
                 config.ccy,
-                config.sym() + '{:0,.2f}'.format(self.fees),
+                config.sym() + STR_PRECISION.format(self.fees),
                 config.ccy,
-                config.sym() + '{:0,.2f}'.format(fees),
+                config.sym() + STR_PRECISION.format(fees),
                 config.ccy))
 
     def subtract_tokens(self, quantity, cost, fees, is_withdrawal):
@@ -55,13 +57,13 @@ class Holdings(object):
                 self.asset,
                 '{:0,f}'.format(self.quantity.normalize()),
                 '{:0,f}'.format(quantity.normalize()),
-                config.sym() + '{:0,.2f}'.format(self.cost),
+                config.sym() + STR_PRECISION.format(self.cost),
                 config.ccy,
-                config.sym() + '{:0,.2f}'.format(cost),
+                config.sym() + STR_PRECISION.format(cost),
                 config.ccy,
-                config.sym() + '{:0,.2f}'.format(self.fees),
+                config.sym() + STR_PRECISION.format(self.fees),
                 config.ccy,
-                config.sym() + '{:0,.2f}'.format(fees),
+                config.sym() + STR_PRECISION.format(fees),
                 config.ccy))
 
     def check_transfer_mismatch(self):

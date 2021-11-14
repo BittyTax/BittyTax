@@ -5,6 +5,8 @@ import sys
 
 from .config import config
 
+STR_PRECISION = '{:0,.5f}'
+
 class TransactionRecord(object):
     TYPE_DEPOSIT = 'Deposit'
     TYPE_MINING = 'Mining'
@@ -93,7 +95,7 @@ class TransactionRecord(object):
     def _format_value(value):
         if value is not None:
             return " (%s %s)" % (
-                config.sym() + '{:0,.2f}'.format(value),
+                config.sym() + STR_PRECISION.format(value),
                 config.ccy)
         return ''
 

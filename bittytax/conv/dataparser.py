@@ -13,6 +13,8 @@ from ..config import config
 from ..price.pricedata import PriceData
 
 TERM_WIDTH = 69
+STR_PRECISION = '{:0,.5f}'
+
 
 class DataParser(object):
     TYPE_WALLET = 'Wallets'
@@ -109,12 +111,12 @@ class DataParser(object):
                     Fore.YELLOW,
                     timestamp.strftime('%Y-%m-%d'),
                     from_currency,
-                    config.sym() + '{:0,.2f}'.format(rate_ccy),
+                    config.sym() + STR_PRECISION.format(rate_ccy),
                     config.ccy,
                     '{:0,f}'.format(Decimal(value).normalize()),
                     from_currency,
                     Style.BRIGHT,
-                    config.sym() + '{:0,.2f}'.format(value_in_ccy),
+                    config.sym() + STR_PRECISION.format(value_in_ccy),
                     config.ccy,
                     Style.NORMAL))
 

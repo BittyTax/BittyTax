@@ -16,6 +16,8 @@ import dateutil.parser
 from .version import __version__
 from .config import config
 
+STR_PRECISION = '{:0,.5f}'
+
 class ReportPdf(object):
     DEFAULT_FILENAME = 'BittyTax_Report'
     FILE_EXTENSION = 'pdf'
@@ -76,7 +78,7 @@ class ReportPdf(object):
         if config.ccy == 'EUR':
             return '&euro;{:0,.2f}'.format(value)
         if config.ccy in ('USD', 'AUD', 'NZD'):
-            return '&dollar;{:0,.2f}'.format(value)
+            return '&dollar;{:0,.5f}'.format(value)
         if config.ccy in ('DKK', 'NOK', 'SEK'):
             return 'kr.{:0,.2f}'.format(value)
         raise ValueError("Currency not supported")
@@ -511,7 +513,7 @@ class ReportLog(object):
 
     @staticmethod
     def format_value(value):
-        return config.sym() + '{:0,.2f}'.format(value + 0)
+        return config.sym() + '{:0,.5f}'.format(value + 0)
 
     @staticmethod
     def format_asset(asset, name):

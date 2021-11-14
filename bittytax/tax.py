@@ -13,7 +13,8 @@ from .config import config
 from .transactions import Buy, Sell
 from .holdings import Holdings
 
-PRECISION = Decimal('0.00')
+PRECISION = Decimal('0.00000')
+STR_PRECISION = '{:0,.5f}'
 
 class TaxCalculator(object):
     DISPOSAL_SAME_DAY = 'Same Day'
@@ -435,10 +436,10 @@ class TaxEventCapitalGains(TaxEvent):
     def __str__(self):
         return "Disposal(%s) gain=%s (proceeds=%s - cost=%s - fees=%s)" % (
             self.disposal_type.lower(),
-            config.sym() + '{:0,.2f}'.format(self.gain),
-            config.sym() + '{:0,.2f}'.format(self.proceeds),
-            config.sym() + '{:0,.2f}'.format(self.cost),
-            config.sym() + '{:0,.2f}'.format(self.fees))
+            config.sym() + STR_PRECISION.format(self.gain),
+            config.sym() + STR_PRECISION.format(self.proceeds),
+            config.sym() + STR_PRECISION.format(self.cost),
+            config.sym() + STR_PRECISION.format(self.fees))
 
 class TaxEventIncome(TaxEvent):
     def __init__(self, b):

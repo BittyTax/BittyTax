@@ -10,6 +10,9 @@ from tqdm import tqdm
 from .config import config
 from .record import TransactionRecord
 
+STR_PRECISION = '{:0,.5f}'
+
+
 class TransactionHistory(object):
     def __init__(self, transaction_records, value_asset):
         self.value_asset = value_asset
@@ -234,7 +237,7 @@ class TransactionBase(object):
         if self.fee_value is not None:
             return " + fee=%s%s %s" % (
                 '' if self.fee_fixed else '~',
-                config.sym() + '{:0,.2f}'.format(self.fee_value),
+                config.sym() + STR_PRECISION.format(self.fee_value),
                 config.ccy)
 
         return ''
@@ -347,7 +350,7 @@ class Buy(TransactionBase):
         if self.cost is not None:
             return " (%s%s %s)" % (
                 '=' if self.cost_fixed else '~',
-                config.sym() + '{:0,.2f}'.format(self.cost),
+                config.sym() + STR_PRECISION.format(self.cost),
                 config.ccy)
         return ''
 
@@ -448,7 +451,7 @@ class Sell(TransactionBase):
         if self.proceeds is not None:
             return " (%s%s %s)" % (
                 '=' if self.proceeds_fixed else '~',
-                config.sym() + '{:0,.2f}'.format(self.proceeds),
+                config.sym() + STR_PRECISION.format(self.proceeds),
                 config.ccy)
         return ''
 
