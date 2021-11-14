@@ -190,19 +190,27 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      buy_quantity=row_dict['Change'],
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
+        elif row_dict['Operation'] == 'Deposit':
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                                     data_row.timestamp,
+                                                     buy_quantity=row_dict['Change'],
+                                                     buy_asset=row_dict['Coin'],
+                                                     wallet=WALLET)
+        elif row_dict['Operation'] == 'Large OTC trading':
+            generic_convert(data_rows, row_dict['UTC_Time'], row_dict['Operation'], row_dict['Coin'])
         elif row_dict['Operation'] == "Small assets exchange BNB":
-            bnb_convert(data_rows, row_dict['UTC_Time'], row_dict['Operation'])
+            generic_convert(data_rows, row_dict['UTC_Time'], row_dict['Operation'], row_dict['Coin'])
         elif row_dict['Operation'] in ("Savings purchase", "Savings Principal redemption",
                                        "POS savings purchase", "POS savings redemption"):
             # Skip not taxable events
             continue
 
-def bnb_convert(data_rows, utc_time, operation):
+def generic_convert(data_rows, utc_time, operation, buy_asset):
     matching_rows = [data_row for data_row in data_rows
                      if data_row.row_dict['UTC_Time'] == utc_time and
                      data_row.row_dict['Operation'] == operation]
 
-    buy_quantity = get_bnb_quantity(matching_rows)
+    buy_quantity = get_coin_quantity(matching_rows, buy_asset)
 
     for data_row in matching_rows:
         if not data_row.parsed:
@@ -212,33 +220,33 @@ def bnb_convert(data_rows, utc_time, operation):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                      data_row.timestamp,
                                                      buy_quantity=buy_quantity,
-                                                     buy_asset="BNB",
+                                                     buy_asset=buy_asset,
                                                      sell_quantity=abs(Decimal(data_row. \
                                                          row_dict['Change'])),
                                                      sell_asset=data_row.row_dict['Coin'],
                                                      wallet=WALLET)
 
-def get_bnb_quantity(matching_rows):
-    bnb_found = False
+def get_coin_quantity(matching_rows, coin):
+    coin_found = False
     buy_quantity = None
     assets = 0
 
     for data_row in matching_rows:
-        if data_row.row_dict['Coin'] == "BNB":
+        if data_row.row_dict['Coin'] == coin:
             data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['UTC_Time'])
             data_row.parsed = True
 
-            if not bnb_found:
+            if not coin_found:
                 buy_quantity = data_row.row_dict['Change']
-                bnb_found = True
+                coin_found = True
             else:
-                # Multiple BNB quantities, will need to be added manually
+                # Multiple coin quantities, will need to be added manually
                 buy_quantity = None
         else:
             assets += 1
 
     if assets > 1:
-        # Multiple assets converted, BNB quantities will need to be added manually
+        # Multiple assets converted, coin quantities will need to be added manually
         buy_quantity = None
 
     return buy_quantity
