@@ -630,7 +630,7 @@ For most wallet files, transactions can only be categorised as deposits or withd
 - Trezor
 
 **Exchanges:**
-- Binance
+- [Binance](https://github.com/BittyTax/BittyTax/wiki/Exchange:-Binance)
 - Bitfinex
 - Bitstamp
 - Bittrex
