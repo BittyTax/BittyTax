@@ -494,6 +494,8 @@ See ["*The “bed and breakfast” rule TCGA92/S106A(5) and (5A)*"](https://www.
  
 This tax functions matches sells to buybacks of the same cryptoasset which occur within 30 days.
 
+**Important:** you need to include transactions 30 days after the end of tax year (5th April) in order for this tax calculation to be correct.
+
 As with the ["same day"](#match-same-day-rule) rule, if the buy and sell quantities do not match, a transaction will be split.
 
 Transactions are sorted by timestamp, and matched in chronological order.
