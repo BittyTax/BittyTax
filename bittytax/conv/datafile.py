@@ -166,7 +166,7 @@ class DataFile(object):
 
     @classmethod
     def consolidate_datafiles(cls, data_file):
-        if data_file in cls.data_files:
+        if data_file.parser.p_type != DataParser.TYPE_GENERIC and data_file in cls.data_files:
             cls.data_files[data_file] += data_file
         else:
             cls.data_files[data_file] = data_file
