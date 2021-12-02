@@ -1,5 +1,7 @@
 # Change Log
 ## [Unreleased]
+### Added
+- Conversion tool: generic parser added to support import from CryptoCredible tool.
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-

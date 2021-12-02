@@ -25,6 +25,8 @@ class TransactionOutRecord(object):
     TYPE_LOST = TransactionRecord.TYPE_LOST
     TYPE_TRADE = TransactionRecord.TYPE_TRADE
 
+    ALL_TYPES = TransactionRecord.ALL_TYPES
+
     BUY_TYPES = (TYPE_DEPOSIT,
                  TYPE_MINING,
                  TYPE_STAKING,

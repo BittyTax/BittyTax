@@ -24,6 +24,7 @@ from . import energyweb
 from . import etherscan
 from . import exodus
 from . import gatehub
+from . import generic
 from . import gravity
 from . import handcash
 from . import hecoinfo
