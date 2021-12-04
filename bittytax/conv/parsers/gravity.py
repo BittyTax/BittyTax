@@ -18,6 +18,13 @@ def parse_gravity_v2(data_row, _parser, **_kwargs):
     parse_gravity_v1(data_row, _parser, **_kwargs)
 
 def parse_gravity_v1(data_rows, parser, **_kwargs):
+    tx_ids = {}
+    for dr in data_rows:
+        if dr.row_dict['transaction id'] in tx_ids:
+            tx_ids[dr.row_dict['transaction id']].append(dr)
+        else:
+            tx_ids[dr.row_dict['transaction id']] = [dr]
+
     for data_row in data_rows:
         if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
@@ -27,11 +34,11 @@ def parse_gravity_v1(data_rows, parser, **_kwargs):
             continue
 
         try:
-            parse_gravity_row(data_rows, parser, data_row)
+            parse_gravity_row(tx_ids, parser, data_row)
         except DataRowError as e:
             data_row.failure = e
 
-def parse_gravity_row(data_rows, parser, data_row):
+def parse_gravity_row(tx_ids, parser, data_row):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['date utc'])
     data_row.parsed = True
@@ -57,8 +64,8 @@ def parse_gravity_row(data_rows, parser, data_row):
             t_type = TransactionOutRecord.TYPE_WITHDRAWAL
             sell_quantity = row_dict['amount']
             sell_asset = row_dict['currency']
-            quantity, asset = find_same_tx(data_rows, row_dict['transaction id'], "withdrawal",
-                                           'to account')
+            quantity, asset = get_tx(tx_ids[row_dict['transaction id']],
+                                     "withdrawal", 'to account')
             if Decimal(sell_quantity) < Decimal(quantity):
                 #swap sell/fee around
                 fee_quantity = sell_quantity
@@ -76,8 +83,8 @@ def parse_gravity_row(data_rows, parser, data_row):
         buy_quantity = row_dict['amount']
         buy_asset = row_dict['currency']
 
-        sell_quantity, sell_asset = find_same_tx(data_rows, row_dict['transaction id'], "trade",
-                                                 'to account')
+        sell_quantity, sell_asset = get_tx(tx_ids[row_dict['transaction id']],
+                                           "trade", 'to account')
         if sell_quantity is None:
             return
     elif row_dict['transaction type'] == "trade" and row_dict['to account'] == SYSTEM_ACCOUNT:
@@ -85,8 +92,8 @@ def parse_gravity_row(data_rows, parser, data_row):
         sell_quantity = row_dict['amount']
         sell_asset = row_dict['currency']
 
-        buy_quantity, buy_asset = find_same_tx(data_rows, row_dict['transaction id'], "trade",
-                                               'from account')
+        buy_quantity, buy_asset = get_tx(tx_ids[row_dict['transaction id']],
+                                         "trade", 'from account')
         if buy_quantity is None:
             return
     elif row_dict['transaction type'] == "referral fees grouping":
@@ -110,15 +117,14 @@ def parse_gravity_row(data_rows, parser, data_row):
                                              fee_asset=fee_asset,
                                              wallet=WALLET)
 
-def find_same_tx(data_rows, tx_hash, tx_type, system_acc):
+def get_tx(tx_id_rows, tx_type, system_acc):
     quantity = None
     asset = ""
 
-    data_rows = [data_row for data_row in data_rows
-                 if data_row.row_dict['transaction id'] == tx_hash and not data_row.parsed]
-    for data_row in data_rows:
-        if tx_type == data_row.row_dict['transaction type'] and \
-                      data_row.row_dict[system_acc] == SYSTEM_ACCOUNT:
+    for data_row in tx_id_rows:
+        if not data_row.parsed and \
+                data_row.row_dict['transaction type'] == tx_type and \
+                data_row.row_dict[system_acc] == SYSTEM_ACCOUNT:
             quantity = data_row.row_dict['amount']
             asset = data_row.row_dict['currency']
             data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['date utc'])

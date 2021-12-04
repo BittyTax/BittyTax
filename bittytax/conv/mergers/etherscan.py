@@ -22,9 +22,16 @@ def merge_etherscan(data_files):
 def do_merge_etherscan(data_files, staking_addresses):
     merge = False
 
+    tx_ids = {}
+    for dr in data_files['tokens'].data_rows:
+        if dr.row_dict['Txhash'] in tx_ids:
+            tx_ids[dr.row_dict['Txhash']].append(dr)
+        else:
+            tx_ids[dr.row_dict['Txhash']] = [dr]
+
     for data_row in data_files['txns'].data_rows:
-        t_tokens = find_tx_tokens(data_files['tokens'].data_rows,
-                                  data_row.row_dict['Txhash'])
+        t_tokens = [data_row for data_row in tx_ids.get(data_row.row_dict['Txhash'], [])
+                    if not data_row.parsed]
 
         if t_tokens:
             if config.debug:
@@ -85,10 +92,6 @@ def do_merge_etherscan(data_files, staking_addresses):
             output_records(data_row, t_ins_orig, t_outs)
 
     return merge
-
-def find_tx_tokens(data_rows, tx_hash):
-    return [data_row for data_row in data_rows
-            if data_row.row_dict['Txhash'] == tx_hash and not data_row.parsed]
 
 def output_records(data_row, t_ins, t_outs):
     dup = bool(data_row in t_ins + t_outs)

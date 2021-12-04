@@ -2,6 +2,12 @@
 ## [Unreleased]
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
+### Changed
+- Binance parser: performance improvements for large data sets.
+- Coinbase Pro parser: performance improvements for large data sets.
+- GateHub parser: performance improvements for large data sets.
+- Gravity parser: performance improvements for large data sets.
+- Etherscan merger: performance improvements for large data sets.
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-
