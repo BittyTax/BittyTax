@@ -39,7 +39,9 @@ from . import liquid
 from . import nexo
 from . import okex
 from . import poloniex
+from . import polygonscan
 from . import qtwallet
+from . import snowtrace
 from . import tradesatoshi
 from . import trezor
 from . import trezorsuite

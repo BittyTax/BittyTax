@@ -94,13 +94,14 @@ DataParser(DataParser.TYPE_EXPLORER,
            worksheet_name="HecoInfo",
            row_handler=parse_hecoinfo)
 
-DataParser(DataParser.TYPE_EXPLORER,
-           "HecoInfo (HECO Internal Transactions)",
-           ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'ParentTxFrom', 'ParentTxTo',
-            'ParentTxETH_Value', 'From', 'TxTo', 'ContractAddress', 'Value_IN(HT)', 'Value_OUT(HT)',
-            None, 'Historical $Price/HT', 'Status', 'ErrCode', 'Type'],
-           worksheet_name="HecoInfo",
-           row_handler=parse_hecoinfo_internal)
+heco_int = DataParser(
+        DataParser.TYPE_EXPLORER,
+        "HecoInfo (HECO Internal Transactions)",
+        ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'ParentTxFrom', 'ParentTxTo',
+         'ParentTxETH_Value', 'From', 'TxTo', 'ContractAddress', 'Value_IN(HT)', 'Value_OUT(HT)',
+         None, 'Historical $Price/HT', 'Status', 'ErrCode', 'Type'],
+        worksheet_name="HecoInfo",
+        row_handler=parse_hecoinfo_internal)
 
 DataParser(DataParser.TYPE_EXPLORER,
            "HecoInfo (HECO Internal Transactions)",
