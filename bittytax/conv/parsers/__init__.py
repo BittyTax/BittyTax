@@ -23,6 +23,7 @@ from . import electrum
 from . import energyweb
 from . import etherscan
 from . import exodus
+from . import ftx
 from . import gatehub
 from . import generic
 from . import gravity
