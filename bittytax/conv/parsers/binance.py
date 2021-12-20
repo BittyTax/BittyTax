@@ -179,7 +179,8 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
             else:
                 data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
                                                          data_row.timestamp,
-                                                         sell_quantity=abs(row_dict['Change']),
+#                                                         sell_quantity=abs(float(row_dict['Change'])),
+                                                         sell_quantity=row_dict['Change'][1:],
                                                          sell_asset=row_dict['Coin'],
                                                          note='MANUAL CHECK',
                                                          wallet=WALLET)
