@@ -14,6 +14,13 @@ from ..exceptions import DataRowError, UnexpectedTypeError, MissingComponentErro
 WALLET = "Coinbase Pro"
 
 def parse_coinbase_pro(data_rows, parser, **_kwargs):
+    trade_ids = {}
+    for dr in data_rows:
+        if dr.row_dict['trade id'] in trade_ids:
+            trade_ids[dr.row_dict['trade id']].append(dr)
+        else:
+            trade_ids[dr.row_dict['trade id']] = [dr]
+
     for data_row in data_rows:
         if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
@@ -23,11 +30,11 @@ def parse_coinbase_pro(data_rows, parser, **_kwargs):
             continue
 
         try:
-            parse_coinbase_pro_row(data_rows, parser, data_row)
+            parse_coinbase_pro_row(trade_ids, parser, data_row)
         except DataRowError as e:
             data_row.failure = e
 
-def parse_coinbase_pro_row(data_rows, parser, data_row):
+def parse_coinbase_pro_row(trade_ids, parser, data_row):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['time'])
     data_row.parsed = True
@@ -49,18 +56,18 @@ def parse_coinbase_pro_row(data_rows, parser, data_row):
             sell_quantity = abs(Decimal(row_dict['amount']))
             sell_asset = row_dict['amount/balance unit']
 
-            buy_quantity, buy_asset = find_same_trade(data_rows, row_dict['trade id'], "match")
+            buy_quantity, buy_asset = get_trade(trade_ids[row_dict['trade id']], "match")
         else:
             buy_quantity = row_dict['amount']
             buy_asset = row_dict['amount/balance unit']
 
-            sell_quantity, sell_asset = find_same_trade(data_rows, row_dict['trade id'], "match")
+            sell_quantity, sell_asset = get_trade(trade_ids[row_dict['trade id']], "match")
 
         if sell_quantity is None or buy_quantity is None:
             raise MissingComponentError(parser.in_header.index('trade id'), 'trade id',
                                         row_dict['trade id'])
 
-        fee_quantity, fee_asset = find_same_trade(data_rows, row_dict['trade id'], "fee")
+        fee_quantity, fee_asset = get_trade(trade_ids[row_dict['trade id']], "fee")
 
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
@@ -74,14 +81,12 @@ def parse_coinbase_pro_row(data_rows, parser, data_row):
     else:
         raise UnexpectedTypeError(parser.in_header.index('type'), 'type', row_dict['type'])
 
-def find_same_trade(data_rows, trade_id, t_type):
+def get_trade(trade_id_rows, t_type):
     quantity = None
     asset = ""
 
-    data_rows = [data_row for data_row in data_rows
-                 if data_row.row_dict['trade id'] == trade_id and not data_row.parsed]
-    for data_row in data_rows:
-        if t_type == data_row.row_dict['type']:
+    for data_row in trade_id_rows:
+        if not data_row.parsed and t_type == data_row.row_dict['type']:
             quantity = abs(Decimal(data_row.row_dict['amount']))
             asset = data_row.row_dict['amount/balance unit']
             data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['time'])

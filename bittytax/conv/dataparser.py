@@ -21,6 +21,7 @@ class DataParser(object):
     TYPE_EXPLORER = 'Explorers'
     TYPE_ACCOUNTING = 'Accounting'
     TYPE_SHARES = 'Stocks & Shares'
+    TYPE_GENERIC = 'Generic'
 
     LIST_ORDER = (TYPE_WALLET, TYPE_EXCHANGE, TYPE_SAVINGS, TYPE_EXPLORER, TYPE_ACCOUNTING,
                   TYPE_SHARES)
@@ -106,17 +107,17 @@ class DataParser(object):
 
         if config.debug:
             print("%sprice: %s, 1 %s=%s %s, %s %s=%s%s %s%s" % (
-                    Fore.YELLOW,
-                    timestamp.strftime('%Y-%m-%d'),
-                    from_currency,
-                    config.sym() + '{:0,.2f}'.format(rate_ccy),
-                    config.ccy,
-                    '{:0,f}'.format(Decimal(value).normalize()),
-                    from_currency,
-                    Style.BRIGHT,
-                    config.sym() + '{:0,.2f}'.format(value_in_ccy),
-                    config.ccy,
-                    Style.NORMAL))
+                Fore.YELLOW,
+                timestamp.strftime('%Y-%m-%d'),
+                from_currency,
+                config.sym() + '{:0,.2f}'.format(rate_ccy),
+                config.ccy,
+                '{:0,f}'.format(Decimal(value).normalize()),
+                from_currency,
+                Style.BRIGHT,
+                config.sym() + '{:0,.2f}'.format(value_in_ccy),
+                config.ccy,
+                Style.NORMAL))
 
         return value_in_ccy
 

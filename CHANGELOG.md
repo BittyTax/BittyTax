@@ -1,5 +1,18 @@
 # Change Log
 ## [Unreleased]
+### Added
+- Conversion tool: generic parser added to support import from CryptoCredible tool.
+- Conversion tool: added parser for SnowTrace explorer.
+- Conversion tool: added parser for PolygonScan explorer.
+- Conversion tool: added merge parser for SnowTrace.
+- Conversion tool: added merge parser for PolygonScan.
+### Changed
+- Binance parser: performance improvements for large data sets.
+- Coinbase Pro parser: performance improvements for large data sets.
+- GateHub parser: performance improvements for large data sets.
+- Gravity parser: performance improvements for large data sets.
+- Etherscan merger: performance improvements for large data sets.
+- Etherscan merger: support merging of NFT and Internal txns exports.
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-
