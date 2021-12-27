@@ -344,7 +344,7 @@ class TaxCalculator(object):
             self.tax_report[tax_year]['CapitalGains'].tax_estimate_ct(tax_year)
         elif self.tax_rules == config.TAX_RULES_UK_INDIVIDUAL:
             self.tax_report[tax_year]['CapitalGains'].tax_estimate_cgt(tax_year)
-        elif self.tax_rules == config.TAX_RULES_NZ:
+        elif self.tax_rules in (config.TAX_RULES_FIFO, config.TAX_RULES_NZ):
             self.tax_report[tax_year]['CapitalGains'].tax_estimate_fixed()
         else:
             assert False

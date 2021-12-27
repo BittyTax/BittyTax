@@ -34,6 +34,7 @@ class Config(object):
                             'UK_COMPANY_MAY', 'UK_COMPANY_JUN', 'UK_COMPANY_JUL', 'UK_COMPANY_AUG',
                             'UK_COMPANY_SEP', 'UK_COMPANY_OCT', 'UK_COMPANY_NOV', 'UK_COMPANY_DEC']
     TAX_RULES_NZ = 'NZ'
+    TAX_RULES_FIFO = 'FIFO'
 
     TRADE_ASSET_TYPE_BUY = 0
     TRADE_ASSET_TYPE_SELL = 1
@@ -67,13 +68,6 @@ class Config(object):
 
     def __init__(self):
         self.debug = False
-
-        if self.tax_rules == TAX_RULES_NZ:
-            self.start_of_year_month = 4
-            self.start_of_year_day = 1
-        else:
-            self.start_of_year_month = 4
-            self.start_of_year_day = 6
 
         if not os.path.exists(Config.BITTYTAX_PATH):
             os.mkdir(Config.BITTYTAX_PATH)
