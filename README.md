@@ -792,9 +792,6 @@ If you need to change anything, the parameters are described below. The file is 
 | `data_source_fiat:` | `['ExchangeRatesAPI', 'RatesAPI']` | Default data source(s) to use for fiat prices |
 | `data_source_crypto:` | `['CryptoCompare', 'CoinGecko']` | Default data source(s) to use for cryptoasset prices |
 | `usernames:` | | List of usernames as used by ChangeTip |
-| `start_of_year_day:` | `6` | The tax year start day (the default day is April the 6th) |
-| `start_of_year_month:` | `4` | The tax year start month |
-
 
 ### fiat_list
 Used to differentiate between fiat and cryptoassets symbols. Make sure you configure all fiat currencies which appear within your transaction records here.
