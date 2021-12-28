@@ -152,6 +152,13 @@ def parse_binance_deposits_withdrawals_cash(data_row, _parser, **kwargs):
         raise DataFilenameError(kwargs['filename'], "Transaction Type (Deposit or Withdrawal)")
 
 def parse_binance_statements(data_rows, parser, **_kwargs):
+    tx_times = {}
+    for dr in data_rows:
+        if dr.row_dict['UTC_Time'] in tx_times:
+            tx_times[dr.row_dict['UTC_Time']].append(dr)
+        else:
+            tx_times[dr.row_dict['UTC_Time']] = [dr]
+
     for data_row in data_rows:
         if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
@@ -197,22 +204,23 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
         elif row_dict['Operation'] == 'Large OTC trading':
-            generic_convert(data_rows, row_dict['UTC_Time'], row_dict['Operation'], row_dict['Coin'])
+            trading_rows = [dr for dr in tx_times[row_dict['UTC_Time']]
+                            if dr.row_dict['Operation'] == row_dict['Operation']]
+            generic_convert(trading_rows, row_dict['Coin'])
         elif row_dict['Operation'] == "Small assets exchange BNB":
-            generic_convert(data_rows, row_dict['UTC_Time'], row_dict['Operation'], row_dict['Coin'])
+            bnb_rows = [dr for dr in tx_times[row_dict['UTC_Time']]
+                        if dr.row_dict['Operation'] == row_dict['Operation']]
+            generic_convert(bnb_rows, row_dict['Coin'])
+
         elif row_dict['Operation'] in ("Savings purchase", "Savings Principal redemption",
                                        "POS savings purchase", "POS savings redemption"):
             # Skip not taxable events
             continue
 
-def generic_convert(data_rows, utc_time, operation, buy_asset):
-    matching_rows = [data_row for data_row in data_rows
-                     if data_row.row_dict['UTC_Time'] == utc_time and
-                     data_row.row_dict['Operation'] == operation]
+def generic_convert(data_rows, buy_asset):
+    buy_quantity = get_coin_quantity(data_rows, buy_asset)
 
-    buy_quantity = get_coin_quantity(matching_rows, buy_asset)
-
-    for data_row in matching_rows:
+    for data_row in data_rows:
         if not data_row.parsed:
             data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['UTC_Time'])
             data_row.parsed = True

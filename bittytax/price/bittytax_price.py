@@ -22,6 +22,7 @@ from .exceptions import DataSourceError
 CMD_LATEST = 'latest'
 CMD_HISTORY = 'historic'
 CMD_LIST = 'list'
+STR_PRECISION = '{:0,.5f}'
 
 if sys.stdout.encoding != 'UTF-8':
     if sys.version_info[:2] >= (3, 7):
@@ -245,7 +246,7 @@ def output_price(symbol, price_ccy, quantity):
     print("%s1 %s=%s %s" % (
         Fore.WHITE,
         symbol,
-        config.sym() + '{:0,.2f}'.format(price_ccy),
+        config.sym() + STR_PRECISION.format(price_ccy),
         config.ccy))
     if quantity:
         quantity = Decimal(quantity)
@@ -253,7 +254,7 @@ def output_price(symbol, price_ccy, quantity):
             Fore.WHITE,
             '{:0,f}'.format(quantity.normalize()),
             symbol,
-            config.sym() + '{:0,.2f}'.format(quantity * price_ccy),
+            config.sym() + STR_PRECISION.format(quantity * price_ccy),
             config.ccy))
 
 def output_ds_price(asset):

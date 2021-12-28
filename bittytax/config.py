@@ -33,6 +33,8 @@ class Config(object):
     TAX_RULES_UK_COMPANY = ['UK_COMPANY_JAN', 'UK_COMPANY_FEB', 'UK_COMPANY_MAR', 'UK_COMPANY_APR',
                             'UK_COMPANY_MAY', 'UK_COMPANY_JUN', 'UK_COMPANY_JUL', 'UK_COMPANY_AUG',
                             'UK_COMPANY_SEP', 'UK_COMPANY_OCT', 'UK_COMPANY_NOV', 'UK_COMPANY_DEC']
+    TAX_RULES_NZ = 'NZ'
+    TAX_RULES_FIFO = 'FIFO'
 
     TRADE_ASSET_TYPE_BUY = 0
     TRADE_ASSET_TYPE_SELL = 1
@@ -52,20 +54,20 @@ class Config(object):
         'trade_asset_type': TRADE_ASSET_TYPE_PRIORITY,
         'trade_allowable_cost_type': TRADE_ALLOWABLE_COST_SPLIT,
         'show_empty_wallets': False,
-        'transfers_include': True,
-        'transfer_fee_disposal': False,
+        'transfers_include': False,
+        'transfer_fee_disposal': True,
         'transfer_fee_allowable_cost': False,
         'lost_buyback': True,
         'data_source_select': {},
         'data_source_fiat': DATA_SOURCE_FIAT,
         'data_source_crypto': DATA_SOURCE_CRYPTO,
         'coinbase_zero_fees_are_gifts': False,
+        'tax_rules': TAX_RULES_UK_INDIVIDUAL,
+        'tax_fixed_rate': 33,
     }
 
     def __init__(self):
         self.debug = False
-        self.start_of_year_month = 4
-        self.start_of_year_day = 6
 
         if not os.path.exists(Config.BITTYTAX_PATH):
             os.mkdir(Config.BITTYTAX_PATH)
@@ -94,6 +96,13 @@ class Config(object):
         self.ccy = self.config['local_currency']
         self.asset_priority = self.config['fiat_list'] + self.config['crypto_list']
 
+        if self.tax_rules == self.TAX_RULES_NZ:
+            self.start_of_year_month = 4
+            self.start_of_year_day = 1
+        else:
+            self.start_of_year_month = 4
+            self.start_of_year_day = 6
+
     def __getattr__(self, name):
         try:
             return self.config[name]
@@ -101,6 +110,8 @@ class Config(object):
             return getattr(self.args, name)
 
     def output_config(self):
+        print("%sconfig: \"%s\"" % (
+            Fore.GREEN, os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG)))
         for name in sorted(self.DEFAULT_CONFIG):
             print("%sconfig: %s = %s" % (Fore.GREEN, name, self.config[name]))
 

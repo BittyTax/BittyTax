@@ -13,7 +13,8 @@ from .config import config
 from .transactions import Buy, Sell
 from .holdings import Holdings
 
-PRECISION = Decimal('0.00')
+PRECISION = Decimal('0.00000')
+STR_PRECISION = '{:0,.5f}'
 
 class TaxCalculator(object):
     DISPOSAL_SAME_DAY = 'Same Day'
@@ -21,6 +22,7 @@ class TaxCalculator(object):
     DISPOSAL_BED_AND_BREAKFAST = 'Bed & Breakfast'
     DISPOSAL_SECTION_104 = 'Section 104'
     DISPOSAL_NO_GAIN_NO_LOSS = 'No Gain/No Loss'
+    DISPOSAL_TRADE = 'Exchange / Trade'
 
     TRANSFER_TYPES = (Buy.TYPE_DEPOSIT, Sell.TYPE_WITHDRAWAL)
 
@@ -232,7 +234,7 @@ class TaxCalculator(object):
             # 30 days between sell and buy-back
             return (s_timestamp.date() < b_timestamp.date() and
                     b_timestamp.date() <= s_timestamp.date() + timedelta(days=30))
-        if not rule:
+        if not rule or rule == self.DISPOSAL_TRADE:
             return True
 
         raise Exception
@@ -340,8 +342,12 @@ class TaxCalculator(object):
 
         if self.tax_rules in config.TAX_RULES_UK_COMPANY:
             self.tax_report[tax_year]['CapitalGains'].tax_estimate_ct(tax_year)
-        else:
+        elif self.tax_rules == config.TAX_RULES_UK_INDIVIDUAL:
             self.tax_report[tax_year]['CapitalGains'].tax_estimate_cgt(tax_year)
+        elif self.tax_rules in (config.TAX_RULES_FIFO, config.TAX_RULES_NZ):
+            self.tax_report[tax_year]['CapitalGains'].tax_estimate_fixed()
+        else:
+            assert False
 
     def calculate_income(self, tax_year):
         self.tax_report[tax_year]['Income'] = CalculateIncome()
@@ -435,10 +441,10 @@ class TaxEventCapitalGains(TaxEvent):
     def __str__(self):
         return "Disposal(%s) gain=%s (proceeds=%s - cost=%s - fees=%s)" % (
             self.disposal_type.lower(),
-            config.sym() + '{:0,.2f}'.format(self.gain),
-            config.sym() + '{:0,.2f}'.format(self.proceeds),
-            config.sym() + '{:0,.2f}'.format(self.cost),
-            config.sym() + '{:0,.2f}'.format(self.fees))
+            config.sym() + STR_PRECISION.format(self.gain),
+            config.sym() + STR_PRECISION.format(self.proceeds),
+            config.sym() + STR_PRECISION.format(self.cost),
+            config.sym() + STR_PRECISION.format(self.fees))
 
 class TaxEventIncome(TaxEvent):
     def __init__(self, b):
@@ -548,6 +554,13 @@ class CalculateCapitalGains(object):
 
         if self.totals['proceeds'] >= self.estimate['allowance'] * 4:
             self.estimate['proceeds_warning'] = True
+
+    def tax_estimate_fixed(self):
+        if self.totals['gain'] > 0:
+            self.estimate['taxable_gain'] = self.totals['gain']
+
+        self.estimate['fixed'] = self.estimate['taxable_gain'] * config.tax_fixed_rate / 100
+        self.estimate['fixed_rate'] = config.tax_fixed_rate
 
     def tax_estimate_ct(self, tax_year):
         if self.totals['gain'] > 0:

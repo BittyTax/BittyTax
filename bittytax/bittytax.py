@@ -55,8 +55,8 @@ def main():
                             min(CCG.CG_DATA_INDIVIDUAL),
                             max(CCG.CG_DATA_INDIVIDUAL)))
     parser.add_argument('--taxrules',
-                        choices=[config.TAX_RULES_UK_INDIVIDUAL] + config.TAX_RULES_UK_COMPANY,
-                        metavar='{UK_INDIVIDUAL, UK_COMPANY_XXX} '
+                        choices=[config.TAX_RULES_UK_INDIVIDUAL, config.TAX_RULES_NZ, config.TAX_RULES_FIFO] + config.TAX_RULES_UK_COMPANY,
+                        metavar='{UK_INDIVIDUAL, NZ, FIFO, UK_COMPANY_XXX} '
                                 'where XXX is the month which starts the financial year, '
                                 'i.e. JAN, FEB, etc.',
                         default=config.TAX_RULES_UK_INDIVIDUAL,
@@ -182,12 +182,17 @@ def do_tax(transaction_records, tax_rules, skip_integrity_check):
 
     tax = TaxCalculator(transaction_history.transactions, tax_rules)
     tax.pool_same_day()
-    tax.match_sell(tax.DISPOSAL_SAME_DAY)
+    if tax_rules not in (config.TAX_RULES_FIFO, config.TAX_RULES_NZ):
+        tax.match_sell(tax.DISPOSAL_SAME_DAY)
 
     if tax_rules == config.TAX_RULES_UK_INDIVIDUAL:
         tax.match_buyback(tax.DISPOSAL_BED_AND_BREAKFAST)
     elif tax_rules in config.TAX_RULES_UK_COMPANY:
         tax.match_sell(tax.DISPOSAL_TEN_DAY)
+    elif tax_rules == config.TAX_RULES_FIFO:
+        tax.match_sell(tax.DISPOSAL_TRADE)
+    elif tax_rules == config.TAX_RULES_NZ:
+        tax.match_sell()
 
     tax.process_section104(skip_integrity_check)
     return tax, value_asset
