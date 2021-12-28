@@ -81,7 +81,7 @@ class TransactionRecord(object):
         if self.fee:
             return " + fee=%s %s%s" % (
                 self._format_quantity(self.fee.quantity),
-                self.fee.asset,
+                self._format_str(self.fee.asset),
                 self._format_value(self.fee.proceeds))
         return ''
 

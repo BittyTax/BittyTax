@@ -143,13 +143,14 @@ DataParser(DataParser.TYPE_EXPLORER,
            worksheet_name="Etherscan",
            row_handler=parse_etherscan)
 
-DataParser(DataParser.TYPE_EXPLORER,
-           "Etherscan (ETH Internal Transactions)",
-           ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'ParentTxFrom', 'ParentTxTo',
-            'ParentTxETH_Value', 'From', 'TxTo', 'ContractAddress', 'Value_IN(ETH)',
-            'Value_OUT(ETH)', None, 'Historical $Price/Eth', 'Status', 'ErrCode', 'Type'],
-           worksheet_name="Etherscan",
-           row_handler=parse_etherscan_internal)
+etherscan_int = DataParser(
+        DataParser.TYPE_EXPLORER,
+        "Etherscan (ETH Internal Transactions)",
+        ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'ParentTxFrom', 'ParentTxTo',
+         'ParentTxETH_Value', 'From', 'TxTo', 'ContractAddress', 'Value_IN(ETH)',
+         'Value_OUT(ETH)', None, 'Historical $Price/Eth', 'Status', 'ErrCode', 'Type'],
+        worksheet_name="Etherscan",
+        row_handler=parse_etherscan_internal)
 
 DataParser(DataParser.TYPE_EXPLORER,
            "Etherscan (ETH Internal Transactions)",
@@ -168,9 +169,10 @@ etherscan_tokens = DataParser(
         worksheet_name="Etherscan",
         row_handler=parse_etherscan_tokens)
 
-DataParser(DataParser.TYPE_EXPLORER,
-           "Etherscan (ERC-721 NFTs)",
-           ['Txhash', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress', 'TokenId',
-            'TokenName', 'TokenSymbol'],
-           worksheet_name="Etherscan",
-           row_handler=parse_etherscan_nfts)
+etherscan_nfts = DataParser(
+        DataParser.TYPE_EXPLORER,
+        "Etherscan (ERC-721 NFTs)",
+        ['Txhash', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress', 'TokenId',
+         'TokenName', 'TokenSymbol'],
+        worksheet_name="Etherscan",
+        row_handler=parse_etherscan_nfts)

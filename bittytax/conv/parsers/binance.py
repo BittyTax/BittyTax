@@ -152,6 +152,13 @@ def parse_binance_deposits_withdrawals_cash(data_row, _parser, **kwargs):
         raise DataFilenameError(kwargs['filename'], "Transaction Type (Deposit or Withdrawal)")
 
 def parse_binance_statements(data_rows, parser, **_kwargs):
+    tx_times = {}
+    for dr in data_rows:
+        if dr.row_dict['UTC_Time'] in tx_times:
+            tx_times[dr.row_dict['UTC_Time']].append(dr)
+        else:
+            tx_times[dr.row_dict['UTC_Time']] = [dr]
+
     for data_row in data_rows:
         if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
@@ -199,7 +206,11 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
         elif row_dict['Operation'] == 'Large OTC trading':
             generic_convert(data_rows, row_dict['UTC_Time'], row_dict['Operation'], row_dict['Coin'])
         elif row_dict['Operation'] == "Small assets exchange BNB":
-            generic_convert(data_rows, row_dict['UTC_Time'], row_dict['Operation'], row_dict['Coin'])
+            bnb_rows = [dr for dr in tx_times[row_dict['UTC_Time']]
+                        if dr.row_dict['Operation'] == row_dict['Operation']]
+            bnb_convert(bnb_rows)
+            #generic_convert(data_rows, row_dict['UTC_Time'], row_dict['Operation'], row_dict['Coin'])
+
         elif row_dict['Operation'] in ("Savings purchase", "Savings Principal redemption",
                                        "POS savings purchase", "POS savings redemption"):
             # Skip not taxable events
@@ -211,8 +222,12 @@ def generic_convert(data_rows, utc_time, operation, buy_asset):
                      data_row.row_dict['Operation'] == operation]
 
     buy_quantity = get_coin_quantity(matching_rows, buy_asset)
+    # TODO: fix after merge
 
-    for data_row in matching_rows:
+def bnb_convert(bnb_rows):
+    buy_quantity = get_coin_quantity(bnb_rows, "BNB")
+
+    for data_row in bnb_rows:
         if not data_row.parsed:
             data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['UTC_Time'])
             data_row.parsed = True
