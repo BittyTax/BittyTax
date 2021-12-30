@@ -40,8 +40,18 @@ def parse_helium_fairspot(data_row, parser, **_kwargs):
                                                  fee_asset='HNT',
                                                  fee_value=fee_ccy,
                                                  wallet=WALLET)
+    elif row_dict['type'] == 'transfer_hotspot_v1':
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
+                                                 data_row.timestamp,
+                                                 sell_quantity=row_dict['hnt_amount'],
+                                                 sell_asset='HNT',
+                                                 sell_value=amount_ccy,
+                                                 fee_quantity=row_dict['hnt_fee'],
+                                                 fee_asset='HNT',
+                                                 fee_value=fee_ccy,
+                                                 wallet=WALLET)
     else:
-        raise UnexpectedTypeError(parser.in_header.index('type', 'type', row_dict['type']))
+        raise UnexpectedTypeError(parser.in_header.index('type'), 'type', row_dict['type'])
 
 def parse_helium_explorer(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict

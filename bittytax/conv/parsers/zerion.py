@@ -12,7 +12,7 @@ from colorama import Fore
 from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
-from ..exceptions import DataRowError, UnexpectedTypeError
+from ..exceptions import DataRowError, UnexpectedTypeError, UnexpectedContentError
 
 PRECISION = Decimal('0.' + '0' * 18)
 
@@ -34,7 +34,8 @@ def parse_zerion(data_rows, parser, **_kwargs):
 
 def parse_zerion_row(data_rows, parser, data_row, row_index):
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'] + ' ' + row_dict['Time'])
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'] + ' ' + row_dict['Time'],
+                                                    tz='Europe/London')
     data_row.parsed = True
 
     fee_quantity, fee_asset, fee_value = get_data(data_row,
@@ -43,52 +44,69 @@ def parse_zerion_row(data_rows, parser, data_row, row_index):
                                                   'Fee Fiat Amount',
                                                   'Fee Fiat Currency')
 
+    if row_dict['Status'] != 'Confirmed':
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
+                                                 data_row.timestamp,
+                                                 sell_quantity=Decimal(0),
+                                                 sell_asset=fee_asset,
+                                                 fee_quantity=fee_quantity,
+                                                 fee_asset=fee_asset,
+                                                 fee_value=fee_value,
+                                                 wallet=WALLET)
+        return
+
     changes = json.loads(row_dict['Changes JSON'])
     t_ins = [t for t in changes if t['type'] == 'in']
     t_outs = [t for t in changes if t['type'] == 'out']
 
     if row_dict['Accounting Type'] == "Income":
-        buy_quantity, buy_asset, buy_value = get_data(data_row,
-                                                      'Buy Amount',
-                                                      'Buy Currency',
-                                                      'Buy Fiat Amount',
-                                                      'Buy Fiat Currency',
-                                                      t_ins)
+        if len(t_ins) > 1:
+            do_zerion_multi_deposit(data_row, data_rows, row_index, t_ins)
+        else:
+            buy_quantity, buy_asset, buy_value = get_data(data_row,
+                                                          'Buy Amount',
+                                                          'Buy Currency',
+                                                          'Buy Fiat Amount',
+                                                          'Buy Fiat Currency',
+                                                          t_ins)
 
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                                 data_row.timestamp,
-                                                 buy_quantity=buy_quantity,
-                                                 buy_asset=buy_asset,
-                                                 buy_value=buy_value,
-                                                 fee_quantity=fee_quantity,
-                                                 fee_asset=fee_asset,
-                                                 fee_value=fee_value,
-                                                 wallet=WALLET)
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                                     data_row.timestamp,
+                                                     buy_quantity=buy_quantity,
+                                                     buy_asset=buy_asset,
+                                                     buy_value=buy_value,
+                                                     fee_quantity=fee_quantity,
+                                                     fee_asset=fee_asset,
+                                                     fee_value=fee_value,
+                                                     wallet=WALLET)
     elif row_dict['Accounting Type'] == "Spend":
-        sell_quantity, sell_asset, sell_value = get_data(data_row,
-                                                         'Sell Amount',
-                                                         'Sell Currency',
-                                                         'Sell Fiat Amount',
-                                                         'Sell Fiat Currency',
-                                                         t_outs)
+        if len(t_outs) > 1:
+            do_zerion_multi_withdrawal(data_row, data_rows, row_index, t_outs)
+        else:
+            sell_quantity, sell_asset, sell_value = get_data(data_row,
+                                                             'Sell Amount',
+                                                             'Sell Currency',
+                                                             'Sell Fiat Amount',
+                                                             'Sell Fiat Currency',
+                                                             t_outs)
 
-        if sell_quantity is None and fee_quantity is None:
-            return
+            if sell_quantity is None and fee_quantity is None:
+                return
 
-        # If a Spend only contains fees, we must include a sell of zero
-        if sell_quantity is None:
-            sell_quantity = 0
-            sell_asset = fee_asset
+            # If a Spend only contains fees, we must include a sell of zero
+            if sell_quantity is None:
+                sell_quantity = 0
+                sell_asset = fee_asset
 
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
-                                                 data_row.timestamp,
-                                                 sell_quantity=sell_quantity,
-                                                 sell_asset=sell_asset,
-                                                 sell_value=sell_value,
-                                                 fee_quantity=fee_quantity,
-                                                 fee_asset=fee_asset,
-                                                 fee_value=fee_value,
-                                                 wallet=WALLET)
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                     data_row.timestamp,
+                                                     sell_quantity=sell_quantity,
+                                                     sell_asset=sell_asset,
+                                                     sell_value=sell_value,
+                                                     fee_quantity=fee_quantity,
+                                                     fee_asset=fee_asset,
+                                                     fee_value=fee_value,
+                                                     wallet=WALLET)
     elif row_dict['Accounting Type'] == "Trade":
         if len(t_ins) == 1:
             # Multi-sell or normal Trade
@@ -97,11 +115,72 @@ def parse_zerion_row(data_rows, parser, data_row, row_index):
             # Multi-buy
             do_zerion_multi_buy(data_row, data_rows, row_index, t_ins, t_outs)
         else:
-            # Multi-to-Multi trade not supported
-            raise Exception
+            # Multi-sell to Multi-buy trade not supported
+            raise UnexpectedContentError(parser.in_header.index('Changes JSON'), 'Changes JSON',
+                                         row_dict['Changes JSON'])
     else:
         raise UnexpectedTypeError(parser.in_header.index('Accounting Type'), 'Accounting Type',
                                   row_dict['Accounting Type'])
+
+def do_zerion_multi_deposit(data_row, data_rows, row_index, t_ins):
+    for cnt, t_in in enumerate(t_ins):
+        buy_quantity, buy_asset, buy_value = get_data_json(data_row, t_in)
+        t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                        data_row.timestamp,
+                                        buy_quantity=buy_quantity,
+                                        buy_asset=buy_asset,
+                                        buy_value=buy_value,
+                                        wallet=WALLET)
+
+        if not data_row.t_record:
+            data_row.t_record = t_record
+        else:
+            dup_data_row = copy.copy(data_row)
+            dup_data_row.row = []
+            dup_data_row.t_record = t_record
+            data_rows.insert(row_index + cnt, dup_data_row)
+
+def do_zerion_multi_withdrawal(data_row, data_rows, row_index, t_outs):
+    fee_quantity, fee_asset, fee_value = get_data(data_row,
+                                                  'Fee Amount',
+                                                  'Fee Currency',
+                                                  'Fee Fiat Amount',
+                                                  'Fee Fiat Currency')
+    tot_fee_quantity = 0
+
+    for cnt, t_out in enumerate(t_outs):
+        sell_quantity, sell_asset, sell_value = get_data_json(data_row, t_out)
+
+        split_fee_value = fee_value / len(t_outs) if fee_value else None
+
+        if cnt < len(t_outs) - 1:
+            split_fee_quantity = (fee_quantity / len(t_outs)).quantize(PRECISION)
+            tot_fee_quantity += split_fee_quantity
+        else:
+            # Last t_out, use up remainder
+            split_fee_quantity = fee_quantity - tot_fee_quantity if fee_quantity else None
+
+        if config.debug:
+            sys.stderr.write("%sconv: split_fee_quantity=%s split_fee_value=%s\n" % (
+                Fore.GREEN, split_fee_quantity, split_fee_value))
+
+        t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                        data_row.timestamp,
+                                        sell_quantity=sell_quantity,
+                                        sell_asset=sell_asset,
+                                        sell_value=sell_value,
+                                        fee_quantity=split_fee_quantity,
+                                        fee_asset=fee_asset,
+                                        fee_value=split_fee_value,
+                                        wallet=WALLET)
+
+        if not data_row.t_record:
+            data_row.t_record = t_record
+        else:
+            dup_data_row = copy.copy(data_row)
+            dup_data_row.row = []
+            dup_data_row.t_record = t_record
+            data_rows.insert(row_index + cnt, dup_data_row)
 
 def do_zerion_multi_sell(data_row, data_rows, row_index, t_ins, t_outs):
     fee_quantity, fee_asset, fee_value = get_data(data_row,

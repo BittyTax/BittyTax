@@ -78,7 +78,7 @@ class DataFile(object):
 
         sys.stderr.write("%sfile: %s%s '%s' %smatched as %s\"%s\"\n" % (
             Fore.WHITE, Fore.YELLOW, filename, worksheet.name,
-            Fore.WHITE, Fore.CYAN, parser.worksheet_name))
+            Fore.WHITE, Fore.CYAN, parser.name))
 
         data_file = DataFile(parser, reader)
         data_file.parse(filename=filename,
@@ -126,7 +126,7 @@ class DataFile(object):
             if parser is not None:
                 sys.stderr.write("%sfile: %s%s %smatched as %s\"%s\"\n" % (
                     Fore.WHITE, Fore.YELLOW, filename, Fore.WHITE,
-                    Fore.CYAN, parser.worksheet_name))
+                    Fore.CYAN, parser.name))
 
                 data_file = DataFile(parser, reader)
                 data_file.parse(filename=filename,
@@ -166,7 +166,7 @@ class DataFile(object):
 
     @classmethod
     def consolidate_datafiles(cls, data_file):
-        if data_file in cls.data_files:
+        if data_file.parser.p_type != DataParser.TYPE_GENERIC and data_file in cls.data_files:
             cls.data_files[data_file] += data_file
         else:
             cls.data_files[data_file] = data_file

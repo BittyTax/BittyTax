@@ -16,6 +16,7 @@ from ..version import __version__
 from ..config import config
 from .dataparser import DataParser
 from .datafile import DataFile
+from .datamerge import DataMerge
 from .output_csv import OutputCsv
 from .output_excel import OutputExcel
 from .exceptions import UnknownCryptoassetError, UnknownUsernameError, DataFilenameError, \
@@ -123,6 +124,8 @@ def main():
                         Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, pathname))
 
     if DataFile.data_files:
+        DataMerge.match_merge(DataFile.data_files)
+
         if args.format == config.FORMAT_EXCEL:
             output = OutputExcel(parser.prog, DataFile.data_files_ordered, args)
             output.write_excel()

@@ -125,6 +125,12 @@ DataParser(DataParser.TYPE_WALLET,
 
 DataParser(DataParser.TYPE_WALLET,
            "Qt Wallet (i.e. Bitcoin Core, etc)",
+           ['Confirmed', 'Date', 'Type', 'Label', 'Address', 'Amount', 'ID'],
+           worksheet_name="Qt Wallet",
+           row_handler=parse_qt_wallet)
+
+DataParser(DataParser.TYPE_WALLET,
+           "Qt Wallet (i.e. Bitcoin Core, etc)",
            ['Transaction', 'Block', 'Date/Time', 'Type', 'Amount', 'Total'],
            worksheet_name="Qt Wallet",
            row_handler=parse_vericoin_qt_wallet)

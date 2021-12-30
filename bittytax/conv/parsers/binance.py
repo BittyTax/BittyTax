@@ -11,12 +11,13 @@ from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError, UnexpectedTradingPairError, \
-                         MissingComponentError, DataFilenameError
+                         DataFilenameError
 
 WALLET = "Binance"
+
 QUOTE_ASSETS = ['AUD', 'BIDR', 'BKRW', 'BNB', 'BRL', 'BTC', 'BUSD', 'BVND', 'DAI', 'ETH',
                 'EUR', 'GBP', 'GYEN', 'IDRT', 'NGN', 'PAX', 'RUB', 'TRX', 'TRY', 'TUSD',
-                'UAH', 'USDC', 'USDS', 'USDT', 'VAI', 'XRP', 'ZAR']
+                'UAH', 'USDC', 'USDP', 'USDS', 'USDT', 'VAI', 'XRP', 'ZAR']
 
 def parse_binance_trades(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
@@ -139,7 +140,7 @@ def parse_binance_deposits_withdrawals_cash(data_row, _parser, **kwargs):
                                                  fee_quantity=row_dict['Fee'],
                                                  fee_asset=row_dict['Coin'],
                                                  wallet=WALLET)
-    elif "withdrawal" in kwargs['filename'].lower():
+    elif "withdraw" in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=row_dict['Amount'],
@@ -151,6 +152,13 @@ def parse_binance_deposits_withdrawals_cash(data_row, _parser, **kwargs):
         raise DataFilenameError(kwargs['filename'], "Transaction Type (Deposit or Withdrawal)")
 
 def parse_binance_statements(data_rows, parser, **_kwargs):
+    tx_times = {}
+    for dr in data_rows:
+        if dr.row_dict['UTC_Time'] in tx_times:
+            tx_times[dr.row_dict['UTC_Time']].append(dr)
+        else:
+            tx_times[dr.row_dict['UTC_Time']] = [dr]
+
     for data_row in data_rows:
         if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
@@ -190,44 +198,37 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
         elif row_dict['Operation'] == "Small assets exchange BNB":
-            bnb_convert(data_rows, parser, row_dict['UTC_Time'], row_dict['Operation'])
+            bnb_rows = [dr for dr in tx_times[row_dict['UTC_Time']]
+                        if dr.row_dict['Operation'] == row_dict['Operation']]
+            bnb_convert(bnb_rows)
         elif row_dict['Operation'] in ("Savings purchase", "Savings Principal redemption",
                                        "POS savings purchase", "POS savings redemption"):
             # Skip not taxable events
-            return
+            continue
 
-def bnb_convert(data_rows, parser, utc_time, operation):
-    matching_rows = [data_row for data_row in data_rows
-                     if data_row.row_dict['UTC_Time'] == utc_time and
-                     data_row.row_dict['Operation'] == operation]
+def bnb_convert(bnb_rows):
+    buy_quantity = get_bnb_quantity(bnb_rows)
 
-    bnb_found, buy_quantity = get_bnb_quantity(matching_rows)
-
-    for data_row in matching_rows:
+    for data_row in bnb_rows:
         if not data_row.parsed:
             data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['UTC_Time'])
             data_row.parsed = True
 
-            if bnb_found:
-                data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                         data_row.timestamp,
-                                                         buy_quantity=buy_quantity,
-                                                         buy_asset="BNB",
-                                                         sell_quantity=abs(Decimal(data_row. \
-                                                             row_dict['Change'])),
-                                                         sell_asset=data_row.row_dict['Coin'],
-                                                         wallet=WALLET)
-            else:
-                data_row.failure = MissingComponentError(parser.in_header.index('Operation'),
-                                                         'Operation',
-                                                         data_row.row_dict['Operation'])
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                     data_row.timestamp,
+                                                     buy_quantity=buy_quantity,
+                                                     buy_asset="BNB",
+                                                     sell_quantity=abs(Decimal(data_row. \
+                                                         row_dict['Change'])),
+                                                     sell_asset=data_row.row_dict['Coin'],
+                                                     wallet=WALLET)
 
-def get_bnb_quantity(matching_rows):
+def get_bnb_quantity(bnb_rows):
     bnb_found = False
     buy_quantity = None
     assets = 0
 
-    for data_row in matching_rows:
+    for data_row in bnb_rows:
         if data_row.row_dict['Coin'] == "BNB":
             data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['UTC_Time'])
             data_row.parsed = True
@@ -245,7 +246,7 @@ def get_bnb_quantity(matching_rows):
         # Multiple assets converted, BNB quantities will need to be added manually
         buy_quantity = None
 
-    return bnb_found, buy_quantity
+    return buy_quantity
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Binance Trades",
@@ -279,6 +280,12 @@ DataParser(DataParser.TYPE_EXCHANGE,
             'Order ID'],
            worksheet_name="Binance D,W",
            row_handler=parse_binance_deposits_withdrawals_cash)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Binance Statements",
+           ['User_ID', 'UTC_Time', 'Account', 'Operation', 'Coin', 'Change', 'Remark'],
+           worksheet_name="Binance S",
+           all_handler=parse_binance_statements)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Binance Statements",

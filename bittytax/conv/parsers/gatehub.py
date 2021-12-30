@@ -15,6 +15,13 @@ from ..exceptions import DataRowError, UnexpectedTypeError, \
 WALLET = "GateHub"
 
 def parse_gatehub(data_rows, parser, **_kwargs):
+    tx_ids = {}
+    for dr in data_rows:
+        if dr.row_dict['TX hash'] in tx_ids:
+            tx_ids[dr.row_dict['TX hash']].append(dr)
+        else:
+            tx_ids[dr.row_dict['TX hash']] = [dr]
+
     for data_row in data_rows:
         if config.debug:
             sys.stderr.write("%sconv: row[%s] %s\n" % (
@@ -24,11 +31,11 @@ def parse_gatehub(data_rows, parser, **_kwargs):
             continue
 
         try:
-            parse_gatehub_row(data_rows, parser, data_row)
+            parse_gatehub_row(tx_ids, parser, data_row)
         except DataRowError as e:
             data_row.failure = e
 
-def parse_gatehub_row(data_rows, parser, data_row):
+def parse_gatehub_row(tx_ids, parser, data_row):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Time'])
     data_row.parsed = True
@@ -54,25 +61,25 @@ def parse_gatehub_row(data_rows, parser, data_row):
             buy_quantity = row_dict['Amount']
             buy_asset = row_dict['Currency']
 
-        fee_quantity, fee_asset = find_same_tx(data_rows, row_dict['TX hash'], "network_fee")
+        fee_quantity, fee_asset = get_tx(tx_ids[row_dict['TX hash']], "network_fee")
     elif row_dict['Type'] == "exchange":
         t_type = TransactionOutRecord.TYPE_TRADE
         if Decimal(row_dict['Amount']) < 0:
             sell_quantity = abs(Decimal(row_dict['Amount']))
             sell_asset = row_dict['Currency']
 
-            buy_quantity, buy_asset = find_same_tx(data_rows, row_dict['TX hash'], "exchange")
+            buy_quantity, buy_asset = get_tx(tx_ids[row_dict['TX hash']], "exchange")
         else:
             buy_quantity = row_dict['Amount']
             buy_asset = row_dict['Currency']
 
-            sell_quantity, sell_asset = find_same_tx(data_rows, row_dict['TX hash'], "exchange")
+            sell_quantity, sell_asset = get_tx(tx_ids[row_dict['TX hash']], "exchange")
 
         if sell_quantity is None or buy_quantity is None:
             raise MissingComponentError(parser.in_header.index('TX hash'), 'TX hash',
                                         row_dict['TX hash'])
 
-        fee_quantity, fee_asset = find_same_tx(data_rows, row_dict['TX hash'], "network_fee")
+        fee_quantity, fee_asset = get_tx(tx_ids[row_dict['TX hash']], "network_fee")
     elif "network_fee" in row_dict['Type']:
         # Fees which are not associated with a payment or exchange are added
         # as a Spend
@@ -92,14 +99,12 @@ def parse_gatehub_row(data_rows, parser, data_row):
                                              fee_asset=fee_asset,
                                              wallet=WALLET)
 
-def find_same_tx(data_rows, tx_hash, tx_type):
+def get_tx(tx_id_rows, tx_type):
     quantity = None
     asset = ""
 
-    data_rows = [data_row for data_row in data_rows
-                 if data_row.row_dict['TX hash'] == tx_hash and not data_row.parsed]
-    for data_row in data_rows:
-        if tx_type in data_row.row_dict['Type']:
+    for data_row in tx_id_rows:
+        if not data_row.parsed and tx_type in data_row.row_dict['Type']:
             quantity = abs(Decimal(data_row.row_dict['Amount']))
             asset = data_row.row_dict['Currency']
             data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['Time'])

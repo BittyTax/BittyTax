@@ -24,6 +24,7 @@ from . import energyweb
 from . import etherscan
 from . import exodus
 from . import gatehub
+from . import generic
 from . import gravity
 from . import handcash
 from . import hecoinfo
@@ -38,7 +39,9 @@ from . import liquid
 from . import nexo
 from . import okex
 from . import poloniex
+from . import polygonscan
 from . import qtwallet
+from . import snowtrace
 from . import staketax
 from . import tradesatoshi
 from . import trezor
