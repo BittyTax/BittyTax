@@ -75,17 +75,22 @@ def parse_etherscan_tokens(data_row, _parser, **kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict['UnixTimestamp']))
 
+    if row_dict['TokenSymbol'].endswith('-LP'):
+        asset = row_dict['TokenSymbol'] + '-' + row_dict['ContractAddress'][0:10]
+    else:
+        asset = row_dict['TokenSymbol']
+
     if row_dict['To'].lower() in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Value'].replace(',', ''),
-                                                 buy_asset=row_dict['TokenSymbol'],
+                                                 buy_asset=asset,
                                                  wallet=WALLET)
     elif row_dict['From'].lower() in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=row_dict['Value'].replace(',', ''),
-                                                 sell_asset=row_dict['TokenSymbol'],
+                                                 sell_asset=asset,
                                                  wallet=WALLET)
     else:
         raise DataFilenameError(kwargs['filename'], "Ethereum address")
