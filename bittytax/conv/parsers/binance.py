@@ -19,6 +19,8 @@ QUOTE_ASSETS = ['AUD', 'BIDR', 'BKRW', 'BNB', 'BRL', 'BTC', 'BUSD', 'BVND', 'DAI
                 'EUR', 'GBP', 'GYEN', 'IDRT', 'NGN', 'PAX', 'RUB', 'TRX', 'TRY', 'TUSD',
                 'UAH', 'USDC', 'USDP', 'USDS', 'USDT', 'VAI', 'XRP', 'ZAR']
 
+BASE_ASSETS = ['1INCH', '1INCHDOWN', '1INCHUP']
+
 def parse_binance_trades(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date(UTC)'])
@@ -93,8 +95,11 @@ def split_trading_pair(trading_pair):
     return None, None
 
 def split_asset(amount):
-    match = re.match(r'([\d|,]*\.\d+)(\w+)$', amount)
+    for base_asset in BASE_ASSETS:
+        if amount.endswith(base_asset):
+            return amount[:-len(base_asset)], base_asset
 
+    match = re.match(r'([\d|,]*\.\d+)(\w+)$', amount)
     if match:
         return match.group(1), match.group(2)
     return None, ''

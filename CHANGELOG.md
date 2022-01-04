@@ -1,5 +1,7 @@
 # Change Log
 ## [Unreleased]
+### Fixed
+- Binance parser: handle symbols with leading digit
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
 - Conversion tool: added parser for SnowTrace explorer.
