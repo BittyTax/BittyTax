@@ -8,6 +8,7 @@
 - Conversion tool: added parser for PolygonScan explorer.
 - Conversion tool: added merge parser for SnowTrace.
 - Conversion tool: added merge parser for PolygonScan.
+- HandCash parser: added new export format.
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
