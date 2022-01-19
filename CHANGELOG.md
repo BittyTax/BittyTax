@@ -16,6 +16,7 @@
 - Etherscan merger: performance improvements for large data sets.
 - Etherscan merger: support merging of NFT and Internal txns exports.
 - Etherscan parser: append contract address for LP tokens.
+- Gravity parser: referral fee payouts.
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-
