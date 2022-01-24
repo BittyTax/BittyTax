@@ -46,5 +46,6 @@ from . import tradesatoshi
 from . import trezor
 from . import trezorsuite
 from . import uphold
+from . import volt
 from . import wirex
 from . import zerion
