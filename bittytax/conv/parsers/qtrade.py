@@ -32,7 +32,7 @@ def parse_qtrade_trades(data_row, parser, **_kwargs):
                                                  fee_asset=row_dict['Base Currency'],
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(2, parser.in_header[2], data_row.row_dict[2])
+        raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "qTrade Trades",
