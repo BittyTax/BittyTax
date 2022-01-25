@@ -40,6 +40,7 @@ from . import nexo
 from . import okex
 from . import poloniex
 from . import polygonscan
+from . import qtrade
 from . import qtwallet
 from . import snowtrace
 from . import tradesatoshi

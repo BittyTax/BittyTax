@@ -10,6 +10,7 @@
 - Conversion tool: added merge parser for PolygonScan.
 - HandCash parser: added new export format.
 - Conversion tool: added parser for Volt wallet.
+- Conversion tool: added parser for qTrade exchange.
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
