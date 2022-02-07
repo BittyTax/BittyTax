@@ -1,7 +1,8 @@
 # Change Log
 ## [Unreleased]
 ### Fixed
-- Binance parser: handle symbols with leading digit
+- Binance parser: handle symbols with leading digit.
+- Bitfinex parser: handle '-' in FEE PERC column. ([#197](https://github.com/BittyTax/BittyTax/issues/197))
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
 - Conversion tool: added parser for SnowTrace explorer.
@@ -11,6 +12,7 @@
 - HandCash parser: added new export format.
 - Conversion tool: added parser for Volt wallet.
 - Conversion tool: added parser for qTrade exchange.
+- Bitfinex parser: added ledger support.
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
