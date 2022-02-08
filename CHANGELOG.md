@@ -13,6 +13,8 @@
 - Conversion tool: added parser for Volt wallet.
 - Conversion tool: added parser for qTrade exchange.
 - Bitfinex parser: added ledger support.
+- Hotbit parser: added new orders export(s).
+- Hotbit parser: added trades format.
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
