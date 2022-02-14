@@ -3,6 +3,7 @@
 ### Fixed
 - Binance parser: handle symbols with leading digit.
 - Bitfinex parser: handle '-' in FEE PERC column. ([#197](https://github.com/BittyTax/BittyTax/issues/197))
+- Binance parser: handle a Distribution which is negative. ([#179](https://github.com/BittyTax/BittyTax/issues/179))
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
 - Conversion tool: added parser for SnowTrace explorer.
@@ -15,6 +16,7 @@
 - Bitfinex parser: added ledger support.
 - Hotbit parser: added new orders export(s).
 - Hotbit parser: added trades format.
+- Binance parser: added Convert History format. ([#208](https://github.com/BittyTax/BittyTax/issues/208))
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
@@ -24,6 +26,8 @@
 - Etherscan merger: support merging of NFT and Internal txns exports.
 - Etherscan parser: append contract address for LP tokens.
 - Gravity parser: referral fee payouts.
+- Binance parser: added "Large OTC trading" operation. ([#191](https://github.com/BittyTax/BittyTax/issues/191))
+- Binance parser: added additional operations.
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-
