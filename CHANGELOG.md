@@ -4,6 +4,11 @@
 - Binance parser: handle symbols with leading digit.
 - Bitfinex parser: handle '-' in FEE PERC column. ([#197](https://github.com/BittyTax/BittyTax/issues/197))
 - Binance parser: handle a Distribution which is negative. ([#179](https://github.com/BittyTax/BittyTax/issues/179))
+- Etherscan parser: failed transactions should not result in Deposits. ([#226](https://github.com/BittyTax/BittyTax/issues/226))
+- BscScan parser: failed transactions should not result in Deposits.
+- HecoInfo parser: failed transactions should not result in Deposits.
+- PolygonScan parser: failed transactions should not result in Deposits.
+- SnowTrace parser: failed transactions should not result in Deposits.
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
 - Conversion tool: added parser for SnowTrace explorer.

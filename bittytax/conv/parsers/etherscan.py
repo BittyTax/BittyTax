@@ -18,12 +18,13 @@ def parse_etherscan(data_row, _parser, **_kwargs):
         row_dict['Value_OUT(ETH)'] = 0
 
     if Decimal(row_dict['Value_IN(ETH)']) > 0:
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                                 data_row.timestamp,
-                                                 buy_quantity=row_dict['Value_IN(ETH)'],
-                                                 buy_asset="ETH",
-                                                 wallet=WALLET,
-                                                 note=get_note(row_dict))
+        if row_dict['Status'] == '':
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                                     data_row.timestamp,
+                                                     buy_quantity=row_dict['Value_IN(ETH)'],
+                                                     buy_asset="ETH",
+                                                     wallet=WALLET,
+                                                     note=get_note(row_dict))
     elif Decimal(row_dict['Value_OUT(ETH)']) > 0:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,

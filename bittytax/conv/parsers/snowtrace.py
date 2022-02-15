@@ -18,12 +18,13 @@ def parse_snowtrace(data_row, _parser, **_kwargs):
         row_dict['Value_OUT(AVAX)'] = 0
 
     if Decimal(row_dict['Value_IN(AVAX)']) > 0:
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                                 data_row.timestamp,
-                                                 buy_quantity=row_dict['Value_IN(AVAX)'],
-                                                 buy_asset="AVAX",
-                                                 wallet=WALLET,
-                                                 note=get_note(row_dict))
+        if row_dict['Status'] == '':
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
+                                                     data_row.timestamp,
+                                                     buy_quantity=row_dict['Value_IN(AVAX)'],
+                                                     buy_asset="AVAX",
+                                                     wallet=WALLET,
+                                                     note=get_note(row_dict))
     elif Decimal(row_dict['Value_OUT(AVAX)']) > 0:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
