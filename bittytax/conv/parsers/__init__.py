@@ -36,6 +36,7 @@ from . import kraken
 from . import kucoin
 from . import ledgerlive
 from . import liquid
+from . import nault
 from . import nexo
 from . import okex
 from . import poloniex
