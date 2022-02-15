@@ -115,7 +115,7 @@ def parse_crypto_com(data_row, parser, **_kwargs):
                                                  wallet=WALLET)
     elif row_dict['Transaction Kind'] in ("crypto_earn_program_created",
                                           "crypto_earn_program_withdrawn",
-                                          "lockup_lock", "lockup_upgrade",
+                                          "lockup_lock", "lockup_unlock", "hlockup_upgrade",
                                           "lockup_swap_credited", "lockup_swap_debited",
                                           "dynamic_coin_swap_credited", "dynamic_coin_swap_debited",
                                           "dynamic_coin_swap_bonus_exchange_deposit",

@@ -33,6 +33,7 @@
 - Gravity parser: referral fee payouts.
 - Binance parser: added "Large OTC trading" operation. ([#191](https://github.com/BittyTax/BittyTax/issues/191))
 - Binance parser: added additional operations.
+- Crypto.com parser: added "lockup_unlock" transaction type. ([#227](https://github.com/BittyTax/BittyTax/issues/227))
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-
