@@ -32,6 +32,7 @@ from . import helium
 from . import hitbtc
 from . import hotbit
 from . import ii
+from . import koinly
 from . import kraken
 from . import kucoin
 from . import ledgerlive
