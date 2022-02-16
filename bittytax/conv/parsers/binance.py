@@ -234,16 +234,19 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      buy_quantity=row_dict['Change'],
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
-        elif row_dict['Operation'] in ("Small assets exchange BNB", "Large OTC trading"):
-            make_trade(row_dict['Operation'], tx_times[row_dict['UTC_Time']])
+        elif row_dict['Operation'] == "Small assets exchange BNB":
+            make_trade(row_dict['Operation'], tx_times[row_dict['UTC_Time']], "BNB")
         elif row_dict['Operation'] in ("Savings purchase", "Savings Principal redemption",
                                        "POS savings purchase", "POS savings redemption"):
             # Skip not taxable events
             continue
 
-def make_trade(operation, tx_times):
+def make_trade(operation, tx_times, default_asset=''):
     op_rows = [dr for dr in tx_times if dr.row_dict['Operation'] == operation]
     buy_quantity, buy_asset = get_buy_quantity(op_rows)
+
+    if not buy_asset:
+        buy_asset = default_asset
 
     for data_row in op_rows:
         if not data_row.parsed:

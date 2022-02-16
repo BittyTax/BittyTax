@@ -22,6 +22,7 @@
 - Hotbit parser: added new orders export(s).
 - Hotbit parser: added trades format.
 - Binance parser: added Convert History format. ([#208](https://github.com/BittyTax/BittyTax/issues/208))
+- Conversion tool: added parser for Nault wallet.
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
@@ -34,6 +35,7 @@
 - Binance parser: added "Large OTC trading" operation. ([#191](https://github.com/BittyTax/BittyTax/issues/191))
 - Binance parser: added additional operations.
 - Crypto.com parser: added "lockup_unlock" transaction type. ([#227](https://github.com/BittyTax/BittyTax/issues/227))
+- Binance parser: removed "Large OTC trading".
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-
