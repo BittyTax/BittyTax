@@ -23,6 +23,7 @@
 - Hotbit parser: added trades format.
 - Binance parser: added Convert History format. ([#208](https://github.com/BittyTax/BittyTax/issues/208))
 - Conversion tool: added parser for Nault wallet.
+- Accounting tool: hide empty balances/wallets from the audit report. ([#229](https://github.com/BittyTax/BittyTax/issues/229))
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
