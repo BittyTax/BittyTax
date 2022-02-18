@@ -18,7 +18,9 @@ KOINLY_D_MAPPING = {'': TransactionOutRecord.TYPE_GIFT_RECEIVED,
                     'reward': TransactionOutRecord.TYPE_GIFT_RECEIVED,
                     'income': TransactionOutRecord.TYPE_INCOME,
                     'loan_interest': TransactionOutRecord.TYPE_INTEREST,
-                    'realized_gain': None}
+                    'realized_gain': None,
+                    'staking': TransactionOutRecord.TYPE_STAKING,
+                    'fork': TransactionOutRecord.TYPE_GIFT_RECEIVED}
 
 KOINLY_W_MAPPING = {'': TransactionOutRecord.TYPE_GIFT_SENT,
                     'gift': TransactionOutRecord.TYPE_GIFT_SENT,
