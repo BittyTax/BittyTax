@@ -13,20 +13,22 @@ from ..exceptions import DataRowError, UnexpectedTypeError
 
 KOINLY_D_MAPPING = {'': TransactionOutRecord.TYPE_GIFT_RECEIVED,
                     'airdrop': TransactionOutRecord.TYPE_AIRDROP,
-                    'fork': None,
+                    'fork': TransactionOutRecord.TYPE_GIFT_RECEIVED,
                     'mining': TransactionOutRecord.TYPE_MINING,
                     'reward': TransactionOutRecord.TYPE_GIFT_RECEIVED,
                     'income': TransactionOutRecord.TYPE_INCOME,
                     'loan_interest': TransactionOutRecord.TYPE_INTEREST,
+                    'staking': TransactionOutRecord.TYPE_STAKING,
                     'realized_gain': None}
 
 KOINLY_W_MAPPING = {'': TransactionOutRecord.TYPE_GIFT_SENT,
                     'gift': TransactionOutRecord.TYPE_GIFT_SENT,
                     'lost': TransactionOutRecord.TYPE_LOST,
                     'cost': TransactionOutRecord.TYPE_SPEND,
+                    'donation': TransactionOutRecord.TYPE_CHARTITY_SENT,
+                    'interest_payment': TransactionOutRecord.TYPE_SPEND,
                     'margin_fee': None,
-                    'interest_payment': None,
-                    'realized_loss': None,
+                    'realized_gain': None,
                     'swap': None}
 
 def parse_koinly(data_rows, parser, **_kwargs):
@@ -97,6 +99,9 @@ def parse_koinly_row(data_rows, parser, data_row, row_index):
                                                      buy_quantity=row_dict['Received Amount'],
                                                      buy_asset=row_dict['Received Currency'],
                                                      buy_value=row_dict['Net Value (GBP)'],
+                                                     fee_quantity=fee_quantity,
+                                                     fee_asset=row_dict['Fee Currency'],
+                                                     fee_value=fee_value,
                                                      wallet=row_dict['Receiving Wallet'],
                                                      note=row_dict['Description'])
         else:
