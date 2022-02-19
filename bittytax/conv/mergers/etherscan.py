@@ -60,10 +60,15 @@ def do_merge_etherscan(data_files, staking_addresses):
 
             continue
 
-        t_ins = [t.data_row for t in t_merge + [data_row] if t.data_row.t_record and
+        t_ins = [t.data_row for t in t_merge if t.data_row.t_record and
                  t.data_row.t_record.t_type == TransactionOutRecord.TYPE_DEPOSIT]
-        t_outs = [t.data_row for t in t_merge + [data_row] if t.data_row.t_record and
+        t_outs = [t.data_row for t in t_merge if t.data_row.t_record and
                   t.data_row.t_record.t_type == TransactionOutRecord.TYPE_WITHDRAWAL]
+
+        if data_row.t_record.t_type == TransactionOutRecord.TYPE_DEPOSIT:
+            t_ins.append(data_row)
+        elif data_row.t_record.t_type == TransactionOutRecord.TYPE_WITHDRAWAL:
+            t_outs.append(data_row)
 
         if config.debug:
             output_records(data_row, t_ins, t_outs)
