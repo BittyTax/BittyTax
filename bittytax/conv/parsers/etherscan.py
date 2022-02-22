@@ -104,13 +104,15 @@ def parse_etherscan_nfts(data_row, _parser, **kwargs):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
                                                  buy_quantity=1,
-                                                 buy_asset=row_dict['TokenSymbol'],
+                                                 buy_asset='{} #{}'.format(row_dict['TokenName'],
+                                                                           row_dict['TokenId']),
                                                  wallet=WALLET)
     elif row_dict['From'].lower() in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
                                                  sell_quantity=1,
-                                                 sell_asset=row_dict['TokenSymbol'],
+                                                 sell_asset='{} #{}'.format(row_dict['TokenName'],
+                                                                            row_dict['TokenId']),
                                                  wallet=WALLET)
     else:
         raise DataFilenameError(kwargs['filename'], "Ethereum address")
