@@ -62,21 +62,19 @@ class TransactionHistory(object):
                         tr.fee.fee_value = tr.fee.proceeds
                         tr.fee.fee_fixed = tr.fee.proceeds_fixed
 
-            if tr.buy and (tr.buy.quantity or tr.buy.fee_value) and \
-                    tr.buy.asset not in config.fiat_list:
+            if tr.buy and (tr.buy.quantity or tr.buy.fee_value):
                 tr.buy.set_tid()
                 self.transactions.append(tr.buy)
                 if config.debug:
                     print("%ssplit:   %s" % (Fore.GREEN, tr.buy))
 
-            if tr.sell and (tr.sell.quantity or tr.sell.fee_value) and \
-                    tr.sell.asset not in config.fiat_list:
+            if tr.sell and (tr.sell.quantity or tr.sell.fee_value):
                 tr.sell.set_tid()
                 self.transactions.append(tr.sell)
                 if config.debug:
                     print("%ssplit:   %s" % (Fore.GREEN, tr.sell))
 
-            if tr.fee and tr.fee.quantity and tr.fee.asset not in config.fiat_list:
+            if tr.fee and tr.fee.quantity:
                 tr.fee.set_tid()
                 self.transactions.append(tr.fee)
                 if config.debug:
@@ -196,6 +194,9 @@ class TransactionBase(object):
 
     def set_tid(self):
         self.tid = self.t_record.set_tid()
+
+    def is_crypto(self):
+        return bool(self.asset not in config.fiat_list)
 
     def _format_tid(self):
         return "%s.%s" % (self.tid[0], self.tid[1])

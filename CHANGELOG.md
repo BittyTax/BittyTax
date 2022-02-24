@@ -9,7 +9,6 @@
 - HecoInfo parser: failed transactions should not result in Deposits.
 - PolygonScan parser: failed transactions should not result in Deposits.
 - SnowTrace parser: failed transactions should not result in Deposits.
-- Etherscan parser: treat NFTs as unique assets. ([#234](https://github.com/BittyTax/BittyTax/issues/234))
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
 - Conversion tool: added parser for SnowTrace explorer.
@@ -25,6 +24,7 @@
 - Binance parser: added Convert History format. ([#208](https://github.com/BittyTax/BittyTax/issues/208))
 - Conversion tool: added parser for Nault wallet.
 - Accounting tool: hide empty balances/wallets from the audit report. ([#229](https://github.com/BittyTax/BittyTax/issues/229))
+- Accounting tool: include fiat transactions in the income report. ([#144](https://github.com/BittyTax/BittyTax/issues/144))
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.

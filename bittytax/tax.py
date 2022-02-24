@@ -57,12 +57,14 @@ class TaxCalculator(object):
                       unit='t',
                       desc="%spool same day%s" % (Fore.CYAN, Fore.GREEN),
                       disable=bool(config.debug or not sys.stdout.isatty())):
-            if isinstance(t, Buy) and t.acquisition and t.t_type not in self.NO_MATCH_TYPES:
+            if isinstance(t, Buy) and t.is_crypto() and t.acquisition and \
+                    t.t_type not in self.NO_MATCH_TYPES:
                 if (t.asset, t.timestamp.date()) not in buy_transactions:
                     buy_transactions[(t.asset, t.timestamp.date())] = t
                 else:
                     buy_transactions[(t.asset, t.timestamp.date())] += t
-            elif isinstance(t, Sell) and t.disposal and t.t_type not in self.NO_MATCH_TYPES:
+            elif isinstance(t, Sell) and t.is_crypto() and t.disposal and \
+                    t.t_type not in self.NO_MATCH_TYPES:
                 if (t.asset, t.timestamp.date()) not in sell_transactions:
                     sell_transactions[(t.asset, t.timestamp.date())] = t
                 else:
@@ -261,9 +263,9 @@ class TaxCalculator(object):
             if config.debug:
                 print("%ssection104: %s" % (Fore.GREEN, t))
 
-            if isinstance(t, Buy):
+            if isinstance(t, Buy) and t.is_crypto():
                 self._add_tokens(t)
-            elif isinstance(t, Sell):
+            elif isinstance(t, Sell) and t.is_crypto():
                 self._subtract_tokens(t, skip_integrity_check)
 
     def _add_tokens(self, t):
@@ -319,7 +321,7 @@ class TaxCalculator(object):
                       unit='t',
                       desc="%sprocess income%s" % (Fore.CYAN, Fore.GREEN),
                       disable=bool(config.debug or not sys.stdout.isatty())):
-            if t.t_type in self.INCOME_TYPES:
+            if t.t_type in self.INCOME_TYPES and (t.is_crypto() or config.fiat_income):
                 tax_event = TaxEventIncome(t)
                 self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
 
