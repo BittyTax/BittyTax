@@ -247,7 +247,7 @@ class TaxCalculator(object):
                       unit='t',
                       desc="%sprocess section 104%s" % (Fore.CYAN, Fore.GREEN),
                       disable=bool(config.debug or not sys.stdout.isatty())):
-            if t.asset not in self.holdings:
+            if t.is_crypto() and t.asset not in self.holdings:
                 self.holdings[t.asset] = Holdings(t.asset)
 
             if t.matched:
