@@ -9,6 +9,7 @@
 - HecoInfo parser: failed transactions should not result in Deposits.
 - PolygonScan parser: failed transactions should not result in Deposits.
 - SnowTrace parser: failed transactions should not result in Deposits.
+- Etherscan parser: treat NFTs as unique assets. ([#234](https://github.com/BittyTax/BittyTax/issues/234))
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
 - Conversion tool: added parser for SnowTrace explorer.
