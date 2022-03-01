@@ -28,6 +28,7 @@
 - Accounting tool: hide empty balances/wallets from the audit report. ([#229](https://github.com/BittyTax/BittyTax/issues/229))
 - Accounting tool: include fiat transactions in the income report. ([#144](https://github.com/BittyTax/BittyTax/issues/144))
 - Bittrex parser: new data file formats added.
+- Conversion tool: added parser for Bittylicious.
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
