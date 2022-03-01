@@ -39,6 +39,23 @@ def parse_trezor_suite(data_row, parser, **kwargs):
                                                  fee_quantity=row_dict['Fee'],
                                                  fee_asset=symbol,
                                                  wallet=WALLET)
+    elif row_dict['Type'] == "SELF":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                 data_row.timestamp,
+                                                 sell_quantity=0,
+                                                 sell_asset=symbol,
+                                                 fee_quantity=row_dict['Fee'],
+                                                 fee_asset=symbol,
+                                                 wallet=WALLET)
+    elif row_dict['Type'] == "FAILED":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
+                                                 data_row.timestamp,
+                                                 sell_quantity=0,
+                                                 sell_asset=symbol,
+                                                 fee_quantity=row_dict['Fee'],
+                                                 fee_asset=symbol,
+                                                 wallet=WALLET,
+                                                 note="Failure")
     else:
         raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 
