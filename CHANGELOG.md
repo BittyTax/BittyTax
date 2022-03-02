@@ -31,6 +31,7 @@
 - Conversion tool: added parser for Bittylicious.
 - Conversion tool: added parser for Mercatox exchange.
 - Conversion tool: added parser for Bitpanda exchange.
+- Conversion tool: added parser for CoinList exchange.
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
