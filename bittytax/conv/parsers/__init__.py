@@ -2,6 +2,7 @@ from . import accointing
 from . import binance
 from . import barclays
 from . import bitfinex
+from . import bitpanda
 from . import bitstamp
 from . import bittrex
 from . import bittylicious
