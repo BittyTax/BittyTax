@@ -43,6 +43,8 @@ class TransactionOutRecord(object):
                   TYPE_CHARITY_SENT,
                   TYPE_LOST)
 
+    WALLET_ADDR_LEN = 10
+
     def __init__(self, t_type, timestamp,
                  buy_quantity=None, buy_asset='', buy_value=None,
                  sell_quantity=None, sell_asset='', sell_value=None,
@@ -98,6 +100,21 @@ class TransactionOutRecord(object):
                 self.format_timestamp(self.timestamp),
                 self.format_note(self.note))
         return []
+
+    # Used for consolidation in merge parsers
+    def get_asset(self):
+        if self.t_type in self.BUY_TYPES:
+            return self.buy_asset
+        if self.t_type in self.SELL_TYPES:
+            return self.sell_asset
+        return ''
+
+    def get_quantity(self):
+        if self.t_type in self.BUY_TYPES:
+            return self.buy_quantity
+        if self.t_type in self.SELL_TYPES:
+            return - abs(self.sell_quantity)
+        return Decimal(0)
 
     @staticmethod
     def format_quantity(quantity):

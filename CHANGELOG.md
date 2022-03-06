@@ -11,6 +11,14 @@
 - SnowTrace parser: failed transactions should not result in Deposits.
 - Etherscan parser: treat NFTs as unique assets. ([#234](https://github.com/BittyTax/BittyTax/issues/234))
 - Trezor Suite parser: support "SELF" and "FAILED" transaction types.
+- Etherscan merger: merge transactions sent via third-party. ([#233](https://github.com/BittyTax/BittyTax/issues/233))
+- Etherscan merger: multiple transfers of the same asset within one transaction should be summed. ([#235](https://github.com/BittyTax/BittyTax/issues/235))
+- Etherscan parser: exclude failed internal transactions.
+- HecoInfo parser: exclude failed internal transactions.
+- BscScan parser: exclude failed internal transactions.
+- PolygonScan parser: exclude failed internal transactions.
+- SnowTrace parser: exclude failed internal transactions.
+- Etherscan merger: only merge transactions for the same wallet address.
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
 - Conversion tool: added parser for SnowTrace explorer.
@@ -45,6 +53,11 @@
 - Binance parser: added additional operations.
 - Crypto.com parser: added "lockup_unlock" transaction type. ([#227](https://github.com/BittyTax/BittyTax/issues/227))
 - Binance parser: removed "Large OTC trading".
+- Etherscan parser: include address in wallet name.
+- HecoInfo parser: include address in wallet name.
+- BscScan parser: include address in wallet name.
+- PolygonScan parser: include address in wallet name.
+- SnowTrace parser: include address in wallet name.
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-

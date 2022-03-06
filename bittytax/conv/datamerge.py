@@ -3,6 +3,8 @@
 
 import sys
 
+from decimal import Decimal
+
 from colorama import Fore
 
 class DataMerge(object):
@@ -68,3 +70,4 @@ class MergeDataRow(object):
         self.data_row = data_row
         self.data_file = data_file
         self.data_file_id = data_file_id
+        self.quantity = Decimal(0)
