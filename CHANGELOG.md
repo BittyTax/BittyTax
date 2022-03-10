@@ -19,6 +19,7 @@
 - PolygonScan parser: exclude failed internal transactions.
 - SnowTrace parser: exclude failed internal transactions.
 - Etherscan merger: only merge transactions for the same wallet address.
+- Electrum parser: handle optional fees.
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
 - Conversion tool: added parser for SnowTrace explorer.
