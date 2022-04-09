@@ -260,12 +260,17 @@ class TaxCalculator(object):
                     print("%ssection104: //%s <- transfer" % (Fore.BLUE, t))
                 continue
 
+            if not t.is_crypto():
+                if config.debug:
+                    print("%ssection104: //%s <- fiat" % (Fore.BLUE, t))
+                continue
+
             if config.debug:
                 print("%ssection104: %s" % (Fore.GREEN, t))
 
-            if isinstance(t, Buy) and t.is_crypto():
+            if isinstance(t, Buy):
                 self._add_tokens(t)
-            elif isinstance(t, Sell) and t.is_crypto():
+            elif isinstance(t, Sell):
                 self._subtract_tokens(t, skip_integrity_check)
 
     def _add_tokens(self, t):

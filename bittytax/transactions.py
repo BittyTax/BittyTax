@@ -62,17 +62,31 @@ class TransactionHistory(object):
                         tr.fee.fee_value = tr.fee.proceeds
                         tr.fee.fee_fixed = tr.fee.proceeds_fixed
 
-            if tr.buy and (tr.buy.quantity or tr.buy.fee_value):
-                tr.buy.set_tid()
-                self.transactions.append(tr.buy)
-                if config.debug:
-                    print("%ssplit:   %s" % (Fore.GREEN, tr.buy))
+            if tr.t_type != TransactionRecord.TYPE_LOST:
+                if tr.buy and (tr.buy.quantity or tr.buy.fee_value):
+                    tr.buy.set_tid()
+                    self.transactions.append(tr.buy)
+                    if config.debug:
+                        print("%ssplit:   %s" % (Fore.GREEN, tr.buy))
 
-            if tr.sell and (tr.sell.quantity or tr.sell.fee_value):
-                tr.sell.set_tid()
-                self.transactions.append(tr.sell)
-                if config.debug:
-                    print("%ssplit:   %s" % (Fore.GREEN, tr.sell))
+                if tr.sell and (tr.sell.quantity or tr.sell.fee_value):
+                    tr.sell.set_tid()
+                    self.transactions.append(tr.sell)
+                    if config.debug:
+                        print("%ssplit:   %s" % (Fore.GREEN, tr.sell))
+            else:
+                # Special case for LOST sell must be before buy-back
+                if tr.sell and (tr.sell.quantity or tr.sell.fee_value):
+                    tr.sell.set_tid()
+                    self.transactions.append(tr.sell)
+                    if config.debug:
+                        print("%ssplit:   %s" % (Fore.GREEN, tr.sell))
+
+                if tr.buy and (tr.buy.quantity or tr.buy.fee_value):
+                    tr.buy.set_tid()
+                    self.transactions.append(tr.buy)
+                    if config.debug:
+                        print("%ssplit:   %s" % (Fore.GREEN, tr.buy))
 
             if tr.fee and tr.fee.quantity:
                 tr.fee.set_tid()
