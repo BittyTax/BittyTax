@@ -469,7 +469,8 @@ class CalculateCapitalGains(object):
                           2019: {'allowance': 11700, 'basic_rate': 10, 'higher_rate': 20},
                           2020: {'allowance': 12000, 'basic_rate': 10, 'higher_rate': 20},
                           2021: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20},
-                          2022: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20}}
+                          2022: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20},
+                          2023: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20}}
 
     # Rate changes start from 1st April
     CG_DATA_COMPANY = {2009: {'small_rate': 21, 'main_rate': 28},
