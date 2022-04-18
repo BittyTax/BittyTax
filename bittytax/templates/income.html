@@ -15,15 +15,15 @@
         {% for te in income.assets[asset] %}
             {% set asset_totals.events = asset_totals.events + 1 %}
             <tr>
-                <td>{{te.asset}}</td>
-                <td>{{te.date|datefilter}}</td>
-                <td>{{te.type}}</td>
-                <td width="30%">{{te.note|nowrapfilter}}</td>
-                <td align="right">{{te.quantity|quantityfilter}}</td>
+                <td valign="top">{{te.asset}}</td>
+                <td valign="top">{{te.date|datefilter}}</td>
+                <td valign="top">{{te.type}}</td>
+                <td valign="top" width="30%">{{te.note}}</td>
+                <td valign="top" align="right">{{te.quantity|quantityfilter}}</td>
                 {% set asset_totals.quantity = asset_totals.quantity + te.quantity %}
-                <td align="right">{{te.amount|valuefilter}}</td>
+                <td valign="top" align="right">{{te.amount|valuefilter}}</td>
                 {% set asset_totals.amount = asset_totals.amount + te.amount %}
-                <td align="right">{{te.fees|valuefilter}}</td>
+                <td valign="top" align="right">{{te.fees|valuefilter}}</td>
                 {% set asset_totals.fees = asset_totals.fees + te.fees %}
             </tr>
         {% endfor %}
