@@ -32,6 +32,7 @@ class ReportPdf(object):
         self.env.filters['ratefilter'] = self.ratefilter
         self.env.filters['ratesfilter'] = self.ratesfilter
         self.env.filters['nowrapfilter'] = self.nowrapfilter
+        self.env.filters['lenfilter'] = self.lenfilter
 
         template = self.env.get_template(self.TEMPLATE_FILE)
         html = template.render({'date': datetime.now(),
@@ -96,6 +97,10 @@ class ReportPdf(object):
         return text.replace(' ', '&nbsp;')
 
     @staticmethod
+    def lenfilter(text, max_len=40, dots=3):
+        return text[:max_len - dots] + '.' * dots if len(text) > max_len else text
+
+    @staticmethod
     def get_output_filename(filename, extension_type):
         if filename:
             filepath, file_extension = os.path.splitext(filename)
@@ -119,6 +124,7 @@ class ReportPdf(object):
 class ReportLog(object):
     MAX_SYMBOL_LEN = 8
     MAX_NAME_LEN = 32
+    MAX_NOTE_LEN = 40
     ASSET_WIDTH = MAX_SYMBOL_LEN + MAX_NAME_LEN + 3
 
     def __init__(self, audit, tax_report, price_report, holdings_report, args):
@@ -320,9 +326,9 @@ class ReportLog(object):
               "other gains and losses in the same tax year, always consult with a professional "
               "accountant before filing.\n" % Fore.CYAN)
         print("%s%-40s %13s" % (
-              Fore.WHITE,
-              "Taxable Gain:",
-              self.format_value(cgains.estimate['taxable_gain'])))
+            Fore.WHITE,
+            "Taxable Gain:",
+            self.format_value(cgains.estimate['taxable_gain'])))
         if 'ct_small' in cgains.estimate:
             print("%s%-40s %13s (%s)" % (
                 Fore.WHITE, "Corporation Tax (Small profits rate):",
@@ -362,7 +368,7 @@ class ReportLog(object):
                     te.asset.ljust(self.MAX_SYMBOL_LEN),
                     self.format_date(te.date),
                     te.type,
-                    te.note,
+                    self.format_note(te.note),
                     self.format_quantity(te.quantity),
                     self.format_value(te.amount),
                     self.format_value(te.fees)))
@@ -501,7 +507,7 @@ class ReportLog(object):
 
     @staticmethod
     def format_day(day):
-        return 'th' if 11<=day<=13 else {1:'st',2:'nd',3:'rd'}.get(day%10, 'th')
+        return 'th' if 11 <= day <= 13 else {1:'st', 2:'nd', 3:'rd'}.get(day%10, 'th')
 
     @staticmethod
     def format_quantity(quantity):
@@ -524,6 +530,11 @@ class ReportLog(object):
         if rate is None:
             return Fore.YELLOW + '*' + Fore.WHITE
         return '{}%'.format(rate)
+
+    @staticmethod
+    def format_note(note):
+        return note[:ReportLog.MAX_NOTE_LEN - 3] + '...' if len(note) > ReportLog.MAX_NOTE_LEN \
+                                                         else note
 
 class ProgressSpinner:
     def __init__(self):
