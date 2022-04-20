@@ -13,8 +13,6 @@ import dateutil.tz
 from .version import __version__
 
 class Config(object):
-    TZ_INFOS = {'BST': dateutil.tz.gettz('Europe/London'),
-                'GMT': dateutil.tz.gettz('Europe/London')}
     TZ_LOCAL = dateutil.tz.gettz('Europe/London')
     TZ_UTC = dateutil.tz.UTC
 

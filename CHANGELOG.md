@@ -22,6 +22,7 @@
 - Electrum parser: handle optional fees.
 - Accounting tool: Lost transactions create wrong cost basis. ([#247](https://github.com/BittyTax/BittyTax/issues/247))
 - Accounting tool: long notes overwrite financial data.
+- Accounting tool: GMT, BST are not the same as Europe/London. ([#251](https://github.com/BittyTax/BittyTax/issues/251))
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
 - Conversion tool: added parser for SnowTrace explorer.

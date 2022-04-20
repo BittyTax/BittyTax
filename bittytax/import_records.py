@@ -154,21 +154,21 @@ class TransactionRow(object):
     MAN = 'Mandatory'
 
     TYPE_VALIDATION = {
-            TR.TYPE_DEPOSIT:       [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
-            TR.TYPE_MINING:        [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
-            TR.TYPE_STAKING:       [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
-            TR.TYPE_INTEREST:      [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
-            TR.TYPE_DIVIDEND:      [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
-            TR.TYPE_INCOME:        [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
-            TR.TYPE_GIFT_RECEIVED: [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
-            TR.TYPE_AIRDROP:       [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
-            TR.TYPE_WITHDRAWAL:    [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
-            TR.TYPE_SPEND:         [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
-            TR.TYPE_GIFT_SENT:     [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
-            TR.TYPE_GIFT_SPOUSE:   [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
-            TR.TYPE_CHARITY_SENT:  [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
-            TR.TYPE_LOST:          [MAN, None, None, None, MAN, MAN, OPT, None, None, None],
-            TR.TYPE_TRADE:         [MAN, MAN, MAN, OPT, MAN, MAN, OPT, OPT, OPT, OPT]}
+        TR.TYPE_DEPOSIT:       [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
+        TR.TYPE_MINING:        [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
+        TR.TYPE_STAKING:       [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
+        TR.TYPE_INTEREST:      [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
+        TR.TYPE_DIVIDEND:      [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
+        TR.TYPE_INCOME:        [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
+        TR.TYPE_GIFT_RECEIVED: [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
+        TR.TYPE_AIRDROP:       [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
+        TR.TYPE_WITHDRAWAL:    [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
+        TR.TYPE_SPEND:         [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
+        TR.TYPE_GIFT_SENT:     [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
+        TR.TYPE_GIFT_SPOUSE:   [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
+        TR.TYPE_CHARITY_SENT:  [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
+        TR.TYPE_LOST:          [MAN, None, None, None, MAN, MAN, OPT, None, None, None],
+        TR.TYPE_TRADE:         [MAN, MAN, MAN, OPT, MAN, MAN, OPT, OPT, OPT, OPT]}
 
     TRANSFER_TYPES = (TR.TYPE_DEPOSIT, TR.TYPE_WITHDRAWAL)
 
@@ -263,7 +263,7 @@ class TransactionRow(object):
 
     def parse_timestamp(self):
         try:
-            timestamp = dateutil.parser.parse(self.row_dict['Timestamp'], tzinfos=config.TZ_INFOS)
+            timestamp = dateutil.parser.parse(self.row_dict['Timestamp'])
         except ValueError:
             raise TimestampParserError(self.HEADER.index('Timestamp'), 'Timestamp',
                                        self.row_dict['Timestamp'])
