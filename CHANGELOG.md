@@ -44,6 +44,7 @@
 - Conversion tool: added parser for Bitpanda exchange.
 - Conversion tool: added parser for CoinList exchange.
 - Conversion tool: added parser for Koinly accounting data.
+- Accounting tool: tax rates and allowance for 2022/23.
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
