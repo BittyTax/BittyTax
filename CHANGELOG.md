@@ -47,6 +47,7 @@
 - Conversion tool: added parser for Koinly accounting data.
 - Accounting tool: tax rates and allowance for 2022/23.
 - Crypto.com parser: added new export format. ([#248](https://github.com/BittyTax/BittyTax/issues/248))
+- Nexo parser: added new export format. ([#246](https://github.com/BittyTax/BittyTax/issues/246))
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
