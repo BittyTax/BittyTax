@@ -161,7 +161,7 @@ def parse_binance_deposits_withdrawals_cash(data_row, _parser, **kwargs):
     if "deposit" in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=row_dict['Amount'],
+                                                 buy_quantity=row_dict['Indicated Amount'],
                                                  buy_asset=row_dict['Coin'],
                                                  fee_quantity=row_dict['Fee'],
                                                  fee_asset=row_dict['Coin'],
@@ -316,6 +316,13 @@ DataParser(DataParser.TYPE_EXCHANGE,
            ['Date(UTC)', 'Pair', 'Side', 'Price', 'Executed', 'Amount', 'Fee'],
            worksheet_name="Binance T",
            row_handler=parse_binance_trades_statement)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Binance Deposits/Withdrawals",
+           ['Date(UTC)', 'Coin', 'Network', 'Amount', 'TransactionFee', 'Address', 'TXID',
+            'SourceAddress', 'PaymentID', 'Status'],
+           worksheet_name="Binance D,W",
+           row_handler=parse_binance_deposits_withdrawals_crypto)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Binance Deposits/Withdrawals",

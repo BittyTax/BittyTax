@@ -23,6 +23,7 @@
 - Accounting tool: Lost transactions create wrong cost basis. ([#247](https://github.com/BittyTax/BittyTax/issues/247))
 - Accounting tool: long notes overwrite financial data.
 - Accounting tool: GMT, BST are not the same as Europe/London. ([#251](https://github.com/BittyTax/BittyTax/issues/251))
+- Binance parser: cash deposits should be gross amount. ([#257](https://github.com/BittyTax/BittyTax/issues/257))
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
 - Conversion tool: added parser for SnowTrace explorer.
@@ -48,6 +49,7 @@
 - Accounting tool: tax rates and allowance for 2022/23.
 - Crypto.com parser: added new export format. ([#248](https://github.com/BittyTax/BittyTax/issues/248))
 - Nexo parser: added new export format. ([#246](https://github.com/BittyTax/BittyTax/issues/246))
+- Binance parser: added new deposits/withdrawals format. ([#258](https://github.com/BittyTax/BittyTax/issues/258))
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
