@@ -1,11 +1,55 @@
 # Change Log
 ## [Unreleased]
+### Fixed
+- Binance parser: handle symbols with leading digit.
+- Bitfinex parser: handle '-' in FEE PERC column. ([#197](https://github.com/BittyTax/BittyTax/issues/197))
+- Binance parser: handle a Distribution which is negative. ([#179](https://github.com/BittyTax/BittyTax/issues/179))
+- Etherscan parser: failed transactions should not result in Deposits. ([#226](https://github.com/BittyTax/BittyTax/issues/226))
+- BscScan parser: failed transactions should not result in Deposits.
+- HecoInfo parser: failed transactions should not result in Deposits.
+- PolygonScan parser: failed transactions should not result in Deposits.
+- SnowTrace parser: failed transactions should not result in Deposits.
+- Etherscan parser: treat NFTs as unique assets. ([#234](https://github.com/BittyTax/BittyTax/issues/234))
+- Trezor Suite parser: support "SELF" and "FAILED" transaction types.
+- Etherscan merger: merge transactions sent via third-party. ([#233](https://github.com/BittyTax/BittyTax/issues/233))
+- Etherscan merger: multiple transfers of the same asset within one transaction should be summed. ([#235](https://github.com/BittyTax/BittyTax/issues/235))
+- Etherscan parser: exclude failed internal transactions.
+- HecoInfo parser: exclude failed internal transactions.
+- BscScan parser: exclude failed internal transactions.
+- PolygonScan parser: exclude failed internal transactions.
+- SnowTrace parser: exclude failed internal transactions.
+- Etherscan merger: only merge transactions for the same wallet address.
+- Electrum parser: handle optional fees.
+- Accounting tool: Lost transactions create wrong cost basis. ([#247](https://github.com/BittyTax/BittyTax/issues/247))
+- Accounting tool: long notes overwrite financial data.
+- Accounting tool: GMT, BST are not the same as Europe/London. ([#251](https://github.com/BittyTax/BittyTax/issues/251))
+- Binance parser: cash deposits should be gross amount. ([#257](https://github.com/BittyTax/BittyTax/issues/257))
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
 - Conversion tool: added parser for SnowTrace explorer.
 - Conversion tool: added parser for PolygonScan explorer.
 - Conversion tool: added merge parser for SnowTrace.
 - Conversion tool: added merge parser for PolygonScan.
+- HandCash parser: added new export format.
+- Conversion tool: added parser for Volt wallet.
+- Conversion tool: added parser for qTrade exchange.
+- Bitfinex parser: added ledger support.
+- Hotbit parser: added new orders export(s).
+- Hotbit parser: added trades format.
+- Binance parser: added Convert History format. ([#208](https://github.com/BittyTax/BittyTax/issues/208))
+- Conversion tool: added parser for Nault wallet.
+- Accounting tool: hide empty balances/wallets from the audit report. ([#229](https://github.com/BittyTax/BittyTax/issues/229))
+- Accounting tool: include fiat transactions in the income report. ([#144](https://github.com/BittyTax/BittyTax/issues/144))
+- Bittrex parser: new data file formats added.
+- Conversion tool: added parser for Bittylicious.
+- Conversion tool: added parser for Mercatox exchange.
+- Conversion tool: added parser for Bitpanda exchange.
+- Conversion tool: added parser for CoinList exchange.
+- Conversion tool: added parser for Koinly accounting data.
+- Accounting tool: tax rates and allowance for 2022/23.
+- Crypto.com parser: added new export format. ([#248](https://github.com/BittyTax/BittyTax/issues/248))
+- Nexo parser: added new export format. ([#246](https://github.com/BittyTax/BittyTax/issues/246))
+- Binance parser: added new deposits/withdrawals format. ([#258](https://github.com/BittyTax/BittyTax/issues/258))
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
@@ -13,6 +57,17 @@
 - Gravity parser: performance improvements for large data sets.
 - Etherscan merger: performance improvements for large data sets.
 - Etherscan merger: support merging of NFT and Internal txns exports.
+- Etherscan parser: append contract address for LP tokens.
+- Gravity parser: referral fee payouts.
+- Binance parser: added "Large OTC trading" operation. ([#191](https://github.com/BittyTax/BittyTax/issues/191))
+- Binance parser: added additional operations.
+- Crypto.com parser: added "lockup_unlock" transaction type. ([#227](https://github.com/BittyTax/BittyTax/issues/227))
+- Binance parser: removed "Large OTC trading".
+- Etherscan parser: include address in wallet name.
+- HecoInfo parser: include address in wallet name.
+- BscScan parser: include address in wallet name.
+- PolygonScan parser: include address in wallet name.
+- SnowTrace parser: include address in wallet name.
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-

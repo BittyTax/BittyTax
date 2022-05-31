@@ -19,6 +19,90 @@ PRECISION = Decimal('0.00000000')
 MAKER_FEE = Decimal(0.0005)
 TAKER_FEE = Decimal(0.002)
 
+def parse_hotbit_orders_v3(data_rows, parser, **kwargs):
+    parse_hotbit_orders_v1(data_rows, parser, type_str='Side', amount_str='Volume', **kwargs)
+
+def parse_hotbit_orders_v2(data_rows, parser, **kwargs):
+    parse_hotbit_orders_v1(data_rows, parser, type_str='Side', amount_str='Amount', **kwargs)
+
+def parse_hotbit_orders_v1(data_rows, parser, **kwargs):
+    if kwargs.get('type_str'):
+        type_str = kwargs['type_str']
+    else:
+        type_str = 'Type'
+
+    if kwargs.get('amount_str'):
+        amount_str = kwargs['amount_str']
+    else:
+        amount_str = 'Amount'
+
+    for row_index, data_row in enumerate(data_rows):
+        if config.debug:
+            sys.stderr.write("%sconv: row[%s] %s\n" % (
+                Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row))
+
+        if data_row.parsed:
+            continue
+
+        try:
+            parse_hotbit_orders_row(data_rows, parser, data_row, row_index, type_str, amount_str)
+        except DataRowError as e:
+            data_row.failure = e
+
+def parse_hotbit_orders_row(data_rows, parser, data_row, row_index, type_str, amount_str):
+    if data_row.row[0] == '':
+        return
+
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'])
+    data_row.parsed = True
+
+    # Have to -re-caclulate the total as it's incorrect for USDT trades
+    total = Decimal(row_dict['Price'].split(' ')[0]) * Decimal(row_dict[amount_str].split(' ')[0])
+
+    # Maker fees are a credit (+), add as gift-received
+    if row_dict['Fee'][0] == '+':
+        # Have to re-calculate the fee as rounding in datafile is incorrect
+        dup_data_row = copy.copy(data_row)
+        dup_data_row.row = []
+        dup_data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
+                                                     data_row.timestamp,
+                                                     buy_quantity=(total * MAKER_FEE). \
+                                                         quantize(PRECISION, rounding=ROUND_DOWN),
+                                                     buy_asset=row_dict['Fee'].split(' ')[1],
+                                                     wallet=WALLET)
+        data_rows.insert(row_index + 1, dup_data_row)
+
+        fee_quantity = None
+        fee_asset = ''
+    else:
+        # Have to re-calculate the fee as rounding in datafile is incorrect
+        fee_quantity = (total * TAKER_FEE).quantize(PRECISION, rounding=ROUND_DOWN)
+        fee_asset = row_dict['Fee'].split(' ')[1]
+
+    if row_dict[type_str] == "BUY":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                 data_row.timestamp,
+                                                 buy_quantity=row_dict[amount_str].split(' ')[0],
+                                                 buy_asset=row_dict['Pair'].split('/')[0],
+                                                 sell_quantity=total.quantize(PRECISION),
+                                                 sell_asset=row_dict['Pair'].split('/')[1],
+                                                 fee_quantity=fee_quantity,
+                                                 fee_asset=fee_asset,
+                                                 wallet=WALLET)
+    elif row_dict[type_str] == "SELL":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                 data_row.timestamp,
+                                                 buy_quantity=total.quantize(PRECISION),
+                                                 buy_asset=row_dict['Pair'].split('/')[1],
+                                                 sell_quantity=row_dict[amount_str].split(' ')[0],
+                                                 sell_asset=row_dict['Pair'].split('/')[0],
+                                                 fee_quantity=fee_quantity,
+                                                 fee_asset=fee_asset,
+                                                 wallet=WALLET)
+    else:
+        raise UnexpectedTypeError(parser.in_header.index(type_str), type_str, row_dict[type_str])
+
 def parse_hotbit_trades(data_rows, parser, **_kwargs):
     for row_index, data_row in enumerate(data_rows):
         if config.debug:
@@ -35,57 +119,83 @@ def parse_hotbit_trades(data_rows, parser, **_kwargs):
 
 def parse_hotbit_trades_row(data_rows, parser, data_row, row_index):
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'])
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['time'])
     data_row.parsed = True
 
-    # Have to -re-caclulate the total as it's incorrect for USDT trades
-    total = Decimal(row_dict['Price'].split(' ')[0]) * Decimal(row_dict['Amount'].split(' ')[0])
-
-    # Maker fees are a credit (+), add as gift-received
-    if row_dict['Fee'][0] == '+':
-        # Have to re-calculate the fee as rounding in datafile is incorrect
+    # Maker fees are negative, add as gift-received
+    if Decimal(row_dict['fee']) < 0:
         dup_data_row = copy.copy(data_row)
         dup_data_row.row = []
+
+        if row_dict['side'] == "buy":
+            buy_asset = row_dict['deal_stock']
+        else:
+            buy_asset = row_dict['stock']
+
         dup_data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                      data_row.timestamp,
-                                                     buy_quantity=(total * MAKER_FEE). \
-                                                         quantize(PRECISION, rounding=ROUND_DOWN),
-                                                     buy_asset=row_dict['Fee'].split(' ')[1],
+                                                     buy_quantity=abs(Decimal(row_dict['fee']). \
+                                                             quantize(PRECISION)),
+                                                     buy_asset=buy_asset,
                                                      wallet=WALLET)
         data_rows.insert(row_index + 1, dup_data_row)
 
-        fee_quantity = 0
+        fee_quantity = None
+        fee_asset = ''
     else:
-        # Have to re-calculate the fee as rounding in datafile is incorrect
-        fee_quantity = (total * TAKER_FEE).quantize(PRECISION, rounding=ROUND_DOWN)
+        fee_quantity = Decimal(row_dict['fee']).quantize(PRECISION)
+        if row_dict['side'] == "buy":
+            fee_asset = row_dict['deal_stock']
+        else:
+            fee_asset = row_dict['stock']
 
-    fee_asset = row_dict['Fee'].split(' ')[1]
-
-    if row_dict['Type'] == "BUY":
+    if row_dict['side'] == "buy":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=row_dict['Amount'].split(' ')[0],
-                                                 buy_asset=row_dict['Pair'].split('/')[0],
-                                                 sell_quantity=total.quantize(PRECISION),
-                                                 sell_asset=row_dict['Pair'].split('/')[1],
+                                                 buy_quantity=row_dict['amount'],
+                                                 buy_asset=row_dict['stock'],
+                                                 sell_quantity=Decimal(row_dict['deal']). \
+                                                         quantize(PRECISION),
+                                                 sell_asset=row_dict['deal_stock'],
                                                  fee_quantity=fee_quantity,
                                                  fee_asset=fee_asset,
                                                  wallet=WALLET)
-    elif row_dict['Type'] == "SELL":
+    elif row_dict['side'] == "sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=total.quantize(PRECISION),
-                                                 buy_asset=row_dict['Pair'].split('/')[1],
-                                                 sell_quantity=row_dict['Amount'].split(' ')[0],
-                                                 sell_asset=row_dict['Pair'].split('/')[0],
+                                                 buy_quantity=Decimal(row_dict['deal']). \
+                                                         quantize(PRECISION),
+                                                 buy_asset=row_dict['stock'],
+                                                 sell_quantity=row_dict['amount'],
+                                                 sell_asset=row_dict['deal_stock'],
                                                  fee_quantity=fee_quantity,
                                                  fee_asset=fee_asset,
                                                  wallet=WALLET)
     else:
-        raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
+        raise UnexpectedTypeError(parser.in_header.index('side'), 'side', row_dict['side'])
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Hotbit Trades",
+           ['Date', 'Pair', 'Side', 'Price', 'Volume', 'Fee', 'Total'],
+           worksheet_name="Hotbit T",
+           all_handler=parse_hotbit_orders_v3)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Hotbit Trades",
+           ['Date', 'Pair', 'Side', 'Price', 'Amount', 'Fee', 'Total'],
+           worksheet_name="Hotbit T",
+           all_handler=parse_hotbit_orders_v2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Hotbit Trades",
            ['Date', 'Pair', 'Type', 'Price', 'Amount', 'Fee', 'Total', 'Export'],
+           worksheet_name="Hotbit T",
+           all_handler=parse_hotbit_orders_v1)
+
+# Format provided by request from support
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Hotbit Trades",
+           ['time', 'user_id', 'market', 'side', 'role', 'price', 'amount', 'deal', 'fee',
+            'platform', 'stock', 'deal_stock'],
            worksheet_name="Hotbit T",
            all_handler=parse_hotbit_trades)

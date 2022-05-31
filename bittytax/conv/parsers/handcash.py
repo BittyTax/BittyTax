@@ -12,7 +12,10 @@ WALLET = "HandCash"
 
 def parse_handcash(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict['createdAt'])
+    if row_dict.get('updatedAt'):
+        data_row.timestamp = DataParser.parse_timestamp(row_dict['updatedAt'])
+    else:
+        data_row.timestamp = DataParser.parse_timestamp(row_dict['createdAt'])
 
     participants = json.loads(row_dict['participants'])
     if row_dict['type'] == "receive":
@@ -51,5 +54,12 @@ DataParser(DataParser.TYPE_WALLET,
            "HandCash",
            ['type', 'addresses', 'transactionId', 'note', 'satoshiFees', 'satoshiAmount',
             'fiatExchangeRate', 'fiatCurrencyCode', 'participants', 'createdAt'],
+           worksheet_name="HandCash",
+           row_handler=parse_handcash)
+
+DataParser(DataParser.TYPE_WALLET,
+           "HandCash",
+           ['type', 'addresses', 'transactionId', 'note', 'satoshiFees', 'satoshiAmount',
+            'fiatExchangeRate', 'fiatCurrencyCode', 'participants', 'updatedAt', 'createdAt'],
            worksheet_name="HandCash",
            row_handler=parse_handcash)

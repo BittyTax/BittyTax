@@ -57,12 +57,14 @@ class TaxCalculator(object):
                       unit='t',
                       desc="%spool same day%s" % (Fore.CYAN, Fore.GREEN),
                       disable=bool(config.debug or not sys.stdout.isatty())):
-            if isinstance(t, Buy) and t.acquisition and t.t_type not in self.NO_MATCH_TYPES:
+            if isinstance(t, Buy) and t.is_crypto() and t.acquisition and \
+                    t.t_type not in self.NO_MATCH_TYPES:
                 if (t.asset, t.timestamp.date()) not in buy_transactions:
                     buy_transactions[(t.asset, t.timestamp.date())] = t
                 else:
                     buy_transactions[(t.asset, t.timestamp.date())] += t
-            elif isinstance(t, Sell) and t.disposal and t.t_type not in self.NO_MATCH_TYPES:
+            elif isinstance(t, Sell) and t.is_crypto() and t.disposal and \
+                    t.t_type not in self.NO_MATCH_TYPES:
                 if (t.asset, t.timestamp.date()) not in sell_transactions:
                     sell_transactions[(t.asset, t.timestamp.date())] = t
                 else:
@@ -245,7 +247,7 @@ class TaxCalculator(object):
                       unit='t',
                       desc="%sprocess section 104%s" % (Fore.CYAN, Fore.GREEN),
                       disable=bool(config.debug or not sys.stdout.isatty())):
-            if t.asset not in self.holdings:
+            if t.is_crypto() and t.asset not in self.holdings:
                 self.holdings[t.asset] = Holdings(t.asset)
 
             if t.matched:
@@ -256,6 +258,11 @@ class TaxCalculator(object):
             if not config.transfers_include and t.t_type in self.TRANSFER_TYPES:
                 if config.debug:
                     print("%ssection104: //%s <- transfer" % (Fore.BLUE, t))
+                continue
+
+            if not t.is_crypto():
+                if config.debug:
+                    print("%ssection104: //%s <- fiat" % (Fore.BLUE, t))
                 continue
 
             if config.debug:
@@ -319,7 +326,7 @@ class TaxCalculator(object):
                       unit='t',
                       desc="%sprocess income%s" % (Fore.CYAN, Fore.GREEN),
                       disable=bool(config.debug or not sys.stdout.isatty())):
-            if t.t_type in self.INCOME_TYPES:
+            if t.t_type in self.INCOME_TYPES and (t.is_crypto() or config.fiat_income):
                 tax_event = TaxEventIncome(t)
                 self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
 
@@ -467,7 +474,8 @@ class CalculateCapitalGains(object):
                           2019: {'allowance': 11700, 'basic_rate': 10, 'higher_rate': 20},
                           2020: {'allowance': 12000, 'basic_rate': 10, 'higher_rate': 20},
                           2021: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20},
-                          2022: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20}}
+                          2022: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20},
+                          2023: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20}}
 
     # Rate changes start from 1st April
     CG_DATA_COMPANY = {2009: {'small_rate': 21, 'main_rate': 28},
@@ -482,7 +490,8 @@ class CalculateCapitalGains(object):
                        2018: {'small_rate': None, 'main_rate': 19},
                        2019: {'small_rate': None, 'main_rate': 19},
                        2020: {'small_rate': None, 'main_rate': 19},
-                       2021: {'small_rate': None, 'main_rate': 19}}
+                       2021: {'small_rate': None, 'main_rate': 19},
+                       2022: {'small_rate': None, 'main_rate': 19}}
 
     def __init__(self, tax_year, tax_rules):
         self.totals = {'cost': Decimal(0),

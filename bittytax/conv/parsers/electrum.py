@@ -24,13 +24,21 @@ def parse_electrum_v3(data_row, _parser, **kwargs):
                                                  wallet=WALLET,
                                                  note=row_dict['label'])
     else:
+        if row_dict['fee']:
+            sell_quantity = abs(Decimal(row_dict['value'])) - Decimal(row_dict['fee'])
+            fee_quantity = row_dict['fee']
+            fee_asset = kwargs['cryptoasset']
+        else:
+            sell_quantity = abs(Decimal(row_dict['value']))
+            fee_quantity = None
+            fee_asset = ''
+
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=abs(Decimal(row_dict['value'])) - \
-                                                               Decimal(row_dict['fee']),
+                                                 sell_quantity=sell_quantity,
                                                  sell_asset=kwargs['cryptoasset'],
-                                                 fee_quantity=row_dict['fee'],
-                                                 fee_asset=kwargs['cryptoasset'],
+                                                 fee_quantity=fee_quantity,
+                                                 fee_asset=fee_asset,
                                                  wallet=WALLET,
                                                  note=row_dict['label'])
 

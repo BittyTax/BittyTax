@@ -115,7 +115,7 @@ def parse_crypto_com(data_row, parser, **_kwargs):
                                                  wallet=WALLET)
     elif row_dict['Transaction Kind'] in ("crypto_earn_program_created",
                                           "crypto_earn_program_withdrawn",
-                                          "lockup_lock", "lockup_upgrade",
+                                          "lockup_lock", "lockup_unlock", "lockup_upgrade",
                                           "lockup_swap_credited", "lockup_swap_debited",
                                           "dynamic_coin_swap_credited", "dynamic_coin_swap_debited",
                                           "dynamic_coin_swap_bonus_exchange_deposit",
@@ -142,6 +142,14 @@ def parse_crypto_com(data_row, parser, **_kwargs):
     else:
         raise UnexpectedTypeError(parser.in_header.index('Transaction Kind'), 'Transaction Kind',
                                   row_dict['Transaction Kind'])
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Crypto.com",
+           ['Timestamp (UTC)', 'Transaction Description', 'Currency', 'Amount', 'To Currency',
+            'To Amount', 'Native Currency', 'Native Amount', 'Native Amount (in USD)',
+            'Transaction Kind', 'Transaction Hash'],
+           worksheet_name="Crypto.com",
+           row_handler=parse_crypto_com)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Crypto.com",

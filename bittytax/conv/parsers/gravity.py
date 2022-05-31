@@ -15,9 +15,14 @@ WALLET = "Gravity"
 SYSTEM_ACCOUNT = "00000000-0000-0000-0000-000000000000"
 
 def parse_gravity_v2(data_row, _parser, **_kwargs):
-    parse_gravity_v1(data_row, _parser, **_kwargs)
+    parse_gravity_v1(data_row, _parser, v2=True, **_kwargs)
 
-def parse_gravity_v1(data_rows, parser, **_kwargs):
+def parse_gravity_v1(data_rows, parser, **kwargs):
+    if kwargs.get('v2'):
+        referral_type = "referral fees payout"
+    else:
+        referral_type = "referral fees grouping"
+
     tx_ids = {}
     for dr in data_rows:
         if dr.row_dict['transaction id'] in tx_ids:
@@ -34,11 +39,11 @@ def parse_gravity_v1(data_rows, parser, **_kwargs):
             continue
 
         try:
-            parse_gravity_row(tx_ids, parser, data_row)
+            parse_gravity_row(tx_ids, parser, data_row, referral_type)
         except DataRowError as e:
             data_row.failure = e
 
-def parse_gravity_row(tx_ids, parser, data_row):
+def parse_gravity_row(tx_ids, parser, data_row, referral_type):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['date utc'])
     data_row.parsed = True
@@ -96,12 +101,13 @@ def parse_gravity_row(tx_ids, parser, data_row):
                                          "trade", 'from account')
         if buy_quantity is None:
             return
-    elif row_dict['transaction type'] == "referral fees grouping":
+    elif row_dict['transaction type'] == referral_type:
         t_type = TransactionOutRecord.TYPE_GIFT_RECEIVED
         buy_quantity = row_dict['amount']
         buy_asset = row_dict['currency']
-    elif row_dict['transaction type'] in ("referral fees collection", "referral fees transfer",
-                                          "internal transfer"):
+    elif row_dict['transaction type'] in ("referral fees collection", "referral fees grouping",
+                                          "referral fees transfer", "internal transfer",
+                                          "correction"):
         return
     else:
         raise UnexpectedTypeError(parser.in_header.index('transaction type'), 'transaction type',

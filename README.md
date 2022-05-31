@@ -604,6 +604,11 @@ section104: //SELL* Withdrawal 2 BTC 'Poloniex' 2017-12-24T12:01:33 GMT 'to Coin
 section104: //BUY* Deposit 2 BTC 'Coinfloor' 2017-12-24T13:53:19 GMT 'from Poloniex' [TID:52.1] <- transfer
 ```
 
+For Windows use this command instead:
+```console
+> bittytax <filename> -d | findstr /C:"<- transfer"
+```
+
 ### Process Income
 This function searches through all the original transactions, and records any that are applicable for income tax. Currently this is `Mining`, `Staking`, `Interest`, `Dividend` and `Income` transaction types.
 

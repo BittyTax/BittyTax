@@ -54,6 +54,9 @@ class AuditRecords(object):
                     '{:0,f}'.format(self.totals[asset].normalize()),
                     Style.NORMAL))
 
+        if config.audit_hide_empty:
+            self._prune_empty(self.wallets)
+
     def _add_tokens(self, wallet, asset, quantity):
         if wallet not in self.wallets:
             self.wallets[wallet] = {}
@@ -91,7 +94,7 @@ class AuditRecords(object):
         self.totals[asset] -= quantity
 
         if config.debug:
-            print("%saudit:   %s:%s=%s (-%s)" %(
+            print("%saudit:   %s:%s=%s (-%s)" % (
                 Fore.GREEN,
                 wallet,
                 asset,
@@ -103,6 +106,14 @@ class AuditRecords(object):
                 Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW,
                 wallet, asset, '{:0,f}'.format(self.wallets[wallet][asset].normalize())))
 
+    def _prune_empty(self, wallets):
+        for wallet in list(wallets):
+            for asset in list(wallets[wallet]):
+                if wallets[wallet][asset] == Decimal(0):
+                    wallets[wallet].pop(asset)
+            if len(wallets[wallet]) == 0:
+                wallets.pop(wallet)
+
     def compare_pools(self, holdings):
         passed = True
         for asset in sorted(self.totals):
@@ -112,10 +123,11 @@ class AuditRecords(object):
             if asset in holdings:
                 if self.totals[asset] == holdings[asset].quantity:
                     if config.debug:
-                        print("%scheck pool: %s (ok)" %(Fore.GREEN, asset))
+                        print("%scheck pool: %s (ok)" % (Fore.GREEN, asset))
                 else:
                     if config.debug:
-                        print("%scheck pool: %s %s (mismatch)" %(Fore.RED, asset,
+                        print("%scheck pool: %s %s (mismatch)" % (
+                            Fore.RED, asset,
                             '{:+0,f}'.format((holdings[asset].quantity-
                                               self.totals[asset]).normalize())))
 
@@ -123,7 +135,7 @@ class AuditRecords(object):
                     passed = False
             else:
                 if config.debug:
-                    print("%scheck pool: %s (missing)" %(Fore.RED, asset))
+                    print("%scheck pool: %s (missing)" % (Fore.RED, asset))
 
                 self._log_failure(asset, self.totals[asset], None)
                 passed = False

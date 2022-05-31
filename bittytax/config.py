@@ -13,8 +13,6 @@ import dateutil.tz
 from .version import __version__
 
 class Config(object):
-    TZ_INFOS = {'BST': dateutil.tz.gettz('Europe/London'),
-                'GMT': dateutil.tz.gettz('Europe/London')}
     TZ_LOCAL = dateutil.tz.gettz('Europe/London')
     TZ_UTC = dateutil.tz.UTC
 
@@ -51,10 +49,12 @@ class Config(object):
         'crypto_list': CRYPTO_LIST,
         'trade_asset_type': TRADE_ASSET_TYPE_PRIORITY,
         'trade_allowable_cost_type': TRADE_ALLOWABLE_COST_SPLIT,
+        'audit_hide_empty': False,
         'show_empty_wallets': False,
         'transfers_include': False,
         'transfer_fee_disposal': True,
         'transfer_fee_allowable_cost': False,
+        'fiat_income': False,
         'lost_buyback': True,
         'data_source_select': {},
         'data_source_fiat': DATA_SOURCE_FIAT,
