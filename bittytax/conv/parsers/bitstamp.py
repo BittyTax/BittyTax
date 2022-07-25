@@ -23,34 +23,6 @@ def parse_bitstamp(data_row, parser, **_kwargs):
                                                  sell_quantity=row_dict['Amount'].split(' ')[0],
                                                  sell_asset=row_dict['Amount'].split(' ')[1],
                                                  wallet=WALLET)
-    elif row_dict['Type'] in ("Staking", "Staking"):
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_STAKING,
-                                                 data_row.timestamp,
-                                                 sell_quantity=row_dict['Amount'].split(' ')[0],
-                                                 sell_asset=row_dict['Amount'].split(' ')[1],
-                                                 wallet=WALLET)
-    elif row_dict['Type'] in ("Sent assets to staking", "Market"):
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                 data_row.timestamp,
-                                                 sell_quantity=row_dict['Amount'].split(' ')[0],
-                                                 sell_asset=row_dict['Amount'].split(' ')[1],
-                                                 buy_quantity="0",
-                                                 buy_asset="GBP",
-                                                 wallet=WALLET)
-    elif row_dict['Type'] in ("Credited with staked assets", "Market"):
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                 data_row.timestamp,
-                                                 buy_quantity=row_dict['Amount'].split(' ')[0],
-                                                 buy_asset=row_dict['Amount'].split(' ')[1],
-                                                 sell_quantity="0",
-                                                 sell_asset="GBP",
-                                                 wallet=WALLET)
-    elif row_dict['Type'] in ("Staking reward", "Market"):
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_STAKING,
-                                                 data_row.timestamp,
-                                                 buy_quantity=row_dict['Amount'].split(' ')[0],
-                                                 buy_asset=row_dict['Amount'].split(' ')[1],
-                                                 wallet=WALLET)
     elif row_dict['Type'] == "Market":
         if row_dict['Fee']:
             fee_quantity = row_dict['Fee'].split(' ')[0]
