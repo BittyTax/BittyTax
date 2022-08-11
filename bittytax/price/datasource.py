@@ -42,6 +42,25 @@ class DataSourceBase(object):
     def get_json(self, url):
         if config.debug:
             print("%sprice: GET %s" % (Fore.YELLOW, url))
+            
+        if config.offline_mode:
+            if config.debug:
+                print("Offline mode")
+
+            try:
+                offline_file = config.CACHE_DIR + os.sep + url.split("/")[-1]
+                with open(offline_file) as f:
+                    response = json.load(f)
+                    if config.debug:
+                        print("Loaded %s" % (offline_file))
+            except FileNotFoundError:
+                print("File not found.")
+                print("Please download the file from %s and place it in %s" % (url, offline_file))
+            
+            if response:
+                return response
+            return {}
+
 
         response = requests.get(url, headers={'User-Agent': self.USER_AGENT}, timeout=self.TIME_OUT)
 
