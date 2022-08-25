@@ -68,6 +68,7 @@
 - BscScan parser: include address in wallet name.
 - PolygonScan parser: include address in wallet name.
 - SnowTrace parser: include address in wallet name.
+- Coinbase parser: added "Learning Reward" transaction type.
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-

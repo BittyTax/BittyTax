@@ -75,7 +75,7 @@ def do_parse_coinbase(data_row, parser, fiat_values):
                                                      buy_quantity=row_dict['Quantity Transacted'],
                                                      buy_asset=row_dict['Asset'],
                                                      wallet=WALLET)
-    elif row_dict['Transaction Type'] in ("Coinbase Earn", "Rewards Income"):
+    elif row_dict['Transaction Type'] in ("Coinbase Earn", "Rewards Income", "Learning Reward"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INCOME,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Quantity Transacted'],
