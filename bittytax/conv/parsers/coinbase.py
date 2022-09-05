@@ -13,7 +13,21 @@ from ..exceptions import UnexpectedTypeError, UnexpectedContentError
 WALLET = "Coinbase"
 DUPLICATE = "Duplicate"
 
-def parse_coinbase(data_row, parser, **_kwargs):
+def parse_coinbase_v2(data_row, parser, **_kwargs):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
+
+    spot_price_ccy = DataParser.convert_currency(row_dict['Spot Price at Transaction'],
+                                                 row_dict['Spot Price Currency'],
+                                                 data_row.timestamp)
+    total_ccy = DataParser.convert_currency(row_dict['Total (inclusive of fees and/or spread)'],
+                                            row_dict['Spot Price Currency'],
+                                            data_row.timestamp)
+
+    do_parse_coinbase(data_row, parser, (spot_price_ccy, row_dict['Subtotal'],
+                                         total_ccy, row_dict['Fees and/or Spread']))
+
+def parse_coinbase_v1(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Timestamp'])
 
@@ -133,7 +147,7 @@ def do_parse_coinbase(data_row, parser, fiat_values):
             raise UnexpectedContentError(parser.in_header.index('Notes'), 'Notes',
                                          row_dict['Notes'])
 
-        buy_quantity = convert_info[2]
+        buy_quantity = convert_info[2].replace(',', '')
         buy_asset = convert_info[3]
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
@@ -311,13 +325,22 @@ def parse_coinbase_transactions(data_row, _parser, **_kwargs):
                                                      buy_asset=row_dict['Currency'],
                                                      wallet=WALLET)
 
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Coinbase",
+           ['Timestamp', 'Transaction Type', 'Asset', 'Quantity Transacted',
+            'Spot Price Currency', 'Spot Price at Transaction', 'Subtotal',
+            'Total (inclusive of fees and/or spread)', 'Fees and/or Spread', 'Notes'],
+           worksheet_name="Coinbase",
+           row_handler=parse_coinbase_v2)
+
 DataParser(DataParser.TYPE_EXCHANGE,
            "Coinbase",
            ['Timestamp', 'Transaction Type', 'Asset', 'Quantity Transacted',
             'Spot Price Currency', 'Spot Price at Transaction', 'Subtotal',
             'Total (inclusive of fees)', 'Fees', 'Notes'],
            worksheet_name="Coinbase",
-           row_handler=parse_coinbase)
+           row_handler=parse_coinbase_v1)
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Coinbase",
