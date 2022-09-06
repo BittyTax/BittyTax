@@ -102,7 +102,7 @@ def do_parse_coinbase(data_row, parser, fiat_values):
                                                  sell_quantity=row_dict['Quantity Transacted'],
                                                  sell_asset=row_dict['Asset'],
                                                  wallet=WALLET)
-    elif row_dict['Transaction Type'] == "Buy":
+    elif row_dict['Transaction Type'] in ("Buy", "Advanced Trade Buy"):
         currency = get_currency(row_dict['Notes'])
         if currency is None:
             raise UnexpectedContentError(parser.in_header.index('Notes'), 'Notes',
@@ -126,7 +126,7 @@ def do_parse_coinbase(data_row, parser, fiat_values):
                                                      fee_quantity=fees,
                                                      fee_asset=currency,
                                                      wallet=WALLET)
-    elif row_dict['Transaction Type'] == "Sell":
+    elif row_dict['Transaction Type'] in ("Sell", "Advanced Trade Sell"):
         currency = get_currency(row_dict['Notes'])
         if currency is None:
             raise UnexpectedContentError(parser.in_header.index('Notes'), 'Notes',
@@ -177,7 +177,7 @@ def get_currency(notes):
     if sys.version_info[0] < 3:
         notes = notes.decode('utf8')
 
-    match = re.match(r".+for .{1}[\d|,]+\.\d{2} (\w{3})$", notes)
+    match = re.match(r".+for .{1}[\d|,]+\.\d{2} (\w{3}).*$", notes)
 
     if match:
         return match.group(1)

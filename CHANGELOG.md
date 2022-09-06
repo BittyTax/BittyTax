@@ -71,6 +71,7 @@
 - PolygonScan parser: include address in wallet name.
 - SnowTrace parser: include address in wallet name.
 - Coinbase parser: added "Learning Reward" transaction type.
+- Coinbase parser: added "Advanced Trade Buy/Sell" transaction types. ([#269](https://github.com/BittyTax/BittyTax/issues/269))
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-
