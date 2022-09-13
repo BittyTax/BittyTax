@@ -11,9 +11,15 @@ from colorama import Fore
 from ...config import config
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
-from ..exceptions import DataRowError, UnexpectedTypeError
+from ..exceptions import DataRowError, UnexpectedTypeError, UnexpectedTradingPairError
 
 WALLET = "Hotbit"
+
+QUOTE_ASSETS = ['ALGO', 'ATOM', 'AUDIO', 'BCH', 'BTC', 'CHZ', 'DOGE', 'DYDX', 'ENS', 'ETC',
+                'ETH', 'FSN', 'HOT', 'ICP', 'IMX', 'KDA', 'LEV', 'LRC', 'LTC', 'MFT',
+                'MINA', 'NEAR', 'NEXO', 'NFT', 'QNT', 'QTUM', 'RVN', 'SHIB', 'SLP', 'SOL',
+                'TFUEL', 'THETA', 'TRB', 'TRX', 'UNI', 'USD', 'USDC', 'USDT', 'VET', 'XEM',
+                'XMR', 'XRP', 'nUSD']
 
 PRECISION = Decimal('0.00000000')
 MAKER_FEE = Decimal(0.0005)
@@ -119,24 +125,28 @@ def parse_hotbit_trades(data_rows, parser, **_kwargs):
 
 def parse_hotbit_trades_row(data_rows, parser, data_row, row_index):
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict['time'])
+
+    if '_' in row_dict['time']:
+        data_row.timestamp = DataParser.parse_timestamp(row_dict['time'].replace('_', ' '))
+    else:
+        data_row.timestamp = DataParser.parse_timestamp(row_dict['time'], tz='Asia/Hong_Kong')
     data_row.parsed = True
+
+    base_asset, quote_asset = split_trading_pair(row_dict['market'])
+    if base_asset is None or quote_asset is None:
+        raise UnexpectedTradingPairError(parser.in_header.index('market'), 'market',
+                                         row_dict['market'])
 
     # Maker fees are negative, add as gift-received
     if Decimal(row_dict['fee']) < 0:
         dup_data_row = copy.copy(data_row)
         dup_data_row.row = []
 
-        if row_dict['side'] == "buy":
-            buy_asset = row_dict['deal_stock']
-        else:
-            buy_asset = row_dict['stock']
-
         dup_data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                      data_row.timestamp,
                                                      buy_quantity=abs(Decimal(row_dict['fee']). \
                                                              quantize(PRECISION)),
-                                                     buy_asset=buy_asset,
+                                                     buy_asset=quote_asset,
                                                      wallet=WALLET)
         data_rows.insert(row_index + 1, dup_data_row)
 
@@ -144,19 +154,16 @@ def parse_hotbit_trades_row(data_rows, parser, data_row, row_index):
         fee_asset = ''
     else:
         fee_quantity = Decimal(row_dict['fee']).quantize(PRECISION)
-        if row_dict['side'] == "buy":
-            fee_asset = row_dict['deal_stock']
-        else:
-            fee_asset = row_dict['stock']
+        fee_asset = quote_asset
 
     if row_dict['side'] == "buy":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['amount'],
-                                                 buy_asset=row_dict['stock'],
+                                                 buy_asset=base_asset,
                                                  sell_quantity=Decimal(row_dict['deal']). \
                                                          quantize(PRECISION),
-                                                 sell_asset=row_dict['deal_stock'],
+                                                 sell_asset=quote_asset,
                                                  fee_quantity=fee_quantity,
                                                  fee_asset=fee_asset,
                                                  wallet=WALLET)
@@ -165,14 +172,21 @@ def parse_hotbit_trades_row(data_rows, parser, data_row, row_index):
                                                  data_row.timestamp,
                                                  buy_quantity=Decimal(row_dict['deal']). \
                                                          quantize(PRECISION),
-                                                 buy_asset=row_dict['stock'],
+                                                 buy_asset=quote_asset,
                                                  sell_quantity=row_dict['amount'],
-                                                 sell_asset=row_dict['deal_stock'],
+                                                 sell_asset=base_asset,
                                                  fee_quantity=fee_quantity,
                                                  fee_asset=fee_asset,
                                                  wallet=WALLET)
     else:
         raise UnexpectedTypeError(parser.in_header.index('side'), 'side', row_dict['side'])
+
+def split_trading_pair(market):
+    for quote_asset in QUOTE_ASSETS:
+        if market.endswith(quote_asset):
+            return market[:-len(quote_asset)], quote_asset
+
+    return None, None
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Hotbit Trades",
@@ -191,6 +205,12 @@ DataParser(DataParser.TYPE_EXCHANGE,
            ['Date', 'Pair', 'Type', 'Price', 'Amount', 'Fee', 'Total', 'Export'],
            worksheet_name="Hotbit T",
            all_handler=parse_hotbit_orders_v1)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "Hotbit Trades",
+           ['time', 'market', 'side', 'price', 'amount', 'deal', 'fee'],
+           worksheet_name="Hotbit T",
+           all_handler=parse_hotbit_trades)
 
 # Format provided by request from support
 DataParser(DataParser.TYPE_EXCHANGE,
