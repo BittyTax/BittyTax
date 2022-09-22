@@ -54,6 +54,7 @@
 - Binance parser: added new deposits/withdrawals format. ([#258](https://github.com/BittyTax/BittyTax/issues/258))
 - Coinbase parser: new "Transaction history" data file format added.
 - Hotbit parser: new "Orders" data file format added.
+- Conversion tool: added parser for Coinmetro exchange.
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
