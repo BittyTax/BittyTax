@@ -56,4 +56,5 @@ from . import trezorsuite
 from . import uphold
 from . import volt
 from . import wirex
+from . import zelcore
 from . import zerion
