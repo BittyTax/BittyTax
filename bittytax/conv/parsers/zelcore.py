@@ -9,7 +9,7 @@ from ..dataparser import DataParser
 
 WALLET = "Zelcore"
 
-def parse_zerlcore_kda(data_row, _parser, **kwargs):
+def parse_zelcore_kda(data_row, _parser, **kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict['timestamp'])/1000)
 
@@ -53,4 +53,4 @@ DataParser(DataParser.TYPE_WALLET,
            ['txid', 'formattedDate', 'timestamp', 'direction', 'amount', 'chainid',
             'destinationchainid', 'isError', 'type', 'asset', 'swapTokenIn', 'swapTokenOut'],
            worksheet_name="Zelcore KDA",
-           row_handler=parse_zerlcore_kda)
+           row_handler=parse_zelcore_kda)
