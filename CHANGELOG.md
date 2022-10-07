@@ -26,6 +26,7 @@
 - Binance parser: cash deposits should be gross amount. ([#257](https://github.com/BittyTax/BittyTax/issues/257))
 - Coinbase parser: handle commas in Buy Quantity matched from Note.
 - Hotbit parser: trade export (from support) timestamps are Hong Kong timezone.
+- Accounting tool: footer/page no. missing from PDF report.
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
 - Conversion tool: added parser for SnowTrace explorer.
