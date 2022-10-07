@@ -8,49 +8,67 @@ import yaml
 
 from ..out_record import TransactionOutRecord
 from ..dataparser import DataParser
-from ..exceptions import UnexpectedTypeError
+from ..exceptions import UnexpectedTypeError, UnexpectedContentError
 
 WALLET = "BnkToTheFuture"
 
 ASSET_NORMALISE = {'USD*': 'USD'}
+
+RCT = 'Related Crypto Trade'
 
 def parse_bnktothefuture(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'])
 
     if row_dict['Description'] in ("Dividend", "Deposit"):
-        details = yaml.safe_load(row_dict['Details'])
+        dtls = yaml.safe_load(row_dict['Details'])
 
-        if 'Related Company' in details:
-            if 'Related transaction' in details:
-                data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DIVIDEND,
-                                                         data_row.timestamp,
-                                                         buy_quantity=row_dict['In'],
-                                                         buy_asset=asset(row_dict['Currency']),
-                                                         fee_quantity=str(details[0]['Amount']),
-                                                         fee_asset=asset(details[0]['Currency']),
-                                                         wallet=WALLET,
-                                                         note=details['Related Company']['Name'])
-            else:
-                data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DIVIDEND,
-                                                         data_row.timestamp,
-                                                         buy_quantity=row_dict['In'],
-                                                         buy_asset=asset(row_dict['Currency']),
-                                                         wallet=WALLET,
-                                                         note=details['Related Company']['Name'])
+        if 'Related Company' in dtls:
+            fee_quantity = None
+            fee_asset = ''
+
+            if 0 in dtls:
+                fee_quantity = str(dtls[0]['Amount'])
+                fee_asset = asset(dtls[0]['Currency'])
+
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DIVIDEND,
+                                                     data_row.timestamp,
+                                                     buy_quantity=row_dict['In'],
+                                                     buy_asset=asset(row_dict['Currency']),
+                                                     fee_quantity=fee_quantity,
+                                                     fee_asset=fee_asset,
+                                                     wallet=WALLET,
+                                                     note=dtls['Related Company']['Name'])
         else:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['In'],
                                                      buy_asset=asset(row_dict['Currency']),
                                                      wallet=WALLET)
-
     elif row_dict['Description'] == "Reward":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['In'],
                                                  buy_asset=asset(row_dict['Currency']),
                                                  wallet=WALLET)
+
+    elif row_dict['Description'] == "Outcome Transaction":
+        dtls = yaml.safe_load(row_dict['Details'])
+
+        if RCT in dtls:
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                     data_row.timestamp,
+                                                     buy_quantity=str(dtls[RCT]['Income Amount']),
+                                                     buy_asset=asset(dtls[RCT]['Income Currency']),
+                                                     sell_quantity=row_dict['Out'],
+                                                     sell_asset=asset(row_dict['Currency']),
+                                                     fee_quantity=str(dtls[RCT]['Fee']),
+                                                     fee_asset=asset(row_dict['Currency']),
+                                                     wallet=WALLET)
+        else:
+            raise UnexpectedContentError(parser.in_header.index('Details'), 'Details',
+                                         row_dict['Details'])
+
     elif row_dict['Description'] == "Withdrawal":
         fee_quantity = None
         fee_asset = ''
@@ -58,11 +76,11 @@ def parse_bnktothefuture(data_row, parser, **_kwargs):
         # Kludge to fix invalid yaml
         yaml_fix = re.sub(r"^.*?Related transaction:", "", row_dict['Details'])
         if yaml_fix:
-            details = yaml.safe_load(yaml_fix)
-            for rel_tx in details:
-                if details[rel_tx]['Description'] == "Fee":
-                    fee_quantity = str(details[rel_tx]['Amount'])
-                    fee_asset = asset(details[rel_tx]['Currency'])
+            dtls = yaml.safe_load(yaml_fix)
+            for rel_tx in dtls:
+                if dtls[rel_tx]['Description'] == "Fee":
+                    fee_quantity = str(dtls[rel_tx]['Amount'])
+                    fee_asset = asset(dtls[rel_tx]['Currency'])
                     break
 
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
@@ -73,8 +91,12 @@ def parse_bnktothefuture(data_row, parser, **_kwargs):
                                                  fee_asset=fee_asset,
                                                  wallet=WALLET)
     elif row_dict['Description'] == "Fee":
-        details = yaml.safe_load(row_dict['Details'])
-        if details[0]['Description'] in ("Dividend", "Withdrawal"):
+        dtls = yaml.safe_load(row_dict['Details'])
+        if 0 in dtls and dtls[0]['Description'] in ("Dividend", "Withdrawal"):
+            # Skip as fee already included
+            return
+
+        if RCT in dtls:
             # Skip as fee already included
             return
 
@@ -85,7 +107,8 @@ def parse_bnktothefuture(data_row, parser, **_kwargs):
                                                  fee_quantity=row_dict['Out'],
                                                  fee_asset=asset(row_dict['Currency']),
                                                  wallet=WALLET)
-    elif row_dict['Description'] in ("Pending Transaction/Order", "Funds Released"):
+    elif row_dict['Description'] in ("Pending Transaction/Order", "Funds Released",
+                                     "Income Transaction"):
         # Skip internal operations
         return
     else:
