@@ -17,7 +17,7 @@ TERM_WIDTH = 69
 class DataParser(object):
     TYPE_WALLET = 'Wallets'
     TYPE_EXCHANGE = 'Exchanges'
-    TYPE_SAVINGS = 'Savings & Loans'
+    TYPE_SAVINGS = 'Savings, Loans & Investments'
     TYPE_EXPLORER = 'Explorers'
     TYPE_ACCOUNTING = 'Accounting'
     TYPE_SHARES = 'Stocks & Shares'
@@ -67,7 +67,7 @@ class DataParser(object):
 
     @classmethod
     def parse_timestamp(cls, timestamp_str, tzinfos=None, tz=None, dayfirst=False, fuzzy=False):
-        if isinstance(timestamp_str, int):
+        if isinstance(timestamp_str, int) or isinstance(timestamp_str, float):
             timestamp = datetime.utcfromtimestamp(timestamp_str)
         else:
             timestamp = dateutil.parser.parse(timestamp_str,

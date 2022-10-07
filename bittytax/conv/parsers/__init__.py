@@ -8,6 +8,7 @@ from . import bittrex
 from . import bittylicious
 from . import blockchain
 from . import blockfi
+from . import bnktothefuture
 from . import bscscan
 from . import celsius
 from . import cgtcalculator

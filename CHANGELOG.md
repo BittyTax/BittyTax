@@ -57,6 +57,7 @@
 - Hotbit parser: new "Orders" data file format added.
 - Conversion tool: added parser for Coinmetro exchange.
 - Conversion tool: added parser for Zelcore wallet.
+- Conversion tool: added parser for the BnkToTheFuture platform.
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
