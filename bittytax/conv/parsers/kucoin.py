@@ -116,7 +116,12 @@ def parse_kucoin_trades_v1(data_row, parser, **_kwargs):
 
 def parse_kucoin_deposits_withdrawals(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict['created_at'], tz='Asia/Hong_Kong')
+
+    # if created_date is present
+    if row_dict['created_date']:
+            data_row.timestamp = DataParser.parse_timestamp(row_dict['created_date'], tz='Asia/Hong_Kong')
+    else:
+        data_row.timestamp = DataParser.parse_timestamp(row_dict['created_at'], tz='Asia/Hong_Kong')
 
     if row_dict['type'] == "DEPOSIT":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
@@ -203,5 +208,11 @@ DataParser(DataParser.TYPE_EXCHANGE,
 DataParser(DataParser.TYPE_EXCHANGE,
            "KuCoin Deposits/Withdrawals",
            ['coin_type', 'type', 'add', 'hash', 'vol', 'created_at'],
+           worksheet_name="Kucoin D,W",
+           row_handler=parse_kucoin_deposits_withdrawals)
+
+DataParser(DataParser.TYPE_EXCHANGE,
+           "KuCoin Bigdata Project payments",
+           ['id', 'user_id', 'coin_type', 'type', 'address', 'wallet_tx_id', 'vol', 'fee', 'created_at','created_date'],
            worksheet_name="Kucoin D,W",
            row_handler=parse_kucoin_deposits_withdrawals)
