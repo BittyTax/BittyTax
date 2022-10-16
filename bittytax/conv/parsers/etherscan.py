@@ -88,6 +88,9 @@ def parse_etherscan_tokens(data_row, _parser, **kwargs):
     else:
         asset = row_dict['TokenSymbol']
 
+    if row_dict['TokenValue']:
+        row_dict['Value'] = row_dict['TokenValue']
+
     if row_dict['To'].lower() in kwargs['filename'].lower():
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
@@ -180,6 +183,14 @@ etherscan_tokens = DataParser(
         DataParser.TYPE_EXPLORER,
         "Etherscan (ERC-20 Tokens)",
         ['Txhash', 'UnixTimestamp', 'DateTime', 'From', 'To', 'Value', 'ContractAddress',
+         'TokenName', 'TokenSymbol'],
+        worksheet_name="Etherscan",
+        row_handler=parse_etherscan_tokens)
+
+etherscan_tokens = DataParser(
+        DataParser.TYPE_EXPLORER,
+        "Etherscan (ERC-20 Tokens)",
+        ['Txhash', 'UnixTimestamp', 'DateTime', 'From', 'To', 'TokenValue', None, 'ContractAddress',
          'TokenName', 'TokenSymbol'],
         worksheet_name="Etherscan",
         row_handler=parse_etherscan_tokens)

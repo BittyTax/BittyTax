@@ -120,6 +120,14 @@ DataParser(DataParser.TYPE_EXPLORER,
            worksheet_name=WORKSHEET_NAME,
            row_handler=parse_bscscan_internal)
 
+DataParser(DataParser.TYPE_EXPLORER,
+           "BscScan (BSC Internal Transactions)",
+           ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'ParentTxFrom', 'ParentTxTo',
+            'ParentTxBNB_Value', 'From', 'TxTo', 'ContractAddress', 'Value_IN(BNB)',
+            'Value_OUT(BNB)', None, 'Historical $Price/BNB', 'Status', 'ErrCode', 'Type'],
+           worksheet_name=WORKSHEET_NAME,
+           row_handler=parse_bscscan_internal)
+
 # Same header as Etherscan
 #DataParser(DataParser.TYPE_EXPLORER,
 #           "BscScan (BEP-20 Tokens)",
