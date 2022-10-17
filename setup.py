@@ -64,7 +64,7 @@ setup(
         'xlrd<=1.2.0',
         'xlsxwriter',
         'jinja2',
-        'xhtml2pdf',
+        'xhtml2pdf<=0.2.6',
         'reportlab<=3.6.6',
         'colorama',
         'tqdm',

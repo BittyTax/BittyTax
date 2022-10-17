@@ -26,6 +26,7 @@
 - Binance parser: cash deposits should be gross amount. ([#257](https://github.com/BittyTax/BittyTax/issues/257))
 - Coinbase parser: handle commas in Buy Quantity matched from Note.
 - Hotbit parser: trade export (from support) timestamps are Hong Kong timezone.
+- Accounting tool: footer/page no. missing from PDF report.
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
 - Conversion tool: added parser for SnowTrace explorer.
@@ -55,6 +56,8 @@
 - Coinbase parser: new "Transaction history" data file format added.
 - Hotbit parser: new "Orders" data file format added.
 - Conversion tool: added parser for Coinmetro exchange.
+- Conversion tool: added parser for Zelcore wallet.
+- Conversion tool: added parser for the BnkToTheFuture platform.
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
@@ -75,6 +78,7 @@
 - SnowTrace parser: include address in wallet name.
 - Coinbase parser: added "Learning Reward" transaction type.
 - Coinbase parser: added "Advanced Trade Buy/Sell" transaction types. ([#269](https://github.com/BittyTax/BittyTax/issues/269))
+- Binance parser: added "ETH 2.0 Staking" operation. ([#273](https://github.com/BittyTax/BittyTax/issues/273))
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-
