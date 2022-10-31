@@ -278,7 +278,7 @@ class ReportLog(object):
 
         if cgains.estimate['proceeds_warning']:
             print("%s*Assets sold are more than 4 times the annual allowance (%s), "
-                  "this needs to be reported to HMRC" % (
+                  "this needs to be reported to HMRC if you already complete a Self Assessment" % (
                       Fore.YELLOW, self.format_value(cgains.estimate['allowance'] * 4)))
 
         if not summary:

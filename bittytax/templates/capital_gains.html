@@ -106,7 +106,7 @@
     </tr>
 </table>
 {% if cgains.estimate.proceeds_warning %}
-    <p>*Assets sold are more than 4 times the annual allowance ({{(cgains.estimate['allowance'] * 4)|valuefilter}}), this needs to be reported to HMRC</p>
+    <p>*Assets sold are more than 4 times the annual allowance ({{(cgains.estimate['allowance'] * 4)|valuefilter}}), this needs to be reported to HMRC if you already complete a Self Assessment</p>
 {% endif %}
 {% if not args.summary %}
     {% if args.tax_rules in config.TAX_RULES_UK_COMPANY %}

@@ -28,6 +28,7 @@
 - Hotbit parser: trade export (from support) timestamps are Hong Kong timezone.
 - Accounting tool: footer/page no. missing from PDF report.
 - Electrum parser: handle commas in values.
+- Accounting tool: update 4x annual allowance warning. ([#211](https://github.com/BittyTax/BittyTax/issues/211))
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
 - Conversion tool: added parser for SnowTrace explorer.
