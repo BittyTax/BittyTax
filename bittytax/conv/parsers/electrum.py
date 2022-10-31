@@ -16,20 +16,21 @@ def parse_electrum_v3(data_row, _parser, **kwargs):
     if not kwargs['cryptoasset']:
         raise UnknownCryptoassetError(kwargs['filename'], kwargs.get('worksheet'))
 
-    if Decimal(row_dict['value']) > 0:
+    value = row_dict['value'].replace(',', '')
+    if Decimal(value) > 0:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=row_dict['value'],
+                                                 buy_quantity=value,
                                                  buy_asset=kwargs['cryptoasset'],
                                                  wallet=WALLET,
                                                  note=row_dict['label'])
     else:
         if row_dict['fee']:
-            sell_quantity = abs(Decimal(row_dict['value'])) - Decimal(row_dict['fee'])
+            sell_quantity = abs(Decimal(value)) - Decimal(row_dict['fee'])
             fee_quantity = row_dict['fee']
             fee_asset = kwargs['cryptoasset']
         else:
-            sell_quantity = abs(Decimal(row_dict['value']))
+            sell_quantity = abs(Decimal(value))
             fee_quantity = None
             fee_asset = ''
 
@@ -52,17 +53,18 @@ def parse_electrum_v1(data_row, _parser, **kwargs):
     if not kwargs['cryptoasset']:
         raise UnknownCryptoassetError(kwargs['filename'], kwargs.get('worksheet'))
 
-    if Decimal(row_dict['value']) > 0:
+    value = row_dict['value'].replace(',', '')
+    if Decimal(value) > 0:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=row_dict['value'],
+                                                 buy_quantity=value,
                                                  buy_asset=kwargs['cryptoasset'],
                                                  wallet=WALLET,
                                                  note=row_dict['label'])
     else:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=abs(Decimal(row_dict['value'])),
+                                                 sell_quantity=abs(Decimal(value)),
                                                  sell_asset=kwargs['cryptoasset'],
                                                  wallet=WALLET,
                                                  note=row_dict['label'])
