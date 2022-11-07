@@ -153,7 +153,7 @@ def parse_binance_deposits_withdrawals_crypto(data_row, _parser, **kwargs):
 
 def parse_binance_deposits_withdrawals_cash(data_row, _parser, **kwargs):
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date(UTC)'])
+    data_row.timestamp = DataParser.parse_timestamp(row_dict['Date(UTCnull)'])
 
     if row_dict['Status'] != "Successful":
         return
@@ -328,8 +328,8 @@ DataParser(DataParser.TYPE_EXCHANGE,
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Binance Deposits/Withdrawals",
-           ['Date(UTC)', 'Coin', 'Amount', 'TransactionFee', 'Address', 'TXID', 'SourceAddress',
-            'PaymentID', 'Status'],
+           ['Date(UTC)', 'Coin', 'Network', 'Amount', 'TransactionFee', 'Address', 'TXID', 
+            'SourceAddress', 'PaymentID', 'Status'],
            worksheet_name="Binance D,W",
            row_handler=parse_binance_deposits_withdrawals_crypto)
 
@@ -342,7 +342,7 @@ DataParser(DataParser.TYPE_EXCHANGE,
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Binance Deposits/Withdrawals",
-           ['Date(UTC)', 'Coin', 'Amount', 'Status', 'Payment Method', 'Indicated Amount', 'Fee',
+           ['Date(UTCnull)', 'Coin', 'Amount', 'Status', 'Payment Method', 'Indicated Amount', 'Fee',
             'Order ID'],
            worksheet_name="Binance D,W",
            row_handler=parse_binance_deposits_withdrawals_cash)
