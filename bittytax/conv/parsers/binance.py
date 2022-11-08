@@ -5,7 +5,7 @@ import sys
 import re
 from decimal import Decimal
 
-from colorama import Fore
+from colorama import Fore, Back
 
 from ...config import config
 from ..out_record import TransactionOutRecord
@@ -195,7 +195,7 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
 
         if row_dict['Operation'] in ("Commission History", "Referrer rebates", "Commission Rebate",
                                      "Commission Fee Shared With You", "Cash Voucher distribution",
-                                     "Referral Kickback"):
+                                     "Referral Kickback", "Cashback Voucher", "Crypto Box"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['Change'],
@@ -221,14 +221,13 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      buy_quantity=row_dict['Change'],
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
-        elif row_dict['Operation'] in ("Savings Interest", "Pool Distribution"):
+        elif row_dict['Operation'] in ("Savings Interest", "Pool Distribution", "Simple Earn Flexible Interest", "Simple Earn Locked Rewards"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INTEREST,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['Change'],
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
-        elif row_dict['Operation'] in ("POS savings interest", "ETH 2.0 Staking Rewards",
-                                       "Liquid Swap rewards"):
+        elif row_dict['Operation'] in ("POS savings interest", "ETH 2.0 Staking Rewards", "Liquid Swap rewards", "Staking Rewards"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_STAKING,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['Change'],
@@ -238,10 +237,14 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
             make_trade(row_dict['Operation'], tx_times[row_dict['UTC_Time']], "BNB")
         elif row_dict['Operation'] == "ETH 2.0 Staking":
             make_trade(row_dict['Operation'], tx_times[row_dict['UTC_Time']])
-        elif row_dict['Operation'] in ("Savings purchase", "Savings Principal redemption",
-                                       "POS savings purchase", "POS savings redemption"):
+        elif row_dict['Operation'] in ("Savings purchase", "Savings Principal redemption", "POS savings purchase", "POS savings redemption", "Staking Purchase", "Staking Redemption", "Simple Earn Flexible Subscription", "Simple Earn Flexible Redemption", "Simple Earn Locked Redemption", "Simple Earn Locked Subscription"):
             # Skip not taxable events
             continue
+        else:
+            if row_dict['Operation'] not in ['Deposit', 'Buy', 'Withdraw', 'Fee', 'Fiat Deposit', 'Fiat Withdraw']:
+                sys.stderr.write("%sWARNING%s Operation not known and should be reported on https://bitty.tax: %s\n" % (
+                        Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, row_dict['Operation']))
+
 
 def make_trade(operation, tx_times, default_asset=''):
     op_rows = [dr for dr in tx_times if dr.row_dict['Operation'] == operation]
@@ -328,7 +331,7 @@ DataParser(DataParser.TYPE_EXCHANGE,
 
 DataParser(DataParser.TYPE_EXCHANGE,
            "Binance Deposits/Withdrawals",
-           ['Date(UTC)', 'Coin', 'Network', 'Amount', 'TransactionFee', 'Address', 'TXID', 
+           ['Date(UTC)', 'Coin', 'Network', 'Amount', 'TransactionFee', 'Address', 'TXID',
             'SourceAddress', 'PaymentID', 'Status'],
            worksheet_name="Binance D,W",
            row_handler=parse_binance_deposits_withdrawals_crypto)
