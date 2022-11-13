@@ -5,8 +5,11 @@ import os
 import atexit
 import json
 import platform
+import zipfile
 from decimal import Decimal
 from datetime import datetime, timedelta
+import pandas as pd
+from io import BytesIO
 
 from colorama import Fore, Back
 import dateutil.parser
@@ -259,6 +262,12 @@ class CoinDesk(DataSourceBase):
                                    'price': Decimal(repr(v)) if v else None,
                                    'url': url} for k, v in json_resp['bpi'].items()},
                                timestamp)
+        else:
+            self.update_prices(pair,{timestamp.strftime('%Y-%m-%d'):
+                               {
+                                   'price': None,
+                                   'url': url}},
+                               timestamp)
 
 class CryptoCompare(DataSourceBase):
     def __init__(self):
@@ -313,10 +322,22 @@ class CoinGecko(DataSourceBase):
     def get_historical(self, asset, quote, timestamp, asset_id=None):
         if asset_id is None:
             asset_id = self.assets[asset]['id']
-
+        # Coin Gecko has a rate limit on its API, we need to cache a result
+        filename = os.path.join(config.CACHE_DIR,"coingecko",datetime.today().strftime('%Y-%m-%d')+asset_id+'_'+quote+'.json')
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        json_resp = None
         url = "https://api.coingecko.com/api/v3/coins/%s/market_chart?vs_currency=%s&days=max" % (
-            asset_id, quote)
-        json_resp = self.get_json(url)
+                asset_id, quote)
+        if os.path.exists(filename):
+            with open(filename, 'r') as response_cache:
+                json_resp = json.load(response_cache)
+
+        else:
+            json_resp = self.get_json(url)
+            with open(filename, 'w') as response_cache:
+                json.dump(json_resp, response_cache, indent=4, sort_keys=True)
+        
+
         pair = self.pair(asset, quote)
         if 'prices' in json_resp:
             self.update_prices(pair,
@@ -362,4 +383,65 @@ class CoinPaprika(DataSourceBase):
                            {dateutil.parser.parse(p['timestamp']).strftime('%Y-%m-%d'): {
                                'price': Decimal(repr(p['price'])) if p['price'] else None,
                                'url': url} for p in json_resp},
+                           timestamp)
+
+class Binance(DataSourceBase):
+    def __init__(self):
+        super(Binance, self).__init__()
+        #https://s3-ap-northeast-1.amazonaws.com/data.binance.vision?delimiter=/&prefix=data/spot/daily/klines/
+        #json_resp = self.get_json("https://data.binance.vision/?prefix=data/spot/daily/klines/")
+        #self.ids = {c['id']: {'symbol': c['symbol'].strip().upper(), 'name': c['name'].strip()}
+        #            for c in json_resp}
+        #self.assets = {c['symbol'].strip().upper(): {'id': c['id'], 'name': c['name'].strip()}
+        #               for c in json_resp}
+        assetsNames = os.path.join(config.CACHE_DIR,"BinanceAssets.txt")
+        self.assets = {}
+        with open(assetsNames) as assetfile:
+            for line in assetfile:
+                self.assets[line.rstrip()]={'id': line.rstrip(), 'name': line.strip()}
+        self.get_config_assets()
+
+    def get_latest(self, asset, quote, asset_id=None):
+        #yesterday = datetime.now() - timedelta(1)
+        #self.get_historical(self,asset,quote,yesterday,asset_id)
+        return None
+        #return self.prices[self.pair(asset, quote)].
+
+    def get_historical(self, asset, quote, timestamp, asset_id=None):
+        # Historic prices only available in BUSD, USDT or BTC
+        if quote not in ('BUSD','USDT', 'BTC'):
+            return
+
+
+        dirname = os.path.join(config.CACHE_DIR,"binance")
+        pair = self.pair(asset, quote)
+        filename = asset+quote+'-1d-'+timestamp.strftime('%Y-%m-%d')+'.csv'
+        downloadfilename = asset+quote+'-1d-'+timestamp.strftime('%Y-%m-%d')+'.zip'
+        os.makedirs(os.path.dirname(dirname), exist_ok=True)
+
+        fullFilename = os.path.join(config.CACHE_DIR,"binance",filename)
+        #https://data.binance.vision/data/spot/daily/klines/EASYBTC/1d/EASYBTC-1d-2021-04-27.zip
+        url = "https://data.binance.vision/data/spot/daily/klines/%s%s/1d/%s" % ((asset, quote,downloadfilename))
+
+        
+        if not os.path.exists(fullFilename):
+            print("%s: %s loading %s from Binance from url %s" % (Fore.YELLOW, self.name(), pair, url))
+            response = requests.get(url, headers={'User-Agent': self.USER_AGENT}, timeout=self.TIME_OUT, stream=True)
+            if response.status_code == 200:
+                with zipfile.ZipFile(BytesIO(response.content)) as zipref:
+                    zipref.extractall(dirname)
+            else:
+                print("Date not available " + fullFilename)
+                return None
+        #else:
+            #print("Cache hit " + fullFilename)
+
+        ohlc = pd.read_csv(fullFilename, header=None)
+        #print(ohlc)
+        
+        self.update_prices(pair,
+                           {timestamp.strftime('%Y-%m-%d'): {
+                               'price': Decimal(ohlc.iloc[0,4]),
+                               'url': url}
+                            },
                            timestamp)

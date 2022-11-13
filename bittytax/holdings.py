@@ -67,6 +67,9 @@ class Holdings(object):
     def check_transfer_mismatch(self):
         if self.withdrawals > 0 and self.withdrawals != self.deposits:
             tqdm.write("%sWARNING%s Disposal detected between a Withdrawal and a Deposit "
-                       "(%s:%s) for %s, cost basis will be wrong" % ( Back.RED+Fore.BLACK,
-                           Back.RESET+Fore.RED, self.withdrawals, self.deposits, self.asset))
+                       "(%s:%s) for %s, %s cost basis will be wrong" % ( Back.RED+Fore.BLACK,
+                           Back.RESET+Fore.RED, self.withdrawals, self.deposits, self.asset, self.quantity))
             self.mismatches += 1
+            return True
+        else:
+            return False

@@ -54,6 +54,13 @@ def parse_bitstamp(data_row, parser, **_kwargs):
         else:
             raise UnexpectedTypeError(parser.in_header.index('Sub Type'), 'Sub Type',
                                       row_dict['Sub Type'])
+
+    elif row_dict['Type'] == "Staking reward":                                      
+            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_STAKING,
+                                                     data_row.timestamp,
+                                                     buy_quantity=row_dict['Amount'].split(' ')[0],
+                                                     buy_asset=row_dict['Amount'].split(' ')[1],
+                                                     wallet=WALLET)
     else:
         raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 

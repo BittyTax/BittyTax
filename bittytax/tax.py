@@ -316,7 +316,8 @@ class TaxCalculator(object):
                 print("%ssection104:   %s" % (Fore.CYAN, tax_event))
 
             if config.transfers_include and not skip_integrity_check:
-                self.holdings[t.asset].check_transfer_mismatch()
+                if self.holdings[t.asset].check_transfer_mismatch():
+                    print("%s Transfer Mismatch issue:   %s" % (Fore.RED, t))
 
     def process_income(self):
         if config.debug:

@@ -221,14 +221,16 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      buy_quantity=row_dict['Change'],
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
-        elif row_dict['Operation'] in ("Savings Interest", "Pool Distribution"):
+        elif row_dict['Operation'] in ("Savings Interest", "Pool Distribution","Simple Earn Flexible Interest",
+                                        "Launchpool Interest"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INTEREST,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['Change'],
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
         elif row_dict['Operation'] in ("POS savings interest", "ETH 2.0 Staking Rewards",
-                                       "Liquid Swap rewards"):
+                                       "Liquid Swap rewards","Staking Rewards","Simple Earn Locked Rewards",
+                                       "DOT Slot Auction Rewards"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_STAKING,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['Change'],
