@@ -236,6 +236,8 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      wallet=WALLET)
         elif row_dict['Operation'] == "Small assets exchange BNB":
             make_trade(row_dict['Operation'], tx_times[row_dict['UTC_Time']], "BNB")
+        elif row_dict['Operation'] == "ETH 2.0 Staking":
+            make_trade(row_dict['Operation'], tx_times[row_dict['UTC_Time']])
         elif row_dict['Operation'] in ("Savings purchase", "Savings Principal redemption",
                                        "POS savings purchase", "POS savings redemption"):
             # Skip not taxable events

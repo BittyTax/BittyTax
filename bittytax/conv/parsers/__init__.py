@@ -8,6 +8,7 @@ from . import bittrex
 from . import bittylicious
 from . import blockchain
 from . import blockfi
+from . import bnktothefuture
 from . import bscscan
 from . import celsius
 from . import cgtcalculator
@@ -17,6 +18,7 @@ from . import coinbase
 from . import coinbasepro
 from . import coinfloor
 from . import coinlist
+from . import coinmetro
 from . import coinomi
 from . import cointracking
 from . import cryptocom
@@ -55,4 +57,5 @@ from . import trezorsuite
 from . import uphold
 from . import volt
 from . import wirex
+from . import zelcore
 from . import zerion
