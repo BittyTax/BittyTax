@@ -221,14 +221,17 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      buy_quantity=row_dict['Change'],
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
-        elif row_dict['Operation'] in ("Savings Interest", "Pool Distribution"):
+        elif row_dict['Operation'] in ("Savings Interest", "Simple Earn Flexible Interest"
+                                       "Pool Distribution"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INTEREST,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['Change'],
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
-        elif row_dict['Operation'] in ("POS savings interest", "ETH 2.0 Staking Rewards",
-                                       "Liquid Swap rewards"):
+        elif row_dict['Operation'] in ("POS savings interest", "Staking Rewards"
+                                       "ETH 2.0 Staking Rewards",
+                                       "Liquid Swap rewards",
+                                       "Simple Earn Locked Rewards"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_STAKING,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['Change'],
@@ -238,8 +241,13 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
             make_trade(row_dict['Operation'], tx_times[row_dict['UTC_Time']], "BNB")
         elif row_dict['Operation'] == "ETH 2.0 Staking":
             make_trade(row_dict['Operation'], tx_times[row_dict['UTC_Time']])
-        elif row_dict['Operation'] in ("Savings purchase", "Savings Principal redemption",
-                                       "POS savings purchase", "POS savings redemption"):
+        elif row_dict['Operation'] in ("Savings purchase", "Simple Earn Flexible Subscription",
+                                       "Savings Principal redemption",
+                                       "Simple Earn Flexible Redemption",
+                                       "POS savings purchase", "Staking Purchase"
+                                       "POS savings redemption", "Staking Redemption",
+                                       "Simple Earn Locked Subscription",
+                                       "Simple Earn Locked Redemption"):
             # Skip not taxable events
             continue
 

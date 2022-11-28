@@ -60,6 +60,7 @@
 - Conversion tool: added parser for Coinmetro exchange.
 - Conversion tool: added parser for Zelcore wallet.
 - Conversion tool: added parser for the BnkToTheFuture platform.
+- Binance parser: added new/re-named operations for Statements. ([#274](https://github.com/BittyTax/BittyTax/issues/274))
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
