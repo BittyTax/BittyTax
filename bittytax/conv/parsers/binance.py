@@ -193,6 +193,11 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
         row_dict = data_row.row_dict
         data_row.timestamp = DataParser.parse_timestamp(row_dict['UTC_Time'])
 
+        if row_dict['Account'] not in ("Spot", "Earn", "Pool"):
+            data_row.failure = UnexpectedTypeError(parser.in_header.index('Account'),
+                                                   'Account', row_dict['Account'])
+            continue
+
         if row_dict['Operation'] in ("Commission History", "Referrer rebates", "Commission Rebate",
                                      "Commission Fee Shared With You", "Cash Voucher distribution",
                                      "Referral Kickback"):
@@ -221,17 +226,19 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      buy_quantity=row_dict['Change'],
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
-        elif row_dict['Operation'] in ("Savings Interest", "Simple Earn Flexible Interest"
-                                       "Pool Distribution"):
+        elif row_dict['Operation'] in ("Savings Interest", "Simple Earn Flexible Interest",
+                                       "Pool Distribution",
+                                       "Launchpool Interest"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INTEREST,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['Change'],
                                                      buy_asset=row_dict['Coin'],
                                                      wallet=WALLET)
-        elif row_dict['Operation'] in ("POS savings interest", "Staking Rewards"
+        elif row_dict['Operation'] in ("POS savings interest", "Staking Rewards",
                                        "ETH 2.0 Staking Rewards",
                                        "Liquid Swap rewards",
-                                       "Simple Earn Locked Rewards"):
+                                       "Simple Earn Locked Rewards",
+                                       "DOT Slot Auction Rewards"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_STAKING,
                                                      data_row.timestamp,
                                                      buy_quantity=row_dict['Change'],
@@ -241,15 +248,25 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
             make_trade(row_dict['Operation'], tx_times[row_dict['UTC_Time']], "BNB")
         elif row_dict['Operation'] == "ETH 2.0 Staking":
             make_trade(row_dict['Operation'], tx_times[row_dict['UTC_Time']])
-        elif row_dict['Operation'] in ("Savings purchase", "Simple Earn Flexible Subscription",
+        elif row_dict['Operation'] in ("transfer_out", "transfer_in",
+                                       "Savings purchase", "Simple Earn Flexible Subscription",
                                        "Savings Principal redemption",
                                        "Simple Earn Flexible Redemption",
-                                       "POS savings purchase", "Staking Purchase"
+                                       "POS savings purchase", "Staking Purchase",
                                        "POS savings redemption", "Staking Redemption",
                                        "Simple Earn Locked Subscription",
                                        "Simple Earn Locked Redemption"):
             # Skip not taxable events
             continue
+        elif row_dict['Operation'] in ("Deposit", "Withdraw", "Transaction Related",
+                                       "Fiat Deposit",
+                                       "Buy", "Sell", "Fee",
+                                       "Large OTC trading"):
+            # Skip duplicate operations
+            continue
+        else:
+            data_row.failure = UnexpectedTypeError(parser.in_header.index('Operation'),
+                                                   'Operation', row_dict['Operation'])
 
 def make_trade(operation, tx_times, default_asset=''):
     op_rows = [dr for dr in tx_times if dr.row_dict['Operation'] == operation]
