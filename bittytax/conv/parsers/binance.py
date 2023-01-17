@@ -13,6 +13,8 @@ from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError, UnexpectedTradingPairError, \
                          DataFilenameError
 
+PRECISION = Decimal('0.' + '0' * 8)
+
 WALLET = "Binance"
 
 QUOTE_ASSETS = ['AUD', 'BIDR', 'BKRW', 'BNB', 'BRL', 'BTC', 'BUSD', 'BVND', 'DAI', 'DOGE',
@@ -275,19 +277,34 @@ def make_trade(operation, tx_times, default_asset=''):
     if not buy_asset:
         buy_asset = default_asset
 
-    for data_row in op_rows:
-        if not data_row.parsed:
-            data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict['UTC_Time'])
-            data_row.parsed = True
+    sell_rows = [dr for dr in op_rows if not dr.parsed]
+    tot_buy_quantity = 0
 
-            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                     data_row.timestamp,
-                                                     buy_quantity=buy_quantity,
-                                                     buy_asset=buy_asset,
-                                                     sell_quantity=abs(Decimal(data_row. \
-                                                         row_dict['Change'])),
-                                                     sell_asset=data_row.row_dict['Coin'],
-                                                     wallet=WALLET)
+    for cnt, sell_row in enumerate(sell_rows):
+        sell_row.timestamp = DataParser.parse_timestamp(sell_row.row_dict['UTC_Time'])
+        sell_row.parsed = True
+
+        if buy_quantity and default_asset == "BNB":
+            if cnt < len(sell_rows) - 1:
+                split_buy_quantity = (buy_quantity / len(sell_rows)).quantize(PRECISION)
+                tot_buy_quantity += split_buy_quantity
+            else:
+                split_buy_quantity = buy_quantity - tot_buy_quantity
+
+            if config.debug:
+                sys.stderr.write("%sconv: split_buy_quantity=%s\n" % (
+                    Fore.GREEN, split_buy_quantity))
+        else:
+            split_buy_quantity = buy_quantity
+
+        sell_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
+                                                 sell_row.timestamp,
+                                                 buy_quantity=split_buy_quantity,
+                                                 buy_asset=buy_asset,
+                                                 sell_quantity=abs(Decimal(sell_row. \
+                                                     row_dict['Change'])),
+                                                 sell_asset=sell_row.row_dict['Coin'],
+                                                 wallet=WALLET)
 
 def get_buy_quantity(op_rows):
     buy_found = False
@@ -301,7 +318,7 @@ def get_buy_quantity(op_rows):
             data_row.parsed = True
 
             if not buy_found:
-                buy_quantity = data_row.row_dict['Change']
+                buy_quantity = Decimal(data_row.row_dict['Change'])
                 buy_asset = data_row.row_dict['Coin']
                 buy_found = True
             else:
@@ -312,9 +329,11 @@ def get_buy_quantity(op_rows):
             sell_assets += 1
 
     if sell_assets > 1:
-        # Multiple sells, quantity will need to be added manually
-        buy_quantity = None
-        buy_asset = ''
+        # Multiple sells, quantity will need to be added manually,
+        # unless configured to evenly split BNB
+        if not config.binance_multi_bnb_split_even:
+            buy_quantity = None
+            buy_asset = ''
 
     return buy_quantity, buy_asset
 

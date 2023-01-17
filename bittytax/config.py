@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import os
+import sys
 from datetime import datetime, timedelta
 
-import os
 import pkg_resources
-
 from colorama import Fore, Back
 import yaml
 import dateutil.tz
@@ -60,6 +60,7 @@ class Config(object):
         'data_source_fiat': DATA_SOURCE_FIAT,
         'data_source_crypto': DATA_SOURCE_CRYPTO,
         'coinbase_zero_fees_are_gifts': False,
+        'binance_multi_bnb_split_even': False,
     }
 
     def __init__(self):
@@ -100,11 +101,19 @@ class Config(object):
         except KeyError:
             return getattr(self.args, name)
 
-    def output_config(self):
-        print("%sconfig: \"%s\"" % (
-            Fore.GREEN, os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG)))
+    def output_config(self, stderr=False):
+        if not stderr:
+            print("%sconfig: \"%s\"" % (
+                Fore.GREEN, os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG)))
+        else:
+            sys.stderr.write(("%sconfig: \"%s\"\n" % (
+                Fore.GREEN, os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG))))
+
         for name in sorted(self.DEFAULT_CONFIG):
-            print("%sconfig: %s = %s" % (Fore.GREEN, name, self.config[name]))
+            if not stderr:
+                print("%sconfig: %s = %s" % (Fore.GREEN, name, self.config[name]))
+            else:
+                sys.stderr.write(("%sconfig: %s = %s\n" % (Fore.GREEN, name, self.config[name])))
 
     def sym(self):
         if self.ccy == 'GBP':

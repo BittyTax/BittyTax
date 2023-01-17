@@ -90,6 +90,7 @@ def main():
         sys.stderr.write("%spython: v%s\n" % (Fore.GREEN, platform.python_version()))
         sys.stderr.write("%ssystem: %s, release: %s\n" % (
             Fore.GREEN, platform.system(), platform.release()))
+        config.output_config(stderr=True)
 
     for filename in args.filename:
         pathnames = glob.glob(filename)
