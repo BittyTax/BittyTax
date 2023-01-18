@@ -84,6 +84,7 @@
 - Coinbase parser: added "Advanced Trade Buy/Sell" transaction types. ([#269](https://github.com/BittyTax/BittyTax/issues/269))
 - Binance parser: added "ETH 2.0 Staking" operation. ([#273](https://github.com/BittyTax/BittyTax/issues/273))
 - Binance parser: error unrecognised operations.
+- Conversion tool: updated mappings for RECAP output format.
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-
