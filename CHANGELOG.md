@@ -85,6 +85,7 @@
 - Binance parser: added "ETH 2.0 Staking" operation. ([#273](https://github.com/BittyTax/BittyTax/issues/273))
 - Binance parser: error unrecognised operations.
 - Conversion tool: updated mappings for RECAP output format.
+- Bitstamp parser: added "Staking reward" transaction type.
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-

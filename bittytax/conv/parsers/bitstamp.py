@@ -23,6 +23,12 @@ def parse_bitstamp(data_row, parser, **_kwargs):
                                                  sell_quantity=row_dict['Amount'].split(' ')[0],
                                                  sell_asset=row_dict['Amount'].split(' ')[1],
                                                  wallet=WALLET)
+    elif row_dict['Type'] == "Staking reward":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_STAKING,
+                                                 data_row.timestamp,
+                                                 buy_quantity=row_dict['Amount'].split(' ')[0],
+                                                 buy_asset=row_dict['Amount'].split(' ')[1],
+                                                 wallet=WALLET)
     elif row_dict['Type'] == "Market":
         if row_dict['Fee']:
             fee_quantity = row_dict['Fee'].split(' ')[0]
