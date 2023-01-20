@@ -51,6 +51,7 @@ from . import polygonscan
 from . import qtrade
 from . import qtwallet
 from . import snowtrace
+from . import staketax
 from . import tradesatoshi
 from . import trezor
 from . import trezorsuite

@@ -62,6 +62,7 @@
 - Conversion tool: added parser for the BnkToTheFuture platform.
 - Binance parser: added new/re-named operations for Statements. ([#274](https://github.com/BittyTax/BittyTax/issues/274))
 - Binance parser: added config to split BNB quantity across multiple tokens.
+- Conversion tool: added paser for StakeTax.
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.

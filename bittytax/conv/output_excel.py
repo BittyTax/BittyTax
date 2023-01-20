@@ -49,6 +49,8 @@ class OutputExcel(OutputBase):
                                                           'bg_color': self.FONT_COLOR_IN_DATA})
         self.format_out_data = self.workbook.add_format({'font_size': FONT_SIZE,
                                                          'font_color': 'black'})
+        self.format_out_data_err = self.workbook.add_format({'font_size': FONT_SIZE,
+                                                             'font_color': 'red'})
         self.format_in_data = self.workbook.add_format({'font_size': FONT_SIZE,
                                                         'font_color': self.FONT_COLOR_IN_DATA})
         self.format_in_data_err = self.workbook.add_format({'font_size': FONT_SIZE,
@@ -97,21 +99,6 @@ class OutputExcel(OutputBase):
             Fore.WHITE, Fore.YELLOW, self.filename))
 
 class Worksheet(object):
-    BUY_LIST = (TransactionOutRecord.TYPE_DEPOSIT,
-                TransactionOutRecord.TYPE_MINING,
-                TransactionOutRecord.TYPE_STAKING,
-                TransactionOutRecord.TYPE_INTEREST,
-                TransactionOutRecord.TYPE_DIVIDEND,
-                TransactionOutRecord.TYPE_INCOME,
-                TransactionOutRecord.TYPE_GIFT_RECEIVED,
-                TransactionOutRecord.TYPE_AIRDROP)
-
-    SELL_LIST = (TransactionOutRecord.TYPE_WITHDRAWAL,
-                 TransactionOutRecord.TYPE_SPEND,
-                 TransactionOutRecord.TYPE_GIFT_SENT,
-                 TransactionOutRecord.TYPE_GIFT_SPOUSE,
-                 TransactionOutRecord.TYPE_CHARITY_SENT,
-                 TransactionOutRecord.TYPE_LOST)
     SHEETNAME_MAX_LEN = 31
     MAX_COL_WIDTH = 30
 
@@ -196,7 +183,7 @@ class Worksheet(object):
 
         # Add transaction record
         if data_row.t_record:
-            self._xl_type(data_row.t_record.t_type, row_num, 0)
+            self._xl_type(data_row.t_record.t_type, row_num, 0, data_row.t_record)
             self._xl_quantity(data_row.t_record.buy_quantity, row_num, 1)
             self._xl_asset(data_row.t_record.buy_asset, row_num, 2)
             self._xl_value(data_row.t_record.buy_value, row_num, 3)
@@ -226,21 +213,30 @@ class Worksheet(object):
 
             self._autofit_calc(len(self.output.BITTYTAX_OUT_HEADER) + col_num, len(col_data))
 
-    def _xl_type(self, t_type, row_num, col_num):
-        if t_type in self.BUY_LIST:
+    def _xl_type(self, t_type, row_num, col_num, t_record):
+        if t_type in TransactionOutRecord.BUY_TYPES or \
+                t_record.buy_asset and not t_record.sell_asset:
             self.worksheet.data_validation(row_num, col_num, row_num, col_num,
                                            {'validate': 'list',
-                                            'source': list(self.BUY_LIST)})
-        elif t_type in self.SELL_LIST:
+                                            'source': list(TransactionOutRecord.BUY_TYPES)})
+        elif t_type in TransactionOutRecord.SELL_TYPES or \
+                t_record.sell_asset and not t_record.buy_asset:
             self.worksheet.data_validation(row_num, col_num, row_num, col_num,
                                            {'validate': 'list',
-                                            'source': list(self.SELL_LIST)})
-        else:
+                                            'source': list(TransactionOutRecord.SELL_TYPES)})
+        elif t_type == TransactionOutRecord.TYPE_TRADE or \
+                t_record.buy_asset and t_record.sell_asset:
             self.worksheet.data_validation(row_num, col_num, row_num, col_num,
                                            {'validate': 'list',
                                             'source': [TransactionOutRecord.TYPE_TRADE]})
-
         self.worksheet.write_string(row_num, col_num, t_type)
+
+        if t_type not in TransactionOutRecord.ALL_TYPES:
+            self.worksheet.conditional_format(row_num, col_num, row_num, col_num,
+                                              {'type': 'text',
+                                               'criteria': 'begins with',
+                                               'value': '_',
+                                               'format': self.output.format_out_data_err})
         self._autofit_calc(col_num, len(t_type))
 
     def _xl_quantity(self, quantity, row_num, col_num):
