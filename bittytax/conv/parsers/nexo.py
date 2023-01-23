@@ -151,3 +151,10 @@ DataParser(DataParser.TYPE_SAVINGS,
             'Output Amount', 'USD Equivalent', 'Details', 'Outstanding Loan', 'Date / Time'],
            worksheet_name="Nexo",
            row_handler=parse_nexo)
+
+DataParser(DataParser.TYPE_SAVINGS,
+           "Nexo",
+           ['Transaction', 'Type', 'Input Currency', 'Input Amount', 'Output Currency',
+            'Output Amount', 'USD Equivalent', 'Details', 'Date / Time'],
+           worksheet_name="Nexo",
+           row_handler=parse_nexo)

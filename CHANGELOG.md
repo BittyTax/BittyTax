@@ -63,6 +63,7 @@
 - Binance parser: added new/re-named operations for Statements. ([#274](https://github.com/BittyTax/BittyTax/issues/274))
 - Binance parser: added config to split BNB quantity across multiple tokens.
 - Conversion tool: added paser for StakeTax.
+- Nexo parser: added new export format. ([#286](https://github.com/BittyTax/BittyTax/issues/286))
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
