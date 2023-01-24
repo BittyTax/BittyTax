@@ -30,6 +30,15 @@ def parse_trezor_suite_v2(data_row, parser, **_kwargs):
                                                  fee_asset=row_dict['Fee unit'],
                                                  wallet=WALLET,
                                                  note=row_dict['Label'])
+    elif row_dict['Type'] == "SELF":
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
+                                                 data_row.timestamp,
+                                                 sell_quantity=0,
+                                                 sell_asset=row_dict['Amount unit'],
+                                                 fee_quantity=row_dict['Fee'],
+                                                 fee_asset=row_dict['Fee unit'],
+                                                 wallet=WALLET,
+                                                 note=row_dict['Label'])
     elif row_dict['Type'] == "FAILED":
         if row_dict['Label']:
             note = "Failure (%s)" % row_dict['Label']
