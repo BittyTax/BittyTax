@@ -65,6 +65,7 @@
 - Conversion tool: added paser for StakeTax.
 - Nexo parser: added new export format. ([#286](https://github.com/BittyTax/BittyTax/issues/286))
 - Etherscan parser: added new export formats. ([#290](https://github.com/BittyTax/BittyTax/issues/290))
+- Trezor Suite parser: added new export format. ([#282](https://github.com/BittyTax/BittyTax/issues/282))
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
