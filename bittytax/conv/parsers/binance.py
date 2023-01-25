@@ -230,6 +230,7 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                                                      wallet=WALLET)
         elif row_dict['Operation'] in ("Savings Interest", "Simple Earn Flexible Interest",
                                        "Pool Distribution",
+                                       "Savings distribution",
                                        "Launchpool Interest"):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INTEREST,
                                                      data_row.timestamp,
@@ -261,7 +262,7 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
             # Skip not taxable events
             continue
         elif row_dict['Operation'] in ("Deposit", "Withdraw", "Transaction Related",
-                                       "Fiat Deposit",
+                                       "Fiat Deposit", "Fiat Withdraw",
                                        "Buy", "Sell", "Fee",
                                        "Large OTC trading"):
             # Skip duplicate operations
