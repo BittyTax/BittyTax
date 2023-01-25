@@ -277,9 +277,9 @@ class ReportLog(object):
             self.format_value(abs(cgains.summary['total_loss']))))
 
         if cgains.estimate['proceeds_warning']:
-            print("%s*Assets sold are more than 4 times the annual allowance (%s), "
+            print("%s*Assets sold are more than %s, "
                   "this needs to be reported to HMRC if you already complete a Self Assessment" % (
-                      Fore.YELLOW, self.format_value(cgains.estimate['allowance'] * 4)))
+                      Fore.YELLOW, self.format_value(cgains.estimate['proceeds_limit'])))
 
         if not summary:
             if tax_rules in config.TAX_RULES_UK_COMPANY:

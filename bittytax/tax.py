@@ -475,7 +475,9 @@ class CalculateCapitalGains(object):
                           2020: {'allowance': 12000, 'basic_rate': 10, 'higher_rate': 20},
                           2021: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20},
                           2022: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20},
-                          2023: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20}}
+                          2023: {'allowance': 12300, 'basic_rate': 10, 'higher_rate': 20},
+                          2024: {'allowance': 6000, 'basic_rate': 10, 'higher_rate': 20,
+                                 'proceeds_limit': 50000}}
 
     # Rate changes start from 1st April
     CG_DATA_COMPANY = {2009: {'small_rate': 21, 'main_rate': 28},
@@ -491,7 +493,8 @@ class CalculateCapitalGains(object):
                        2019: {'small_rate': None, 'main_rate': 19},
                        2020: {'small_rate': None, 'main_rate': 19},
                        2021: {'small_rate': None, 'main_rate': 19},
-                       2022: {'small_rate': None, 'main_rate': 19}}
+                       2022: {'small_rate': None, 'main_rate': 19},
+                       2023: {'small_rate': 19, 'main_rate': 25}}
 
     def __init__(self, tax_year, tax_rules):
         self.totals = {'cost': Decimal(0),
@@ -517,8 +520,15 @@ class CalculateCapitalGains(object):
                              'taxable_gain': Decimal(0),
                              'cgt_basic': Decimal(0),
                              'cgt_higher': Decimal(0),
+                             'proceeds_limit': self.get_proceeds_limit(tax_year),
                              'proceeds_warning': False}
         self.assets = {}
+
+    def get_proceeds_limit(self, tax_year):
+        if 'proceeds_limit' in self.CG_DATA_INDIVIDUAL[tax_year]:
+            # For 2023 HMRC has introduced a fixed CGT reporting proceeds limit
+            return self.CG_DATA_INDIVIDUAL[tax_year]['proceeds_limit']
+        return Decimal(self.CG_DATA_INDIVIDUAL[tax_year]['allowance']) * 4
 
     def get_ct_rate(self, date):
         if date < datetime(date.year, 4, 1, tzinfo=config.TZ_LOCAL):
@@ -555,7 +565,7 @@ class CalculateCapitalGains(object):
         elif self.totals['gain'] > 0:
             self.estimate['allowance_used'] = self.totals['gain']
 
-        if self.totals['proceeds'] >= self.estimate['allowance'] * 4:
+        if self.totals['proceeds'] >= self.estimate['proceeds_limit']:
             self.estimate['proceeds_warning'] = True
 
     def tax_estimate_ct(self, tax_year):
