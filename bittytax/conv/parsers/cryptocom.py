@@ -44,9 +44,17 @@ def parse_crypto_com(data_row, parser, **_kwargs):
                                                  buy_asset=row_dict['Currency'],
                                                  buy_value=value,
                                                  wallet=WALLET)
+    elif row_dict['Transaction Kind'] == 'rewards_platform_deposit_credited':
+        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_INCOME,
+                                                 data_row.timestamp,
+                                                 buy_quantity=row_dict['Amount'],
+                                                 buy_asset=row_dict['Currency'],
+                                                 buy_value=value,
+                                                 wallet=WALLET)
     elif row_dict['Transaction Kind'] in ("viban_purchase", "van_purchase",
                                           "crypto_viban_exchange", "crypto_exchange",
-                                          "crypto_to_van_sell_order"):
+                                          "crypto_to_van_sell_order",
+                                          "trading.limit_order.fiat_wallet.sell_commit"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['To Amount'],
@@ -123,7 +131,10 @@ def parse_crypto_com(data_row, parser, **_kwargs):
                                           "crypto_wallet_swap_credited",
                                           "crypto_wallet_swap_debited",
                                           "supercharger_deposit", "supercharger_withdrawal",
-                                          "council_node_deposit_created"):
+                                          "council_node_deposit_created",
+                                          "trading.limit_order.fiat_wallet.purchase_lock",
+                                          "trading.limit_order.fiat_wallet.purchase_unlock",
+                                          "trading.limit_order.fiat_wallet.sell_lock"):
         return
     elif row_dict['Transaction Kind'] == "":
         # Could be a fiat transaction
