@@ -11,7 +11,7 @@ def parse_kucoin_trades_v4(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['createdDate'], tz='Asia/Hong_Kong')
 
-    if row_dict['direction'] == "buy":
+    if row_dict['direction'].lower() == "buy":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['amount'],
@@ -21,7 +21,7 @@ def parse_kucoin_trades_v4(data_row, parser, **_kwargs):
                                                  fee_quantity=row_dict['fee'],
                                                  fee_asset=row_dict['symbol'].split('-')[1],
                                                  wallet=WALLET)
-    elif row_dict['direction'] == "sell":
+    elif row_dict['direction'].lower() == "sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['dealValue'],
@@ -66,7 +66,7 @@ def parse_kucoin_trades_v2(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['created_at'], tz='Asia/Hong_Kong')
 
-    if row_dict['direction'] == "BUY":
+    if row_dict['direction'].lower() == "buy":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['amount_coin'],
@@ -76,7 +76,7 @@ def parse_kucoin_trades_v2(data_row, parser, **_kwargs):
                                                  fee_quantity=row_dict['fee'],
                                                  fee_asset=row_dict['symbol'].split('-')[1],
                                                  wallet=WALLET)
-    elif row_dict['direction'] == "SELL":
+    elif row_dict['direction'].lower() == "sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['funds'],
@@ -94,7 +94,7 @@ def parse_kucoin_trades_v1(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['created_at'], tz='Asia/Hong_Kong')
 
-    if row_dict['direction'] == "BUY":
+    if row_dict['direction'].lower() == "buy":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['amount'],
@@ -102,7 +102,7 @@ def parse_kucoin_trades_v1(data_row, parser, **_kwargs):
                                                  sell_quantity=row_dict['deal_value'],
                                                  sell_asset=row_dict['symbol'].split('-')[1],
                                                  wallet=WALLET)
-    elif row_dict['direction'] == "SELL":
+    elif row_dict['direction'].lower() == "sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['deal_value'],
