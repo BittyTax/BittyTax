@@ -95,6 +95,7 @@
 - Bitstamp parser: added "Staking reward" transaction type.
 - Crypto.com parser: added additional transaction kinds. ([#285](https://github.com/BittyTax/BittyTax/issues/285))
 - KuCoin parser: make direction field case-insensitive. ([#189](https://github.com/BittyTax/BittyTax/issues/189))
+- BlockFi parser: added "Referral Bonus" transaction type. ([#159](https://github.com/BittyTax/BittyTax/issues/159))
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-
