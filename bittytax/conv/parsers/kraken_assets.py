@@ -41,14 +41,14 @@ def get_quote_assets():
                 base = response.json()["result"][pair]["base"]
                 quote = response.json()["result"][pair]["quote"]
 
-                if bt_base + '/' + bt_quote == wsname:
+                if bt_base and bt_quote and bt_base + '/' + bt_quote == wsname:
                     print("%s = %s/%s [OK]" % (pair, bt_base, bt_quote))
                 elif bt_base == base and bt_quote == quote:
                     print("%s = %s/%s [OK]" % (pair, bt_base, bt_quote))
                 else:
                     passed = False
                     print("%s = %s/%s [Failure] %s (%s & %s)" %
-                            (pair, bt_base, bt_quote, wsname, base, quote))
+                          (pair, bt_base, bt_quote, wsname, base, quote))
 
         if passed:
             print("===Split trading pairs PASSED===")
@@ -61,14 +61,14 @@ def output_constants(alt_assets, quote_assets):
     rows = []
     for i in range(0, len(quote_assets), 10):
         rows.append(", ".join("\'{}\'".format(v)
-                for v in sorted(quote_assets)[i:i+10]))
+                              for v in sorted(quote_assets)[i:i+10]))
 
     print("\nQUOTE_ASSETS = [%s]\n" % (',\n                '.join(rows)))
 
     rows = []
     for i in range(0, len(alt_assets), 5):
         rows.append(", ".join("\'{}\': \'{}\'".format(k, v)
-                for k, v in sorted(alt_assets.items())[i:i+5]))
+                              for k, v in sorted(alt_assets.items())[i:i+5]))
 
     print("ALT_ASSETS = {%s}" % (',\n              '.join(rows)))
 

@@ -214,7 +214,12 @@ class Worksheet(object):
             self._autofit_calc(len(self.output.BITTYTAX_OUT_HEADER) + col_num, len(col_data))
 
     def _xl_type(self, t_type, row_num, col_num, t_record):
-        if t_type in TransactionOutRecord.BUY_TYPES or \
+        if t_type == TransactionOutRecord.TYPE_TRADE or \
+                t_record.buy_asset and t_record.sell_asset:
+            self.worksheet.data_validation(row_num, col_num, row_num, col_num,
+                                           {'validate': 'list',
+                                            'source': [TransactionOutRecord.TYPE_TRADE]})
+        elif t_type in TransactionOutRecord.BUY_TYPES or \
                 t_record.buy_asset and not t_record.sell_asset:
             self.worksheet.data_validation(row_num, col_num, row_num, col_num,
                                            {'validate': 'list',
@@ -224,11 +229,6 @@ class Worksheet(object):
             self.worksheet.data_validation(row_num, col_num, row_num, col_num,
                                            {'validate': 'list',
                                             'source': list(TransactionOutRecord.SELL_TYPES)})
-        elif t_type == TransactionOutRecord.TYPE_TRADE or \
-                t_record.buy_asset and t_record.sell_asset:
-            self.worksheet.data_validation(row_num, col_num, row_num, col_num,
-                                           {'validate': 'list',
-                                            'source': [TransactionOutRecord.TYPE_TRADE]})
         self.worksheet.write_string(row_num, col_num, t_type)
 
         if t_type not in TransactionOutRecord.ALL_TYPES:

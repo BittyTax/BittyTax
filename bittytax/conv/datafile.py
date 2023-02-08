@@ -86,6 +86,10 @@ class DataFile(object):
                         unconfirmed=args.unconfirmed,
                         cryptoasset=args.cryptoasset)
 
+        if parser.deprecated:
+            sys.stderr.write("%sWARNING%s This parser is deprecated, please use \"%s\"\n" % (
+                Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, parser.deprecated.name))
+
         if data_file.failures:
             sys.stderr.write("%sWARNING%s Parser failure for Excel file: %s '%s'\n" % (
                 Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, filename, worksheet.name))
@@ -132,6 +136,12 @@ class DataFile(object):
                 data_file.parse(filename=filename,
                                 unconfirmed=args.unconfirmed,
                                 cryptoasset=args.cryptoasset)
+
+                if parser.deprecated:
+                    sys.stderr.write("%sWARNING%s This parser is deprecated, "
+                                     "please use \"%s\"\n" % (
+                                         Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW,
+                                         parser.deprecated.name))
 
                 if data_file.failures:
                     sys.stderr.write("%sWARNING%s Parser failure for CSV file: %s\n" % (

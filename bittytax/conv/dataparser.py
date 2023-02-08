@@ -30,11 +30,12 @@ class DataParser(object):
     parsers = []
 
     def __init__(self, p_type, name, header, delimiter=',',
-                 worksheet_name=None, row_handler=None, all_handler=None):
+                 worksheet_name=None, deprecated=None, row_handler=None, all_handler=None):
         self.p_type = p_type
         self.name = name
         self.header = header
         self.worksheet_name = worksheet_name if worksheet_name else name
+        self.deprecated = deprecated
         self.delimiter = delimiter
         self.row_handler = row_handler
         self.all_handler = all_handler
@@ -67,7 +68,7 @@ class DataParser(object):
 
     @classmethod
     def parse_timestamp(cls, timestamp_str, tzinfos=None, tz=None, dayfirst=False, fuzzy=False):
-        if isinstance(timestamp_str, int) or isinstance(timestamp_str, float):
+        if isinstance(timestamp_str, (int, float)):
             timestamp = datetime.utcfromtimestamp(timestamp_str)
         else:
             timestamp = dateutil.parser.parse(timestamp_str,
