@@ -7,13 +7,13 @@ from decimal import Decimal
 from colorama import Fore
 
 from ...config import config
-from ..out_record import TransactionOutRecord
+from ..out_record import TransactionOutRecord as TxOutRec
 from ..dataparser import DataParser
 from ..exceptions import DataRowError, UnexpectedTypeError, MissingComponentError
 
 WALLET = "Coinbase Pro"
 
-def parse_coinbase_pro(data_rows, parser, **_kwargs):
+def parse_coinbase_pro_account_v2(data_rows, parser, **_kwargs):
     trade_ids = {}
     for dr in data_rows:
         if dr.row_dict['trade id'] in trade_ids:
@@ -40,17 +40,17 @@ def parse_coinbase_pro_row(trade_ids, parser, data_row):
     data_row.parsed = True
 
     if row_dict['type'] == "withdrawal":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
-                                                 data_row.timestamp,
-                                                 sell_quantity=abs(Decimal(row_dict['amount'])),
-                                                 sell_asset=row_dict['amount/balance unit'],
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_WITHDRAWAL,
+                                     data_row.timestamp,
+                                     sell_quantity=abs(Decimal(row_dict['amount'])),
+                                     sell_asset=row_dict['amount/balance unit'],
+                                     wallet=WALLET)
     elif row_dict['type'] == "deposit":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                                 data_row.timestamp,
-                                                 buy_quantity=row_dict['amount'],
-                                                 buy_asset=row_dict['amount/balance unit'],
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_DEPOSIT,
+                                     data_row.timestamp,
+                                     buy_quantity=row_dict['amount'],
+                                     buy_asset=row_dict['amount/balance unit'],
+                                     wallet=WALLET)
     elif row_dict['type'] == "match":
         if Decimal(row_dict['amount']) < 0:
             sell_quantity = abs(Decimal(row_dict['amount']))
@@ -69,15 +69,15 @@ def parse_coinbase_pro_row(trade_ids, parser, data_row):
 
         fee_quantity, fee_asset = get_trade(trade_ids[row_dict['trade id']], "fee")
 
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                 data_row.timestamp,
-                                                 buy_quantity=buy_quantity,
-                                                 buy_asset=buy_asset,
-                                                 sell_quantity=sell_quantity,
-                                                 sell_asset=sell_asset,
-                                                 fee_quantity=fee_quantity,
-                                                 fee_asset=fee_asset,
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_TRADE,
+                                     data_row.timestamp,
+                                     buy_quantity=buy_quantity,
+                                     buy_asset=buy_asset,
+                                     sell_quantity=sell_quantity,
+                                     sell_asset=sell_asset,
+                                     fee_quantity=fee_quantity,
+                                     fee_asset=fee_asset,
+                                     wallet=WALLET)
     else:
         raise UnexpectedTypeError(parser.in_header.index('type'), 'type', row_dict['type'])
 
@@ -95,85 +95,89 @@ def get_trade(trade_id_rows, t_type):
 
     return quantity, asset
 
-def parse_coinbase_pro_deposits_withdrawals(data_row, parser, **_kwargs):
+def parse_coinbase_pro_account_v1(data_row, parser, **_kwargs):
+    # This legacy version only uses the account report for deposits/withdrawals
+    # everything else comes from the fills report
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['time'])
 
     if row_dict['type'] == "withdrawal":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
-                                                 data_row.timestamp,
-                                                 sell_quantity=abs(Decimal(row_dict['amount'])),
-                                                 sell_asset=row_dict['amount/balance unit'],
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_WITHDRAWAL,
+                                     data_row.timestamp,
+                                     sell_quantity=abs(Decimal(row_dict['amount'])),
+                                     sell_asset=row_dict['amount/balance unit'],
+                                     wallet=WALLET)
     elif row_dict['type'] == "deposit":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                                 data_row.timestamp,
-                                                 buy_quantity=row_dict['amount'],
-                                                 buy_asset=row_dict['amount/balance unit'],
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_DEPOSIT,
+                                     data_row.timestamp,
+                                     buy_quantity=row_dict['amount'],
+                                     buy_asset=row_dict['amount/balance unit'],
+                                     wallet=WALLET)
     elif row_dict['type'] in ("match", "fee"):
         # Skip trades
         return
     else:
         raise UnexpectedTypeError(parser.in_header.index('type'), 'type', row_dict['type'])
 
-def parse_coinbase_pro_trades_v2(data_row, parser, **kwargs):
-    parse_coinbase_pro_trades_v1(data_row, parser, **kwargs)
+def parse_coinbase_pro_fills_v2(data_row, parser, **kwargs):
+    # Deprecated, you can now use just the account statement
+    parse_coinbase_pro_fills_v1(data_row, parser, **kwargs)
 
-def parse_coinbase_pro_trades_v1(data_row, parser, **_kwargs):
+def parse_coinbase_pro_fills_v1(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict['created at'])
 
     if row_dict['side'] == "BUY":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                 data_row.timestamp,
-                                                 buy_quantity=row_dict['size'],
-                                                 buy_asset=row_dict['size unit'],
-                                                 sell_quantity=abs(Decimal(row_dict['total'])) - \
-                                                               Decimal(row_dict['fee']),
-                                                 sell_asset=row_dict['price/fee/total unit'],
-                                                 fee_quantity=row_dict['fee'],
-                                                 fee_asset=row_dict['price/fee/total unit'],
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_TRADE,
+                                     data_row.timestamp,
+                                     buy_quantity=row_dict['size'],
+                                     buy_asset=row_dict['size unit'],
+                                     sell_quantity=abs(Decimal(row_dict['total'])) - \
+                                                   Decimal(row_dict['fee']),
+                                     sell_asset=row_dict['price/fee/total unit'],
+                                     fee_quantity=row_dict['fee'],
+                                     fee_asset=row_dict['price/fee/total unit'],
+                                     wallet=WALLET)
     elif row_dict['side'] == "SELL":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                 data_row.timestamp,
-                                                 buy_quantity=Decimal(row_dict['total']) + \
-                                                              Decimal(row_dict['fee']),
-                                                 buy_asset=row_dict['price/fee/total unit'],
-                                                 sell_quantity=row_dict['size'],
-                                                 sell_asset=row_dict['size unit'],
-                                                 fee_quantity=row_dict['fee'],
-                                                 fee_asset=row_dict['price/fee/total unit'],
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_TRADE,
+                                     data_row.timestamp,
+                                     buy_quantity=Decimal(row_dict['total']) + \
+                                                  Decimal(row_dict['fee']),
+                                     buy_asset=row_dict['price/fee/total unit'],
+                                     sell_quantity=row_dict['size'],
+                                     sell_asset=row_dict['size unit'],
+                                     fee_quantity=row_dict['fee'],
+                                     fee_asset=row_dict['price/fee/total unit'],
+                                     wallet=WALLET)
     else:
         raise UnexpectedTypeError(parser.in_header.index('side'), 'side', row_dict['side'])
 
-DataParser(DataParser.TYPE_EXCHANGE,
-           "Coinbase Pro",
-           ['portfolio', 'type', 'time', 'amount', 'balance', 'amount/balance unit', 'transfer id',
-            'trade id', 'order id'],
-           worksheet_name="Coinbase Pro",
-           all_handler=parse_coinbase_pro)
+account = DataParser(DataParser.TYPE_EXCHANGE,
+                     "Coinbase Pro Account",
+                     ['portfolio', 'type', 'time', 'amount', 'balance', 'amount/balance unit',
+                      'transfer id', 'trade id', 'order id'],
+                     worksheet_name="Coinbase Pro",
+                     all_handler=parse_coinbase_pro_account_v2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
-           "Coinbase Pro Trades",
+           "Coinbase Pro Fills",
            ['portfolio', 'trade id', 'product', 'side', 'created at', 'size', 'size unit', 'price',
             'fee', 'total', 'price/fee/total unit'],
            worksheet_name="Coinbase Pro T",
+           deprecated=account,
            # Different handler name used to prevent data file consolidation
-           row_handler=parse_coinbase_pro_trades_v2)
+           row_handler=parse_coinbase_pro_fills_v2)
 
 DataParser(DataParser.TYPE_EXCHANGE,
-           "Coinbase Pro Trades",
+           "Coinbase Pro Fills",
            ['trade id', 'product', 'side', 'created at', 'size', 'size unit', 'price', 'fee',
             'total', 'price/fee/total unit'],
            worksheet_name="Coinbase Pro T",
-           row_handler=parse_coinbase_pro_trades_v1)
+           row_handler=parse_coinbase_pro_fills_v1)
 
 DataParser(DataParser.TYPE_EXCHANGE,
-           "Coinbase Pro Deposits/Withdrawals",
+           "Coinbase Pro Account",
            ['type', 'time', 'amount', 'balance', 'amount/balance unit', 'transfer id', 'trade id',
             'order id'],
-           worksheet_name="Coinbase Pro D,W",
-           row_handler=parse_coinbase_pro_deposits_withdrawals)
+           worksheet_name="Coinbase Pro",
+           row_handler=parse_coinbase_pro_account_v1)
