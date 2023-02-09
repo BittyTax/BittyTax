@@ -69,6 +69,7 @@
 - Trezor Suite parser: added new export format. ([#282](https://github.com/BittyTax/BittyTax/issues/282))
 - Accounting tool: tax rates and allowance for 2023/24.
 - Exodus parser: added new export format. ([#200](https://github.com/BittyTax/BittyTax/issues/200))
+- Accointing parser: added new export format. ([#219](https://github.com/BittyTax/BittyTax/issues/219))
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
