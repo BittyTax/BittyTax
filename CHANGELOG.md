@@ -71,6 +71,7 @@
 - Exodus parser: added new export format. ([#200](https://github.com/BittyTax/BittyTax/issues/200))
 - Accointing parser: added new export format. ([#219](https://github.com/BittyTax/BittyTax/issues/219))
 - Conversion tool: added parser for Yoroi wallet.
+- Celsius parser: added new export format.
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
