@@ -7,29 +7,29 @@ import copy
 from colorama import Fore
 
 from ...config import config
-from ..out_record import TransactionOutRecord
+from ..out_record import TransactionOutRecord as TxOutRec
 from ..dataparser import DataParser
 from ..exceptions import DataRowError, UnexpectedTypeError
 
-KOINLY_D_MAPPING = {'': TransactionOutRecord.TYPE_GIFT_RECEIVED,
-                    'airdrop': TransactionOutRecord.TYPE_AIRDROP,
-                    'fork': TransactionOutRecord.TYPE_GIFT_RECEIVED,
-                    'mining': TransactionOutRecord.TYPE_MINING,
-                    'reward': TransactionOutRecord.TYPE_GIFT_RECEIVED,
-                    'income': TransactionOutRecord.TYPE_INCOME,
-                    'loan_interest': TransactionOutRecord.TYPE_INTEREST,
-                    'staking': TransactionOutRecord.TYPE_STAKING,
-                    'realized_gain': None}
+KOINLY_D_MAPPING = {'': TxOutRec.TYPE_GIFT_RECEIVED,
+                    'airdrop': TxOutRec.TYPE_AIRDROP,
+                    'fork': TxOutRec.TYPE_GIFT_RECEIVED,
+                    'mining': TxOutRec.TYPE_MINING,
+                    'reward': TxOutRec.TYPE_GIFT_RECEIVED,
+                    'income': TxOutRec.TYPE_INCOME,
+                    'loan_interest': TxOutRec.TYPE_INTEREST,
+                    'staking': TxOutRec.TYPE_STAKING,
+                    'realized_gain': '_realized_gain'}
 
-KOINLY_W_MAPPING = {'': TransactionOutRecord.TYPE_GIFT_SENT,
-                    'gift': TransactionOutRecord.TYPE_GIFT_SENT,
-                    'lost': TransactionOutRecord.TYPE_LOST,
-                    'cost': TransactionOutRecord.TYPE_SPEND,
-                    'donation': TransactionOutRecord.TYPE_CHARITY_SENT,
-                    'interest_payment': TransactionOutRecord.TYPE_SPEND,
-                    'margin_fee': None,
-                    'realized_gain': None,
-                    'swap': None}
+KOINLY_W_MAPPING = {'': TxOutRec.TYPE_GIFT_SENT,
+                    'gift': TxOutRec.TYPE_GIFT_SENT,
+                    'lost': TxOutRec.TYPE_LOST,
+                    'cost': TxOutRec.TYPE_SPEND,
+                    'donation': TxOutRec.TYPE_CHARITY_SENT,
+                    'interest_payment': TxOutRec.TYPE_SPEND,
+                    'margin_fee': '_margin_fee',
+                    'realized_gain': '_realized_gain',
+                    'swap': '_swap'}
 
 def parse_koinly(data_rows, parser, **_kwargs):
     for row_index, data_row in enumerate(data_rows):
@@ -61,63 +61,63 @@ def parse_koinly_row(data_rows, parser, data_row, row_index):
         fee_value = None
 
     if row_dict['Type'] in ("buy", "sell", "exchange"):
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                 data_row.timestamp,
-                                                 buy_quantity=row_dict['Received Amount'],
-                                                 buy_asset=row_dict['Received Currency'],
-                                                 buy_value=row_dict['Net Value (GBP)'],
-                                                 sell_quantity=row_dict['Sent Amount'],
-                                                 sell_asset=row_dict['Sent Currency'],
-                                                 sell_value=row_dict['Net Value (GBP)'],
-                                                 fee_quantity=fee_quantity,
-                                                 fee_asset=row_dict['Fee Currency'],
-                                                 fee_value=fee_value,
-                                                 wallet=row_dict['Sending Wallet'],
-                                                 note=row_dict['Description'])
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_TRADE,
+                                     data_row.timestamp,
+                                     buy_quantity=row_dict['Received Amount'],
+                                     buy_asset=row_dict['Received Currency'],
+                                     buy_value=row_dict['Net Value (GBP)'],
+                                     sell_quantity=row_dict['Sent Amount'],
+                                     sell_asset=row_dict['Sent Currency'],
+                                     sell_value=row_dict['Net Value (GBP)'],
+                                     fee_quantity=fee_quantity,
+                                     fee_asset=row_dict['Fee Currency'],
+                                     fee_value=fee_value,
+                                     wallet=row_dict['Sending Wallet'],
+                                     note=row_dict['Description'])
     elif row_dict['Type'] == "transfer":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
-                                                 data_row.timestamp,
-                                                 sell_quantity=row_dict['Sent Amount'],
-                                                 sell_asset=row_dict['Sent Currency'],
-                                                 fee_quantity=fee_quantity,
-                                                 fee_asset=row_dict['Fee Currency'],
-                                                 wallet=row_dict['Sending Wallet'],
-                                                 note=row_dict['Description'])
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_WITHDRAWAL,
+                                     data_row.timestamp,
+                                     sell_quantity=row_dict['Sent Amount'],
+                                     sell_asset=row_dict['Sent Currency'],
+                                     fee_quantity=fee_quantity,
+                                     fee_asset=row_dict['Fee Currency'],
+                                     wallet=row_dict['Sending Wallet'],
+                                     note=row_dict['Description'])
         dup_data_row = copy.copy(data_row)
         dup_data_row.row = []
-        dup_data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                                     data_row.timestamp,
-                                                     buy_quantity=row_dict['Received Amount'],
-                                                     buy_asset=row_dict['Received Currency'],
-                                                     wallet=row_dict['Receiving Wallet'],
-                                                     note=row_dict['Description'])
+        dup_data_row.t_record = TxOutRec(TxOutRec.TYPE_DEPOSIT,
+                                         data_row.timestamp,
+                                         buy_quantity=row_dict['Received Amount'],
+                                         buy_asset=row_dict['Received Currency'],
+                                         wallet=row_dict['Receiving Wallet'],
+                                         note=row_dict['Description'])
         data_rows.insert(row_index + 1, dup_data_row)
     elif row_dict['Type'] in ("fiat_deposit", "crypto_deposit"):
         if row_dict['Label'] in KOINLY_D_MAPPING and KOINLY_D_MAPPING[row_dict['Label']]:
-            data_row.t_record = TransactionOutRecord(KOINLY_D_MAPPING[row_dict['Label']],
-                                                     data_row.timestamp,
-                                                     buy_quantity=row_dict['Received Amount'],
-                                                     buy_asset=row_dict['Received Currency'],
-                                                     buy_value=row_dict['Net Value (GBP)'],
-                                                     fee_quantity=fee_quantity,
-                                                     fee_asset=row_dict['Fee Currency'],
-                                                     fee_value=fee_value,
-                                                     wallet=row_dict['Receiving Wallet'],
-                                                     note=row_dict['Description'])
+            data_row.t_record = TxOutRec(KOINLY_D_MAPPING[row_dict['Label']],
+                                         data_row.timestamp,
+                                         buy_quantity=row_dict['Received Amount'],
+                                         buy_asset=row_dict['Received Currency'],
+                                         buy_value=row_dict['Net Value (GBP)'],
+                                         fee_quantity=fee_quantity,
+                                         fee_asset=row_dict['Fee Currency'],
+                                         fee_value=fee_value,
+                                         wallet=row_dict['Receiving Wallet'],
+                                         note=row_dict['Description'])
         else:
             raise UnexpectedTypeError(parser.in_header.index('Label'), 'Label', row_dict['Label'])
     elif row_dict['Type'] in ("fiat_withdrawal", "crypto_withdrawal"):
         if row_dict['Label'] in KOINLY_W_MAPPING and KOINLY_W_MAPPING[row_dict['Label']]:
-            data_row.t_record = TransactionOutRecord(KOINLY_W_MAPPING[row_dict['Label']],
-                                                     data_row.timestamp,
-                                                     sell_quantity=row_dict['Sent Amount'],
-                                                     sell_asset=row_dict['Sent Currency'],
-                                                     sell_value=row_dict['Net Value (GBP)'],
-                                                     fee_quantity=fee_quantity,
-                                                     fee_asset=row_dict['Fee Currency'],
-                                                     fee_value=fee_value,
-                                                     wallet=row_dict['Sending Wallet'],
-                                                     note=row_dict['Description'])
+            data_row.t_record = TxOutRec(KOINLY_W_MAPPING[row_dict['Label']],
+                                         data_row.timestamp,
+                                         sell_quantity=row_dict['Sent Amount'],
+                                         sell_asset=row_dict['Sent Currency'],
+                                         sell_value=row_dict['Net Value (GBP)'],
+                                         fee_quantity=fee_quantity,
+                                         fee_asset=row_dict['Fee Currency'],
+                                         fee_value=fee_value,
+                                         wallet=row_dict['Sending Wallet'],
+                                         note=row_dict['Description'])
         else:
             raise UnexpectedTypeError(parser.in_header.index('Label'), 'Label', row_dict['Label'])
     else:

@@ -101,6 +101,7 @@
 - BlockFi parser: added "Referral Bonus" transaction type. ([#159](https://github.com/BittyTax/BittyTax/issues/159))
 - Kraken parser: use Ledgers export for trades.
 - Coinbase Pro parser: deprecated Fills parser.
+- Koinly parser: allow unsupported types.
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-
