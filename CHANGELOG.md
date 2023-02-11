@@ -72,6 +72,7 @@
 - Accointing parser: added new export format. ([#219](https://github.com/BittyTax/BittyTax/issues/219))
 - Conversion tool: added parser for Yoroi wallet.
 - Celsius parser: added new export format.
+- Conversion tool: added parser for CEX.IO exchange.
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.

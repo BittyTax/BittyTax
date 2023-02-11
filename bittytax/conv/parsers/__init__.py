@@ -11,6 +11,7 @@ from . import blockfi
 from . import bnktothefuture
 from . import bscscan
 from . import celsius
+from . import cexio
 from . import cgtcalculator
 from . import changetip
 from . import circle
