@@ -73,6 +73,7 @@
 - Conversion tool: added parser for Yoroi wallet.
 - Celsius parser: added new export format.
 - Conversion tool: added parser for CEX.IO exchange.
+- Setup.py fixed for Python 3.11.
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.
