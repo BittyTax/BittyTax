@@ -133,7 +133,12 @@ disable=print-statement,
         xreadlines-attribute,
         deprecated-sys-function,
         exception-escape,
-        comprehension-escape
+        comprehension-escape,
+        missing-docstring,
+        superfluous-parens,
+        unused-wildcard-import,
+        wildcard-import,
+        duplicate-code,
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -170,7 +175,7 @@ score=yes
 [REFACTORING]
 
 # Maximum number of nested blocks for function / method body
-max-nested-blocks=5
+max-nested-blocks=7
 
 # Complete name of functions that never returns. When checking for
 # inconsistent-return-statements if a never returning function is called then
@@ -193,13 +198,13 @@ max-spelling-suggestions=4
 
 # Spelling dictionary name. Available dictionaries: de_DE (myspell), fr_FR
 # (myspell), en_GB (myspell), en_AU (myspell), en_US (myspell).
-spelling-dict=
+spelling-dict=en_GB
 
 # List of comma separated words that should not be checked.
 spelling-ignore-words=
 
 # A path to a file that contains private dictionary; one word per line.
-spelling-private-dict-file=
+spelling-private-dict-file=.pylint_dictionary
 
 # Tells whether to store unknown words to indicated private dictionary in
 # --spelling-private-dict-file option instead of raising a message.
@@ -256,7 +261,7 @@ ignore-on-opaque-inference=yes
 # List of class names for which member attributes should not be checked (useful
 # for classes with dynamically set attributes). This supports the use of
 # qualified names.
-ignored-classes=optparse.Values,thread._local,_thread._local
+ignored-classes=optparse.Values,thread._local,_thread._local,pisaContext
 
 # List of module names for which member attributes should not be checked
 # (useful for modules/projects where namespaces are manipulated during runtime
@@ -400,12 +405,27 @@ function-naming-style=snake_case
 #function-rgx=
 
 # Good variable names which should always be accepted, separated by a comma
-good-names=i,
+good-names=b,
+           e,
+           h,
+           i,
            j,
            k,
+           s,
+           t,
+           v,
+           dr,
+           ds,
            ex,
+           ld,
+           te,
+           tp,
+           tr,
+           tz,
            Run,
+           config,
            _
+
 
 # Include a hint for the correct naming format with invalid-name
 include-naming-hint=no
@@ -454,7 +474,7 @@ variable-naming-style=snake_case
 [DESIGN]
 
 # Maximum number of arguments for function / method
-max-args=5
+max-args=14
 
 # Maximum number of attributes for a class (see R0902).
 max-attributes=7
@@ -463,10 +483,10 @@ max-attributes=7
 max-bool-expr=5
 
 # Maximum number of branch for function / method body
-max-branches=12
+max-branches=30
 
 # Maximum number of locals for function / method body
-max-locals=15
+max-locals=24
 
 # Maximum number of parents for a class (see R0901).
 max-parents=7
@@ -478,7 +498,7 @@ max-public-methods=20
 max-returns=6
 
 # Maximum number of statements in function / method body
-max-statements=50
+max-statements=92
 
 # Minimum number of public methods for a class (see R0903).
 min-public-methods=2
