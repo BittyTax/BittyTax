@@ -19,6 +19,9 @@ jobs:
           pip install pylint
       - name: Install BittyTax
         run: pip install -e .
-      - name: Lint 
-        run: |
-            pylint $(git ls-files '*.py')
+      - name: Lint 2.7
+        run: pylint --rcfile=.pylintrc-27 $(git ls-files '*.py')
+        if: ${{matrix.python-version}} == "2.7"
+      - name: Lint 3.x
+        run: pylint $(git ls-files '*.py')
+        if: ${{matrix.python-version}} != "2.7"
