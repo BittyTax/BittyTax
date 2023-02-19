@@ -151,6 +151,7 @@ class TransactionHistory(object):
                  tr.fee.proceeds_fixed) = self.value_asset.get_value(tr.fee.asset,
                                                                      tr.fee.timestamp,
                                                                      tr.fee.quantity)
+
     def which_asset_value(self, tr):
         if config.trade_asset_type == config.TRADE_ASSET_TYPE_BUY:
             if tr.buy.cost is None:
@@ -191,7 +192,7 @@ class TransactionHistory(object):
 
         return value, fixed
 
-class TransactionBase(object):
+class TransactionBase(object):  # pylint: disable=too-many-instance-attributes
     def __init__(self, t_type, asset, quantity):
         self.tid = None
         self.t_record = None
@@ -280,7 +281,7 @@ class TransactionBase(object):
                 setattr(result, k, copy.deepcopy(v, memo))
         return result
 
-class Buy(TransactionBase):
+class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
     TYPE_DEPOSIT = TransactionRecord.TYPE_DEPOSIT
     TYPE_MINING = TransactionRecord.TYPE_MINING
     TYPE_STAKING = TransactionRecord.TYPE_STAKING
@@ -310,7 +311,7 @@ class Buy(TransactionBase):
 
         # Pool buys
         if self.asset != other.asset:
-            raise Exception
+            raise ValueError("Assets do not match")
         self.quantity += other.quantity
         self.cost += other.cost
 
@@ -349,7 +350,9 @@ class Buy(TransactionBase):
         self.quantity = sell_quantity
         self.set_tid()
 
+        # pylint: disable=attribute-defined-outside-init
         remainder.cost = remainder.cost - self.cost
+        # pylint: enable=attribute-defined-outside-init
 
         if self.fee_value:
             remainder.fee_value = remainder.fee_value - self.fee_value
@@ -383,7 +386,7 @@ class Buy(TransactionBase):
             self._format_tid(),
             self._format_pooled(pooled_bold))
 
-class Sell(TransactionBase):
+class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
     TYPE_WITHDRAWAL = TransactionRecord.TYPE_WITHDRAWAL
     TYPE_SPEND = TransactionRecord.TYPE_SPEND
     TYPE_GIFT_SENT = TransactionRecord.TYPE_GIFT_SENT
@@ -411,7 +414,7 @@ class Sell(TransactionBase):
 
         # Pool sells
         if self.asset != other.asset:
-            raise Exception
+            raise ValueError("Assets do not match")
         self.quantity += other.quantity
         self.proceeds += other.proceeds
 
@@ -450,7 +453,9 @@ class Sell(TransactionBase):
         self.quantity = buy_quantity
         self.set_tid()
 
+        # pylint: disable=attribute-defined-outside-init
         remainder.proceeds = remainder.proceeds - self.proceeds
+        # pylint: enable=attribute-defined-outside-init
 
         if self.fee_value:
             remainder.fee_value = remainder.fee_value - self.fee_value

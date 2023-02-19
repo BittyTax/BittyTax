@@ -15,7 +15,7 @@ from .holdings import Holdings
 
 PRECISION = Decimal('0.00')
 
-class TaxCalculator(object):
+class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
     DISPOSAL_SAME_DAY = 'Same Day'
     DISPOSAL_TEN_DAY = 'Ten Day'
     DISPOSAL_BED_AND_BREAKFAST = 'Bed & Breakfast'
@@ -29,7 +29,7 @@ class TaxCalculator(object):
 
     NO_GAIN_NO_LOSS_TYPES = (Sell.TYPE_GIFT_SPOUSE, Sell.TYPE_CHARITY_SENT)
 
-    # These transactions are except from the "same day" & "bnb" rule
+    # These transactions are except from the "same day" & "b&b" rule
     NO_MATCH_TYPES = (Sell.TYPE_GIFT_SPOUSE, Sell.TYPE_CHARITY_SENT, Sell.TYPE_LOST)
 
     def __init__(self, transactions, tax_rules):
@@ -237,7 +237,7 @@ class TaxCalculator(object):
         if not rule:
             return True
 
-        raise Exception
+        raise ValueError("Unexpected rule")
 
     def process_section104(self, skip_integrity_check):
         if config.debug:
@@ -447,7 +447,7 @@ class TaxEventCapitalGains(TaxEvent):
             config.sym() + '{:0,.2f}'.format(self.cost),
             config.sym() + '{:0,.2f}'.format(self.fees))
 
-class TaxEventIncome(TaxEvent):
+class TaxEventIncome(TaxEvent):  # pylint: disable=too-few-public-methods
     def __init__(self, b):
         super(TaxEventIncome, self).__init__(b.timestamp, b.asset)
         self.type = b.t_type
@@ -536,7 +536,7 @@ class CalculateCapitalGains(object):
             return self.CG_DATA_COMPANY[date.year-1]['small_rate'], \
                    self.CG_DATA_COMPANY[date.year-1]['main_rate']
         return self.CG_DATA_COMPANY[date.year]['small_rate'], \
-               self.CG_DATA_COMPANY[date.year]['main_rate']
+            self.CG_DATA_COMPANY[date.year]['main_rate']
 
     def tax_summary(self, te):
         self.summary['disposals'] += 1
@@ -559,9 +559,9 @@ class CalculateCapitalGains(object):
             self.estimate['allowance_used'] = self.estimate['allowance']
             self.estimate['taxable_gain'] = self.totals['gain'] - self.estimate['allowance']
             self.estimate['cgt_basic'] = self.estimate['taxable_gain'] * \
-                                         self.CG_DATA_INDIVIDUAL[tax_year]['basic_rate'] / 100
+                self.CG_DATA_INDIVIDUAL[tax_year]['basic_rate'] / 100
             self.estimate['cgt_higher'] = self.estimate['taxable_gain'] * \
-                                          self.CG_DATA_INDIVIDUAL[tax_year]['higher_rate'] /100
+                self.CG_DATA_INDIVIDUAL[tax_year]['higher_rate'] / 100
         elif self.totals['gain'] > 0:
             self.estimate['allowance_used'] = self.totals['gain']
 
@@ -595,7 +595,7 @@ class CalculateCapitalGains(object):
                                                  small_rate / 100
 
                 self.estimate['ct_main'] += self.estimate['taxable_gain'] / day_count * \
-                                            main_rate / 100
+                    main_rate / 100
 
         if self.estimate['ct_small_rates'] == [None]:
             # No small rate so remove estimate

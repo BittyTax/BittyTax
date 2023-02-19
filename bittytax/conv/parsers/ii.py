@@ -2,7 +2,7 @@
 # (c) Nano Nano Ltd 2019
 
 from ...config import config
-from ..out_record import TransactionOutRecord
+from ..out_record import TransactionOutRecord as TxOutRec
 from ..dataparser import DataParser
 from ..exceptions import MissingValueError
 
@@ -20,23 +20,21 @@ def parse_ii(data_row, parser, **_kwargs):
                                 row_dict['Quantity'])
 
     if row_dict['Debit']:
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                 data_row.timestamp,
-                                                 buy_quantity=row_dict['Quantity'],
-                                                 buy_asset=row_dict['Symbol'],
-                                                 sell_quantity=row_dict['Debit'].strip('£'). \
-                                                     replace(',', ''),
-                                                 sell_asset=config.ccy,
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_TRADE,
+                                     data_row.timestamp,
+                                     buy_quantity=row_dict['Quantity'],
+                                     buy_asset=row_dict['Symbol'],
+                                     sell_quantity=row_dict['Debit'].strip('£').replace(',', ''),
+                                     sell_asset=config.ccy,
+                                     wallet=WALLET)
     elif row_dict['Credit']:
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                 data_row.timestamp,
-                                                 buy_quantity=row_dict['Credit'].strip('£'). \
-                                                     replace(',', ''),
-                                                 buy_asset=config.ccy,
-                                                 sell_quantity=row_dict['Quantity'],
-                                                 sell_asset=row_dict['Symbol'],
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_TRADE,
+                                     data_row.timestamp,
+                                     buy_quantity=row_dict['Credit'].strip('£').replace(',', ''),
+                                     buy_asset=config.ccy,
+                                     sell_quantity=row_dict['Quantity'],
+                                     sell_asset=row_dict['Symbol'],
+                                     wallet=WALLET)
 
 DataParser(DataParser.TYPE_SHARES,
            "Interactive Investor",

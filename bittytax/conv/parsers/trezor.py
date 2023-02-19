@@ -33,8 +33,8 @@ def parse_trezor(data_row, parser, **kwargs):
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Value'],
                                                  buy_asset=symbol,
-                                                 fee_quantity=Decimal(row_dict['TX total']) - \
-                                                              Decimal(row_dict['Value']),
+                                                 fee_quantity=Decimal(row_dict['TX total']) -
+                                                 Decimal(row_dict['Value']),
                                                  fee_asset=symbol,
                                                  wallet=WALLET,
                                                  note=row_dict.get('Address Label', ''))
@@ -43,8 +43,8 @@ def parse_trezor(data_row, parser, **kwargs):
                                                  data_row.timestamp,
                                                  sell_quantity=row_dict['Value'],
                                                  sell_asset=symbol,
-                                                 fee_quantity=abs(Decimal(row_dict['TX total'])) - \
-                                                              Decimal(row_dict['Value']),
+                                                 fee_quantity=abs(Decimal(row_dict['TX total'])) -
+                                                 Decimal(row_dict['Value']),
                                                  fee_asset=symbol,
                                                  wallet=WALLET,
                                                  note=row_dict.get('Address Label', ''))

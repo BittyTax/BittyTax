@@ -8,7 +8,7 @@ from decimal import Decimal
 from ..config import config
 from ..record import TransactionRecord
 
-class TransactionOutRecord(object):
+class TransactionOutRecord(object):  # pylint: disable=too-many-instance-attributes
     TYPE_DEPOSIT = TransactionRecord.TYPE_DEPOSIT
     TYPE_MINING = TransactionRecord.TYPE_MINING
     TYPE_STAKING = TransactionRecord.TYPE_STAKING

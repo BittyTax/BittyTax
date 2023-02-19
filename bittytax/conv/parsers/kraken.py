@@ -274,7 +274,7 @@ def normalise_asset(asset):
         return asset[:-2]
     return asset
 
-ledgers = DataParser(DataParser.TYPE_EXCHANGE,
+LEDGERS = DataParser(DataParser.TYPE_EXCHANGE,
                      "Kraken Ledgers",
                      ['txid', 'refid', 'time', 'type', 'subtype', 'aclass', 'asset', 'amount',
                       'fee', 'balance'],
@@ -294,7 +294,7 @@ DataParser(DataParser.TYPE_EXCHANGE,
             'margin', 'misc', 'ledgers', 'postxid', 'posstatus', 'cprice', 'ccost', 'cfee', 'cvol',
             'cmargin', 'net', 'trades'],
            worksheet_name="Kraken T",
-           deprecated=ledgers,
+           deprecated=LEDGERS,
            row_handler=parse_kraken_trades)
 
 DataParser(DataParser.TYPE_EXCHANGE,
@@ -302,5 +302,5 @@ DataParser(DataParser.TYPE_EXCHANGE,
            ['txid', 'ordertxid', 'pair', 'time', 'type', 'ordertype', 'price', 'cost', 'fee', 'vol',
             'margin', 'misc', 'ledgers'],
            worksheet_name="Kraken T",
-           deprecated=ledgers,
+           deprecated=LEDGERS,
            row_handler=parse_kraken_trades)

@@ -12,7 +12,7 @@ from ...config import config
 from ..out_record import TransactionOutRecord
 from ..datamerge import DataMerge, MergeDataRow
 from ..exceptions import UnexpectedContentError
-from ..parsers.etherscan import etherscan_txns, etherscan_tokens, etherscan_nfts, etherscan_int, \
+from ..parsers.etherscan import ETHERSCAN_TXNS, ETHERSCAN_TOKENS, ETHERSCAN_NFTS, ETHERSCAN_INT, \
                                 get_note
 
 PRECISION = Decimal('0.' + '0' * 18)
@@ -25,7 +25,7 @@ INTERNAL_TXNS = 'int'
 def merge_etherscan(data_files):
     return do_merge_etherscan(data_files, [])
 
-def do_merge_etherscan(data_files, staking_addresses):
+def do_merge_etherscan(data_files, staking_addresses):  # pylint: disable=too-many-locals
     merge = False
     tx_ids = {}
 
@@ -42,7 +42,7 @@ def do_merge_etherscan(data_files, staking_addresses):
                 tx_ids[wallet][dr.row_dict['Txhash']] = []
 
             tx_ids[wallet][dr.row_dict['Txhash']]. \
-                    append(MergeDataRow(dr, data_files[file_id], file_id))
+                append(MergeDataRow(dr, data_files[file_id], file_id))
 
     for wallet in tx_ids:
         for txn in tx_ids[wallet]:
@@ -123,12 +123,12 @@ def get_ins_outs(tx_ids):
     t_fees = [t.data_row for t in tx_ids if t.data_row.t_record and
               t.data_row.t_record.fee_quantity]
 
-    if len(t_fees) == 0:
+    if not t_fees:
         t_fee = None
     elif len(t_fees) == 1:
         t_fee = t_fees[0]
     else:
-        raise Exception
+        raise ValueError("Multiple fees")
 
     return t_ins, t_outs, t_fee
 
@@ -199,7 +199,7 @@ def method_handling(t_ins, t_fee, staking_addresses):
                     if config.debug:
                         sys.stderr.write("%smerge:     staking:\n" % (Fore.YELLOW))
                 else:
-                    raise Exception
+                    raise ValueError("Multiple transactions")
 
 def do_etherscan_multi_sell(t_ins, t_outs, t_fee):
     if config.debug:
@@ -308,8 +308,8 @@ def do_fee_split(t_all, t_fee, fee_quantity, fee_asset):
             t_fee.t_record.fee_asset = ''
 
 DataMerge("Etherscan fees & multi-token transactions",
-          {TXNS: {'req': DataMerge.MAN, 'obj': etherscan_txns},
-           TOKENS: {'req': DataMerge.OPT, 'obj': etherscan_tokens},
-           NFTS: {'req': DataMerge.OPT, 'obj': etherscan_nfts},
-           INTERNAL_TXNS: {'req': DataMerge.OPT, 'obj': etherscan_int}},
+          {TXNS: {'req': DataMerge.MAN, 'obj': ETHERSCAN_TXNS},
+           TOKENS: {'req': DataMerge.OPT, 'obj': ETHERSCAN_TOKENS},
+           NFTS: {'req': DataMerge.OPT, 'obj': ETHERSCAN_NFTS},
+           INTERNAL_TXNS: {'req': DataMerge.OPT, 'obj': ETHERSCAN_INT}},
           merge_etherscan)

@@ -72,7 +72,7 @@ def parse_cexio(data_row, parser, **_kwargs):
             sell_quantity = trade_info[1]
             sell_asset = trade_info[2]
         else:
-            # Skip coresponding "Buy/Sell Order" row
+            # Skip corresponding "Buy/Sell Order" row
             return
 
         data_row.t_record = TxOutRec(TxOutRec.TYPE_TRADE,

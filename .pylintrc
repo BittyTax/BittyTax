@@ -96,12 +96,13 @@ disable=raw-checker-failed,
         missing-function-docstring,
         wildcard-import,
         unused-wildcard-import,
-        useless-object-inheritance, # Not 2.7 compatible
-        consider-using-f-string, # Not 2.7 compatible
-        consider-using-dict-items, # Not 2.7 compatible
-        super-with-arguments, # Not 2.7 compatible
-        raise-missing-from, # Not 2.7 compatible
-        redundant-u-string-prefix, # Not 2.7 compatible
+        useless-object-inheritance,  # Not 2.7 compatible
+        consider-using-f-string,  # Not 2.7 compatible
+        consider-using-dict-items,  # Not 2.7 compatible
+        super-with-arguments,  # Not 2.7 compatible
+        raise-missing-from,  # Not 2.7 compatible
+        redundant-u-string-prefix,  # Not 2.7 compatible
+        unspecified-encoding,  # Not 2.7 compatible
         duplicate-code,
         unnecessary-dunder-call,
 

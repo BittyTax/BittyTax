@@ -63,7 +63,7 @@ def parse_hotbit_orders_row(data_rows, parser, data_row, row_index, type_str, am
     data_row.timestamp = DataParser.parse_timestamp(row_dict['Date'])
     data_row.parsed = True
 
-    # Have to -re-caclulate the total as it's incorrect for USDT trades
+    # Have to re-calculate the total as it's incorrect for USDT trades
     total = Decimal(row_dict['Price'].split(' ')[0]) * Decimal(row_dict[amount_str].split(' ')[0])
 
     # Maker fees are a credit (+), add as gift-received
@@ -73,8 +73,8 @@ def parse_hotbit_orders_row(data_rows, parser, data_row, row_index, type_str, am
         dup_data_row.row = []
         dup_data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                      data_row.timestamp,
-                                                     buy_quantity=(total * MAKER_FEE). \
-                                                         quantize(PRECISION, rounding=ROUND_DOWN),
+                                                     buy_quantity=(total * MAKER_FEE).
+                                                     quantize(PRECISION, rounding=ROUND_DOWN),
                                                      buy_asset=row_dict['Fee'].split(' ')[1],
                                                      wallet=WALLET)
         data_rows.insert(row_index + 1, dup_data_row)
@@ -144,8 +144,8 @@ def parse_hotbit_trades_row(data_rows, parser, data_row, row_index):
 
         dup_data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                      data_row.timestamp,
-                                                     buy_quantity=abs(Decimal(row_dict['fee']). \
-                                                             quantize(PRECISION)),
+                                                     buy_quantity=abs(Decimal(row_dict['fee']).
+                                                                      quantize(PRECISION)),
                                                      buy_asset=quote_asset,
                                                      wallet=WALLET)
         data_rows.insert(row_index + 1, dup_data_row)
@@ -161,8 +161,8 @@ def parse_hotbit_trades_row(data_rows, parser, data_row, row_index):
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['amount'],
                                                  buy_asset=base_asset,
-                                                 sell_quantity=Decimal(row_dict['deal']). \
-                                                         quantize(PRECISION),
+                                                 sell_quantity=Decimal(row_dict['deal']).
+                                                 quantize(PRECISION),
                                                  sell_asset=quote_asset,
                                                  fee_quantity=fee_quantity,
                                                  fee_asset=fee_asset,
@@ -170,8 +170,8 @@ def parse_hotbit_trades_row(data_rows, parser, data_row, row_index):
     elif row_dict['side'] == "sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=Decimal(row_dict['deal']). \
-                                                         quantize(PRECISION),
+                                                 buy_quantity=Decimal(row_dict['deal']).
+                                                 quantize(PRECISION),
                                                  buy_asset=quote_asset,
                                                  sell_quantity=row_dict['amount'],
                                                  sell_asset=base_asset,

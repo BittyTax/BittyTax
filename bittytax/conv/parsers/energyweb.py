@@ -3,7 +3,7 @@
 
 from decimal import Decimal
 
-from ..out_record import TransactionOutRecord
+from ..out_record import TransactionOutRecord as TxOutRec
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError
 
@@ -14,21 +14,19 @@ def parse_energy_web(data_row, parser, **_kwargs):
     data_row.timestamp = DataParser.parse_timestamp(row_dict['UnixTimestamp'])
 
     if row_dict['Type'] == "IN":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                                 data_row.timestamp,
-                                                 buy_quantity= \
-                                                     Decimal(row_dict['Value']) / 10 ** 18,
-                                                 buy_asset="EWT",
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_DEPOSIT,
+                                     data_row.timestamp,
+                                     buy_quantity=Decimal(row_dict['Value']) / 10 ** 18,
+                                     buy_asset="EWT",
+                                     wallet=WALLET)
     elif row_dict['Type'] == "OUT":
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
-                                                 data_row.timestamp,
-                                                 sell_quantity= \
-                                                     Decimal(row_dict['Value']) / 10 ** 18,
-                                                 sell_asset="EWT",
-                                                 fee_quantity=Decimal(row_dict['Fee']) / 10 ** 18,
-                                                 fee_asset="EWT",
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_WITHDRAWAL,
+                                     data_row.timestamp,
+                                     sell_quantity=Decimal(row_dict['Value']) / 10 ** 18,
+                                     sell_asset="EWT",
+                                     fee_quantity=Decimal(row_dict['Fee']) / 10 ** 18,
+                                     fee_asset="EWT",
+                                     wallet=WALLET)
     else:
         raise UnexpectedTypeError(parser.in_header.index('Type'), 'Type', row_dict['Type'])
 

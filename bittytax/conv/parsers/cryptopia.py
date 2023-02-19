@@ -27,8 +27,8 @@ def parse_cryptopia_withdrawals(data_row, _parser, **_kwargs):
 
     data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                              data_row.timestamp,
-                                             sell_quantity=Decimal(row_dict['Amount']) - \
-                                                           Decimal(row_dict['Fee']),
+                                             sell_quantity=Decimal(row_dict['Amount']) -
+                                             Decimal(row_dict['Fee']),
                                              sell_asset=row_dict['Currency'],
                                              fee_quantity=row_dict['Fee'],
                                              fee_asset=row_dict['Currency'],

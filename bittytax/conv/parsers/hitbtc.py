@@ -56,8 +56,8 @@ def parse_hitbtc_trades_row(data_rows, parser, data_row, row_index):
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Quantity'],
                                                  buy_asset=row_dict['Instrument'].split('/')[0],
-                                                 sell_quantity=Decimal(row_dict['Quantity']) * \
-                                                               Decimal(row_dict['Price']),
+                                                 sell_quantity=Decimal(row_dict['Quantity']) *
+                                                 Decimal(row_dict['Price']),
                                                  sell_asset=row_dict['Instrument'].split('/')[1],
                                                  fee_quantity=fee_quantity,
                                                  fee_asset=fee_asset,
@@ -65,8 +65,8 @@ def parse_hitbtc_trades_row(data_rows, parser, data_row, row_index):
     elif row_dict['Side'] == "sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=Decimal(row_dict['Quantity']) * \
-                                                              Decimal(row_dict['Price']),
+                                                 buy_quantity=Decimal(row_dict['Quantity']) *
+                                                 Decimal(row_dict['Price']),
                                                  buy_asset=row_dict['Instrument'].split('/')[1],
                                                  sell_quantity=row_dict['Quantity'],
                                                  sell_asset=row_dict['Instrument'].split('/')[0],
@@ -85,8 +85,8 @@ def parse_hitbtc_trades_v1(data_row, parser, **_kwargs):
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Quantity'],
                                                  buy_asset=row_dict['Instrument'].split('/')[0],
-                                                 sell_quantity=Decimal(row_dict['Volume']) - \
-                                                               Decimal(row_dict['Rebate']),
+                                                 sell_quantity=Decimal(row_dict['Volume']) -
+                                                 Decimal(row_dict['Rebate']),
                                                  sell_asset=row_dict['Instrument'].split('/')[1],
                                                  fee_quantity=row_dict['Fee'],
                                                  fee_asset=row_dict['Instrument'].split('/')[1],
@@ -94,8 +94,8 @@ def parse_hitbtc_trades_v1(data_row, parser, **_kwargs):
     elif row_dict['Side'] == "sell":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=Decimal(row_dict['Volume']) + \
-                                                              Decimal(row_dict['Rebate']),
+                                                 buy_quantity=Decimal(row_dict['Volume']) +
+                                                 Decimal(row_dict['Rebate']),
                                                  buy_asset=row_dict['Instrument'].split('/')[1],
                                                  sell_quantity=row_dict['Quantity'],
                                                  sell_asset=row_dict['Instrument'].split('/')[0],

@@ -45,9 +45,8 @@ class ReportPdf(object):
                                 'args': args})
 
         with ProgressSpinner():
-            pdf_file = open(self.filename, 'w+b')
-            status = pisa.CreatePDF(html, dest=pdf_file)
-            pdf_file.close()
+            with open(self.filename, 'w+b') as pdf_file:
+                status = pisa.CreatePDF(html, dest=pdf_file)
 
         if not status.err:
             print("%sPDF tax report created: %s%s" % (Fore.WHITE, Fore.YELLOW, self.filename))
@@ -258,8 +257,8 @@ class ReportLog(object):
         if cgains.estimate['proceeds_warning']:
             print("%s%-40s %s" % (
                 Fore.WHITE, "Disposal proceeds:",
-                ('*' + self.format_value(cgains.totals['proceeds'])).rjust(13). \
-                        replace('*', Fore.YELLOW + '*' + Fore.WHITE)))
+                ('*' + self.format_value(cgains.totals['proceeds'])).rjust(13).
+                replace('*', Fore.YELLOW + '*' + Fore.WHITE)))
         else:
             print("%s%-40s %13s" % (
                 Fore.WHITE, "Disposal proceeds:",
@@ -507,7 +506,7 @@ class ReportLog(object):
 
     @staticmethod
     def format_day(day):
-        return 'th' if 11 <= day <= 13 else {1:'st', 2:'nd', 3:'rd'}.get(day%10, 'th')
+        return 'th' if 11 <= day <= 13 else {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
 
     @staticmethod
     def format_quantity(quantity):
@@ -536,7 +535,7 @@ class ReportLog(object):
         return note[:ReportLog.MAX_NOTE_LEN - 3] + '...' if len(note) > ReportLog.MAX_NOTE_LEN \
                                                          else note
 
-class ProgressSpinner:
+class ProgressSpinner(object):
     def __init__(self):
         self.spinner = itertools.cycle(['-', '\\', '|', '/'])
         self.busy = False

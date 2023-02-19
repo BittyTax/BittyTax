@@ -33,8 +33,8 @@ def parse_bitpanda(data_row, parser, **_kwargs):
 
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=Decimal(buy_quantity) + \
-                                                              Decimal(row_dict['Fee']),
+                                                 buy_quantity=Decimal(buy_quantity) +
+                                                 Decimal(row_dict['Fee']),
                                                  buy_asset=buy_asset,
                                                  fee_quantity=row_dict['Fee'],
                                                  fee_asset=buy_asset,

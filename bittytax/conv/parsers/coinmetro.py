@@ -35,8 +35,8 @@ def parse_coinmetro_row(data_rows, parser, data_row, row_index):
     if "Deposit" in row_dict['Description']:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                  data_row.timestamp,
-                                                 buy_quantity=Decimal(row_dict['Amount']) + \
-                                                              Decimal(row_dict['Fee']),
+                                                 buy_quantity=Decimal(row_dict['Amount']) +
+                                                 Decimal(row_dict['Fee']),
                                                  buy_asset=row_dict['Asset'],
                                                  fee_quantity=row_dict['Fee'],
                                                  fee_asset=row_dict['Asset'],

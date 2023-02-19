@@ -7,7 +7,7 @@ import requests
 from bittytax.conv.parsers.kraken import split_trading_pair
 
 def get_alt_assets():
-    response = requests.get("https://api.kraken.com/0/public/Assets")
+    response = requests.get("https://api.kraken.com/0/public/Assets", timeout=10)
 
     alt_assets = {}
     if response:
@@ -19,7 +19,7 @@ def get_alt_assets():
     return alt_assets
 
 def get_quote_assets():
-    response = requests.get("https://api.kraken.com/0/public/AssetPairs")
+    response = requests.get("https://api.kraken.com/0/public/AssetPairs", timeout=10)
 
     quote_assets = []
     if response:

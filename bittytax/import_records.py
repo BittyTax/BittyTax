@@ -90,7 +90,7 @@ class ImportRecords(object):
             print("%simporting rows" % Fore.CYAN)
 
         if sys.version_info[0] < 3:
-            # Special handling required for utf-8 encoded csv files
+            # Special handling required for utf-8 encoded CSV files
             reader = csv.reader(self.utf_8_encoder(import_file))
         else:
             reader = csv.reader(import_file)

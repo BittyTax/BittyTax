@@ -72,7 +72,7 @@ def parse_gravity_row(tx_ids, parser, data_row, referral_type):
             quantity, asset = get_tx(tx_ids[row_dict['transaction id']],
                                      "withdrawal", 'to account')
             if Decimal(sell_quantity) < Decimal(quantity):
-                #swap sell/fee around
+                # Swap sell/fee around
                 fee_quantity = sell_quantity
                 fee_asset = sell_asset
                 sell_quantity = quantity

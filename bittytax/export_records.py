@@ -7,7 +7,7 @@ import os
 
 from colorama import Fore
 
-class ExportRecords:
+class ExportRecords(object):
     DEFAULT_FILENAME = 'BittyTax_Export'
     FILE_EXTENSION = 'csv'
     OUT_HEADER = ['Type',

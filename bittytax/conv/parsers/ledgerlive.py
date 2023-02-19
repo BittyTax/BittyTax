@@ -20,8 +20,8 @@ def parse_ledger_live(data_row, parser, **_kwargs):
         if row_dict['Operation Fees']:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
                                                      data_row.timestamp,
-                                                     buy_quantity=Decimal(row_dict[AMOUNT]) + \
-                                                                  Decimal(row_dict[FEES]),
+                                                     buy_quantity=Decimal(row_dict[AMOUNT]) +
+                                                     Decimal(row_dict[FEES]),
                                                      buy_asset=row_dict['Currency Ticker'],
                                                      fee_quantity=row_dict['Operation Fees'],
                                                      fee_asset=row_dict['Currency Ticker'],
@@ -37,8 +37,8 @@ def parse_ledger_live(data_row, parser, **_kwargs):
         if row_dict['Operation Fees']:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                      data_row.timestamp,
-                                                     sell_quantity=Decimal(row_dict[AMOUNT]) - \
-                                                                   Decimal(row_dict[FEES]),
+                                                     sell_quantity=Decimal(row_dict[AMOUNT]) -
+                                                     Decimal(row_dict[FEES]),
                                                      sell_asset=row_dict['Currency Ticker'],
                                                      fee_quantity=row_dict['Operation Fees'],
                                                      fee_asset=row_dict['Currency Ticker'],
@@ -52,8 +52,8 @@ def parse_ledger_live(data_row, parser, **_kwargs):
     elif row_dict['Operation Type'] in ("FEES", "REVEAL"):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
                                                  data_row.timestamp,
-                                                 sell_quantity=Decimal(row_dict[AMOUNT]) - \
-                                                               Decimal(row_dict[FEES]),
+                                                 sell_quantity=Decimal(row_dict[AMOUNT]) -
+                                                 Decimal(row_dict[FEES]),
                                                  sell_asset=row_dict['Currency Ticker'],
                                                  fee_quantity=row_dict['Operation Fees'],
                                                  fee_asset=row_dict['Currency Ticker'],

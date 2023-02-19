@@ -5,6 +5,7 @@ import sys
 
 from .config import config
 
+# pylint: disable=too-few-public-methods, too-many-instance-attributes
 class TransactionRecord(object):
     TYPE_DEPOSIT = 'Deposit'
     TYPE_MINING = 'Mining'

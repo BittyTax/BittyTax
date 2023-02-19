@@ -8,7 +8,7 @@ from decimal import Decimal
 from colorama import Fore
 
 from ...config import config
-from ..out_record import TransactionOutRecord
+from ..out_record import TransactionOutRecord as TxOutRec
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError, UnexpectedContentError, MissingComponentError
 
@@ -20,42 +20,42 @@ def parse_coinlist(data_row, parser, **_kwargs):
     amount = row_dict['Amount'].replace(',', '')
 
     if "Deposit" in row_dict['Description']:
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_DEPOSIT,
-                                                 data_row.timestamp,
-                                                 buy_quantity=amount,
-                                                 buy_asset=row_dict['Asset'],
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_DEPOSIT,
+                                     data_row.timestamp,
+                                     buy_quantity=amount,
+                                     buy_asset=row_dict['Asset'],
+                                     wallet=WALLET)
     elif "Withdrawal" in row_dict['Description']:
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
-                                                 data_row.timestamp,
-                                                 sell_quantity=abs(Decimal(amount)),
-                                                 sell_asset=row_dict['Asset'],
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_WITHDRAWAL,
+                                     data_row.timestamp,
+                                     sell_quantity=abs(Decimal(amount)),
+                                     sell_asset=row_dict['Asset'],
+                                     wallet=WALLET)
     elif "Staking" in row_dict['Description']:
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_STAKING,
-                                                 data_row.timestamp,
-                                                 buy_quantity=amount,
-                                                 buy_asset=row_dict['Asset'],
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_STAKING,
+                                     data_row.timestamp,
+                                     buy_quantity=amount,
+                                     buy_asset=row_dict['Asset'],
+                                     wallet=WALLET)
     elif "Distribution" in row_dict['Description']:
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_AIRDROP,
-                                                 data_row.timestamp,
-                                                 buy_quantity=amount,
-                                                 buy_asset=row_dict['Asset'],
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_AIRDROP,
+                                     data_row.timestamp,
+                                     buy_quantity=amount,
+                                     buy_asset=row_dict['Asset'],
+                                     wallet=WALLET)
     elif "Sold" in row_dict['Description']:
         buy_quantity, buy_asset = get_buy_quantity(row_dict['Description'])
         if buy_quantity is None:
             raise UnexpectedContentError(parser.in_header.index('Description'), 'Description',
                                          row_dict['Description'])
 
-        data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                 data_row.timestamp,
-                                                 buy_quantity=buy_quantity,
-                                                 buy_asset=buy_asset,
-                                                 sell_quantity=abs(Decimal(amount)),
-                                                 sell_asset=row_dict['Asset'],
-                                                 wallet=WALLET)
+        data_row.t_record = TxOutRec(TxOutRec.TYPE_TRADE,
+                                     data_row.timestamp,
+                                     buy_quantity=buy_quantity,
+                                     buy_asset=buy_asset,
+                                     sell_quantity=abs(Decimal(amount)),
+                                     sell_asset=row_dict['Asset'],
+                                     wallet=WALLET)
     elif "Transfer" in row_dict['Description']:
         # Skip internal transfers
         return
@@ -98,17 +98,15 @@ def parse_coinlist_pro(data_rows, parser, **_kwargs):
                                                          row_dict['time'])
                 continue
 
-            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                     data_row.timestamp,
-                                                     buy_quantity=buy.row_dict['amount'],
-                                                     buy_asset=buy.row_dict['balance'],
-                                                     sell_quantity=abs(Decimal(sell. \
-                                                         row_dict['amount'])),
-                                                     sell_asset=sell.row_dict['balance'],
-                                                     fee_quantity=abs(Decimal(fee. \
-                                                         row_dict['amount'])),
-                                                     fee_asset=fee.row_dict['balance'],
-                                                     wallet=WALLET)
+            data_row.t_record = TxOutRec(TxOutRec.TYPE_TRADE,
+                                         data_row.timestamp,
+                                         buy_quantity=buy.row_dict['amount'],
+                                         buy_asset=buy.row_dict['balance'],
+                                         sell_quantity=abs(Decimal(sell.row_dict['amount'])),
+                                         sell_asset=sell.row_dict['balance'],
+                                         fee_quantity=abs(Decimal(fee.row_dict['amount'])),
+                                         fee_asset=fee.row_dict['balance'],
+                                         wallet=WALLET)
         elif row_dict['type'] == "admin":
             buy, sell = get_buy_sell(data_row, "admin", tx_times[row_dict['time']])
             if buy is None:
@@ -116,14 +114,13 @@ def parse_coinlist_pro(data_rows, parser, **_kwargs):
                                                          row_dict['time'])
                 continue
 
-            data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
-                                                     data_row.timestamp,
-                                                     buy_quantity=buy.row_dict['amount'],
-                                                     buy_asset=buy.row_dict['balance'],
-                                                     sell_quantity=abs(Decimal(sell. \
-                                                         row_dict['amount'])),
-                                                     sell_asset=sell.row_dict['balance'],
-                                                     wallet=WALLET)
+            data_row.t_record = TxOutRec(TxOutRec.TYPE_TRADE,
+                                         data_row.timestamp,
+                                         buy_quantity=buy.row_dict['amount'],
+                                         buy_asset=buy.row_dict['balance'],
+                                         sell_quantity=abs(Decimal(sell.row_dict['amount'])),
+                                         sell_asset=sell.row_dict['balance'],
+                                         wallet=WALLET)
         elif row_dict['type'] in ("deposit", "withdrawal"):
             # Skip internal transfers
             continue

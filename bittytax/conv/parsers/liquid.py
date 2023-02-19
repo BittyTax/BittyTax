@@ -20,8 +20,8 @@ def parse_liquid_trades(data_row, parser, **_kwargs):
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Open Qty'],
                                                  buy_asset=row_dict['Base Currency'],
-                                                 sell_quantity=Decimal(row_dict['Amount']). \
-                                                               quantize(PRECISION),
+                                                 sell_quantity=Decimal(row_dict['Amount']).
+                                                 quantize(PRECISION),
                                                  sell_asset=row_dict['Quote Currency'],
                                                  fee_quantity=row_dict['Fee'],
                                                  fee_asset=row_dict['Fee Currency'],
@@ -29,8 +29,8 @@ def parse_liquid_trades(data_row, parser, **_kwargs):
     elif row_dict['Type'] == "Sold":
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=Decimal(row_dict['Amount']). \
-                                                              quantize(PRECISION),
+                                                 buy_quantity=Decimal(row_dict['Amount']).
+                                                 quantize(PRECISION),
                                                  buy_asset=row_dict['Quote Currency'],
                                                  sell_quantity=row_dict['Open Qty'],
                                                  sell_asset=row_dict['Base Currency'],

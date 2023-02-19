@@ -15,7 +15,7 @@ def parse_polygonscan(data_row, _parser, **_kwargs):
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict['UnixTimestamp']))
 
     if row_dict['Status'] != '':
-        # Failed txns should not have a Value_OUT
+        # Failed transactions should not have a Value_OUT
         row_dict['Value_OUT(MATIC)'] = 0
 
     if Decimal(row_dict['Value_IN(MATIC)']) > 0:
@@ -52,7 +52,7 @@ def parse_polygonscan_internal(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict['UnixTimestamp']))
 
-    # Failed internal txn
+    # Failed internal transaction
     if row_dict['Status'] != '0':
         return
 
@@ -69,14 +69,14 @@ def parse_polygonscan_internal(data_row, _parser, **_kwargs):
                                                  sell_asset="MATIC",
                                                  wallet=get_wallet(row_dict['From']))
 
-matic_txns = DataParser(
-        DataParser.TYPE_EXPLORER,
-        "PolygonScan (MATIC Transactions)",
-        ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
-         'Value_IN(MATIC)', 'Value_OUT(MATIC)', None, 'TxnFee(MATIC)', 'TxnFee(USD)',
-         'Historical $Price/MATIC', 'Status', 'ErrCode', 'Method'],
-        worksheet_name=WORKSHEET_NAME,
-        row_handler=parse_polygonscan)
+MATIC_TXNS = DataParser(
+    DataParser.TYPE_EXPLORER,
+    "PolygonScan (MATIC Transactions)",
+    ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
+     'Value_IN(MATIC)', 'Value_OUT(MATIC)', None, 'TxnFee(MATIC)', 'TxnFee(USD)',
+     'Historical $Price/MATIC', 'Status', 'ErrCode', 'Method'],
+    worksheet_name=WORKSHEET_NAME,
+    row_handler=parse_polygonscan)
 
 DataParser(DataParser.TYPE_EXPLORER,
            "PolygonScan (MATIC Transactions)",
@@ -86,14 +86,14 @@ DataParser(DataParser.TYPE_EXPLORER,
            worksheet_name=WORKSHEET_NAME,
            row_handler=parse_polygonscan)
 
-matic_int = DataParser(
-        DataParser.TYPE_EXPLORER,
-        "PolygonScan (MATIC Internal Transactions)",
-        ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'ParentTxFrom', 'ParentTxTo',
-         'ParentTxETH_Value', 'From', 'TxTo', 'ContractAddress', 'Value_IN(MATIC)',
-         'Value_OUT(MATIC)', None, 'Historical $Price/MATIC', 'Status', 'ErrCode', 'Type'],
-        worksheet_name=WORKSHEET_NAME,
-        row_handler=parse_polygonscan_internal)
+MATIC_INT = DataParser(
+    DataParser.TYPE_EXPLORER,
+    "PolygonScan (MATIC Internal Transactions)",
+    ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'ParentTxFrom', 'ParentTxTo',
+     'ParentTxETH_Value', 'From', 'TxTo', 'ContractAddress', 'Value_IN(MATIC)',
+     'Value_OUT(MATIC)', None, 'Historical $Price/MATIC', 'Status', 'ErrCode', 'Type'],
+    worksheet_name=WORKSHEET_NAME,
+    row_handler=parse_polygonscan_internal)
 
 DataParser(DataParser.TYPE_EXPLORER,
            "PolygonScan (MATIC Internal Transactions)",
@@ -105,17 +105,17 @@ DataParser(DataParser.TYPE_EXPLORER,
            row_handler=parse_polygonscan_internal)
 
 # Same header as Etherscan
-#DataParser(DataParser.TYPE_EXPLORER,
-#           "PolygonScan (ERC-20 Tokens)",
-#           ['Txhash', 'UnixTimestamp', 'DateTime', 'From', 'To', 'Value', 'ContractAddress',
-#            'TokenName', 'TokenSymbol'],
-#           worksheet_name=WORKSHEET_NAME,
-#           row_handler=parse_polygonscan_tokens)
+# DataParser(DataParser.TYPE_EXPLORER,
+#            "PolygonScan (ERC-20 Tokens)",
+#            ['Txhash', 'UnixTimestamp', 'DateTime', 'From', 'To', 'Value', 'ContractAddress',
+#             'TokenName', 'TokenSymbol'],
+#            worksheet_name=WORKSHEET_NAME,
+#            row_handler=parse_polygonscan_tokens)
 
 # Same header as Etherscan
-#DataParser(DataParser.TYPE_EXPLORER,
-#           "PolygonScan (ERC-721 NFTs)",
-#           ['Txhash', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress', 'TokenId',
-#            'TokenName', 'TokenSymbol'],
-#           worksheet_name=WORKSHEET_NAME,
-#           row_handler=parse_polygonscan_nfts)
+# DataParser(DataParser.TYPE_EXPLORER,
+#            "PolygonScan (ERC-721 NFTs)",
+#            ['Txhash', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress', 'TokenId',
+#             'TokenName', 'TokenSymbol'],
+#            worksheet_name=WORKSHEET_NAME,
+#            row_handler=parse_polygonscan_nfts)

@@ -132,8 +132,8 @@ def parse_coinbase_pro_fills_v1(data_row, parser, **_kwargs):
                                      data_row.timestamp,
                                      buy_quantity=row_dict['size'],
                                      buy_asset=row_dict['size unit'],
-                                     sell_quantity=abs(Decimal(row_dict['total'])) - \
-                                                   Decimal(row_dict['fee']),
+                                     sell_quantity=abs(Decimal(row_dict['total'])) -
+                                     Decimal(row_dict['fee']),
                                      sell_asset=row_dict['price/fee/total unit'],
                                      fee_quantity=row_dict['fee'],
                                      fee_asset=row_dict['price/fee/total unit'],
@@ -141,8 +141,8 @@ def parse_coinbase_pro_fills_v1(data_row, parser, **_kwargs):
     elif row_dict['side'] == "SELL":
         data_row.t_record = TxOutRec(TxOutRec.TYPE_TRADE,
                                      data_row.timestamp,
-                                     buy_quantity=Decimal(row_dict['total']) + \
-                                                  Decimal(row_dict['fee']),
+                                     buy_quantity=Decimal(row_dict['total']) +
+                                     Decimal(row_dict['fee']),
                                      buy_asset=row_dict['price/fee/total unit'],
                                      sell_quantity=row_dict['size'],
                                      sell_asset=row_dict['size unit'],
@@ -152,7 +152,7 @@ def parse_coinbase_pro_fills_v1(data_row, parser, **_kwargs):
     else:
         raise UnexpectedTypeError(parser.in_header.index('side'), 'side', row_dict['side'])
 
-account = DataParser(DataParser.TYPE_EXCHANGE,
+ACCOUNT = DataParser(DataParser.TYPE_EXCHANGE,
                      "Coinbase Pro Account",
                      ['portfolio', 'type', 'time', 'amount', 'balance', 'amount/balance unit',
                       'transfer id', 'trade id', 'order id'],
@@ -164,7 +164,7 @@ DataParser(DataParser.TYPE_EXCHANGE,
            ['portfolio', 'trade id', 'product', 'side', 'created at', 'size', 'size unit', 'price',
             'fee', 'total', 'price/fee/total unit'],
            worksheet_name="Coinbase Pro T",
-           deprecated=account,
+           deprecated=ACCOUNT,
            # Different handler name used to prevent data file consolidation
            row_handler=parse_coinbase_pro_fills_v2)
 

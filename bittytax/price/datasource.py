@@ -83,13 +83,14 @@ class DataSourceBase(object):
                                       'url': price['url']}
                                for date, price in json_prices[pair].items()}
                         for pair in json_prices}
-        except:
+        except (IOError, ValueError):
             print("%sWARNING%s Data cached for %s could not be loaded" % (
                 Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, self.name()))
             return {}
 
     def dump_prices(self):
-        with open(os.path.join(config.CACHE_DIR, self.name() + '.json'), 'w') as price_cache:
+        with open(os.path.join(config.CACHE_DIR, self.name() + '.json'),
+                  'w') as price_cache:
             json_prices = {pair: {date: {'price': self.decimal_to_str(price['price']),
                                          'url': price['url']}
                                   for date, price in self.prices[pair].items()}
@@ -140,12 +141,12 @@ class DataSourceBase(object):
     def get_list(self):
         if self.ids:
             asset_list = {}
-            for c in self.ids:
-                symbol = self.ids[c]['symbol']
+            for t in self.ids:
+                symbol = self.ids[t]['symbol']
                 if symbol not in asset_list:
                     asset_list[symbol] = []
 
-                asset_list[symbol].append({'id': c, 'name': self.ids[c]['name']})
+                asset_list[symbol].append({'id': t, 'name': self.ids[t]['name']})
 
             # Include any custom symbols as well
             for symbol in asset_list:
@@ -153,7 +154,7 @@ class DataSourceBase(object):
                     asset_list[symbol].append(self.assets[symbol])
 
             return asset_list
-        return {k: [{'id':None, 'name': v['name']}] for k, v in self.assets.items()}
+        return {k: [{'id': None, 'name': v['name']}] for k, v in self.assets.items()}
 
     @staticmethod
     def pair(asset, quote):
@@ -190,7 +191,7 @@ class BittyTaxAPI(DataSourceBase):
             "https://api.bitty.tax/v1/latest?base=%s&symbols=%s" % (asset, quote)
         )
         return Decimal(repr(json_resp['rates'][quote])) \
-                if 'rates' in json_resp and quote in json_resp['rates'] else None
+            if 'rates' in json_resp and quote in json_resp['rates'] else None
 
     def get_historical(self, asset, quote, timestamp, _asset_id=None):
         url = "https://api.bitty.tax/v1/%s?base=%s&symbols=%s" % (
@@ -200,9 +201,8 @@ class BittyTaxAPI(DataSourceBase):
         # Date returned in response might not be date requested due to weekends/holidays
         self.update_prices(pair,
                            {timestamp.strftime('%Y-%m-%d'): {
-                               'price': Decimal(repr(json_resp['rates'][quote])) \
-                                        if 'rates' in json_resp and quote \
-                                        in json_resp['rates'] else None,
+                               'price': Decimal(repr(json_resp['rates'][quote]))
+                               if 'rates' in json_resp and quote in json_resp['rates'] else None,
                                'url': url}},
                            timestamp)
 
@@ -221,7 +221,7 @@ class Frankfurter(DataSourceBase):
             "https://api.frankfurter.app/latest?from=%s&to=%s" % (asset, quote)
         )
         return Decimal(repr(json_resp['rates'][quote])) \
-                if 'rates' in json_resp and quote in json_resp['rates'] else None
+            if 'rates' in json_resp and quote in json_resp['rates'] else None
 
     def get_historical(self, asset, quote, timestamp, _asset_id=None):
         url = "https://api.frankfurter.app/%s?from=%s&to=%s" % (
@@ -231,9 +231,8 @@ class Frankfurter(DataSourceBase):
         # Date returned in response might not be date requested due to weekends/holidays
         self.update_prices(pair,
                            {timestamp.strftime('%Y-%m-%d'): {
-                               'price': Decimal(repr(json_resp['rates'][quote])) \
-                                        if 'rates' in json_resp and quote \
-                                        in json_resp['rates'] else None,
+                               'price': Decimal(repr(json_resp['rates'][quote]))
+                               if 'rates' in json_resp and quote in json_resp['rates'] else None,
                                'url': url}},
                            timestamp)
 
@@ -245,7 +244,7 @@ class CoinDesk(DataSourceBase):
     def get_latest(self, _asset, quote, _asset_id=None):
         json_resp = self.get_json("https://api.coindesk.com/v1/bpi/currentprice.json")
         return Decimal(repr(json_resp['bpi'][quote]['rate_float'])) \
-                if 'bpi' in json_resp and quote in json_resp['bpi'] else None
+            if 'bpi' in json_resp and quote in json_resp['bpi'] else None
 
     def get_historical(self, asset, quote, timestamp, _asset_id=None):
         url = "https://api.coindesk.com/v1/bpi/historical/close.json" \
@@ -269,8 +268,9 @@ class CryptoCompare(DataSourceBase):
         # CryptoCompare symbols are unique, so no ID required
 
     def get_latest(self, asset, quote, _asset_id=None):
-        json_resp = self.get_json("https://min-api.cryptocompare.com/data/price" \
-            "?extraParams=%s&fsym=%s&tsyms=%s" % (self.USER_AGENT, asset, quote))
+        json_resp = self.get_json("https://min-api.cryptocompare.com/data/price"
+                                  "?extraParams=%s&fsym=%s&tsyms=%s" % (self.USER_AGENT,
+                                                                        asset, quote))
         return Decimal(repr(json_resp[quote])) if quote in json_resp else None
 
     def get_historical(self, asset, quote, timestamp, _asset_id=None):
@@ -285,8 +285,8 @@ class CryptoCompare(DataSourceBase):
         if 'Data' in json_resp:
             self.update_prices(pair,
                                {datetime.fromtimestamp(d['time']).strftime('%Y-%m-%d'): {
-                                   'price': Decimal(repr(d['close'])) if 'close' in d and \
-                                           d['close'] else None,
+                                   'price': Decimal(repr(d['close']))
+                                   if 'close' in d and d['close'] else None,
                                    'url': url} for d in json_resp['Data']},
                                timestamp)
 
@@ -304,11 +304,11 @@ class CoinGecko(DataSourceBase):
         if asset_id is None:
             asset_id = self.assets[asset]['id']
 
-        json_resp = self.get_json("https://api.coingecko.com/api/v3/coins/%s?localization=false" \
-            "&community_data=false&developer_data=false" % asset_id)
+        json_resp = self.get_json("https://api.coingecko.com/api/v3/coins/%s?localization=false"
+                                  "&community_data=false&developer_data=false" % asset_id)
         return Decimal(repr(json_resp['market_data']['current_price'][quote.lower()])) \
-                if 'market_data' in json_resp and 'current_price' in json_resp['market_data'] and \
-                quote.lower() in json_resp['market_data']['current_price'] else None
+            if 'market_data' in json_resp and 'current_price' in json_resp['market_data'] and \
+            quote.lower() in json_resp['market_data']['current_price'] else None
 
     def get_historical(self, asset, quote, timestamp, asset_id=None):
         if asset_id is None:
@@ -342,7 +342,7 @@ class CoinPaprika(DataSourceBase):
         json_resp = self.get_json("https://api.coinpaprika.com/v1/tickers/%s?quotes=%s" % (
             (asset_id, quote)))
         return Decimal(repr(json_resp['quotes'][quote]['price'])) \
-                if 'quotes' in json_resp and quote in json_resp['quotes'] else None
+            if 'quotes' in json_resp and quote in json_resp['quotes'] else None
 
     def get_historical(self, asset, quote, timestamp, asset_id=None):
         # Historic prices only available in USD or BTC

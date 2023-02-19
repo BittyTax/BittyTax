@@ -40,8 +40,8 @@ def parse_tradesatoshi_withdrawals_v1(data_row, _parser, **_kwargs):
 
     data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                              data_row.timestamp,
-                                             sell_quantity=Decimal(row_dict['Amount']) - \
-                                                           Decimal(row_dict['Fee']),
+                                             sell_quantity=Decimal(row_dict['Amount']) -
+                                             Decimal(row_dict['Fee']),
                                              sell_asset=row_dict['Symbol'],
                                              fee_quantity=row_dict['Fee'],
                                              fee_asset=row_dict['Symbol'],
@@ -58,8 +58,8 @@ def parse_tradesatoshi_trades(data_row, parser, **_kwargs):
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Amount'],
                                                  buy_asset=row_dict['TradePair'].split('/')[0],
-                                                 sell_quantity=sell_quantity. \
-                                                     quantize(PRECISION, rounding=ROUND_DOWN),
+                                                 sell_quantity=sell_quantity.
+                                                 quantize(PRECISION, rounding=ROUND_DOWN),
                                                  sell_asset=row_dict['TradePair'].split('/')[1],
                                                  fee_quantity=row_dict['Fee'],
                                                  fee_asset=row_dict['TradePair'].split('/')[1],
@@ -69,8 +69,8 @@ def parse_tradesatoshi_trades(data_row, parser, **_kwargs):
 
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity=buy_quantity. \
-                                                     quantize(PRECISION, rounding=ROUND_DOWN),
+                                                 buy_quantity=buy_quantity.
+                                                 quantize(PRECISION, rounding=ROUND_DOWN),
                                                  buy_asset=row_dict['TradePair'].split('/')[1],
                                                  sell_quantity=row_dict['Amount'],
                                                  sell_asset=row_dict['TradePair'].split('/')[0],

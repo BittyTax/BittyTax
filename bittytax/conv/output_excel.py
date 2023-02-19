@@ -20,10 +20,10 @@ if platform.system() == 'Darwin':
 else:
     FONT_SIZE = 11
 
-class OutputExcel(OutputBase):
+class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
     FILE_EXTENSION = 'xlsx'
     DATE_FORMAT = 'yyyy-mm-dd hh:mm:ss'
-    DATE_FORMAT_MS = 'yyyy-mm-dd hh:mm:ss.000' # Excel can only display milliseconds
+    DATE_FORMAT_MS = 'yyyy-mm-dd hh:mm:ss.000'  # Excel can only display milliseconds
     STR_FORMAT_MS = '%Y-%m-%dT%H:%M:%S.%f'
     FONT_COLOR_IN_DATA = '#808080'
     TITLE = 'BittyTax Records'
@@ -107,8 +107,8 @@ class Worksheet(object):
 
     def __init__(self, output, data_file):
         self.output = output
-        self.worksheet = output.workbook.add_worksheet(self._sheet_name( \
-                                                       data_file.parser.worksheet_name))
+        self.worksheet = output.workbook.add_worksheet(self._sheet_name(
+            data_file.parser.worksheet_name))
         self.col_width = {}
         self.columns = self._make_columns(data_file.parser.in_header)
         self.microseconds, self.milliseconds = self._is_microsecond_timestamp(data_file.data_rows)

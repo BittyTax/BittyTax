@@ -5,7 +5,6 @@ import os
 
 from colorama import Fore
 
-from ..version import __version__
 from ..config import config
 from .datasource import DataSourceBase
 from .exceptions import UnexpectedDataSourceError

@@ -7,6 +7,7 @@ from ..config import config
 from .datasource import DataSourceBase, BittyTaxAPI, Frankfurter
 from .exceptions import UnexpectedDataSourceError
 
+
 class AssetData(object):
     FIAT_DATASOURCES = (BittyTaxAPI.__name__, Frankfurter.__name__)
 
@@ -40,7 +41,7 @@ class AssetData(object):
                         match = True
 
                     if match:
-                        asset_data.append({'symbol':symbol,
+                        asset_data.append({'symbol': symbol,
                                            'name': asset_id['name'],
                                            'data_source': self.data_sources[ds].name(),
                                            'id': asset_id['id'],
@@ -136,7 +137,7 @@ class AssetData(object):
                 self.data_sources[ds].get_historical(req_symbol, asset_id['quote'],
                                                      req_date, asset_id['id'])
                 if pair in self.data_sources[ds].prices and \
-                       date in self.data_sources[ds].prices[pair]:
+                        date in self.data_sources[ds].prices[pair]:
                     asset_id['price'] = self.data_sources[ds].prices[pair][date]['price']
                 else:
                     asset_id['price'] = None

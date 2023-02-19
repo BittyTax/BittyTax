@@ -146,9 +146,9 @@ def validate_year(value):
     if year not in CCG.CG_DATA_INDIVIDUAL:
         raise argparse.ArgumentTypeError("tax year %d is not supported, "
                                          "must be in the range (%s-%s)" % (
-            year,
-            min(CCG.CG_DATA_INDIVIDUAL),
-            max(CCG.CG_DATA_INDIVIDUAL)))
+                                             year,
+                                             min(CCG.CG_DATA_INDIVIDUAL),
+                                             max(CCG.CG_DATA_INDIVIDUAL)))
 
     return year
 

@@ -55,7 +55,16 @@ class AuditRecords(object):
                     Style.NORMAL))
 
         if config.audit_hide_empty:
-            self._prune_empty(self.wallets)
+            self.prune_empty(self.wallets)
+
+    @staticmethod
+    def prune_empty(wallets):
+        for wallet in list(wallets):
+            for asset in list(wallets[wallet]):
+                if wallets[wallet][asset] == Decimal(0):
+                    wallets[wallet].pop(asset)
+            if not wallets[wallet]:
+                wallets.pop(wallet)
 
     def _add_tokens(self, wallet, asset, quantity):
         if wallet not in self.wallets:
@@ -106,14 +115,6 @@ class AuditRecords(object):
                 Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW,
                 wallet, asset, '{:0,f}'.format(self.wallets[wallet][asset].normalize())))
 
-    def _prune_empty(self, wallets):
-        for wallet in list(wallets):
-            for asset in list(wallets[wallet]):
-                if wallets[wallet][asset] == Decimal(0):
-                    wallets[wallet].pop(asset)
-            if len(wallets[wallet]) == 0:
-                wallets.pop(wallet)
-
     def compare_pools(self, holdings):
         passed = True
         for asset in sorted(self.totals):
@@ -128,7 +129,7 @@ class AuditRecords(object):
                     if config.debug:
                         print("%scheck pool: %s %s (mismatch)" % (
                             Fore.RED, asset,
-                            '{:+0,f}'.format((holdings[asset].quantity-
+                            '{:+0,f}'.format((holdings[asset].quantity -
                                               self.totals[asset]).normalize())))
 
                     self._log_failure(asset, self.totals[asset], holdings[asset].quantity)

@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from colorama import Fore
 
-class DataMerge(object):
+class DataMerge(object):  # pylint: disable=too-few-public-methods
     OPT = 'Optional'
     MAN = 'Mandatory'
 
@@ -47,8 +47,8 @@ class DataMerge(object):
 
                 merge = data_merge.merge_handler(matched_data_files)
                 if merge:
-                    parsers = [matched_data_files[data_file].parser.name
-                               for data_file in matched_data_files]
+                    parsers = [matched_data_files[df].parser.name
+                               for df in matched_data_files]
                     sys.stderr.write("%smerge: successfully merged %s\"%s\"\n" % (
                         Fore.WHITE, Fore.CYAN, cls.SEPARATOR_AND.join(parsers)))
 
@@ -65,7 +65,7 @@ class DataMerge(object):
                 return data_file
         return None
 
-class MergeDataRow(object):
+class MergeDataRow(object):  # pylint: disable=too-few-public-methods
     def __init__(self, data_row, data_file, data_file_id):
         self.data_row = data_row
         self.data_file = data_file

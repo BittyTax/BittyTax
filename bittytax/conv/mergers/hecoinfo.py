@@ -4,11 +4,10 @@
 from .etherscan import do_merge_etherscan, TXNS, TOKENS, NFTS, INTERNAL_TXNS
 from ..datamerge import DataMerge
 from ..out_record import TransactionOutRecord
-from ..parsers.hecoinfo import heco_txns, heco_int, WALLET, WORKSHEET_NAME
-from ..parsers.etherscan import etherscan_tokens, etherscan_nfts
+from ..parsers.hecoinfo import HECO_TXNS, HECO_INT, WALLET, WORKSHEET_NAME
+from ..parsers.etherscan import ETHERSCAN_TOKENS, ETHERSCAN_NFTS
 
-STAKE_ADDRESSES = ['0x5fad6fbba4bba686ba9b8052cf0bd51699f38b93', #MakiSwap
-                  ]
+STAKE_ADDRESSES = ['0x5fad6fbba4bba686ba9b8052cf0bd51699f38b93']  # MakiSwap
 
 def merge_hecoinfo(data_files):
     # Do same merge as Etherscan
@@ -33,8 +32,8 @@ def merge_hecoinfo(data_files):
     return merge
 
 DataMerge("HecoInfo fees & multi-token transactions",
-          {TXNS: {'req': DataMerge.MAN, 'obj': heco_txns},
-           TOKENS: {'req': DataMerge.OPT, 'obj': etherscan_tokens},
-           NFTS: {'req': DataMerge.OPT, 'obj': etherscan_nfts},
-           INTERNAL_TXNS: {'req': DataMerge.OPT, 'obj': heco_int}},
+          {TXNS: {'req': DataMerge.MAN, 'obj': HECO_TXNS},
+           TOKENS: {'req': DataMerge.OPT, 'obj': ETHERSCAN_TOKENS},
+           NFTS: {'req': DataMerge.OPT, 'obj': ETHERSCAN_NFTS},
+           INTERNAL_TXNS: {'req': DataMerge.OPT, 'obj': HECO_INT}},
           merge_hecoinfo)

@@ -9,10 +9,10 @@ VERSION_FILE = 'bittytax/version.py'
 GITHUB_REPO = 'https://github.com/BittyTax/BittyTax'
 
 def get_version():
-    line = open(VERSION_FILE, 'rt').read()
-    version = re.search(r'^__version__ = [\'"]([^\'"]*)[\'"]', line, re.MULTILINE)
-    if version:
-        return version.group(1)
+    with open(VERSION_FILE, 'rt') as ver_file:
+        version = re.search(r'^__version__ = [\'"]([^\'"]*)[\'"]', ver_file.read(), re.MULTILINE)
+        if version:
+            return version.group(1)
     raise RuntimeError('Unable to find version string in ' + VERSION_FILE)
 
 def get_long_description():

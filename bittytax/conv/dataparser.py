@@ -14,7 +14,7 @@ from ..price.pricedata import PriceData
 
 TERM_WIDTH = 69
 
-class DataParser(object):
+class DataParser(object):  # pylint: disable=too-many-instance-attributes
     TYPE_WALLET = 'Wallets'
     TYPE_EXCHANGE = 'Exchanges'
     TYPE_SAVINGS = 'Savings, Loans & Investments'
@@ -78,7 +78,7 @@ class DataParser(object):
             timestamp = timestamp.replace(tzinfo=dateutil.tz.gettz(tz))
             timestamp = timestamp.astimezone(config.TZ_UTC)
         elif timestamp.tzinfo is None:
-            #default to UTC if no timezone is specified
+            # Default to UTC if no timezone is specified
             timestamp = timestamp.replace(tzinfo=config.TZ_UTC)
         else:
             timestamp = timestamp.astimezone(config.TZ_UTC)
@@ -180,6 +180,6 @@ class DataParser(object):
             elif col is None:
                 row_out.append('*')
             else:
-                row_out.append('\'%s\'' %col)
+                row_out.append('\'%s\'' % col)
 
         return '[' + ', '.join(row_out) + ']'

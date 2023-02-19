@@ -21,8 +21,8 @@ def parse_coinomi(data_row, _parser, **_kwargs):
     else:
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_WITHDRAWAL,
                                                  data_row.timestamp,
-                                                 sell_quantity=abs(Decimal(row_dict['Value'])) - \
-                                                         Decimal(row_dict['Fees']),
+                                                 sell_quantity=abs(Decimal(row_dict['Value'])) -
+                                                 Decimal(row_dict['Fees']),
                                                  sell_asset=row_dict['Symbol'],
                                                  fee_quantity=row_dict['Fees'],
                                                  fee_asset=row_dict['Symbol'],

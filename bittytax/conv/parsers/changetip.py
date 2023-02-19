@@ -19,15 +19,15 @@ def parse_changetip(data_row, _parser, **kwargs):
         if row_dict['To'] in config.usernames:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_RECEIVED,
                                                      data_row.timestamp,
-                                                     buy_quantity= \
-                                                         Decimal(row_dict[AMOUNT]) / 10 ** 8,
+                                                     buy_quantity=Decimal(row_dict[AMOUNT]) /
+                                                     10 ** 8,
                                                      buy_asset="BTC",
                                                      wallet=WALLET)
         elif row_dict['From'] in config.usernames:
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_GIFT_SENT,
                                                      data_row.timestamp,
-                                                     sell_quantity= \
-                                                         Decimal(row_dict[AMOUNT]) / 10 ** 8,
+                                                     sell_quantity=Decimal(row_dict[AMOUNT]) /
+                                                     10 ** 8,
                                                      sell_asset="BTC",
                                                      wallet=WALLET)
         else:

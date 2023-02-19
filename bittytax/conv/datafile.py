@@ -54,7 +54,7 @@ class DataFile(object):
 
                 data_row.parse(self.parser, **kwargs)
         else:
-            # all rows handled together
+            # All rows handled together
             DataRow.parse_all(self.data_rows, self.parser, **kwargs)
 
         self.failures = [data_row for data_row in self.data_rows if data_row.failure is not None]
@@ -166,7 +166,7 @@ class DataFile(object):
                     sys.stderr.write("%sconv: CSV delimiter='%s'\n" % (Fore.CYAN, delimiter))
 
                 if sys.version_info[0] < 3:
-                    # special handling required for utf-8 encoded csv files
+                    # Special handling required for utf-8 encoded CSV files
                     reader = csv.reader(cls.utf_8_encoder(csv_file), delimiter=delimiter)
                 else:
                     reader = csv.reader(csv_file, delimiter=delimiter)

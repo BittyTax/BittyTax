@@ -20,24 +20,24 @@ def parse_cgtcalculator(data_row, parser, **_kwargs):
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Shares'],
                                                  buy_asset=row_dict['Company'],
-                                                 sell_quantity=Decimal(row_dict['Shares']) * \
-                                                               Decimal(row_dict['Price']),
+                                                 sell_quantity=Decimal(row_dict['Shares']) *
+                                                 Decimal(row_dict['Price']),
                                                  sell_asset=config.ccy,
-                                                 fee_quantity=Decimal(row_dict['Charges']) + \
-                                                              Decimal(row_dict['Tax']),
+                                                 fee_quantity=Decimal(row_dict['Charges']) +
+                                                 Decimal(row_dict['Tax']),
                                                  fee_asset=config.ccy,
                                                  wallet=WALLET)
     elif row_dict['B/S'] == "S":
         if data_row.timestamp >= datetime(2008, 4, 6, tzinfo=config.TZ_UTC):
             data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                      data_row.timestamp,
-                                                     buy_quantity=Decimal(row_dict['Shares']) * \
-                                                                  Decimal(row_dict['Price']),
+                                                     buy_quantity=Decimal(row_dict['Shares']) *
+                                                     Decimal(row_dict['Price']),
                                                      buy_asset=config.ccy,
                                                      sell_quantity=row_dict['Shares'],
                                                      sell_asset=row_dict['Company'],
-                                                     fee_quantity=Decimal(row_dict['Charges']) + \
-                                                                  Decimal(row_dict['Tax']),
+                                                     fee_quantity=Decimal(row_dict['Charges']) +
+                                                     Decimal(row_dict['Tax']),
                                                      fee_asset=config.ccy,
                                                      wallet=WALLET)
         else:

@@ -218,8 +218,8 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
             else:
                 data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_SPEND,
                                                          data_row.timestamp,
-                                                         sell_quantity= \
-                                                             abs(Decimal(row_dict['Change'])),
+                                                         sell_quantity=abs(Decimal(
+                                                             row_dict['Change'])),
                                                          sell_asset=row_dict['Coin'],
                                                          wallet=WALLET)
         elif row_dict['Operation'] == "Super BNB Mining":
@@ -302,8 +302,8 @@ def make_trade(operation, tx_times, default_asset=''):
                                                  sell_row.timestamp,
                                                  buy_quantity=split_buy_quantity,
                                                  buy_asset=buy_asset,
-                                                 sell_quantity=abs(Decimal(sell_row. \
-                                                     row_dict['Change'])),
+                                                 sell_quantity=abs(Decimal(sell_row.
+                                                                           row_dict['Change'])),
                                                  sell_asset=sell_row.row_dict['Coin'],
                                                  wallet=WALLET)
 

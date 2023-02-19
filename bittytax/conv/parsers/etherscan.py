@@ -14,7 +14,7 @@ def parse_etherscan(data_row, _parser, **_kwargs):
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict['UnixTimestamp']))
 
     if row_dict['Status'] != '':
-        # Failed txns should not have a Value_OUT
+        # Failed transactions should not have a Value_OUT
         row_dict['Value_OUT(ETH)'] = 0
 
     if Decimal(row_dict['Value_IN(ETH)']) > 0:
@@ -62,7 +62,7 @@ def parse_etherscan_internal(data_row, _parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict['UnixTimestamp']))
 
-    # Failed internal txn
+    # Failed internal transaction
     if row_dict['Status'] != '0':
         return
 
@@ -129,23 +129,22 @@ def parse_etherscan_nfts(data_row, _parser, **kwargs):
     else:
         raise DataFilenameError(kwargs['filename'], "Ethereum address")
 
-etherscan_txns = DataParser(
-        DataParser.TYPE_EXPLORER,
-        "Etherscan (ETH Transactions)",
-        ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
-         'Value_IN(ETH)', 'Value_OUT(ETH)', None, 'TxnFee(ETH)', 'TxnFee(USD)',
-         'Historical $Price/Eth', 'Status', 'ErrCode'],
-        worksheet_name="Etherscan",
-        row_handler=parse_etherscan)
+ETHERSCAN_TXNS = DataParser(
+    DataParser.TYPE_EXPLORER,
+    "Etherscan (ETH Transactions)",
+    ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
+     'Value_IN(ETH)', 'Value_OUT(ETH)', None, 'TxnFee(ETH)', 'TxnFee(USD)',
+     'Historical $Price/Eth', 'Status', 'ErrCode'],
+    worksheet_name="Etherscan",
+    row_handler=parse_etherscan)
 
-DataParser(
-        DataParser.TYPE_EXPLORER,
-        "Etherscan (ETH Transactions)",
-        ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
-         'Value_IN(ETH)', 'Value_OUT(ETH)', None, 'TxnFee(ETH)', 'TxnFee(USD)',
-         'Historical $Price/Eth', 'Status', 'ErrCode', 'PrivateNote'],
-        worksheet_name="Etherscan",
-        row_handler=parse_etherscan)
+DataParser(DataParser.TYPE_EXPLORER,
+           "Etherscan (ETH Transactions)",
+           ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
+            'Value_IN(ETH)', 'Value_OUT(ETH)', None, 'TxnFee(ETH)', 'TxnFee(USD)',
+            'Historical $Price/Eth', 'Status', 'ErrCode', 'PrivateNote'],
+           worksheet_name="Etherscan",
+           row_handler=parse_etherscan)
 
 DataParser(DataParser.TYPE_EXPLORER,
            "Etherscan (ETH Transactions)",
@@ -163,14 +162,14 @@ DataParser(DataParser.TYPE_EXPLORER,
            worksheet_name="Etherscan",
            row_handler=parse_etherscan)
 
-etherscan_int = DataParser(
-        DataParser.TYPE_EXPLORER,
-        "Etherscan (ETH Internal Transactions)",
-        ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'ParentTxFrom', 'ParentTxTo',
-         'ParentTxETH_Value', 'From', 'TxTo', 'ContractAddress', 'Value_IN(ETH)',
-         'Value_OUT(ETH)', None, 'Historical $Price/Eth', 'Status', 'ErrCode', 'Type'],
-        worksheet_name="Etherscan",
-        row_handler=parse_etherscan_internal)
+ETHERSCAN_INT = DataParser(
+    DataParser.TYPE_EXPLORER,
+    "Etherscan (ETH Internal Transactions)",
+    ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'ParentTxFrom', 'ParentTxTo',
+     'ParentTxETH_Value', 'From', 'TxTo', 'ContractAddress', 'Value_IN(ETH)',
+     'Value_OUT(ETH)', None, 'Historical $Price/Eth', 'Status', 'ErrCode', 'Type'],
+    worksheet_name="Etherscan",
+    row_handler=parse_etherscan_internal)
 
 DataParser(DataParser.TYPE_EXPLORER,
            "Etherscan (ETH Internal Transactions)",
@@ -181,34 +180,32 @@ DataParser(DataParser.TYPE_EXPLORER,
            worksheet_name="Etherscan",
            row_handler=parse_etherscan_internal)
 
-etherscan_tokens = DataParser(
-        DataParser.TYPE_EXPLORER,
-        "Etherscan (ERC-20 Tokens)",
-        ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'TokenValue',
-         'USDValueDayOfTx', 'ContractAddress', 'TokenName', 'TokenSymbol'],
-        worksheet_name="Etherscan",
-        row_handler=parse_etherscan_tokens)
+ETHERSCAN_TOKENS = DataParser(
+    DataParser.TYPE_EXPLORER,
+    "Etherscan (ERC-20 Tokens)",
+    ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'TokenValue',
+     'USDValueDayOfTx', 'ContractAddress', 'TokenName', 'TokenSymbol'],
+    worksheet_name="Etherscan",
+    row_handler=parse_etherscan_tokens)
 
-DataParser(
-        DataParser.TYPE_EXPLORER,
-        "Etherscan (ERC-20 Tokens)",
-        ['Txhash', 'UnixTimestamp', 'DateTime', 'From', 'To', 'Value', 'ContractAddress',
-         'TokenName', 'TokenSymbol'],
-        worksheet_name="Etherscan",
-        row_handler=parse_etherscan_tokens)
+DataParser(DataParser.TYPE_EXPLORER,
+           "Etherscan (ERC-20 Tokens)",
+           ['Txhash', 'UnixTimestamp', 'DateTime', 'From', 'To', 'Value', 'ContractAddress',
+            'TokenName', 'TokenSymbol'],
+           worksheet_name="Etherscan",
+           row_handler=parse_etherscan_tokens)
 
-etherscan_nfts = DataParser(
-        DataParser.TYPE_EXPLORER,
-        "Etherscan (ERC-721 NFTs)",
-        ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
-         'TokenId', 'TokenName', 'TokenSymbol'],
-        worksheet_name="Etherscan",
-        row_handler=parse_etherscan_nfts)
+ETHERSCAN_NFTS = DataParser(
+    DataParser.TYPE_EXPLORER,
+    "Etherscan (ERC-721 NFTs)",
+    ['Txhash', 'Blockno', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress',
+     'TokenId', 'TokenName', 'TokenSymbol'],
+    worksheet_name="Etherscan",
+    row_handler=parse_etherscan_nfts)
 
-DataParser(
-        DataParser.TYPE_EXPLORER,
-        "Etherscan (ERC-721 NFTs)",
-        ['Txhash', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress', 'TokenId',
-         'TokenName', 'TokenSymbol'],
-        worksheet_name="Etherscan",
-        row_handler=parse_etherscan_nfts)
+DataParser(DataParser.TYPE_EXPLORER,
+           "Etherscan (ERC-721 NFTs)",
+           ['Txhash', 'UnixTimestamp', 'DateTime', 'From', 'To', 'ContractAddress', 'TokenId',
+            'TokenName', 'TokenSymbol'],
+           worksheet_name="Etherscan",
+           row_handler=parse_etherscan_nfts)

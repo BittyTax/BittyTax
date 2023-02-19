@@ -16,9 +16,8 @@ def parse_bittrex_trades_v3(data_row, parser, **_kwargs):
     if row_dict['Type'] in ("LIMIT_BUY", 'MARKET_BUY'):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity= \
-                                                     Decimal(row_dict['Quantity']) - \
-                                                     Decimal(row_dict['Remaining']),
+                                                 buy_quantity=Decimal(row_dict['Quantity']) -
+                                                 Decimal(row_dict['Remaining']),
                                                  buy_asset=row_dict['Exchange'].split('-')[1],
                                                  sell_quantity=row_dict['Price'],
                                                  sell_asset=row_dict['Exchange'].split('-')[0],
@@ -28,9 +27,8 @@ def parse_bittrex_trades_v3(data_row, parser, **_kwargs):
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Price'],
                                                  buy_asset=row_dict['Exchange'].split('-')[0],
-                                                 sell_quantity= \
-                                                     Decimal(row_dict['Quantity']) - \
-                                                     Decimal(row_dict['Remaining']),
+                                                 sell_quantity=Decimal(row_dict['Quantity']) -
+                                                 Decimal(row_dict['Remaining']),
                                                  sell_asset=row_dict['Exchange'].split('-')[1],
                                                  wallet=WALLET)
     else:
@@ -43,9 +41,8 @@ def parse_bittrex_trades_v2(data_row, parser, **_kwargs):
     if row_dict['OrderType'] in ("LIMIT_BUY", 'MARKET_BUY'):
         data_row.t_record = TransactionOutRecord(TransactionOutRecord.TYPE_TRADE,
                                                  data_row.timestamp,
-                                                 buy_quantity= \
-                                                     Decimal(row_dict['Quantity']) - \
-                                                     Decimal(row_dict['QuantityRemaining']),
+                                                 buy_quantity=Decimal(row_dict['Quantity']) -
+                                                 Decimal(row_dict['QuantityRemaining']),
                                                  buy_asset=row_dict['Exchange'].split('-')[1],
                                                  sell_quantity=row_dict['Price'],
                                                  sell_asset=row_dict['Exchange'].split('-')[0],
@@ -57,9 +54,8 @@ def parse_bittrex_trades_v2(data_row, parser, **_kwargs):
                                                  data_row.timestamp,
                                                  buy_quantity=row_dict['Price'],
                                                  buy_asset=row_dict['Exchange'].split('-')[0],
-                                                 sell_quantity= \
-                                                     Decimal(row_dict['Quantity']) - \
-                                                     Decimal(row_dict['QuantityRemaining']),
+                                                 sell_quantity=Decimal(row_dict['Quantity']) -
+                                                 Decimal(row_dict['QuantityRemaining']),
                                                  sell_asset=row_dict['Exchange'].split('-')[1],
                                                  fee_quantity=row_dict['Commission'],
                                                  fee_asset=row_dict['Exchange'].split('-')[0],

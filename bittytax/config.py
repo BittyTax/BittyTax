@@ -10,8 +10,6 @@ from colorama import Fore, Back
 import yaml
 import dateutil.tz
 
-from .version import __version__
-
 class Config(object):
     TZ_LOCAL = dateutil.tz.gettz('Europe/London')
     TZ_UTC = dateutil.tz.UTC
@@ -82,7 +80,7 @@ class Config(object):
             with open(os.path.join(Config.BITTYTAX_PATH,
                                    Config.BITTYTAX_CONFIG), 'rb') as config_file:
                 self.config = yaml.safe_load(config_file)
-        except:
+        except (IOError, ValueError):
             print("%sWARNING%s Config file cannot be loaded: %s" % (
                 Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW,
                 os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG)))
@@ -117,9 +115,9 @@ class Config(object):
 
     def sym(self):
         if self.ccy == 'GBP':
-            return u'\xA3' # £
+            return u'\xA3'  # £
         if self.ccy == 'EUR':
-            return u'\u20AC' # €
+            return u'\u20AC'  # €
         if self.ccy in ('USD', 'AUD', 'NZD'):
             return '$'
         if self.ccy in ('DKK', 'NOK', 'SEK'):

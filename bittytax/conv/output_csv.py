@@ -10,7 +10,7 @@ from colorama import Fore, Back
 from ..config import config
 from .out_record import TransactionOutRecord
 
-class OutputBase(object):
+class OutputBase(object):  # pylint: disable=too-few-public-methods
     DEFAULT_FILENAME = 'BittyTax_Records'
     EXCEL_PRECISION = 15
     BITTYTAX_OUT_HEADER = ['Type',
@@ -168,21 +168,21 @@ class OutputCsv(OutputBase):
                 Back.YELLOW+Fore.BLACK, Back.RESET+Fore.YELLOW, OutputBase.EXCEL_PRECISION,
                 tr.format_quantity(tr.fee_quantity), Fore.RESET))
         return [tr.t_type,
-                '{0:f}'.format(tr.buy_quantity.normalize()) if tr.buy_quantity is not None \
-                                                            else None,
+                '{0:f}'.format(tr.buy_quantity.normalize())
+                if tr.buy_quantity is not None else None,
                 tr.buy_asset,
-                '{0:f}'.format(tr.buy_value.normalize()) if tr.buy_value is not None \
-                                                         else None,
-                '{0:f}'.format(tr.sell_quantity.normalize()) if tr.sell_quantity is not None \
-                                                             else None,
+                '{0:f}'.format(tr.buy_value.normalize())
+                if tr.buy_value is not None else None,
+                '{0:f}'.format(tr.sell_quantity.normalize())
+                if tr.sell_quantity is not None else None,
                 tr.sell_asset,
-                '{0:f}'.format(tr.sell_value.normalize()) if tr.sell_value is not None \
-                                                          else None,
-                '{0:f}'.format(tr.fee_quantity.normalize()) if tr.fee_quantity is not None \
-                                                            else None,
+                '{0:f}'.format(tr.sell_value.normalize())
+                if tr.sell_value is not None else None,
+                '{0:f}'.format(tr.fee_quantity.normalize())
+                if tr.fee_quantity is not None else None,
                 tr.fee_asset,
-                '{0:f}'.format(tr.fee_value.normalize()) if tr.fee_value is not None \
-                                                         else None,
+                '{0:f}'.format(tr.fee_value.normalize())
+                if tr.fee_value is not None else None,
                 tr.wallet,
                 OutputCsv._format_timestamp(tr.timestamp),
                 tr.note]
@@ -191,12 +191,12 @@ class OutputCsv(OutputBase):
     def _to_recap_csv(tr):
         return [OutputCsv.RECAP_TYPE_MAPPING[tr.t_type],
                 tr.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-                '{0:f}'.format(tr.buy_quantity.normalize()) if tr.buy_quantity is not None \
-                                                            else None,
+                '{0:f}'.format(tr.buy_quantity.normalize())
+                if tr.buy_quantity is not None else None,
                 tr.buy_asset,
-                '{0:f}'.format(tr.sell_quantity.normalize()) if tr.sell_quantity is not None \
-                                                             else None,
+                '{0:f}'.format(tr.sell_quantity.normalize())
+                if tr.sell_quantity is not None else None,
                 tr.sell_asset,
-                '{0:f}'.format(tr.fee_quantity.normalize()) if tr.fee_quantity is not None \
-                                                            else None,
+                '{0:f}'.format(tr.fee_quantity.normalize())
+                if tr.fee_quantity is not None else None,
                 tr.fee_asset]

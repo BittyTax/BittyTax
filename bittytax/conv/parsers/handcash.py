@@ -4,7 +4,7 @@
 import json
 from decimal import Decimal
 
-from ..out_record import TransactionOutRecord
+from ..out_record import TransactionOutRecord as TxOutRec
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError
 
@@ -20,33 +20,30 @@ def parse_handcash(data_row, parser, **_kwargs):
     participants = json.loads(row_dict['participants'])
     if row_dict['type'] == "receive":
         if participants[0]["type"] == "user":
-            t_type = TransactionOutRecord.TYPE_GIFT_RECEIVED
+            t_type = TxOutRec.TYPE_GIFT_RECEIVED
         else:
-            t_type = TransactionOutRecord.TYPE_DEPOSIT
+            t_type = TxOutRec.TYPE_DEPOSIT
 
-        data_row.t_record = TransactionOutRecord(t_type,
-                                                 data_row.timestamp,
-                                                 buy_quantity=Decimal(row_dict['satoshiAmount']) \
-                                                     / 10 ** 8,
-                                                 buy_asset="BSV",
-                                                 wallet=WALLET,
-                                                 note=row_dict['note'])
+        data_row.t_record = TxOutRec(t_type,
+                                     data_row.timestamp,
+                                     buy_quantity=Decimal(row_dict['satoshiAmount']) / 10 ** 8,
+                                     buy_asset="BSV",
+                                     wallet=WALLET,
+                                     note=row_dict['note'])
     elif row_dict['type'] == "send":
         if participants[0]["type"] == "user":
-            t_type = TransactionOutRecord.TYPE_GIFT_SENT
+            t_type = TxOutRec.TYPE_GIFT_SENT
         else:
-            t_type = TransactionOutRecord.TYPE_WITHDRAWAL
+            t_type = TxOutRec.TYPE_WITHDRAWAL
 
-        data_row.t_record = TransactionOutRecord(t_type,
-                                                 data_row.timestamp,
-                                                 sell_quantity=Decimal(row_dict['satoshiAmount']) \
-                                                     / 10 ** 8,
-                                                 sell_asset="BSV",
-                                                 fee_quantity=Decimal(row_dict['satoshiFees']) \
-                                                     / 10 ** 8,
-                                                 fee_asset="BSV",
-                                                 wallet=WALLET,
-                                                 note=row_dict['note'])
+        data_row.t_record = TxOutRec(t_type,
+                                     data_row.timestamp,
+                                     sell_quantity=Decimal(row_dict['satoshiAmount']) / 10 ** 8,
+                                     sell_asset="BSV",
+                                     fee_quantity=Decimal(row_dict['satoshiFees']) / 10 ** 8,
+                                     fee_asset="BSV",
+                                     wallet=WALLET,
+                                     note=row_dict['note'])
     else:
         raise UnexpectedTypeError(parser.in_header.index('type'), 'type', row_dict['type'])
 

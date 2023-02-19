@@ -271,7 +271,7 @@ def output_assets(assets):
     for asset in assets:
         print("%s%s (%s) %svia %s%s%s" % (
             Fore.WHITE,
-            #Fore.YELLOW if asset['priority'] else Fore.WHITE,
+            # Fore.YELLOW if asset['priority'] else Fore.WHITE,
             asset['symbol'],
             asset['name'],
             Fore.CYAN,
