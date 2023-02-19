@@ -34,11 +34,11 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: ${{matrix.python-version}}
-      - name: Install libenchant-dev (linux)
+      - name: Install enchant (linux)
         if: matrix.platform == 'linux'
         run: |
           sudo apt update
-          sudo apt install libenchant-dev
+          sudo apt install enchant
       - name: Install enchant (macOS)
         if: matrix.platform == 'macos'
         run: |
