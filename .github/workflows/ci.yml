@@ -37,6 +37,7 @@ jobs:
       - name: Install libenchant-dev (linux)
         if: matrix.platform == 'linux'
         run: |
+          sudo apt update
           sudo apt install libenchant-dev
       - name: Install enchant (macOS)
         if: matrix.platform == 'macos'
