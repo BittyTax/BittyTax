@@ -6,11 +6,15 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["2.7", "3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
-        os: [ubuntu-22.04, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        exclude:
+          - python-version: 3.6
+            os: ubuntu-latest
         include:
           - python-version: "2.7"
             pylintrc: ".pylintrc-27"
           - python-version: "3.6"
+            os: ubuntu-20.04
             pylintrc: ".pylintrc"
           - python-version: "3.7"
             pylintrc: ".pylintrc"
@@ -22,10 +26,6 @@ jobs:
             pylintrc: ".pylintrc"
           - python-version: "3.11"
             pylintrc: ".pylintrc"
-          - os: ubuntu-22.04
-            platform: linux
-          - os: macos-latest
-            platform: macos
 
     runs-on: ${{matrix.os}} 
     steps:
@@ -35,11 +35,11 @@ jobs:
         with:
           python-version: ${{matrix.python-version}}
       - name: Install enchant (linux)
-        if: matrix.platform == 'linux'
+        if: contains("ubuntu", ${{matrix.os}})
         run: |
-          sudo apt-get -y install --no-install-recommends libenchant-2-dev
+          sudo apt-get -y install --no-install-recommends libenchant-2-dev aspell-en libaspell-dev
       - name: Install enchant (macOS)
-        if: matrix.platform == 'macos'
+        if: contains("macos", ${{matrix.os}})
         run: |
           brew install enchant
       - name: Install dependencies

@@ -199,13 +199,13 @@ max-spelling-suggestions=4
 
 # Spelling dictionary name. Available dictionaries: de_DE (myspell), fr_FR
 # (myspell), en_GB (myspell), en_AU (myspell), en_US (myspell).
-spelling-dict=
+spelling-dict=en_GB
 
 # List of comma separated words that should not be checked.
 spelling-ignore-words=
 
 # A path to a file that contains private dictionary; one word per line.
-spelling-private-dict-file=
+spelling-private-dict-file=.pylint_dictionary
 
 # Tells whether to store unknown words to indicated private dictionary in
 # --spelling-private-dict-file option instead of raising a message.
