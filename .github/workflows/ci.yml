@@ -37,7 +37,7 @@ jobs:
       - name: Install enchant (linux)
         if: matrix.platform == 'linux'
         run: |
-          sudo apt-get -y install --no-install-recommends libenchant-2-dev aspell-en libaspell-dev
+          sudo apt-get -y install --no-install-recommends libenchant-2-dev
       - name: Install enchant (macOS)
         if: matrix.platform == 'macos'
         run: |
