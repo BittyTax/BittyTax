@@ -1,0 +1,7 @@
+[flake8]
+# E302: Expected 2 blank lines, found 0
+# E305: Expected 2 blank lines after end of function or class
+# F403: 'from module import *' used; unable to detect undefined names
+# F401: Module imported but unused
+extend-ignore = E302, E305, F403, F401
+max-line-length = 100
