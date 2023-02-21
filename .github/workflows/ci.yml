@@ -15,12 +15,6 @@ jobs:
             os: ubuntu-20.04
           - python-version: "2.7"
             pylint-rcfile: "--rcfile=.pylintrc-27"
-          - os: ubuntu-20.04
-            platform: linux
-          - os: ubuntu-latest
-            platform: linux
-          - os: macos-latest
-            platform: macos
     runs-on: ${{matrix.os}} 
     steps:
       - uses: actions/checkout@v3
@@ -29,11 +23,11 @@ jobs:
         with:
           python-version: ${{matrix.python-version}}
       - name: Install enchant (linux)
-        if: matrix.platform == 'linux' 
+        if: startsWith(matrix.os, 'ubuntu')
         run: |
-          sudo apt-get -y install --no-install-recommends libenchant-2-dev aspell-en libaspell-dev
+          sudo apt-get -y install --no-install-recommends libenchant1c2a libenchant-2-dev aspell-en libaspell-dev
       - name: Install enchant (macOS)
-        if: matrix.platform == 'macos'
+        if: startsWith(matrix.os, 'macos')
         run: |
           brew install enchant
       - name: Install dependencies
