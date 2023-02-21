@@ -20,6 +20,12 @@ jobs:
             os: ubuntu-20.04
             lib: libenchant1c2a
             pylint-rcfile: "--rcfile=.pylintrc-27"
+          - python-version: "2.7"
+            os: macos-latest
+            pylint-rcfile: "--rcfile=.pylintrc-27"
+          - python-version: "2.7"
+            os: windows-latest
+            pylint-rcfile: "--rcfile=.pylintrc-27"
     runs-on: ${{matrix.os}} 
     steps:
       - uses: actions/checkout@v3

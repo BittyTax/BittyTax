@@ -105,6 +105,7 @@ disable=raw-checker-failed,
         unspecified-encoding,  # Not 2.7 compatible
         duplicate-code,
         unnecessary-dunder-call,
+        invalid-name,  # Workaround (https://github.com/PyCQA/pylint/issues/8319)
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
