@@ -8,12 +8,17 @@ jobs:
         python-version: ["2.7", "3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
         os: [ubuntu-latest, windows-latest, macos-latest]
         exclude:
+          - python-version: "2.7"
+            os: ubuntu-latest
           - python-version: "3.6"
             os: ubuntu-latest
         include:
           - python-version: "3.6"
             os: ubuntu-20.04
+            lib: libenchant1c2a
           - python-version: "2.7"
+            os: ubuntu-20.04
+            lib: libenchant1c2a
             pylint-rcfile: "--rcfile=.pylintrc-27"
     runs-on: ${{matrix.os}} 
     steps:
@@ -25,7 +30,7 @@ jobs:
       - name: Install enchant (linux)
         if: startsWith(matrix.os, 'ubuntu')
         run: |
-          sudo apt-get -y install --no-install-recommends libenchant1c2a libenchant-2-dev aspell-en libaspell-dev
+          sudo apt-get -y install --no-install-recommends ${{matrix.lib}} libenchant-2-dev aspell-en libaspell-dev
       - name: Install enchant (macOS)
         if: startsWith(matrix.os, 'macos')
         run: |
