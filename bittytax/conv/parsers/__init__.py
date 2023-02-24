@@ -1,64 +1,66 @@
-from . import accointing
-from . import binance
-from . import barclays
-from . import bitfinex
-from . import bitpanda
-from . import bitstamp
-from . import bittrex
-from . import bittylicious
-from . import blockchain
-from . import blockfi
-from . import bnktothefuture
-from . import bscscan
-from . import celsius
-from . import cexio
-from . import cgtcalculator
-from . import changetip
-from . import circle
-from . import coinbase
-from . import coinbasepro
-from . import coinfloor
-from . import coinlist
-from . import coinmetro
-from . import coinomi
-from . import cointracking
-from . import cryptocom
-from . import cryptopia
-from . import cryptsy
-from . import electrum
-from . import energyweb
-from . import etherscan
-from . import exodus
-from . import gatehub
-from . import generic
-from . import gravity
-from . import handcash
-from . import hecoinfo
-from . import helium
-from . import hitbtc
-from . import hotbit
-from . import ii
-from . import koinly
-from . import kraken
-from . import kucoin
-from . import ledgerlive
-from . import liquid
-from . import mercatox
-from . import nault
-from . import nexo
-from . import okex
-from . import poloniex
-from . import polygonscan
-from . import qtrade
-from . import qtwallet
-from . import snowtrace
-from . import staketax
-from . import tradesatoshi
-from . import trezor
-from . import trezorsuite
-from . import uphold
-from . import volt
-from . import wirex
-from . import yoroi
-from . import zelcore
-from . import zerion
+from . import (
+    accointing,
+    barclays,
+    binance,
+    bitfinex,
+    bitpanda,
+    bitstamp,
+    bittrex,
+    bittylicious,
+    blockchain,
+    blockfi,
+    bnktothefuture,
+    bscscan,
+    celsius,
+    cexio,
+    cgtcalculator,
+    changetip,
+    circle,
+    coinbase,
+    coinbasepro,
+    coinfloor,
+    coinlist,
+    coinmetro,
+    coinomi,
+    cointracking,
+    cryptocom,
+    cryptopia,
+    cryptsy,
+    electrum,
+    energyweb,
+    etherscan,
+    exodus,
+    gatehub,
+    generic,
+    gravity,
+    handcash,
+    hecoinfo,
+    helium,
+    hitbtc,
+    hotbit,
+    ii,
+    koinly,
+    kraken,
+    kucoin,
+    ledgerlive,
+    liquid,
+    mercatox,
+    nault,
+    nexo,
+    okex,
+    poloniex,
+    polygonscan,
+    qtrade,
+    qtwallet,
+    snowtrace,
+    staketax,
+    tradesatoshi,
+    trezor,
+    trezorsuite,
+    uphold,
+    volt,
+    wirex,
+    yoroi,
+    zelcore,
+    zerion,
+)

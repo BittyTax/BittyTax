@@ -3,10 +3,11 @@
 
 from decimal import Decimal
 
-from colorama import Fore, Back
+from colorama import Back, Fore
 from tqdm import tqdm
 
 from .config import config
+
 
 class Holdings(object):
     def __init__(self, asset):
@@ -27,19 +28,23 @@ class Holdings(object):
             self.deposits += 1
 
         if config.debug:
-            print("%ssection104:   %s=%s (+%s) cost=%s %s (+%s %s) fees=%s %s (+%s %s)" % (
-                Fore.YELLOW,
-                self.asset,
-                '{:0,f}'.format(self.quantity.normalize()),
-                '{:0,f}'.format(quantity.normalize()),
-                config.sym() + '{:0,.2f}'.format(self.cost),
-                config.ccy,
-                config.sym() + '{:0,.2f}'.format(cost),
-                config.ccy,
-                config.sym() + '{:0,.2f}'.format(self.fees),
-                config.ccy,
-                config.sym() + '{:0,.2f}'.format(fees),
-                config.ccy))
+            print(
+                "%ssection104:   %s=%s (+%s) cost=%s %s (+%s %s) fees=%s %s (+%s %s)"
+                % (
+                    Fore.YELLOW,
+                    self.asset,
+                    "{:0,f}".format(self.quantity.normalize()),
+                    "{:0,f}".format(quantity.normalize()),
+                    config.sym() + "{:0,.2f}".format(self.cost),
+                    config.ccy,
+                    config.sym() + "{:0,.2f}".format(cost),
+                    config.ccy,
+                    config.sym() + "{:0,.2f}".format(self.fees),
+                    config.ccy,
+                    config.sym() + "{:0,.2f}".format(fees),
+                    config.ccy,
+                )
+            )
 
     def subtract_tokens(self, quantity, cost, fees, is_withdrawal):
         self.quantity -= quantity
@@ -50,26 +55,35 @@ class Holdings(object):
             self.withdrawals += 1
 
         if config.debug:
-            print("%ssection104:   %s=%s (-%s) cost=%s %s (-%s %s) fees=%s %s (-%s %s)" % (
-                Fore.YELLOW,
-                self.asset,
-                '{:0,f}'.format(self.quantity.normalize()),
-                '{:0,f}'.format(quantity.normalize()),
-                config.sym() + '{:0,.2f}'.format(self.cost),
-                config.ccy,
-                config.sym() + '{:0,.2f}'.format(cost),
-                config.ccy,
-                config.sym() + '{:0,.2f}'.format(self.fees),
-                config.ccy,
-                config.sym() + '{:0,.2f}'.format(fees),
-                config.ccy))
+            print(
+                "%ssection104:   %s=%s (-%s) cost=%s %s (-%s %s) fees=%s %s (-%s %s)"
+                % (
+                    Fore.YELLOW,
+                    self.asset,
+                    "{:0,f}".format(self.quantity.normalize()),
+                    "{:0,f}".format(quantity.normalize()),
+                    config.sym() + "{:0,.2f}".format(self.cost),
+                    config.ccy,
+                    config.sym() + "{:0,.2f}".format(cost),
+                    config.ccy,
+                    config.sym() + "{:0,.2f}".format(self.fees),
+                    config.ccy,
+                    config.sym() + "{:0,.2f}".format(fees),
+                    config.ccy,
+                )
+            )
 
     def check_transfer_mismatch(self):
         if self.withdrawals > 0 and self.withdrawals != self.deposits:
-            tqdm.write("%sWARNING%s Disposal detected between a Withdrawal and a Deposit "
-                       "(%s:%s) for %s, cost basis will be wrong" % (Back.RED+Fore.BLACK,
-                                                                     Back.RESET+Fore.RED,
-                                                                     self.withdrawals,
-                                                                     self.deposits,
-                                                                     self.asset))
+            tqdm.write(
+                "%sWARNING%s Disposal detected between a Withdrawal and a Deposit "
+                "(%s:%s) for %s, cost basis will be wrong"
+                % (
+                    Back.RED + Fore.BLACK,
+                    Back.RESET + Fore.RED,
+                    self.withdrawals,
+                    self.deposits,
+                    self.asset,
+                )
+            )
             self.mismatches += 1

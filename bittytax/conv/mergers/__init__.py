@@ -1,5 +1,1 @@
-from . import bscscan
-from . import etherscan
-from . import hecoinfo
-from . import polygonscan
-from . import snowtrace
+from . import bscscan, etherscan, hecoinfo, polygonscan, snowtrace

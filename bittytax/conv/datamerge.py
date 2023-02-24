@@ -2,16 +2,16 @@
 # (c) Nano Nano Ltd 2021
 
 import sys
-
 from decimal import Decimal
 
 from colorama import Fore
 
-class DataMerge(object):  # pylint: disable=too-few-public-methods
-    OPT = 'Optional'
-    MAN = 'Mandatory'
 
-    SEPARATOR_AND = '"' + Fore.WHITE + ' & ' + Fore.CYAN + '"'
+class DataMerge(object):  # pylint: disable=too-few-public-methods
+    OPT = "Optional"
+    MAN = "Mandatory"
+
+    SEPARATOR_AND = '"' + Fore.WHITE + " & " + Fore.CYAN + '"'
 
     mergers = []
 
@@ -27,8 +27,9 @@ class DataMerge(object):  # pylint: disable=too-few-public-methods
         for data_merge in cls.mergers:
             matched_data_files = {}
 
-            man_tot = len([p for p in data_merge.parsers
-                           if data_merge.parsers[p]['req'] == cls.MAN])
+            man_tot = len(
+                [p for p in data_merge.parsers if data_merge.parsers[p]["req"] == cls.MAN]
+            )
             man_cnt = 0
             opt_cnt = 0
 
@@ -37,20 +38,21 @@ class DataMerge(object):  # pylint: disable=too-few-public-methods
 
                 if data_file:
                     matched_data_files[parser] = data_file
-                    if data_merge.parsers[parser]['req'] == cls.MAN:
+                    if data_merge.parsers[parser]["req"] == cls.MAN:
                         man_cnt += 1
-                    elif data_merge.parsers[parser]['req'] == cls.OPT:
+                    elif data_merge.parsers[parser]["req"] == cls.OPT:
                         opt_cnt += 1
 
             if man_cnt == 1 and opt_cnt > 0 or man_cnt > 1 and man_cnt == man_tot:
-                sys.stderr.write("%smerge: \"%s\"\n" % (Fore.WHITE, data_merge.name))
+                sys.stderr.write('%smerge: "%s"\n' % (Fore.WHITE, data_merge.name))
 
                 merge = data_merge.merge_handler(matched_data_files)
                 if merge:
-                    parsers = [matched_data_files[df].parser.name
-                               for df in matched_data_files]
-                    sys.stderr.write("%smerge: successfully merged %s\"%s\"\n" % (
-                        Fore.WHITE, Fore.CYAN, cls.SEPARATOR_AND.join(parsers)))
+                    parsers = [matched_data_files[df].parser.name for df in matched_data_files]
+                    sys.stderr.write(
+                        '%smerge: successfully merged %s"%s"\n'
+                        % (Fore.WHITE, Fore.CYAN, cls.SEPARATOR_AND.join(parsers))
+                    )
 
                     for match in matched_data_files:
                         del data_files[matched_data_files[match]]
@@ -60,10 +62,13 @@ class DataMerge(object):  # pylint: disable=too-few-public-methods
     @classmethod
     def _match_datafile(cls, data_files, parser):
         for data_file in data_files:
-            if (data_file.parser.row_handler, data_file.parser.all_handler) == \
-                   (parser['obj'].row_handler, parser['obj'].all_handler):
+            if (data_file.parser.row_handler, data_file.parser.all_handler) == (
+                parser["obj"].row_handler,
+                parser["obj"].all_handler,
+            ):
                 return data_file
         return None
+
 
 class MergeDataRow(object):  # pylint: disable=too-few-public-methods
     def __init__(self, data_row, data_file, data_file_id):

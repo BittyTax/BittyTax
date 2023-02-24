@@ -1,21 +1,27 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import sys
 import csv
+import sys
 from decimal import Decimal, InvalidOperation
 
-from colorama import Fore, Back
-from tqdm import tqdm, trange
 import dateutil.parser
 import xlrd
+from colorama import Back, Fore
+from tqdm import tqdm, trange
 
 from .config import config
-from .transactions import Buy, Sell
+from .exceptions import (
+    DataValueError,
+    MissingDataError,
+    TimestampParserError,
+    TransactionParserError,
+    UnexpectedDataError,
+    UnexpectedTransactionTypeError,
+)
 from .record import TransactionRecord as TR
-from .exceptions import TransactionParserError, UnexpectedTransactionTypeError, \
-                        TimestampParserError, DataValueError, MissingDataError, \
-                        UnexpectedDataError
+from .transactions import Buy, Sell
+
 
 class ImportRecords(object):
     def __init__(self):
@@ -28,25 +34,32 @@ class ImportRecords(object):
         print("%sExcel file: %s%s" % (Fore.WHITE, Fore.YELLOW, filename))
 
         for worksheet in workbook.sheets():
-            if worksheet.name.startswith('--'):
+            if worksheet.name.startswith("--"):
                 print("%sskipping '%s' worksheet" % (Fore.GREEN, worksheet.name))
                 continue
+
             if config.debug:
                 print("%simporting '%s' rows" % (Fore.CYAN, worksheet.name))
 
-            for row_num in trange(0, worksheet.nrows,
-                                  unit=' row',
-                                  desc="%simporting '%s' rows%s" % (
-                                      Fore.CYAN, worksheet.name, Fore.GREEN),
-                                  disable=bool(config.debug or not sys.stdout.isatty())):
+            for row_num in trange(
+                0,
+                worksheet.nrows,
+                unit=" row",
+                desc="%simporting '%s' rows%s" % (Fore.CYAN, worksheet.name, Fore.GREEN),
+                disable=bool(config.debug or not sys.stdout.isatty()),
+            ):
                 if row_num == 0:
-                    # skip headers
+                    # Skip headers
                     continue
 
-                row = [self.convert_cell(worksheet.cell(row_num, cell_num), workbook)
-                       for cell_num in range(0, worksheet.ncols)]
+                row = [
+                    self.convert_cell(worksheet.cell(row_num, cell_num), workbook)
+                    for cell_num in range(0, worksheet.ncols)
+                ]
 
-                t_row = TransactionRow(row[:len(TransactionRow.HEADER)], row_num+1, worksheet.name)
+                t_row = TransactionRow(
+                    row[: len(TransactionRow.HEADER)], row_num + 1, worksheet.name
+                )
                 try:
                     t_row.parse()
                 except TransactionParserError as e:
@@ -56,8 +69,10 @@ class ImportRecords(object):
                     tqdm.write("%simport: %s" % (Fore.YELLOW, t_row))
 
                 if t_row.failure:
-                    tqdm.write("%sERROR%s %s" % (
-                        Back.RED+Fore.BLACK, Back.RESET+Fore.RED, t_row.failure))
+                    tqdm.write(
+                        "%sERROR%s %s"
+                        % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED, t_row.failure)
+                    )
 
                 self.t_rows.append(t_row)
                 self.update_cnts(t_row)
@@ -70,17 +85,21 @@ class ImportRecords(object):
         if cell.ctype == xlrd.XL_CELL_DATE:
             datetime = xlrd.xldate.xldate_as_datetime(cell.value, workbook.datemode)
             if datetime.microsecond:
-                value = datetime.strftime('%Y-%m-%dT%H:%M:%S.%f')
+                value = datetime.strftime("%Y-%m-%dT%H:%M:%S.%f")
             else:
-                value = datetime.strftime('%Y-%m-%d %H:%M:%S')
-        elif cell.ctype in (xlrd.XL_CELL_NUMBER, xlrd.XL_CELL_BOOLEAN, xlrd.XL_CELL_ERROR):
+                value = datetime.strftime("%Y-%m-%d %H:%M:%S")
+        elif cell.ctype in (
+            xlrd.XL_CELL_NUMBER,
+            xlrd.XL_CELL_BOOLEAN,
+            xlrd.XL_CELL_ERROR,
+        ):
             # repr is required to ensure no precision is lost
             value = repr(cell.value)
         else:
             if sys.version_info[0] >= 3:
                 value = str(cell.value)
             else:
-                value = cell.value.encode('utf-8')
+                value = cell.value.encode("utf-8")
 
         return value
 
@@ -95,15 +114,17 @@ class ImportRecords(object):
         else:
             reader = csv.reader(import_file)
 
-        for row in tqdm(reader,
-                        unit=' row',
-                        desc="%simporting%s" % (Fore.CYAN, Fore.GREEN),
-                        disable=bool(config.debug or not sys.stdout.isatty())):
+        for row in tqdm(
+            reader,
+            unit=" row",
+            desc="%simporting%s" % (Fore.CYAN, Fore.GREEN),
+            disable=bool(config.debug or not sys.stdout.isatty()),
+        ):
             if reader.line_num == 1:
-                # skip headers
+                # Skip headers
                 continue
 
-            t_row = TransactionRow(row[:len(TransactionRow.HEADER)], reader.line_num)
+            t_row = TransactionRow(row[: len(TransactionRow.HEADER)], reader.line_num)
             try:
                 t_row.parse()
             except TransactionParserError as e:
@@ -113,8 +134,9 @@ class ImportRecords(object):
                 tqdm.write("%simport: %s" % (Fore.YELLOW, t_row))
 
             if t_row.failure:
-                tqdm.write("%sERROR%s %s" % (
-                    Back.RED+Fore.BLACK, Back.RESET+Fore.RED, t_row.failure))
+                tqdm.write(
+                    "%sERROR%s %s" % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED, t_row.failure)
+                )
 
             self.t_rows.append(t_row)
             self.update_cnts(t_row)
@@ -122,7 +144,7 @@ class ImportRecords(object):
     @staticmethod
     def utf_8_encoder(unicode_csv_data):
         for line in unicode_csv_data:
-            yield line.encode('utf-8')
+            yield line.encode("utf-8")
 
     def update_cnts(self, t_row):
         if t_row.failure is not None:
@@ -143,32 +165,44 @@ class ImportRecords(object):
 
         return transaction_records
 
-class TransactionRow(object):
-    HEADER = ['Type',
-              'Buy Quantity', 'Buy Asset', 'Buy Value',
-              'Sell Quantity', 'Sell Asset', 'Sell Value',
-              'Fee Quantity', 'Fee Asset', 'Fee Value',
-              'Wallet', 'Timestamp', 'Note']
 
-    OPT = 'Optional'
-    MAN = 'Mandatory'
+class TransactionRow(object):
+    HEADER = [
+        "Type",
+        "Buy Quantity",
+        "Buy Asset",
+        "Buy Value",
+        "Sell Quantity",
+        "Sell Asset",
+        "Sell Value",
+        "Fee Quantity",
+        "Fee Asset",
+        "Fee Value",
+        "Wallet",
+        "Timestamp",
+        "Note",
+    ]
+
+    OPT = "Optional"
+    MAN = "Mandatory"
 
     TYPE_VALIDATION = {
-        TR.TYPE_DEPOSIT:       [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
-        TR.TYPE_MINING:        [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
-        TR.TYPE_STAKING:       [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
-        TR.TYPE_INTEREST:      [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
-        TR.TYPE_DIVIDEND:      [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
-        TR.TYPE_INCOME:        [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
+        TR.TYPE_DEPOSIT: [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
+        TR.TYPE_MINING: [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
+        TR.TYPE_STAKING: [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
+        TR.TYPE_INTEREST: [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
+        TR.TYPE_DIVIDEND: [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
+        TR.TYPE_INCOME: [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
         TR.TYPE_GIFT_RECEIVED: [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
-        TR.TYPE_AIRDROP:       [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
-        TR.TYPE_WITHDRAWAL:    [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
-        TR.TYPE_SPEND:         [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
-        TR.TYPE_GIFT_SENT:     [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
-        TR.TYPE_GIFT_SPOUSE:   [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
-        TR.TYPE_CHARITY_SENT:  [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
-        TR.TYPE_LOST:          [MAN, None, None, None, MAN, MAN, OPT, None, None, None],
-        TR.TYPE_TRADE:         [MAN, MAN, MAN, OPT, MAN, MAN, OPT, OPT, OPT, OPT]}
+        TR.TYPE_AIRDROP: [MAN, MAN, MAN, OPT, None, None, None, OPT, OPT, OPT],
+        TR.TYPE_WITHDRAWAL: [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
+        TR.TYPE_SPEND: [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
+        TR.TYPE_GIFT_SENT: [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
+        TR.TYPE_GIFT_SPOUSE: [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
+        TR.TYPE_CHARITY_SENT: [MAN, None, None, None, MAN, MAN, OPT, OPT, OPT, OPT],
+        TR.TYPE_LOST: [MAN, None, None, None, MAN, MAN, OPT, None, None, None],
+        TR.TYPE_TRADE: [MAN, MAN, MAN, OPT, MAN, MAN, OPT, OPT, OPT, OPT],
+    }
 
     TRANSFER_TYPES = (TR.TYPE_DEPOSIT, TR.TYPE_WITHDRAWAL)
 
@@ -186,45 +220,45 @@ class TransactionRow(object):
             return
 
         buy = sell = fee = None
-        t_type = self.row_dict['Type']
+        t_type = self.row_dict["Type"]
 
         if t_type not in self.TYPE_VALIDATION:
-            raise UnexpectedTransactionTypeError(self.HEADER.index('Type'), 'Type', t_type)
+            raise UnexpectedTransactionTypeError(self.HEADER.index("Type"), "Type", t_type)
 
         for pos, required in enumerate(self.TYPE_VALIDATION[t_type]):
-            if pos == self.HEADER.index('Buy Quantity'):
-                buy_quantity = self.validate_quantity('Buy Quantity', required)
-            elif pos == self.HEADER.index('Buy Asset'):
-                buy_asset = self.validate_asset('Buy Asset', required)
-            elif pos == self.HEADER.index('Buy Value'):
-                buy_value = self.validate_value('Buy Value', required)
-            elif pos == self.HEADER.index('Sell Quantity'):
-                sell_quantity = self.validate_quantity('Sell Quantity', required)
-            elif pos == self.HEADER.index('Sell Asset'):
-                sell_asset = self.validate_asset('Sell Asset', required)
-            elif pos == self.HEADER.index('Sell Value'):
-                sell_value = self.validate_value('Sell Value', required)
-            elif pos == self.HEADER.index('Fee Quantity'):
-                fee_quantity = self.validate_quantity('Fee Quantity', required)
-            elif pos == self.HEADER.index('Fee Asset'):
-                fee_asset = self.validate_asset('Fee Asset', required)
-            elif pos == self.HEADER.index('Fee Value'):
-                fee_value = self.validate_value('Fee Value', required)
+            if pos == self.HEADER.index("Buy Quantity"):
+                buy_quantity = self.validate_quantity("Buy Quantity", required)
+            elif pos == self.HEADER.index("Buy Asset"):
+                buy_asset = self.validate_asset("Buy Asset", required)
+            elif pos == self.HEADER.index("Buy Value"):
+                buy_value = self.validate_value("Buy Value", required)
+            elif pos == self.HEADER.index("Sell Quantity"):
+                sell_quantity = self.validate_quantity("Sell Quantity", required)
+            elif pos == self.HEADER.index("Sell Asset"):
+                sell_asset = self.validate_asset("Sell Asset", required)
+            elif pos == self.HEADER.index("Sell Value"):
+                sell_value = self.validate_value("Sell Value", required)
+            elif pos == self.HEADER.index("Fee Quantity"):
+                fee_quantity = self.validate_quantity("Fee Quantity", required)
+            elif pos == self.HEADER.index("Fee Asset"):
+                fee_asset = self.validate_asset("Fee Asset", required)
+            elif pos == self.HEADER.index("Fee Value"):
+                fee_value = self.validate_value("Fee Value", required)
 
         if buy_value and buy_asset == config.ccy and buy_value != buy_quantity:
-            raise DataValueError(self.HEADER.index('Buy Value'), 'Buy Value', buy_value)
+            raise DataValueError(self.HEADER.index("Buy Value"), "Buy Value", buy_value)
 
         if sell_value and sell_asset == config.ccy and sell_value != sell_quantity:
-            raise DataValueError(self.HEADER.index('Sell Value'), 'Sell Value', sell_value)
+            raise DataValueError(self.HEADER.index("Sell Value"), "Sell Value", sell_value)
 
         if fee_value and fee_asset == config.ccy and fee_value != fee_quantity:
-            raise DataValueError(self.HEADER.index('Fee Value'), 'Fee Value', fee_value)
+            raise DataValueError(self.HEADER.index("Fee Value"), "Fee Value", fee_value)
 
         if fee_quantity is not None and not fee_asset:
-            raise MissingDataError(self.HEADER.index('Fee Asset'), 'Fee Asset')
+            raise MissingDataError(self.HEADER.index("Fee Asset"), "Fee Asset")
 
         if fee_quantity is None and fee_asset:
-            raise MissingDataError(self.HEADER.index('Fee Quantity'), 'Fee Quantity')
+            raise MissingDataError(self.HEADER.index("Fee Quantity"), "Fee Quantity")
 
         if buy_asset:
             buy = Buy(t_type, buy_quantity, buy_asset, buy_value)
@@ -254,19 +288,27 @@ class TransactionRow(object):
                         fee.disposal = False
 
         if len(self.row) == len(self.HEADER):
-            note = self.row_dict['Note']
+            note = self.row_dict["Note"]
         else:
-            note = ''
+            note = ""
 
-        self.t_record = TR(t_type, buy, sell, fee, self.row_dict['Wallet'],
-                           self.parse_timestamp(), note)
+        self.t_record = TR(
+            t_type,
+            buy,
+            sell,
+            fee,
+            self.row_dict["Wallet"],
+            self.parse_timestamp(),
+            note,
+        )
 
     def parse_timestamp(self):
         try:
-            timestamp = dateutil.parser.parse(self.row_dict['Timestamp'])
+            timestamp = dateutil.parser.parse(self.row_dict["Timestamp"])
         except ValueError:
-            raise TimestampParserError(self.HEADER.index('Timestamp'), 'Timestamp',
-                                       self.row_dict['Timestamp'])
+            raise TimestampParserError(
+                self.HEADER.index("Timestamp"), "Timestamp", self.row_dict["Timestamp"]
+            )
 
         if timestamp.tzinfo is None:
             # Default to UTC if no timezone is specified
@@ -280,16 +322,21 @@ class TransactionRow(object):
                 try:
                     quantity = Decimal(self.strip_non_digits(self.row_dict[quantity_hdr]))
                 except InvalidOperation:
-                    raise DataValueError(self.HEADER.index(quantity_hdr), quantity_hdr,
-                                         self.row_dict[quantity_hdr])
+                    raise DataValueError(
+                        self.HEADER.index(quantity_hdr),
+                        quantity_hdr,
+                        self.row_dict[quantity_hdr],
+                    )
 
                 if quantity < 0:
-                    raise DataValueError(self.HEADER.index(quantity_hdr), quantity_hdr,
-                                         quantity)
+                    raise DataValueError(self.HEADER.index(quantity_hdr), quantity_hdr, quantity)
                 return quantity
 
-            raise UnexpectedDataError(self.HEADER.index(quantity_hdr), quantity_hdr,
-                                      self.row_dict[quantity_hdr])
+            raise UnexpectedDataError(
+                self.HEADER.index(quantity_hdr),
+                quantity_hdr,
+                self.row_dict[quantity_hdr],
+            )
         if required == self.MAN:
             raise MissingDataError(self.HEADER.index(quantity_hdr), quantity_hdr)
 
@@ -300,8 +347,9 @@ class TransactionRow(object):
             if required:
                 return self.row_dict[asset_hdr]
 
-            raise UnexpectedDataError(self.HEADER.index(asset_hdr), asset_hdr,
-                                      self.row_dict[asset_hdr])
+            raise UnexpectedDataError(
+                self.HEADER.index(asset_hdr), asset_hdr, self.row_dict[asset_hdr]
+            )
         if required == self.MAN:
             raise MissingDataError(self.HEADER.index(asset_hdr), asset_hdr)
 
@@ -313,16 +361,20 @@ class TransactionRow(object):
                 try:
                     value = Decimal(self.strip_non_digits(self.row_dict[value_hdr]))
                 except InvalidOperation:
-                    raise DataValueError(self.HEADER.index(value_hdr), value_hdr,
-                                         self.row_dict[value_hdr])
+                    raise DataValueError(
+                        self.HEADER.index(value_hdr),
+                        value_hdr,
+                        self.row_dict[value_hdr],
+                    )
 
                 if value < 0:
                     raise DataValueError(self.HEADER.index(value_hdr), value_hdr, value)
 
                 return value
 
-            raise UnexpectedDataError(self.HEADER.index(value_hdr), value_hdr,
-                                      self.row_dict[value_hdr])
+            raise UnexpectedDataError(
+                self.HEADER.index(value_hdr), value_hdr, self.row_dict[value_hdr]
+            )
 
         if required == self.MAN:
             raise MissingDataError(self.HEADER.index(value_hdr), value_hdr)
@@ -331,34 +383,34 @@ class TransactionRow(object):
 
     @staticmethod
     def strip_non_digits(string):
-        return string.strip('£€$').replace(',', '')
+        return string.strip("£€$").replace(",", "")
 
     def __str__(self):
         if self.t_record and self.t_record.tid:
             tid_str = " %s[TID:%s]" % (Fore.MAGENTA, self.t_record.tid[0])
         else:
-            tid_str = ''
+            tid_str = ""
 
         if self.worksheet_name:
             worksheet_str = "'%s' " % self.worksheet_name
         else:
-            worksheet_str = ''
+            worksheet_str = ""
 
         if sys.version_info[0] < 3:
-            row = [r.decode('utf8') for r in self.row]
+            row = [r.decode("utf8") for r in self.row]
         else:
             row = self.row
 
         if self.failure is not None:
-            row_str = ', '.join(["%s'%s'%s" % (Back.RED, data, Back.RESET)
-                                 if self.failure.col_num == num
-                                 else "'%s'" % data
-                                 for num, data in enumerate(row)])
+            row_str = ", ".join(
+                [
+                    "%s'%s'%s" % (Back.RED, data, Back.RESET)
+                    if self.failure.col_num == num
+                    else "'%s'" % data
+                    for num, data in enumerate(row)
+                ]
+            )
         else:
-            row_str = "'%s'" % '\', \''.join(row)
+            row_str = "'%s'" % "', '".join(row)
 
-        return "%srow[%s] [%s]%s" % (
-            worksheet_str,
-            self.row_num,
-            row_str,
-            tid_str)
+        return "%srow[%s] [%s]%s" % (worksheet_str, self.row_num, row_str, tid_str)

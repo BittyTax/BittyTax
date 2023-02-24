@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import sys
 import copy
+import sys
 
 from colorama import Fore, Style
 from tqdm import tqdm
 
 from .config import config
 from .record import TransactionRecord
+
 
 class TransactionHistory(object):
     def __init__(self, transaction_records, value_asset):
@@ -18,10 +19,12 @@ class TransactionHistory(object):
         if config.debug:
             print("%ssplit transaction records" % Fore.CYAN)
 
-        for tr in tqdm(transaction_records,
-                       unit='tr',
-                       desc="%ssplit transaction records%s" % (Fore.CYAN, Fore.GREEN),
-                       disable=bool(config.debug or not sys.stdout.isatty())):
+        for tr in tqdm(
+            transaction_records,
+            unit="tr",
+            desc="%ssplit transaction records%s" % (Fore.CYAN, Fore.GREEN),
+            disable=bool(config.debug or not sys.stdout.isatty()),
+        ):
             if config.debug:
                 print("%ssplit: TR %s" % (Fore.MAGENTA, tr))
 
@@ -100,23 +103,20 @@ class TransactionHistory(object):
     def get_all_values(self, tr):
         if tr.buy and tr.buy.acquisition and tr.buy.cost is None:
             if tr.sell:
-                (tr.buy.cost,
-                 tr.buy.cost_fixed) = self.which_asset_value(tr)
+                (tr.buy.cost, tr.buy.cost_fixed) = self.which_asset_value(tr)
             else:
-                (tr.buy.cost,
-                 tr.buy.cost_fixed) = self.value_asset.get_value(tr.buy.asset,
-                                                                 tr.buy.timestamp,
-                                                                 tr.buy.quantity)
+                (tr.buy.cost, tr.buy.cost_fixed) = self.value_asset.get_value(
+                    tr.buy.asset, tr.buy.timestamp, tr.buy.quantity
+                )
 
         if tr.sell and tr.sell.disposal and tr.sell.proceeds is None:
             if tr.buy:
                 tr.sell.proceeds = tr.buy.cost
                 tr.sell.proceeds_fixed = tr.buy.cost_fixed
             else:
-                (tr.sell.proceeds,
-                 tr.sell.proceeds_fixed) = self.value_asset.get_value(tr.sell.asset,
-                                                                      tr.sell.timestamp,
-                                                                      tr.sell.quantity)
+                (tr.sell.proceeds, tr.sell.proceeds_fixed) = self.value_asset.get_value(
+                    tr.sell.asset, tr.sell.timestamp, tr.sell.quantity
+                )
         if tr.fee and tr.fee.disposal and tr.fee.proceeds is None:
             if tr.fee.asset not in config.fiat_list:
                 if tr.buy and tr.buy.asset == tr.fee.asset:
@@ -125,46 +125,49 @@ class TransactionHistory(object):
                         tr.fee.proceeds = tr.fee.quantity * price
                         tr.fee.proceeds_fixed = tr.buy.cost_fixed
                     else:
-                        (tr.fee.proceeds,
-                         tr.fee.proceeds_fixed) = self.value_asset.get_value(tr.fee.asset,
-                                                                             tr.fee.timestamp,
-                                                                             tr.fee.quantity)
+                        (
+                            tr.fee.proceeds,
+                            tr.fee.proceeds_fixed,
+                        ) = self.value_asset.get_value(
+                            tr.fee.asset, tr.fee.timestamp, tr.fee.quantity
+                        )
                 elif tr.sell and tr.sell.asset == tr.fee.asset:
                     if tr.sell.proceeds and tr.sell.quantity:
                         price = tr.sell.proceeds / tr.sell.quantity
                         tr.fee.proceeds = tr.fee.quantity * price
                         tr.fee.proceeds_fixed = tr.sell.proceeds_fixed
                     else:
-                        (tr.fee.proceeds,
-                         tr.fee.proceeds_fixed) = self.value_asset.get_value(tr.fee.asset,
-                                                                             tr.fee.timestamp,
-                                                                             tr.fee.quantity)
+                        (
+                            tr.fee.proceeds,
+                            tr.fee.proceeds_fixed,
+                        ) = self.value_asset.get_value(
+                            tr.fee.asset, tr.fee.timestamp, tr.fee.quantity
+                        )
                 else:
                     # Must be a 3rd cryptoasset
-                    (tr.fee.proceeds,
-                     tr.fee.proceeds_fixed) = self.value_asset.get_value(tr.fee.asset,
-                                                                         tr.fee.timestamp,
-                                                                         tr.fee.quantity)
+                    (
+                        tr.fee.proceeds,
+                        tr.fee.proceeds_fixed,
+                    ) = self.value_asset.get_value(tr.fee.asset, tr.fee.timestamp, tr.fee.quantity)
             else:
                 # Fee paid in fiat
-                (tr.fee.proceeds,
-                 tr.fee.proceeds_fixed) = self.value_asset.get_value(tr.fee.asset,
-                                                                     tr.fee.timestamp,
-                                                                     tr.fee.quantity)
+                (tr.fee.proceeds, tr.fee.proceeds_fixed) = self.value_asset.get_value(
+                    tr.fee.asset, tr.fee.timestamp, tr.fee.quantity
+                )
 
     def which_asset_value(self, tr):
         if config.trade_asset_type == config.TRADE_ASSET_TYPE_BUY:
             if tr.buy.cost is None:
-                value, fixed = self.value_asset.get_value(tr.buy.asset,
-                                                          tr.buy.timestamp,
-                                                          tr.buy.quantity)
+                value, fixed = self.value_asset.get_value(
+                    tr.buy.asset, tr.buy.timestamp, tr.buy.quantity
+                )
             else:
                 value, fixed = tr.buy.cost, tr.buy.cost_fixed
         elif config.trade_asset_type == config.TRADE_ASSET_TYPE_SELL:
             if tr.sell.proceeds is None:
-                value, fixed = self.value_asset.get_value(tr.sell.asset,
-                                                          tr.sell.timestamp,
-                                                          tr.sell.quantity)
+                value, fixed = self.value_asset.get_value(
+                    tr.sell.asset, tr.sell.timestamp, tr.sell.quantity
+                )
             else:
                 value, fixed = tr.sell.proceeds, tr.sell.proceeds_fixed
         else:
@@ -177,20 +180,21 @@ class TransactionHistory(object):
 
             if pos_sell_asset <= pos_buy_asset:
                 if tr.sell.proceeds is None:
-                    value, fixed = self.value_asset.get_value(tr.sell.asset,
-                                                              tr.sell.timestamp,
-                                                              tr.sell.quantity)
+                    value, fixed = self.value_asset.get_value(
+                        tr.sell.asset, tr.sell.timestamp, tr.sell.quantity
+                    )
                 else:
                     value, fixed = tr.sell.proceeds, tr.sell.proceeds_fixed
             else:
                 if tr.buy.cost is None:
-                    value, fixed = self.value_asset.get_value(tr.buy.asset,
-                                                              tr.buy.timestamp,
-                                                              tr.buy.quantity)
+                    value, fixed = self.value_asset.get_value(
+                        tr.buy.asset, tr.buy.timestamp, tr.buy.quantity
+                    )
                 else:
                     value, fixed = tr.buy.cost, tr.buy.cost_fixed
 
         return value, fixed
+
 
 class TransactionBase(object):  # pylint: disable=too-many-instance-attributes
     def __init__(self, t_type, asset, quantity):
@@ -218,47 +222,49 @@ class TransactionBase(object):  # pylint: disable=too-many-instance-attributes
 
     def _format_quantity(self):
         if self.quantity is None:
-            return ''
-        return '{:0,f}'.format(self.quantity.normalize())
+            return ""
+        return "{:0,f}".format(self.quantity.normalize())
 
     def _format_asset(self):
         if sys.version_info[0] < 3:
-            return self.asset.decode('utf8')
+            return self.asset.decode("utf8")
         return self.asset
 
     def _format_wallet(self):
         if sys.version_info[0] < 3:
-            return self.wallet.decode('utf8')
+            return self.wallet.decode("utf8")
         return self.wallet
 
     def _format_note(self):
         if self.note:
             if sys.version_info[0] < 3:
-                return "'%s' " % self.note.decode('utf8')
+                return "'%s' " % self.note.decode("utf8")
             return "'%s' " % self.note
-        return ''
+        return ""
 
     def _format_pooled(self, bold=False):
         if self.pooled:
             return " %s(%s)%s" % (
-                Style.BRIGHT if bold else '',
+                Style.BRIGHT if bold else "",
                 len(self.pooled),
-                Style.NORMAL if bold else '')
-        return ''
+                Style.NORMAL if bold else "",
+            )
+        return ""
 
     def _format_fee(self):
         if self.fee_value is not None:
             return " + fee=%s%s %s" % (
-                '' if self.fee_fixed else '~',
-                config.sym() + '{:0,.2f}'.format(self.fee_value),
-                config.ccy)
+                "" if self.fee_fixed else "~",
+                config.sym() + "{:0,.2f}".format(self.fee_value),
+                config.ccy,
+            )
 
-        return ''
+        return ""
 
     def _format_timestamp(self):
         if self.timestamp.microsecond:
-            return self.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f %Z')
-        return self.timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
+            return self.timestamp.strftime("%Y-%m-%dT%H:%M:%S.%f %Z")
+        return self.timestamp.strftime("%Y-%m-%dT%H:%M:%S %Z")
 
     def __eq__(self, other):
         return (self.asset, self.timestamp) == (other.asset, other.timestamp)
@@ -274,12 +280,13 @@ class TransactionBase(object):  # pylint: disable=too-many-instance-attributes
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.__dict__.items():
-            if k == 't_record':
+            if k == "t_record":
                 # Keep reference to the transaction record
                 setattr(result, k, v)
             else:
                 setattr(result, k, copy.deepcopy(v, memo))
         return result
+
 
 class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
     TYPE_DEPOSIT = TransactionRecord.TYPE_DEPOSIT
@@ -292,8 +299,16 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
     TYPE_AIRDROP = TransactionRecord.TYPE_AIRDROP
     TYPE_TRADE = TransactionRecord.TYPE_TRADE
 
-    ACQUISITION_TYPES = {TYPE_MINING, TYPE_STAKING, TYPE_INTEREST, TYPE_DIVIDEND,
-                         TYPE_INCOME, TYPE_GIFT_RECEIVED, TYPE_AIRDROP, TYPE_TRADE}
+    ACQUISITION_TYPES = {
+        TYPE_MINING,
+        TYPE_STAKING,
+        TYPE_INTEREST,
+        TYPE_DIVIDEND,
+        TYPE_INCOME,
+        TYPE_GIFT_RECEIVED,
+        TYPE_AIRDROP,
+        TYPE_TRADE,
+    }
 
     def __init__(self, t_type, buy_quantity, buy_asset, buy_value):
         super(Buy, self).__init__(t_type, buy_asset, buy_quantity)
@@ -364,27 +379,30 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
     def _format_cost(self):
         if self.cost is not None:
             return " (%s%s %s)" % (
-                '=' if self.cost_fixed else '~',
-                config.sym() + '{:0,.2f}'.format(self.cost),
-                config.ccy)
-        return ''
+                "=" if self.cost_fixed else "~",
+                config.sym() + "{:0,.2f}".format(self.cost),
+                config.ccy,
+            )
+        return ""
 
     def __str__(self, pooled_bold=False, quantity_bold=False):
         return "%s%s %s%s %s %s%s%s%s '%s' %s %s[TID:%s]%s" % (
             type(self).__name__.upper(),
-            '*' if not self.acquisition else '',
+            "*" if not self.acquisition else "",
             self.t_type,
-            Style.BRIGHT if quantity_bold else '',
+            Style.BRIGHT if quantity_bold else "",
             self._format_quantity(),
             self._format_asset(),
-            Style.NORMAL if quantity_bold else '',
+            Style.NORMAL if quantity_bold else "",
             self._format_cost(),
             self._format_fee(),
             self._format_wallet(),
             self._format_timestamp(),
             self._format_note(),
             self._format_tid(),
-            self._format_pooled(pooled_bold))
+            self._format_pooled(pooled_bold),
+        )
+
 
 class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
     TYPE_WITHDRAWAL = TransactionRecord.TYPE_WITHDRAWAL
@@ -395,8 +413,14 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
     TYPE_LOST = TransactionRecord.TYPE_LOST
     TYPE_TRADE = TransactionRecord.TYPE_TRADE
 
-    DISPOSAL_TYPES = {TYPE_SPEND, TYPE_GIFT_SENT, TYPE_GIFT_SPOUSE, TYPE_CHARITY_SENT,
-                      TYPE_LOST, TYPE_TRADE}
+    DISPOSAL_TYPES = {
+        TYPE_SPEND,
+        TYPE_GIFT_SENT,
+        TYPE_GIFT_SPOUSE,
+        TYPE_CHARITY_SENT,
+        TYPE_LOST,
+        TYPE_TRADE,
+    }
 
     def __init__(self, t_type, sell_quantity, sell_asset, sell_value):
         super(Sell, self).__init__(t_type, sell_asset, sell_quantity)
@@ -467,24 +491,26 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
     def _format_proceeds(self):
         if self.proceeds is not None:
             return " (%s%s %s)" % (
-                '=' if self.proceeds_fixed else '~',
-                config.sym() + '{:0,.2f}'.format(self.proceeds),
-                config.ccy)
-        return ''
+                "=" if self.proceeds_fixed else "~",
+                config.sym() + "{:0,.2f}".format(self.proceeds),
+                config.ccy,
+            )
+        return ""
 
     def __str__(self, pooled_bold=False, quantity_bold=False):
         return "%s%s %s%s %s %s%s%s%s '%s' %s %s[TID:%s]%s" % (
             type(self).__name__.upper(),
-            '*' if not self.disposal else '',
+            "*" if not self.disposal else "",
             self.t_type,
-            Style.BRIGHT if quantity_bold else '',
+            Style.BRIGHT if quantity_bold else "",
             self._format_quantity(),
             self._format_asset(),
-            Style.NORMAL if quantity_bold else '',
+            Style.NORMAL if quantity_bold else "",
             self._format_proceeds(),
             self._format_fee(),
             self._format_wallet(),
             self._format_timestamp(),
             self._format_note(),
             self._format_tid(),
-            self._format_pooled(pooled_bold))
+            self._format_pooled(pooled_bold),
+        )

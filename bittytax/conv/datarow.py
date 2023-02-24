@@ -5,12 +5,13 @@ import datetime
 
 from colorama import Back
 
-from .parsers import *
-from .mergers import *
 from ..config import config
 from .exceptions import DataRowError
+from .mergers import *
+from .parsers import *
 
 DEFAULT_TIMESTAMP = datetime.datetime(datetime.MINYEAR, 1, 1, tzinfo=config.TZ_UTC)
+
 
 class DataRow(object):
     def __init__(self, line_num, row, in_header):
@@ -40,8 +41,16 @@ class DataRow(object):
 
     def __str__(self):
         if self.failure is not None:
-            return '[' + ', '.join(["%s'%s'%s" % (Back.RED, data, Back.RESET)
-                                    if self.failure.col_num == num
-                                    else "'%s'" % data
-                                    for num, data in enumerate(self.row)]) + ']'
-        return '[' + "'%s'" % '\', \''.join(self.row) + ']'
+            return (
+                "["
+                + ", ".join(
+                    [
+                        "%s'%s'%s" % (Back.RED, data, Back.RESET)
+                        if self.failure.col_num == num
+                        else "'%s'" % data
+                        for num, data in enumerate(self.row)
+                    ]
+                )
+                + "]"
+            )
+        return "[" + "'%s'" % "', '".join(self.row) + "]"

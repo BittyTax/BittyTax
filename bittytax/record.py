@@ -5,39 +5,42 @@ import sys
 
 from .config import config
 
+
 # pylint: disable=too-few-public-methods, too-many-instance-attributes
 class TransactionRecord(object):
-    TYPE_DEPOSIT = 'Deposit'
-    TYPE_MINING = 'Mining'
-    TYPE_STAKING = 'Staking'
-    TYPE_INTEREST = 'Interest'
-    TYPE_DIVIDEND = 'Dividend'
-    TYPE_INCOME = 'Income'
-    TYPE_GIFT_RECEIVED = 'Gift-Received'
-    TYPE_AIRDROP = 'Airdrop'
-    TYPE_WITHDRAWAL = 'Withdrawal'
-    TYPE_SPEND = 'Spend'
-    TYPE_GIFT_SENT = 'Gift-Sent'
-    TYPE_GIFT_SPOUSE = 'Gift-Spouse'
-    TYPE_CHARITY_SENT = 'Charity-Sent'
-    TYPE_LOST = 'Lost'
-    TYPE_TRADE = 'Trade'
+    TYPE_DEPOSIT = "Deposit"
+    TYPE_MINING = "Mining"
+    TYPE_STAKING = "Staking"
+    TYPE_INTEREST = "Interest"
+    TYPE_DIVIDEND = "Dividend"
+    TYPE_INCOME = "Income"
+    TYPE_GIFT_RECEIVED = "Gift-Received"
+    TYPE_AIRDROP = "Airdrop"
+    TYPE_WITHDRAWAL = "Withdrawal"
+    TYPE_SPEND = "Spend"
+    TYPE_GIFT_SENT = "Gift-Sent"
+    TYPE_GIFT_SPOUSE = "Gift-Spouse"
+    TYPE_CHARITY_SENT = "Charity-Sent"
+    TYPE_LOST = "Lost"
+    TYPE_TRADE = "Trade"
 
-    ALL_TYPES = (TYPE_DEPOSIT,
-                 TYPE_MINING,
-                 TYPE_STAKING,
-                 TYPE_INCOME,
-                 TYPE_INTEREST,
-                 TYPE_DIVIDEND,
-                 TYPE_GIFT_RECEIVED,
-                 TYPE_AIRDROP,
-                 TYPE_WITHDRAWAL,
-                 TYPE_SPEND,
-                 TYPE_GIFT_SENT,
-                 TYPE_GIFT_SPOUSE,
-                 TYPE_CHARITY_SENT,
-                 TYPE_LOST,
-                 TYPE_TRADE)
+    ALL_TYPES = (
+        TYPE_DEPOSIT,
+        TYPE_MINING,
+        TYPE_STAKING,
+        TYPE_INCOME,
+        TYPE_INTEREST,
+        TYPE_DIVIDEND,
+        TYPE_GIFT_RECEIVED,
+        TYPE_AIRDROP,
+        TYPE_WITHDRAWAL,
+        TYPE_SPEND,
+        TYPE_GIFT_SENT,
+        TYPE_GIFT_SPOUSE,
+        TYPE_CHARITY_SENT,
+        TYPE_LOST,
+        TYPE_TRADE,
+    )
 
     cnt = 0
 
@@ -81,47 +84,46 @@ class TransactionRecord(object):
             return " + fee=%s %s%s" % (
                 self._format_quantity(self.fee.quantity),
                 self._format_str(self.fee.asset),
-                self._format_value(self.fee.proceeds))
-        return ''
+                self._format_value(self.fee.proceeds),
+            )
+        return ""
 
     @staticmethod
     def _format_quantity(quantity):
         if quantity is None:
-            return ''
-        return '{:0,f}'.format(quantity.normalize())
+            return ""
+        return "{:0,f}".format(quantity.normalize())
 
     @staticmethod
     def _format_value(value):
         if value is not None:
-            return " (%s %s)" % (
-                config.sym() + '{:0,.2f}'.format(value),
-                config.ccy)
-        return ''
+            return " (%s %s)" % (config.sym() + "{:0,.2f}".format(value), config.ccy)
+        return ""
 
     @staticmethod
     def _format_note(note):
         if note:
             if sys.version_info[0] < 3:
-                return "'%s' " % note.decode('utf8')
+                return "'%s' " % note.decode("utf8")
             return "'%s' " % note
-        return ''
+        return ""
 
     @staticmethod
     def _format_timestamp(timestamp):
         if timestamp.microsecond:
-            return timestamp.strftime('%Y-%m-%dT%H:%M:%S.%f %Z')
-        return timestamp.strftime('%Y-%m-%dT%H:%M:%S %Z')
+            return timestamp.strftime("%Y-%m-%dT%H:%M:%S.%f %Z")
+        return timestamp.strftime("%Y-%m-%dT%H:%M:%S %Z")
 
     @staticmethod
     def _format_decimal(decimal):
         if decimal is None:
-            return ''
-        return '{:0f}'.format(decimal.normalize())
+            return ""
+        return "{:0f}".format(decimal.normalize())
 
     @staticmethod
     def _format_str(string):
         if sys.version_info[0] < 3:
-            return string.decode('utf8')
+            return string.decode("utf8")
         return string
 
     def __eq__(self, other):
@@ -147,7 +149,8 @@ class TransactionRecord(object):
                 self._format_str(self.wallet),
                 self._format_timestamp(self.timestamp),
                 self._format_note(self.note),
-                self.tid[0])
+                self.tid[0],
+            )
         if self.buy:
             return "%s %s %s%s%s '%s' %s %s[TID:%s]" % (
                 self.t_type,
@@ -158,7 +161,8 @@ class TransactionRecord(object):
                 self._format_str(self.wallet),
                 self._format_timestamp(self.timestamp),
                 self._format_note(self.note),
-                self.tid[0])
+                self.tid[0],
+            )
         if self.sell:
             return "%s %s %s%s%s '%s' %s %s[TID:%s]" % (
                 self.t_type,
@@ -169,50 +173,57 @@ class TransactionRecord(object):
                 self._format_str(self.wallet),
                 self._format_timestamp(self.timestamp),
                 self._format_note(self.note),
-                self.tid[0])
+                self.tid[0],
+            )
         return []
 
     def to_csv(self):
         if self.buy and self.sell:
-            return [self.t_type,
-                    self._format_decimal(self.buy.quantity),
-                    self._format_str(self.buy.asset),
-                    self._format_decimal(self.buy.cost),
-                    self._format_decimal(self.sell.quantity),
-                    self._format_str(self.sell.asset),
-                    self._format_decimal(self.sell.proceeds),
-                    self._format_decimal(self.fee.quantity) if self.fee else '',
-                    self._format_str(self.fee.asset) if self.fee else '',
-                    self._format_decimal(self.fee.proceeds) if self.fee else '',
-                    self._format_str(self.wallet),
-                    self._format_timestamp(self.timestamp),
-                    self._format_str(self.note)]
+            return [
+                self.t_type,
+                self._format_decimal(self.buy.quantity),
+                self._format_str(self.buy.asset),
+                self._format_decimal(self.buy.cost),
+                self._format_decimal(self.sell.quantity),
+                self._format_str(self.sell.asset),
+                self._format_decimal(self.sell.proceeds),
+                self._format_decimal(self.fee.quantity) if self.fee else "",
+                self._format_str(self.fee.asset) if self.fee else "",
+                self._format_decimal(self.fee.proceeds) if self.fee else "",
+                self._format_str(self.wallet),
+                self._format_timestamp(self.timestamp),
+                self._format_str(self.note),
+            ]
         if self.buy:
-            return [self.t_type,
-                    self._format_decimal(self.buy.quantity),
-                    self._format_str(self.buy.asset),
-                    self._format_decimal(self.buy.cost),
-                    '',
-                    '',
-                    '',
-                    self._format_decimal(self.fee.quantity) if self.fee else '',
-                    self._format_str(self.fee.asset) if self.fee else '',
-                    self._format_decimal(self.fee.proceeds) if self.fee else '',
-                    self._format_str(self.wallet),
-                    self._format_timestamp(self.timestamp),
-                    self._format_str(self.note)]
+            return [
+                self.t_type,
+                self._format_decimal(self.buy.quantity),
+                self._format_str(self.buy.asset),
+                self._format_decimal(self.buy.cost),
+                "",
+                "",
+                "",
+                self._format_decimal(self.fee.quantity) if self.fee else "",
+                self._format_str(self.fee.asset) if self.fee else "",
+                self._format_decimal(self.fee.proceeds) if self.fee else "",
+                self._format_str(self.wallet),
+                self._format_timestamp(self.timestamp),
+                self._format_str(self.note),
+            ]
         if self.sell:
-            return [self.t_type,
-                    '',
-                    '',
-                    '',
-                    self._format_decimal(self.sell.quantity),
-                    self._format_str(self.sell.asset),
-                    self._format_decimal(self.sell.proceeds),
-                    self._format_decimal(self.fee.quantity) if self.fee else '',
-                    self._format_str(self.fee.asset) if self.fee else '',
-                    self._format_decimal(self.fee.proceeds) if self.fee else '',
-                    self._format_str(self.wallet),
-                    self._format_timestamp(self.timestamp),
-                    self._format_str(self.note)]
+            return [
+                self.t_type,
+                "",
+                "",
+                "",
+                self._format_decimal(self.sell.quantity),
+                self._format_str(self.sell.asset),
+                self._format_decimal(self.sell.proceeds),
+                self._format_decimal(self.fee.quantity) if self.fee else "",
+                self._format_str(self.fee.asset) if self.fee else "",
+                self._format_decimal(self.fee.proceeds) if self.fee else "",
+                self._format_str(self.wallet),
+                self._format_timestamp(self.timestamp),
+                self._format_str(self.note),
+            ]
         return []
