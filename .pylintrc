@@ -94,8 +94,6 @@ disable=raw-checker-failed,
         missing-module-docstring,
         missing-class-docstring,
         missing-function-docstring,
-        wildcard-import,
-        unused-wildcard-import,
         useless-object-inheritance,  # Not 2.7 compatible
         consider-using-f-string,  # Not 2.7 compatible
         consider-using-dict-items,  # Not 2.7 compatible

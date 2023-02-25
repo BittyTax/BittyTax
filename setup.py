@@ -3,7 +3,7 @@ import re
 
 from setuptools import setup
 
-VERSION_FILE = "bittytax/version.py"
+VERSION_FILE = "src/bittytax/version.py"
 GITHUB_REPO = "https://github.com/BittyTax/BittyTax"
 
 
@@ -63,6 +63,7 @@ setup(
         "bittytax.templates",
     ],
     package_data={"bittytax": ["templates/*.html"]},
+    package_dir={"bittytax": "src/bittytax"},
     install_requires=[
         "python-dateutil>=2.7.0",
         "requests",

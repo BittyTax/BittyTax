@@ -136,8 +136,6 @@ disable=print-statement,
         comprehension-escape,
         missing-docstring,
         superfluous-parens,  # Not 3.x compatible
-        unused-wildcard-import,
-        wildcard-import,
         duplicate-code,
         bad-continuation,  # Black compatibility
         ungrouped-imports,  # isort compatiblity
