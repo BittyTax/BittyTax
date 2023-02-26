@@ -43,7 +43,7 @@ jobs:
           brew install enchant
       - name: Install enchant (windows)
         if: startsWith(matrix.os, 'windows')
-      - uses: actions/checkout@v3
+        uses: actions/checkout@v3
         with:
             name: AbiWord/enchant
             path: ./enchant
@@ -54,13 +54,14 @@ jobs:
                 mingw-w64-x86_64-autotools
                 mingw-w64-x86_64-gcc
                 mingw-w64-x86_64-glib2
+      - name: Build enchant (windows)
         run: |
             ./enchant/bootstrap
             ./enchant/configure --enable-relocatable
             cd ./enchant
             make --jobs=`nproc`
             make check --jobs=`nproc`
-            make distcheck --jobs=`nproc`l
+            make distcheck --jobs=`nproc`
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
