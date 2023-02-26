@@ -35,6 +35,8 @@ QUOTE_ASSETS = [
     "IDRT",
     "NGN",
     "PAX",
+    "PLN",
+    "RON",
     "RUB",
     "TRX",
     "TRY",
@@ -326,7 +328,7 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                 buy_asset=row_dict["Coin"],
                 wallet=WALLET,
             )
-        elif row_dict["Operation"] == "Small assets exchange BNB":
+        elif row_dict["Operation"] in ("Small assets exchange BNB", "Small Assets Exchange BNB"):
             _make_trade(row_dict["Operation"], tx_times[row_dict["UTC_Time"]], "BNB")
         elif row_dict["Operation"] == "ETH 2.0 Staking":
             _make_trade(row_dict["Operation"], tx_times[row_dict["UTC_Time"]])
@@ -355,7 +357,12 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
             "Buy",
             "Sell",
             "Fee",
+            "Transaction Buy",
+            "Transaction Spend",
+            "Transaction Sold",
+            "Transaction Revenue",
             "Large OTC trading",
+            "Binance Convert",
         ):
             # Skip duplicate operations
             continue
