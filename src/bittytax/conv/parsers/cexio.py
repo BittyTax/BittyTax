@@ -2,17 +2,45 @@
 # (c) Nano Nano Ltd 2023
 
 import re
+import sys
 from decimal import ROUND_DOWN, Decimal
+
+from colorama import Fore
 
 from ...config import config
 from ..dataparser import DataParser
-from ..exceptions import UnexpectedContentError, UnexpectedTypeError
+from ..exceptions import DataRowError, UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
 WALLET = "CEX.IO"
 
 
-def parse_cexio(data_row, parser, **_kwargs):
+def parse_cexio(data_rows, parser, **_kwargs):
+    tx_times = {}
+
+    for dr in data_rows:
+        if dr.row_dict["DateUTC"] in tx_times:
+            tx_times[dr.row_dict["DateUTC"]].append(dr)
+        else:
+            tx_times[dr.row_dict["DateUTC"]] = [dr]
+
+    for data_row in data_rows:
+        if config.debug:
+            sys.stderr.write(
+                "%sconv: row[%s] %s\n"
+                % (Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row)
+            )
+
+        if data_row.parsed:
+            continue
+
+        try:
+            _parse_cexio_row(tx_times, parser, data_row)
+        except DataRowError as e:
+            data_row.failure = e
+
+
+def _parse_cexio_row(tx_times, parser, data_row):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["DateUTC"])
 
@@ -93,6 +121,8 @@ def parse_cexio(data_row, parser, **_kwargs):
             wallet=WALLET,
             note=row_dict["Comment"],
         )
+    elif row_dict["Type"] in ("wallet_buy", "wallet_sell"):
+        _make_trade(tx_times[row_dict["DateUTC"]], data_row, parser)
     elif row_dict["Type"] in ("referral", "checksum", "costsNothing"):
         data_row.t_record = TransactionOutRecord(
             TransactionOutRecord.TYPE_GIFT_RECEIVED,
@@ -137,6 +167,34 @@ def _get_trade_info(comment, t_type):
     return None
 
 
+def _make_trade(tx_times, data_row, parser):
+    buy_rows = [dr for dr in tx_times if dr.row_dict["Type"] == "wallet_buy"]
+    sell_rows = [dr for dr in tx_times if dr.row_dict["Type"] == "wallet_sell"]
+
+    if len(buy_rows) == 1 and len(sell_rows) == 1:
+        if data_row == buy_rows[0]:
+            sell_rows[0].timestamp = data_row.timestamp
+            sell_rows[0].parsed = True
+        else:
+            buy_rows[0].timestamp = data_row.timestamp
+            buy_rows[0].parsed = True
+
+        # Assumes there are no trading fees
+        data_row.t_record = TransactionOutRecord(
+            TransactionOutRecord.TYPE_TRADE,
+            data_row.timestamp,
+            buy_quantity=buy_rows[0].row_dict["Amount"],
+            buy_asset=buy_rows[0].row_dict["Symbol"],
+            sell_quantity=abs(Decimal(sell_rows[0].row_dict["Amount"])),
+            sell_asset=sell_rows[0].row_dict["Symbol"],
+            wallet=WALLET,
+        )
+    else:
+        data_row.failure = UnexpectedContentError(
+            parser.in_header.index("Type"), "Type", data_row.row_dict["Type"]
+        )
+
+
 DataParser(
     DataParser.TYPE_EXCHANGE,
     "CEX.IO",
@@ -152,5 +210,5 @@ DataParser(
         "Comment",
     ],
     worksheet_name="CEX.IO",
-    row_handler=parse_cexio,
+    all_handler=parse_cexio,
 )
