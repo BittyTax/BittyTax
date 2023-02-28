@@ -4,7 +4,7 @@
 
 import requests
 
-from bittytax.conv.parsers.kraken import split_trading_pair
+from bittytax.conv.parsers.kraken import _split_trading_pair
 
 
 def get_alt_assets():
@@ -37,7 +37,7 @@ def get_quote_assets():
                     quote_assets.append(quote)
 
                 # Validate split method
-                bt_base, bt_quote = split_trading_pair(pair)
+                bt_base, bt_quote = _split_trading_pair(pair)
 
                 wsname = response.json()["result"][pair]["wsname"]
                 base = response.json()["result"][pair]["base"]

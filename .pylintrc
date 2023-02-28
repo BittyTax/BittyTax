@@ -83,17 +83,10 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
-disable=raw-checker-failed,
-        bad-inline-option,
-        locally-disabled,
-        file-ignored,
-        suppressed-message,
-        useless-suppression,
-        deprecated-pragma,
-        use-symbolic-message-instead,
-        missing-module-docstring,
+disable=missing-module-docstring,
         missing-class-docstring,
         missing-function-docstring,
+        duplicate-code,
         useless-object-inheritance,  # Not 2.7 compatible
         consider-using-f-string,  # Not 2.7 compatible
         consider-using-dict-items,  # Not 2.7 compatible
@@ -101,9 +94,6 @@ disable=raw-checker-failed,
         raise-missing-from,  # Not 2.7 compatible
         redundant-u-string-prefix,  # Not 2.7 compatible
         unspecified-encoding,  # Not 2.7 compatible
-        duplicate-code,
-        unnecessary-dunder-call,
-        invalid-name,  # Workaround (https://github.com/PyCQA/pylint/issues/8319)
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -167,7 +157,7 @@ max-spelling-suggestions=4
 
 # Spelling dictionary name. Available dictionaries: none. To make it work,
 # install the 'python-enchant' package.
-spelling-dict=en_GB
+spelling-dict=
 
 # List of comma separated words that should be considered directives if they
 # appear and the beginning of a comment and should not be checked.

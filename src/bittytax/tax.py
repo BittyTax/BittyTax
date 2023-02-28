@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
+# pylint: disable=bad-option-value, unnecessary-dunder-call
 
 import copy
 import sys
