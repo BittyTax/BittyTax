@@ -41,13 +41,21 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: |
           brew install enchant
-      - name: Install dependencies
+      - name: Install BittyTax
         run: |
           python -m pip install --upgrade pip
-          pip install pylint pyenchant flake8
-      - name: Install BittyTax
-        run: pip install -e .
+          pip install -e .
       - name: Pylint
-        run: pylint ${{matrix.pylint-rcfile}} $(git ls-files '*.py')
+        run: |
+          pip install pylint
+          pylint ${{matrix.pylint-rcfile}} $(git ls-files '*.py')
       - name: Flake8
-        run: flake8
+        run: |
+          pip install flake8
+          flake8 .
+      - name: isort/Black
+        if: ${{ matrix.python-version > 2.7 }}
+        run: |
+          pip install isort black
+          isort --check $(git ls-files '*.py')
+          black --check $(git ls-files '*.py')

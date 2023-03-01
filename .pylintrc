@@ -56,7 +56,7 @@ persistent=yes
 py-version=3.6
 
 # Discover python modules and packages in the file system subtree.
-recursive=no
+recursive=yes
 
 # When enabled, pylint would attempt to guess common misconfiguration and emit
 # user-friendly hints instead of false-positive error messages.
@@ -94,6 +94,7 @@ disable=missing-module-docstring,
         raise-missing-from,  # Not 2.7 compatible
         redundant-u-string-prefix,  # Not 2.7 compatible
         unspecified-encoding,  # Not 2.7 compatible
+        invalid-name,  # Workaround (https://github.com/PyCQA/pylint/issues/8319)
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
