@@ -1,5 +1,7 @@
 name: CI 
 on: [push, pull_request]
+env:
+  SPELL_CHECK: 'false'
 jobs:
   build:
     strategy:
@@ -37,15 +39,25 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get -y install --no-install-recommends ${{matrix.lib}} libenchant-2-dev aspell-en libaspell-dev
+        env:
+          SPELL_CHECK: 'true'
       - name: Install enchant (macOS)
         if: startsWith(matrix.os, 'macos')
         run: |
           brew install enchant
+        env:
+          SPELL_CHECK: 'true'
       - name: Install BittyTax
         run: |
           python -m pip install --upgrade pip
           pip install -e .
+      - name: Pylint (with spelling check)
+        if: ${{ env.SPELL_CHECK == 'true' }}
+        run: |
+          pip install pylint pyenchant
+          pylint ${{matrix.pylint-rcfile}} --spelling-dict=en_GB $(git ls-files '*.py')
       - name: Pylint
+        if: ${{ env.SPELL_CHECK == 'false' }}
         run: |
           pip install pylint
           pylint ${{matrix.pylint-rcfile}} $(git ls-files '*.py')
