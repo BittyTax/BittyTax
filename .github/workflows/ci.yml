@@ -54,7 +54,7 @@ jobs:
           pip install flake8
           flake8 .
       - name: isort/Black
-        if: ${{ matrix.python-version > 2.7 }}
+        if: ${{ matrix.python-version > 3.6 }}
         run: |
           pip install isort black
           isort --check $(git ls-files '*.py')
