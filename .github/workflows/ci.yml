@@ -43,3 +43,39 @@ jobs:
         run: |
           pip install flake8
           flake8 .
+  spell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install BittyTax
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+      - name: Install libenchant packages
+        run: |
+          sudo apt-get -y install --no-install-recommends libenchant-2-dev aspell-en libaspell-dev
+      - name: Pylint (with spelling check)
+        run: |
+          pip install pylint pyenchant
+          pylint --spelling-dict=en_GB $(git ls-files '*.py')
+  black:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{matrix.python-version}}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{matrix.python-version}}
+      - name: isort/Black
+        run: |
+          pip install isort black
+          isort --check $(git ls-files '*.py')
+          black --check $(git ls-files '*.py')
