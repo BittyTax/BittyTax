@@ -1,6 +1,5 @@
 include LICENSE
 include README.md
 include CHANGELOG.md
-include data/example.csv
-include bittytax/config/bittytax.conf
-include bittytax/templates/*.html
+include src/bittytax/config/bittytax.conf
+include src/bittytax/templates/*.html

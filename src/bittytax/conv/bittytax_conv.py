@@ -68,8 +68,8 @@ def main():
     )
     parser.add_argument(
         "--format",
-        choices=[config.FORMAT_EXCEL, config.FORMAT_CSV, config.FORMAT_RECAP],
-        default=config.FORMAT_EXCEL,
+        choices=[str(config.FORMAT_EXCEL), str(config.FORMAT_CSV), str(config.FORMAT_RECAP)],
+        default=str(config.FORMAT_EXCEL),
         type=str.upper,
         help="specify the output format, default: EXCEL",
     )
