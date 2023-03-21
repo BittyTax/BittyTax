@@ -184,7 +184,7 @@ def _parse_kraken_ledgers_row(ref_ids, data_rows, parser, data_row, row_index):
             wallet=WALLET,
         )
     elif row_dict["type"] == "transfer":
-        if len(_get_ref_ids(ref_ids, row_dict["refid"], row_dict["type"])) > 1:
+        if len(_get_ref_ids(ref_ids, row_dict["refid"], ("transfer"))) > 1:
             # Multiple transfer rows is a rebase? Not currently supported
             raise UnexpectedContentError(
                 parser.in_header.index("refid"), "refid", row_dict["refid"]
@@ -221,14 +221,16 @@ def _parse_kraken_ledgers_row(ref_ids, data_rows, parser, data_row, row_index):
             raise UnexpectedTypeError(
                 parser.in_header.index("subtype"), "subtype", row_dict["subtype"]
             )
-    elif row_dict["type"] in ("trade", "spend", "receive"):
-        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], row_dict["type"]))
+    elif row_dict["type"] == "trade":
+        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("trade")))
+    elif row_dict["type"] in ("spend", "receive"):
+        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("spend", "receive")))
     else:
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
 
 def _get_ref_ids(ref_ids, ref_id, k_type):
-    return [dr for dr in ref_ids[ref_id] if dr.row_dict["type"] == k_type]
+    return [dr for dr in ref_ids[ref_id] if dr.row_dict["type"] in k_type]
 
 
 def _make_trade(ref_ids):
