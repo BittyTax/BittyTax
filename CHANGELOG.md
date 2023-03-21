@@ -75,6 +75,7 @@
 - Conversion tool: added parser for CEX.IO exchange.
 - Setup.py fixed for Python 3.11.
 - Binance parser: added re-named operations for Statements. ([#292](https://github.com/BittyTax/BittyTax/issues/292))
+- OKX parser: added new export formats. ([#293](https://github.com/BittyTax/BittyTax/issues/293))
 ### Changed
 - Binance parser: performance improvements for large data sets.
 - Coinbase Pro parser: performance improvements for large data sets.

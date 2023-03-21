@@ -47,7 +47,7 @@ from . import (
     mercatox,
     nault,
     nexo,
-    okex,
+    okx,
     poloniex,
     polygonscan,
     qtrade,
