@@ -11,6 +11,23 @@ from ..out_record import TransactionOutRecord
 WALLET = "Exodus"
 
 
+def parse_exodus_stake(data_row, parser, **_kwargs):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
+
+    if row_dict["Type"] == "Staking":
+        data_row.t_record = TransactionOutRecord(
+            TransactionOutRecord.TYPE_STAKING,
+            data_row.timestamp,
+            buy_quantity=row_dict["Buy"],
+            buy_asset=row_dict["Cur."],
+            wallet=WALLET,
+            note=row_dict["Comment"],
+        )
+    else:
+        raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
+
+
 def parse_exodus_v2(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["DATE"], fuzzy=True)
@@ -90,6 +107,15 @@ def parse_exodus_v1(data_row, parser, **_kwargs):
         )
     else:
         raise UnexpectedTypeError(parser.in_header.index("TYPE"), "TYPE", row_dict["TYPE"])
+
+
+DataParser(
+    DataParser.TYPE_WALLET,
+    "Exodus",
+    ["Type", "Buy", "Cur.", "Exchange", "Group", "Comment", "Date"],
+    worksheet_name="Exodus",
+    row_handler=parse_exodus_stake,
+)
 
 
 DataParser(
