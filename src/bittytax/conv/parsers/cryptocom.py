@@ -197,7 +197,7 @@ def parse_crypto_com(data_row, parser, **_kwargs):
         return
     elif row_dict["Transaction Kind"] == "":
         # Could be a fiat transaction
-        if "Deposit" in row_dict[1]:
+        if "Deposit" in row_dict["Transaction Description"]:
             data_row.t_record = TransactionOutRecord(
                 TransactionOutRecord.TYPE_DEPOSIT,
                 data_row.timestamp,
@@ -205,7 +205,7 @@ def parse_crypto_com(data_row, parser, **_kwargs):
                 buy_asset=row_dict["Currency"],
                 wallet=WALLET,
             )
-        elif "Withdrawal" in row_dict[1]:
+        elif "Withdrawal" in row_dict["Transaction Description"]:
             data_row.t_record = TransactionOutRecord(
                 TransactionOutRecord.TYPE_WITHDRAWAL,
                 data_row.timestamp,
