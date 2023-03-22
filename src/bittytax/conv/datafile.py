@@ -46,7 +46,7 @@ class DataFile(object):
                 data_row for data_row in other.data_rows if data_row not in self.data_rows
             ]
         else:
-            if len([dr for dr in other.data_rows if dr in self.data_rows]) > 0:
+            if [dr for dr in other.data_rows if dr in self.data_rows]:
                 sys.stderr.write(
                     '%sWARNING%s Duplicate rows detected for "%s", '
                     "use the [--duplicates] option to remove them (use with care!)\n"
