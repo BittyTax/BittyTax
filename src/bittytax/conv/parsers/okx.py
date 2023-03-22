@@ -15,15 +15,18 @@ from ..out_record import TransactionOutRecord
 WALLET = "OKX"
 TZ_INFOS = {"CST": dateutil.tz.gettz("Asia/Shanghai")}
 
+if sys.version_info[0] < 3:
+    BOM = "\xef\xbb\xbf"
+else:
+    BOM = u"\ufeff"
+
 
 def parse_okx_trades_v2(data_rows, parser, **_kwargs):
     ids = {}
 
     for dr in data_rows:
-        if dr.row_dict.get("\ufeffid"):
-            dr.row_dict["id"] = dr.row_dict["\ufeffid"]
-        elif dr.row_dict.get("\xef\xbb\xbfid"):  # Python 2.7 uses binary
-            dr.row_dict["id"] = dr.row_dict["\xef\xbb\xbfid"]
+        if dr.row_dict.get(BOM+"id"):
+            dr.row_dict["id"] = dr.row_dict[BOM+"id"]
 
         if dr.row_dict["id"] in ids:
             ids[dr.row_dict["id"]].append(dr)
@@ -170,7 +173,7 @@ DataParser(
     DataParser.TYPE_EXCHANGE,
     "OKX Trades",
     [
-        lambda h: h in ("id", "\ufeffid", h),
+        lambda h: h in ("id", BOM+"id", h),
         "Order id",
         "Time",
         "Trade Type",
@@ -202,7 +205,7 @@ DataParser(
     DataParser.TYPE_EXCHANGE,
     "OKX Funding",
     [
-        lambda h: h in ("id", "\ufeffid", h),
+        lambda h: h in ("id", BOM+"id", h),
         "Time",
         "Type",
         "Amount",
@@ -219,7 +222,7 @@ DataParser(
     DataParser.TYPE_EXCHANGE,
     "OKX Funding",
     [
-        lambda h: h in ("id", "\ufeffid", h),
+        lambda h: h in ("id", BOM+"id", h),
         "",
         "Time",
         "Type",
