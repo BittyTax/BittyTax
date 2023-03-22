@@ -70,7 +70,7 @@
 - Nexo parser: added new export format. ([#286](https://github.com/BittyTax/BittyTax/issues/286))
 - Etherscan parser: added new export formats. ([#290](https://github.com/BittyTax/BittyTax/issues/290))
 - Trezor Suite parser: added new export format. ([#282](https://github.com/BittyTax/BittyTax/issues/282))
-- Accounting tool: tax rates and allowance for 2023/24.
+- Accounting tool: tax rates and allowance for 2023/24 and 2024/25.
 - Exodus parser: added new export format. ([#200](https://github.com/BittyTax/BittyTax/issues/200))
 - Accointing parser: added new export format. ([#219](https://github.com/BittyTax/BittyTax/issues/219))
 - Conversion tool: added parser for Yoroi wallet.
