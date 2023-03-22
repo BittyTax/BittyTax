@@ -32,6 +32,7 @@
 - Binance parser: added missing operations for Statements. ([#283](https://github.com/BittyTax/BittyTax/issues/283))
 - Crypto.com parser: fix handling of fiat deposits/withdrawals.
 - Kraken parser: fix spend/receive transactions types. ([#296](https://github.com/BittyTax/BittyTax/issues/296))
+- Qt Wallet parser: check parser.args exists.
 ### Added
 - Conversion tool: generic parser added to support import from CryptoCredible tool.
 - Conversion tool: added parser for SnowTrace explorer.

@@ -21,7 +21,7 @@ def parse_qt_wallet(data_row, parser, **kwargs):
     amount, symbol = _get_amount(data_row.row[5])
 
     if not kwargs["cryptoasset"]:
-        if parser.args[0].group(1):
+        if parser.args and parser.args[0].group(1):
             symbol = parser.args[0].group(1)
         elif not symbol:
             raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet"))
