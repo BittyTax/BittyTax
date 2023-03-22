@@ -20,6 +20,11 @@ def parse_okx_trades_v2(data_rows, parser, **_kwargs):
     ids = {}
 
     for dr in data_rows:
+        if dr.row_dict.get("\ufeffid"):
+            dr.row_dict["id"] = dr.row_dict["\ufeffid"]
+        elif dr.row_dict.get("\xef\xbb\xbfid"):  # Python 2.7 uses binary
+            dr.row_dict["id"] = dr.row_dict["\xef\xbb\xbfid"]
+
         if dr.row_dict["id"] in ids:
             ids[dr.row_dict["id"]].append(dr)
         else:
@@ -165,7 +170,7 @@ DataParser(
     DataParser.TYPE_EXCHANGE,
     "OKX Trades",
     [
-        "id",
+        lambda h: h in ("id", "\ufeffid", h),
         "Order id",
         "Time",
         "Trade Type",
@@ -196,7 +201,34 @@ DataParser(
 DataParser(
     DataParser.TYPE_EXCHANGE,
     "OKX Funding",
-    ["id", "", "Time", "Type", "Amount", "Before Balance", "After Balance", "Fee", "Symbol"],
+    [
+        lambda h: h in ("id", "\ufeffid", h),
+        "Time",
+        "Type",
+        "Amount",
+        "Before Balance",
+        "After Balance",
+        "Fee",
+        "Symbol",
+    ],
+    worksheet_name="OKX F",
+    row_handler=parse_okx_funding,
+)
+
+DataParser(
+    DataParser.TYPE_EXCHANGE,
+    "OKX Funding",
+    [
+        lambda h: h in ("id", "\ufeffid", h),
+        "",
+        "Time",
+        "Type",
+        "Amount",
+        "Before Balance",
+        "After Balance",
+        "Fee",
+        "Symbol",
+    ],
     worksheet_name="OKX F",
     row_handler=parse_okx_funding,
 )
