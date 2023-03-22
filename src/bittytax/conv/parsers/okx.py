@@ -18,7 +18,7 @@ TZ_INFOS = {"CST": dateutil.tz.gettz("Asia/Shanghai")}
 if sys.version_info[0] < 3:
     BOM = "\xef\xbb\xbf"
 else:
-    BOM = "\ufeff"
+    BOM = u"\ufeff"
 
 
 def parse_okx_trades_v2(data_rows, parser, **_kwargs):
