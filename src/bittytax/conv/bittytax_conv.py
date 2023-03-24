@@ -87,6 +87,7 @@ def main():
 
     args = parser.parse_args()
     config.debug = args.debug
+    config.output = sys.stderr
     DataFile.remove_duplicates = args.duplicates
 
     if config.debug:
@@ -95,7 +96,7 @@ def main():
         sys.stderr.write(
             "%ssystem: %s, release: %s\n" % (Fore.GREEN, platform.system(), platform.release())
         )
-        config.output_config(stderr=True)
+        config.output_config()
 
     for filename in args.filename:
         pathnames = glob.glob(filename)

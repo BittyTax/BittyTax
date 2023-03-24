@@ -111,6 +111,7 @@
 - Kraken parser: use Ledgers export for trades.
 - Coinbase Pro parser: deprecated Fills parser.
 - Koinly parser: allow unsupported types.
+- Config: error and exit if config load fails.
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-

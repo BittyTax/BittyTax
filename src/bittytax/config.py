@@ -71,12 +71,14 @@ class Config(object):
         "data_source_select": {},
         "data_source_fiat": DATA_SOURCE_FIAT,
         "data_source_crypto": DATA_SOURCE_CRYPTO,
+        "usernames": [],
         "coinbase_zero_fees_are_gifts": False,
         "binance_multi_bnb_split_even": False,
     }
 
     def __init__(self):
         self.debug = False
+        self.output = sys.stdout
         self.start_of_year_month = 4
         self.start_of_year_day = 6
 
@@ -97,16 +99,22 @@ class Config(object):
                 os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG), "rb"
             ) as config_file:
                 self.config = yaml.safe_load(config_file)
-        except (IOError, yaml.scanner.ScannerError):
-            print(
-                "%sWARNING%s Config file cannot be loaded: %s"
+        except IOError:
+            sys.stderr.write(
+                "%sERROR%s Config file cannot be loaded: %s\n"
                 % (
-                    Back.YELLOW + Fore.BLACK,
-                    Back.RESET + Fore.YELLOW,
+                    Back.RED + Fore.BLACK,
+                    Back.RESET + Fore.RED,
                     os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG),
                 )
             )
-            self.config = {}
+            sys.exit(1)
+        except yaml.scanner.ScannerError as e:
+            sys.stderr.write(
+                "%sERROR%s Config file contains an error:\n%s\n"
+                % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED, e)
+            )
+            sys.exit(1)
 
         for name, default in self.DEFAULT_CONFIG.items():
             if name not in self.config:
@@ -116,36 +124,19 @@ class Config(object):
         self.asset_priority = self.config["fiat_list"] + self.config["crypto_list"]
 
     def __getattr__(self, name):
-        try:
-            return self.config[name]
-        except KeyError:
-            return getattr(self.args, name)
+        return self.config[name]
 
-    def output_config(self, stderr=False):
-        if not stderr:
-            print(
-                '%sconfig: "%s"'
-                % (
-                    Fore.GREEN,
-                    os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG),
-                )
+    def output_config(self):
+        self.output.write(
+            '%sconfig: "%s"\n'
+            % (
+                Fore.GREEN,
+                os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG),
             )
-        else:
-            sys.stderr.write(
-                (
-                    '%sconfig: "%s"\n'
-                    % (
-                        Fore.GREEN,
-                        os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG),
-                    )
-                )
-            )
+        )
 
-        for name in sorted(self.DEFAULT_CONFIG):
-            if not stderr:
-                print("%sconfig: %s = %s" % (Fore.GREEN, name, self.config[name]))
-            else:
-                sys.stderr.write(("%sconfig: %s = %s\n" % (Fore.GREEN, name, self.config[name])))
+        for name in self.DEFAULT_CONFIG:
+            self.output.write("%sconfig: %s: %s\n" % (Fore.GREEN, name, self.config[name]))
 
     def sym(self):
         if self.ccy == "GBP":
