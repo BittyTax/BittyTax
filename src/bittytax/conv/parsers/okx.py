@@ -23,6 +23,7 @@ else:
 
 def parse_okx_trades_v2(data_rows, parser, **_kwargs):
     ids = {}
+    orders = {}
 
     for dr in data_rows:
         if dr.row_dict.get(BOM + "id"):
@@ -32,6 +33,11 @@ def parse_okx_trades_v2(data_rows, parser, **_kwargs):
             ids[dr.row_dict["id"]].append(dr)
         else:
             ids[dr.row_dict["id"]] = [dr]
+
+        if dr.row_dict["Order id"] in orders:
+            orders[dr.row_dict["Order id"]].append(dr)
+        else:
+            orders[dr.row_dict["Order id"]] = [dr]
 
     for data_row in data_rows:
         if config.debug:
@@ -44,19 +50,22 @@ def parse_okx_trades_v2(data_rows, parser, **_kwargs):
             continue
 
         try:
-            _parse_okx_trades_v2_row(ids, parser, data_row)
+            _parse_okx_trades_v2_row(ids, orders, parser, data_row)
         except DataRowError as e:
             data_row.failure = e
 
 
-def _parse_okx_trades_v2_row(ids, parser, data_row):
+def _parse_okx_trades_v2_row(ids, orders, parser, data_row):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
     data_row.parsed = True
 
     if row_dict["Trade Type"] == "Spot":
         if row_dict["Type"] in ("Buy", "Sell"):
-            _make_trade(ids[row_dict["id"]], data_row, parser)
+            if not _make_trade(ids[row_dict["id"]], data_row):
+                # Some trades don't have matching id's, try matching by Order id instead
+                if not _make_trade(orders[row_dict["Order id"]], data_row):
+                    raise UnexpectedContentError(0, "id", data_row.row_dict["id"])
         else:
             raise UnexpectedTypeError(
                 parser.in_header.index("Type"), "Type", data_row.row_dict["Type"]
@@ -70,16 +79,16 @@ def _parse_okx_trades_v2_row(ids, parser, data_row):
         )
 
 
-def _make_trade(ids, data_row, parser):
+def _make_trade(ids, data_row):
     buy_rows = [dr for dr in ids if dr.row_dict["Type"] == "Buy"]
     sell_rows = [dr for dr in ids if dr.row_dict["Type"] == "Sell"]
 
     if len(buy_rows) == 1 and len(sell_rows) == 1:
         if data_row == buy_rows[0]:
-            sell_rows[0].timestamp = data_row.timestamp
+            sell_rows[0].timestamp = DataParser.parse_timestamp(sell_rows[0].row_dict["Time"])
             sell_rows[0].parsed = True
         else:
-            buy_rows[0].timestamp = data_row.timestamp
+            buy_rows[0].timestamp = DataParser.parse_timestamp(buy_rows[0].row_dict["Time"])
             buy_rows[0].parsed = True
 
         data_row.t_record = TransactionOutRecord(
@@ -93,10 +102,9 @@ def _make_trade(ids, data_row, parser):
             fee_asset=buy_rows[0].row_dict["Unit"],
             wallet=WALLET,
         )
-    else:
-        data_row.failure = UnexpectedContentError(
-            parser.in_header.index("Type"), "Type", data_row.row_dict["Type"]
-        )
+        return True
+
+    return False
 
 
 def parse_okx_trades_v1(data_rows, parser, **_kwargs):
@@ -149,9 +157,37 @@ def parse_okx_funding(data_row, parser, **_kwargs):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
 
-    if row_dict["Type"] == "Staking Yield":
+    if row_dict["Type"] == "Deposit":
+        data_row.t_record = TransactionOutRecord(
+            TransactionOutRecord.TYPE_DEPOSIT,
+            data_row.timestamp,
+            buy_quantity=row_dict["Amount"],
+            buy_asset=row_dict["Symbol"],
+            fee_quantity=row_dict["Fee"],
+            fee_asset=row_dict["Symbol"],
+            wallet=WALLET,
+        )
+    elif row_dict["Type"] == "Withdrawal":
+        data_row.t_record = TransactionOutRecord(
+            TransactionOutRecord.TYPE_WITHDRAWAL,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["Amount"])),
+            sell_asset=row_dict["Symbol"],
+            fee_quantity=row_dict["Fee"],
+            fee_asset=row_dict["Symbol"],
+            wallet=WALLET,
+        )
+    elif row_dict["Type"] == "Staking Yield":
         data_row.t_record = TransactionOutRecord(
             TransactionOutRecord.TYPE_STAKING,
+            data_row.timestamp,
+            buy_quantity=row_dict["Amount"],
+            buy_asset=row_dict["Symbol"],
+            wallet=WALLET,
+        )
+    elif row_dict["Type"] == "Fee rebate":
+        data_row.t_record = TransactionOutRecord(
+            TransactionOutRecord.TYPE_GIFT_RECEIVED,
             data_row.timestamp,
             buy_quantity=row_dict["Amount"],
             buy_asset=row_dict["Symbol"],
@@ -162,6 +198,8 @@ def parse_okx_funding(data_row, parser, **_kwargs):
         "Redeem staking",
         "Savings subscription",
         "Savings redemption",
+        "From unified trading account",
+        "To unified trading account",
     ):
         # Skip not taxable events
         return
