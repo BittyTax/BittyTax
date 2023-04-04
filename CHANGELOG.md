@@ -1,5 +1,11 @@
 # Change Log
 ## [Unreleased]
+
+## Version [0.5.1] (2023-04-04)
+Important:-
+
+The `Lost` transaction type was incorrectly performing the buy-back before the sell, resulting in a loss for only half of the purchase cost. If you have used this transaction type previously we recommend you re-generate your tax reports to ensure the capital gains disposal is for the full cost of the lost asset.
+
 ### Fixed
 - Binance parser: handle symbols with leading digit.
 - Bitfinex parser: handle '-' in FEE PERC column. ([#197](https://github.com/BittyTax/BittyTax/issues/197))
@@ -477,7 +483,8 @@ This is the initial beta release. Although it has been throughly tested, it's po
 - Exchange data files supported: Bitstamp, Bittrex, ChangeTip, Circle, Coinbase, Coinbase Pro, Coinfloor, Cryptopia, Cryptsy, Gatehub, OKEx, Poloniex, TradeSatoshi, Uphold.
 - Explorer data files supported: Etherscan.
 
-[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/BittyTax/BittyTax/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/BittyTax/BittyTax/compare/v0.4.3...v0.5.0
 [0.4.3]: https://github.com/BittyTax/BittyTax/compare/v0.4.2...v0.4.3
 [0.4.2]: https://github.com/BittyTax/BittyTax/compare/v0.4.1...v0.4.2
