@@ -21,6 +21,7 @@ json
 kraken
 lookups
 nano
+openpyxl
 parsers
 rebase
 repr

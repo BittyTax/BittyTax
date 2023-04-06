@@ -125,7 +125,7 @@ def main():
             except DataFilenameError as e:
                 sys.stderr.write(Fore.RESET)
                 parser.exit("%s: error: %s" % (parser.prog, e))
-            except DataFormatUnrecognised as e:
+            except DataFormatUnrecognised:
                 sys.stderr.write(_file_msg(pathname, None, msg="unrecognised"))
             except IOError as e:
                 if e.errno == errno.ENOENT:
