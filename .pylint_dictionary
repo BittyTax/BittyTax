@@ -28,5 +28,6 @@ repr
 timestamp
 timezone
 txhash
+xlsx
 yaml
 zerion
