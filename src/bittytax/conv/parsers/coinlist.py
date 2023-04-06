@@ -9,7 +9,12 @@ from colorama import Fore
 
 from ...config import config
 from ..dataparser import DataParser
-from ..exceptions import MissingComponentError, UnexpectedContentError, UnexpectedTypeError
+from ..exceptions import (
+    DataRowError,
+    MissingComponentError,
+    UnexpectedContentError,
+    UnexpectedTypeError,
+)
 from ..out_record import TransactionOutRecord
 
 WALLET = "CoinList"
@@ -105,56 +110,57 @@ def parse_coinlist_pro(data_rows, parser, **_kwargs):
                 % (Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row)
             )
 
-        if data_row.parsed:
-            continue
+        try:
+            _parse_coinlist_pro_row(tx_times, parser, data_row)
+        except DataRowError as e:
+            data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
 
-        row_dict = data_row.row_dict
-        data_row.timestamp = DataParser.parse_timestamp(row_dict["time"])
+            data_row.failure = e
 
-        if row_dict["type"] in ("match", "fee"):
-            buy, sell = _get_buy_sell(data_row, "match", tx_times[row_dict["time"]])
-            fee = _get_fee(data_row, tx_times[row_dict["time"]])
-            if buy is None or fee is None:
-                data_row.failure = MissingComponentError(
-                    parser.in_header.index("time"), "time", row_dict["time"]
-                )
-                continue
 
-            data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_TRADE,
-                data_row.timestamp,
-                buy_quantity=buy.row_dict["amount"],
-                buy_asset=buy.row_dict["balance"],
-                sell_quantity=abs(Decimal(sell.row_dict["amount"])),
-                sell_asset=sell.row_dict["balance"],
-                fee_quantity=abs(Decimal(fee.row_dict["amount"])),
-                fee_asset=fee.row_dict["balance"],
-                wallet=WALLET,
-            )
-        elif row_dict["type"] == "admin":
-            buy, sell = _get_buy_sell(data_row, "admin", tx_times[row_dict["time"]])
-            if buy is None:
-                data_row.failure = MissingComponentError(
-                    parser.in_header.index("time"), "time", row_dict["time"]
-                )
-                continue
+def _parse_coinlist_pro_row(tx_times, parser, data_row):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["time"])
 
-            data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_TRADE,
-                data_row.timestamp,
-                buy_quantity=buy.row_dict["amount"],
-                buy_asset=buy.row_dict["balance"],
-                sell_quantity=abs(Decimal(sell.row_dict["amount"])),
-                sell_asset=sell.row_dict["balance"],
-                wallet=WALLET,
-            )
-        elif row_dict["type"] in ("deposit", "withdrawal"):
-            # Skip internal transfers
-            continue
-        else:
-            data_row.failure = UnexpectedTypeError(
-                parser.in_header.index("type"), "type", row_dict["type"]
-            )
+    if row_dict["type"] in ("match", "fee"):
+        buy, sell = _get_buy_sell(data_row, "match", tx_times[row_dict["time"]])
+        fee = _get_fee(data_row, tx_times[row_dict["time"]])
+        if buy is None or fee is None:
+            raise MissingComponentError(parser.in_header.index("time"), "time", row_dict["time"])
+
+        data_row.t_record = TransactionOutRecord(
+            TransactionOutRecord.TYPE_TRADE,
+            data_row.timestamp,
+            buy_quantity=buy.row_dict["amount"],
+            buy_asset=buy.row_dict["balance"],
+            sell_quantity=abs(Decimal(sell.row_dict["amount"])),
+            sell_asset=sell.row_dict["balance"],
+            fee_quantity=abs(Decimal(fee.row_dict["amount"])),
+            fee_asset=fee.row_dict["balance"],
+            wallet=WALLET,
+        )
+    elif row_dict["type"] == "admin":
+        buy, sell = _get_buy_sell(data_row, "admin", tx_times[row_dict["time"]])
+        if buy is None:
+            raise MissingComponentError(parser.in_header.index("time"), "time", row_dict["time"])
+
+        data_row.t_record = TransactionOutRecord(
+            TransactionOutRecord.TYPE_TRADE,
+            data_row.timestamp,
+            buy_quantity=buy.row_dict["amount"],
+            buy_asset=buy.row_dict["balance"],
+            sell_quantity=abs(Decimal(sell.row_dict["amount"])),
+            sell_asset=sell.row_dict["balance"],
+            wallet=WALLET,
+        )
+    elif row_dict["type"] in ("deposit", "withdrawal"):
+        # Skip internal transfers
+        return
+    else:
+        raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
 
 def _get_buy_sell(data_row, tx_type, tx_times):

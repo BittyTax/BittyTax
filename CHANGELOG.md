@@ -1,5 +1,13 @@
 # Change Log
 ## [Unreleased]
+### Added
+- Conversion tool: identify data file types (.xls, .zip/.xlsx) using magic numbers
+- Conversion tool: identify duplicate data files using hashes.
+### Changed
+- Accounting tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
+- Conversion tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
+- Conversion tool: error with non-zero exit status if no data files are processed. ([#253](https://github.com/BittyTax/BittyTax/issues/253))
+- Conversion tool: report and continue any unexpected parser/merger exceptions.
 
 ## Version [0.5.1] (2023-04-04)
 Important:-

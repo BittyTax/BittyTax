@@ -38,6 +38,11 @@ def parse_cexio(data_rows, parser, **_kwargs):
             _parse_cexio_row(tx_times, parser, data_row)
         except DataRowError as e:
             data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
 
 
 def _parse_cexio_row(tx_times, parser, data_row):

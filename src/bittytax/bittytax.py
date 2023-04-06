@@ -5,11 +5,11 @@
 import argparse
 import codecs
 import io
+import os
 import platform
 import sys
 
 import colorama
-import xlrd
 from colorama import Back, Fore
 
 from .audit import AuditRecords
@@ -167,9 +167,12 @@ def do_import(filename):
     import_records = ImportRecords()
 
     if filename:
-        try:
-            import_records.import_excel(filename)
-        except xlrd.XLRDError:
+        _, file_extension = os.path.splitext(filename)
+        if file_extension == ".xlsx":
+            import_records.import_excel_xlsx(filename)
+        elif file_extension == ".xls":
+            import_records.import_excel_xls(filename)
+        else:
             with io.open(filename, newline="", encoding="utf-8") as csv_file:
                 import_records.import_csv(csv_file)
     else:

@@ -9,7 +9,12 @@ from colorama import Fore
 
 from ...config import config
 from ..dataparser import DataParser
-from ..exceptions import DataFilenameError, UnexpectedTradingPairError, UnexpectedTypeError
+from ..exceptions import (
+    DataFilenameError,
+    DataRowError,
+    UnexpectedTradingPairError,
+    UnexpectedTypeError,
+)
 from ..out_record import TransactionOutRecord
 
 PRECISION = Decimal("0." + "0" * 8)
@@ -250,126 +255,138 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
                 % (Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row)
             )
 
-        row_dict = data_row.row_dict
-        data_row.timestamp = DataParser.parse_timestamp(row_dict["UTC_Time"])
-
-        if row_dict["Account"] not in ("Spot", "Earn", "Pool"):
-            data_row.failure = UnexpectedTypeError(
-                parser.in_header.index("Account"), "Account", row_dict["Account"]
-            )
+        if data_row.parsed:
             continue
 
-        if row_dict["Operation"] in (
-            "Commission History",
-            "Referrer rebates",
-            "Commission Rebate",
-            "Commission Fee Shared With You",
-            "Cash Voucher distribution",
-            "Referral Kickback",
-        ):
+        try:
+            _parse_binance_statements_row(tx_times, parser, data_row)
+        except DataRowError as e:
+            data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
+
+
+def _parse_binance_statements_row(tx_times, parser, data_row):
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["UTC_Time"])
+
+    if row_dict["Account"] not in ("Spot", "Earn", "Pool"):
+        raise UnexpectedTypeError(parser.in_header.index("Account"), "Account", row_dict["Account"])
+
+    if row_dict["Operation"] in (
+        "Commission History",
+        "Referrer rebates",
+        "Commission Rebate",
+        "Commission Fee Shared With You",
+        "Cash Voucher distribution",
+        "Referral Kickback",
+    ):
+        data_row.t_record = TransactionOutRecord(
+            TransactionOutRecord.TYPE_GIFT_RECEIVED,
+            data_row.timestamp,
+            buy_quantity=row_dict["Change"],
+            buy_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
+    elif row_dict["Operation"] == "Distribution":
+        if Decimal(row_dict["Change"]) > 0:
             data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_GIFT_RECEIVED,
+                TransactionOutRecord.TYPE_AIRDROP,
                 data_row.timestamp,
                 buy_quantity=row_dict["Change"],
                 buy_asset=row_dict["Coin"],
                 wallet=WALLET,
             )
-        elif row_dict["Operation"] == "Distribution":
-            if Decimal(row_dict["Change"]) > 0:
-                data_row.t_record = TransactionOutRecord(
-                    TransactionOutRecord.TYPE_AIRDROP,
-                    data_row.timestamp,
-                    buy_quantity=row_dict["Change"],
-                    buy_asset=row_dict["Coin"],
-                    wallet=WALLET,
-                )
-            else:
-                data_row.t_record = TransactionOutRecord(
-                    TransactionOutRecord.TYPE_SPEND,
-                    data_row.timestamp,
-                    sell_quantity=abs(Decimal(row_dict["Change"])),
-                    sell_asset=row_dict["Coin"],
-                    wallet=WALLET,
-                )
-        elif row_dict["Operation"] == "Super BNB Mining":
-            data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_MINING,
-                data_row.timestamp,
-                buy_quantity=row_dict["Change"],
-                buy_asset=row_dict["Coin"],
-                wallet=WALLET,
-            )
-        elif row_dict["Operation"] in (
-            "Savings Interest",
-            "Simple Earn Flexible Interest",
-            "Pool Distribution",
-            "Savings distribution",
-            "Launchpool Interest",
-        ):
-            data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_INTEREST,
-                data_row.timestamp,
-                buy_quantity=row_dict["Change"],
-                buy_asset=row_dict["Coin"],
-                wallet=WALLET,
-            )
-        elif row_dict["Operation"] in (
-            "POS savings interest",
-            "Staking Rewards",
-            "ETH 2.0 Staking Rewards",
-            "Liquid Swap rewards",
-            "Simple Earn Locked Rewards",
-            "DOT Slot Auction Rewards",
-        ):
-            data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_STAKING,
-                data_row.timestamp,
-                buy_quantity=row_dict["Change"],
-                buy_asset=row_dict["Coin"],
-                wallet=WALLET,
-            )
-        elif row_dict["Operation"] in ("Small assets exchange BNB", "Small Assets Exchange BNB"):
-            _make_trade(row_dict["Operation"], tx_times[row_dict["UTC_Time"]], "BNB")
-        elif row_dict["Operation"] == "ETH 2.0 Staking":
-            _make_trade(row_dict["Operation"], tx_times[row_dict["UTC_Time"]])
-        elif row_dict["Operation"] in (
-            "transfer_out",
-            "transfer_in",
-            "Savings purchase",
-            "Simple Earn Flexible Subscription",
-            "Savings Principal redemption",
-            "Simple Earn Flexible Redemption",
-            "POS savings purchase",
-            "Staking Purchase",
-            "POS savings redemption",
-            "Staking Redemption",
-            "Simple Earn Locked Subscription",
-            "Simple Earn Locked Redemption",
-        ):
-            # Skip not taxable events
-            continue
-        elif row_dict["Operation"] in (
-            "Deposit",
-            "Withdraw",
-            "Transaction Related",
-            "Fiat Deposit",
-            "Fiat Withdraw",
-            "Buy",
-            "Sell",
-            "Fee",
-            "Transaction Buy",
-            "Transaction Spend",
-            "Transaction Sold",
-            "Transaction Revenue",
-            "Large OTC trading",
-            "Binance Convert",
-        ):
-            # Skip duplicate operations
-            continue
         else:
-            data_row.failure = UnexpectedTypeError(
-                parser.in_header.index("Operation"), "Operation", row_dict["Operation"]
+            data_row.t_record = TransactionOutRecord(
+                TransactionOutRecord.TYPE_SPEND,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["Change"])),
+                sell_asset=row_dict["Coin"],
+                wallet=WALLET,
             )
+    elif row_dict["Operation"] == "Super BNB Mining":
+        data_row.t_record = TransactionOutRecord(
+            TransactionOutRecord.TYPE_MINING,
+            data_row.timestamp,
+            buy_quantity=row_dict["Change"],
+            buy_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
+    elif row_dict["Operation"] in (
+        "Savings Interest",
+        "Simple Earn Flexible Interest",
+        "Pool Distribution",
+        "Savings distribution",
+        "Launchpool Interest",
+    ):
+        data_row.t_record = TransactionOutRecord(
+            TransactionOutRecord.TYPE_INTEREST,
+            data_row.timestamp,
+            buy_quantity=row_dict["Change"],
+            buy_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
+    elif row_dict["Operation"] in (
+        "POS savings interest",
+        "Staking Rewards",
+        "ETH 2.0 Staking Rewards",
+        "Liquid Swap rewards",
+        "Simple Earn Locked Rewards",
+        "DOT Slot Auction Rewards",
+    ):
+        data_row.t_record = TransactionOutRecord(
+            TransactionOutRecord.TYPE_STAKING,
+            data_row.timestamp,
+            buy_quantity=row_dict["Change"],
+            buy_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
+    elif row_dict["Operation"] in ("Small assets exchange BNB", "Small Assets Exchange BNB"):
+        _make_trade(row_dict["Operation"], tx_times[row_dict["UTC_Time"]], "BNB")
+    elif row_dict["Operation"] == "ETH 2.0 Staking":
+        _make_trade(row_dict["Operation"], tx_times[row_dict["UTC_Time"]])
+    elif row_dict["Operation"] in (
+        "transfer_out",
+        "transfer_in",
+        "Savings purchase",
+        "Simple Earn Flexible Subscription",
+        "Savings Principal redemption",
+        "Simple Earn Flexible Redemption",
+        "POS savings purchase",
+        "Staking Purchase",
+        "POS savings redemption",
+        "Staking Redemption",
+        "Simple Earn Locked Subscription",
+        "Simple Earn Locked Redemption",
+    ):
+        # Skip not taxable events
+        return
+    elif row_dict["Operation"] in (
+        "Deposit",
+        "Withdraw",
+        "Transaction Related",
+        "Fiat Deposit",
+        "Fiat Withdraw",
+        "Buy",
+        "Sell",
+        "Fee",
+        "Transaction Buy",
+        "Transaction Spend",
+        "Transaction Sold",
+        "Transaction Revenue",
+        "Large OTC trading",
+        "Binance Convert",
+    ):
+        # Skip duplicate operations
+        return
+    else:
+        raise UnexpectedTypeError(
+            parser.in_header.index("Operation"), "Operation", row_dict["Operation"]
+        )
 
 
 def _make_trade(operation, tx_times, default_asset=""):

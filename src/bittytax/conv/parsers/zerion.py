@@ -33,6 +33,11 @@ def parse_zerion(data_rows, parser, **_kwargs):
             _parse_zerion_row(data_rows, parser, data_row, row_index)
         except DataRowError as e:
             data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
 
 
 def _parse_zerion_row(data_rows, parser, data_row, row_index):

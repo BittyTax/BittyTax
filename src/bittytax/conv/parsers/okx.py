@@ -53,6 +53,11 @@ def parse_okx_trades_v2(data_rows, parser, **_kwargs):
             _parse_okx_trades_v2_row(ids, orders, parser, data_row)
         except DataRowError as e:
             data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
 
 
 def _parse_okx_trades_v2_row(ids, orders, parser, data_row):
@@ -65,17 +70,15 @@ def _parse_okx_trades_v2_row(ids, orders, parser, data_row):
             if not _make_trade(ids[row_dict["id"]], data_row):
                 # Some trades don't have matching id's, try matching by Order id instead
                 if not _make_trade(orders[row_dict["Order id"]], data_row):
-                    raise UnexpectedContentError(0, "id", data_row.row_dict["id"])
+                    raise UnexpectedContentError(0, "id", row_dict["id"])
         else:
-            raise UnexpectedTypeError(
-                parser.in_header.index("Type"), "Type", data_row.row_dict["Type"]
-            )
+            raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
     elif row_dict["Trade Type"] == "Transfer":
         # Skip internal transfers
         return
     else:
         raise UnexpectedTypeError(
-            parser.in_header.index("Trade Type"), "Trade Type", data_row.row_dict["Trade Type"]
+            parser.in_header.index("Trade Type"), "Trade Type", row_dict["Trade Type"]
         )
 
 
@@ -130,6 +133,11 @@ def parse_okx_trades_v1(data_rows, parser, **_kwargs):
 
             _parse_okx_trades_v1_row(buy_row, sell_row, parser)
         except DataRowError as e:
+            buy_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
             buy_row.failure = e
 
 

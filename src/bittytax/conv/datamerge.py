@@ -4,7 +4,9 @@
 import sys
 from decimal import Decimal
 
-from colorama import Fore
+from colorama import Back, Fore
+
+from ..config import config
 
 
 class DataMerge(object):  # pylint: disable=too-few-public-methods
@@ -46,18 +48,28 @@ class DataMerge(object):  # pylint: disable=too-few-public-methods
             if man_cnt == 1 and opt_cnt > 0 or man_cnt > 1 and man_cnt == man_tot:
                 sys.stderr.write('%smerge: "%s"\n' % (Fore.WHITE, data_merge.name))
 
-                merge = data_merge.merge_handler(matched_data_files)
-                if merge:
-                    parsers = [matched_data_files[df].parser.name for df in matched_data_files]
-                    sys.stderr.write(
-                        '%smerge: successfully merged %s"%s"\n'
-                        % (Fore.WHITE, Fore.CYAN, cls.SEPARATOR_AND.join(parsers))
-                    )
+                try:
+                    merge = data_merge.merge_handler(matched_data_files)
+                except (ValueError, ArithmeticError) as e:
+                    if config.debug:
+                        raise
 
-                    for match in matched_data_files:
-                        del data_files[matched_data_files[match]]
+                    sys.stderr.write(
+                        '%sERROR%s Unexpected error: "%s"\n'
+                        % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED, e)
+                    )
                 else:
-                    sys.stderr.write("%smerge: nothing to merge\n" % Fore.YELLOW)
+                    if merge:
+                        parsers = [matched_data_files[df].parser.name for df in matched_data_files]
+                        sys.stderr.write(
+                            '%smerge: successfully merged %s"%s"\n'
+                            % (Fore.WHITE, Fore.CYAN, cls.SEPARATOR_AND.join(parsers))
+                        )
+
+                        for match in matched_data_files:
+                            del data_files[matched_data_files[match]]
+                    else:
+                        sys.stderr.write("%smerge: nothing to merge\n" % Fore.YELLOW)
 
     @classmethod
     def _match_datafile(cls, data_files, parser):

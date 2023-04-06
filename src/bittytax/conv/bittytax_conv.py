@@ -5,12 +5,12 @@ import argparse
 import codecs
 import errno
 import glob
+import hashlib
 import platform
 import sys
 
 import colorama
-import xlrd
-from colorama import Back, Fore
+from colorama import Fore
 
 from ..config import config
 from ..version import __version__
@@ -98,6 +98,7 @@ def main():
         )
         config.output_config()
 
+    file_hashes = set()
     for filename in args.filename:
         pathnames = glob.glob(filename)
         if not pathnames:
@@ -105,7 +106,13 @@ def main():
 
         for pathname in pathnames:
             try:
-                do_read_file(pathname, args)
+                file_type, file_hash = _get_file_info(pathname)
+                if file_hash in file_hashes:
+                    sys.stderr.write(_file_msg(pathname, None, msg="skipping duplicate"))
+                else:
+                    file_hashes.add(file_hash)
+                    _do_read_file(file_type, pathname, args)
+
             except UnknownCryptoassetError as e:
                 sys.stderr.write(Fore.RESET)
                 parser.error("%s, please specify using the [-ca CRYPTOASSET] option" % e)
@@ -113,31 +120,20 @@ def main():
                 sys.stderr.write(Fore.RESET)
                 parser.exit(
                     "%s: error: %s, please specify usernames in the %s file"
-                    % (parser.prog, e, config.BITTYTAX_CONFIG)
+                    % (parser.prog, e, config.BITTYTAX_CONFIG),
                 )
             except DataFilenameError as e:
                 sys.stderr.write(Fore.RESET)
                 parser.exit("%s: error: %s" % (parser.prog, e))
             except DataFormatUnrecognised as e:
-                sys.stderr.write(
-                    "%sWARNING%s %s\n" % (Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW, e)
-                )
+                sys.stderr.write(_file_msg(pathname, None, msg="unrecognised"))
             except IOError as e:
                 if e.errno == errno.ENOENT:
-                    sys.stderr.write(
-                        "%sWARNING%s File does not exist: %s\n"
-                        % (Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW, pathname)
-                    )
+                    sys.stderr.write(_file_msg(pathname, None, msg="no such file or directory"))
                 elif e.errno == errno.EISDIR:
-                    sys.stderr.write(
-                        "%sWARNING%s File is a directory: %s\n"
-                        % (Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW, pathname)
-                    )
+                    sys.stderr.write(_file_msg(pathname, None, msg="is a directory"))
                 else:
-                    sys.stderr.write(
-                        "%sWARNING%s File could not be read: %s\n"
-                        % (Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW, pathname)
-                    )
+                    sys.stderr.write(_file_msg(pathname, None, msg="read error"))
 
     if DataFile.data_files:
         DataMerge.match_merge(DataFile.data_files)
@@ -150,19 +146,61 @@ def main():
             sys.stderr.write(Fore.RESET)
             sys.stderr.flush()
             output.write_csv()
+    else:
+        sys.stderr.write(Fore.RESET)
+        parser.exit(3, "%s: error: no data files could be processed\n" % parser.prog)
 
 
-def do_read_file(pathname, args):
-    try:
-        for worksheet, datemode in DataFile.read_excel(pathname):
+def _do_read_file(file_type, pathname, args):
+    if file_type == "zip":
+        for worksheet in DataFile.read_excel_xlsx(pathname):
             try:
-                DataFile.read_worksheet(worksheet, datemode, pathname, args)
-            except DataFormatUnrecognised as e:
-                sys.stderr.write(
-                    "%sWARNING%s %s\n" % (Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW, e)
-                )
-    except xlrd.XLRDError:
+                DataFile.read_worksheet_xlsx(worksheet, pathname, args)
+            except DataFormatUnrecognised:
+                sys.stderr.write(_file_msg(pathname, worksheet.title, msg="unrecognised"))
+    elif file_type == "xls":
+        for worksheet, datemode in DataFile.read_excel_xls(pathname):
+            try:
+                DataFile.read_worksheet_xls(worksheet, datemode, pathname, args)
+            except (DataFormatUnrecognised, ValueError):
+                sys.stderr.write(_file_msg(pathname, worksheet.name, msg="unrecognised"))
+    else:
         DataFile.read_csv(pathname, args)
+
+
+def _get_file_info(filename):
+    file_type = None
+
+    with open(filename, "rb") as df:
+        file_hash = hashlib.sha1()
+        chunk = df.read(8192)
+        if chunk[0:8] == b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1":
+            file_type = "xls"
+        elif chunk[0:4] == b"\x50\x4B\x03\x04":
+            # xlsx is a zip file, let openpyxl unpack and check
+            file_type = "zip"
+
+        while chunk:
+            file_hash.update(chunk)
+            chunk = df.read(8192)
+
+    return file_type, file_hash.hexdigest()
+
+
+def _file_msg(filename, worksheet_name, msg):
+    if worksheet_name:
+        worksheet_str = " '%s'" % worksheet_name
+    else:
+        worksheet_str = ""
+
+    return "%sfile: %s%s%s %s%s\n" % (
+        Fore.WHITE,
+        Fore.YELLOW,
+        filename,
+        worksheet_str,
+        Fore.WHITE,
+        msg,
+    )
 
 
 if __name__ == "__main__":

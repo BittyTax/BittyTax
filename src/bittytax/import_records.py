@@ -3,11 +3,13 @@
 
 import csv
 import sys
+import warnings
 from decimal import Decimal, InvalidOperation
 
 import dateutil.parser
 import xlrd
 from colorama import Back, Fore
+from openpyxl import load_workbook
 from tqdm import tqdm, trange
 
 from .config import config
@@ -29,7 +31,61 @@ class ImportRecords(object):
         self.success_cnt = 0
         self.failure_cnt = 0
 
-    def import_excel(self, filename):
+    def import_excel_xlsx(self, filename):
+        warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
+        workbook = load_workbook(filename=filename, read_only=False, data_only=True)
+        print("%sExcel file: %s%s" % (Fore.WHITE, Fore.YELLOW, filename))
+
+        for sheet_name in workbook.sheetnames:
+            worksheet = workbook[sheet_name]
+
+            if worksheet.title.startswith("--"):
+                print("%sskipping '%s' worksheet" % (Fore.GREEN, worksheet.title))
+                continue
+
+            if config.debug:
+                print("%simporting '%s' rows" % (Fore.CYAN, worksheet.title))
+
+            for row_num, row in enumerate(
+                tqdm(
+                    worksheet.rows,
+                    total=worksheet.max_row,
+                    unit=" row",
+                    desc="%simporting '%s' rows%s" % (Fore.CYAN, worksheet.title, Fore.GREEN),
+                    disable=bool(config.debug or not sys.stdout.isatty()),
+                )
+            ):
+                if row_num == 0:
+                    # Skip headers
+                    continue
+
+                row = [self.convert_cell_xlsx(cell) for cell in row]
+
+                t_row = TransactionRow(
+                    row[: len(TransactionRow.HEADER)], row_num + 1, worksheet.title
+                )
+
+                try:
+                    t_row.parse()
+                except TransactionParserError as e:
+                    t_row.failure = e
+
+                if config.debug or t_row.failure:
+                    tqdm.write("%simport: %s" % (Fore.YELLOW, t_row))
+
+                if t_row.failure:
+                    tqdm.write(
+                        "%sERROR%s %s"
+                        % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED, t_row.failure)
+                    )
+
+                self.t_rows.append(t_row)
+                self.update_cnts(t_row)
+
+        workbook.close()
+        del workbook
+
+    def import_excel_xls(self, filename):
         workbook = xlrd.open_workbook(filename)
         print("%sExcel file: %s%s" % (Fore.WHITE, Fore.YELLOW, filename))
 
@@ -53,13 +109,14 @@ class ImportRecords(object):
                     continue
 
                 row = [
-                    self.convert_cell(worksheet.cell(row_num, cell_num), workbook)
+                    self.convert_cell_xls(worksheet.cell(row_num, cell_num), workbook)
                     for cell_num in range(0, worksheet.ncols)
                 ]
 
                 t_row = TransactionRow(
                     row[: len(TransactionRow.HEADER)], row_num + 1, worksheet.name
                 )
+
                 try:
                     t_row.parse()
                 except TransactionParserError as e:
@@ -81,7 +138,16 @@ class ImportRecords(object):
         del workbook
 
     @staticmethod
-    def convert_cell(cell, workbook):
+    def convert_cell_xlsx(cell):
+        if cell.value is None:
+            return ""
+
+        if sys.version_info[0] < 3 and cell.data_type == "s":
+            return cell.value.encode("utf-8")
+        return str(cell.value)
+
+    @staticmethod
+    def convert_cell_xls(cell, workbook):
         if cell.ctype == xlrd.XL_CELL_DATE:
             datetime = xlrd.xldate.xldate_as_datetime(cell.value, workbook.datemode)
             if datetime.microsecond:

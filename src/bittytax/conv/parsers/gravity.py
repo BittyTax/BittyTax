@@ -46,6 +46,11 @@ def parse_gravity_v1(data_rows, parser, **kwargs):
             _parse_gravity_row(tx_ids, parser, data_row, referral_type)
         except DataRowError as e:
             data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
 
 
 def _parse_gravity_row(tx_ids, parser, data_row, referral_type):

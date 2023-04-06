@@ -36,6 +36,11 @@ def parse_gatehub(data_rows, parser, **_kwargs):
             _parse_gatehub_row(tx_ids, parser, data_row)
         except DataRowError as e:
             data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
 
 
 def _parse_gatehub_row(tx_ids, parser, data_row):

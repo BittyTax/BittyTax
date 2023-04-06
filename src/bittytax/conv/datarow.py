@@ -3,7 +3,7 @@
 
 import datetime
 
-from colorama import Back
+from colorama import Back, Fore
 
 from ..config import config
 from .exceptions import DataRowError
@@ -28,6 +28,11 @@ class DataRow(object):
             parser.row_handler(self, parser, **kwargs)
         except DataRowError as e:
             self.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            self.failure = e
 
     def __eq__(self, other):
         return self.row == other.row
@@ -40,7 +45,7 @@ class DataRow(object):
         parser.all_handler(data_rows, parser, **kwargs)
 
     def __str__(self):
-        if self.failure is not None:
+        if self.failure and isinstance(self.failure, DataRowError):
             return (
                 "["
                 + ", ".join(
@@ -53,4 +58,6 @@ class DataRow(object):
                 )
                 + "]"
             )
+        if self.failure:
+            return Fore.RED + "[" + "'%s'" % "', '".join(self.row) + "]"
         return "[" + "'%s'" % "', '".join(self.row) + "]"

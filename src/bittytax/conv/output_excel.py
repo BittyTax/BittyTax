@@ -11,6 +11,7 @@ from xlsxwriter.utility import xl_rowcol_to_cell
 
 from ..config import config
 from ..version import __version__
+from .exceptions import DataRowError
 from .out_record import TransactionOutRecord
 from .output_csv import OutputBase
 
@@ -69,7 +70,7 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
         self.format_in_data = self.workbook.add_format(
             {"font_size": FONT_SIZE, "font_color": self.FONT_COLOR_IN_DATA}
         )
-        self.format_in_data_err = self.workbook.add_format(
+        self.format_in_data_col_err = self.workbook.add_format(
             {
                 "font_size": FONT_SIZE,
                 "font_color": self.FONT_COLOR_IN_DATA,
@@ -77,6 +78,9 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
                 "diag_border": 7,
                 "diag_color": "red",
             }
+        )
+        self.format_in_data_err = self.workbook.add_format(
+            {"font_size": FONT_SIZE, "font_color": "red"}
         )
         self.format_num_float = self.workbook.add_format(
             {
@@ -253,20 +257,23 @@ class Worksheet(object):
 
         # Add original data
         for col_num, col_data in enumerate(in_row):
-            if data_row.failure and data_row.failure.col_num == col_num:
-                self.worksheet.write(
-                    row_num,
-                    len(self.output.BITTYTAX_OUT_HEADER) + col_num,
-                    col_data,
-                    self.output.format_in_data_err,
-                )
+            if (
+                data_row.failure
+                and isinstance(data_row.failure, DataRowError)
+                and data_row.failure.col_num == col_num
+            ):
+                cell_format = self.output.format_in_data_col_err
+            elif data_row.failure and not isinstance(data_row.failure, DataRowError):
+                cell_format = self.output.format_in_data_err
             else:
-                self.worksheet.write(
-                    row_num,
-                    len(self.output.BITTYTAX_OUT_HEADER) + col_num,
-                    col_data,
-                    self.output.format_in_data,
-                )
+                cell_format = self.output.format_in_data
+
+            self.worksheet.write(
+                row_num,
+                len(self.output.BITTYTAX_OUT_HEADER) + col_num,
+                col_data,
+                cell_format,
+            )
 
             self._autofit_calc(len(self.output.BITTYTAX_OUT_HEADER) + col_num, len(col_data))
 
@@ -349,7 +356,10 @@ class Worksheet(object):
 
     def _xl_asset(self, asset, row_num, col_num):
         if sys.version_info[0] < 3:
-            asset = asset.decode("utf8")
+            try:
+                asset = asset.decode("utf8")
+            except UnicodeEncodeError:
+                pass
         self.worksheet.write_string(row_num, col_num, asset)
         self._autofit_calc(col_num, len(asset))
 

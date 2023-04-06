@@ -98,6 +98,11 @@ def parse_hotbit_orders_v1(data_rows, parser, **kwargs):
             _parse_hotbit_orders_row(data_rows, parser, data_row, row_index, type_str, amount_str)
         except DataRowError as e:
             data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
 
 
 def _parse_hotbit_orders_row(data_rows, parser, data_row, row_index, type_str, amount_str):
@@ -174,6 +179,11 @@ def parse_hotbit_trades(data_rows, parser, **_kwargs):
         try:
             _parse_hotbit_trades_row(data_rows, parser, data_row, row_index)
         except DataRowError as e:
+            data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
             data_row.failure = e
 
 
