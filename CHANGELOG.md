@@ -8,6 +8,7 @@
 - Conversion tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
 - Conversion tool: error with non-zero exit status if no data files are processed. ([#253](https://github.com/BittyTax/BittyTax/issues/253))
 - Conversion tool: report and continue any unexpected parser/merger exceptions.
+- Binance parser: add renamed Operation/Account. ([#300](https://github.com/BittyTax/BittyTax/issues/300))
 
 ## Version [0.5.1] (2023-04-04)
 Important:-

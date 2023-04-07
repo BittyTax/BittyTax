@@ -273,7 +273,7 @@ def _parse_binance_statements_row(tx_times, parser, data_row):
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["UTC_Time"])
 
-    if row_dict["Account"] not in ("Spot", "Earn", "Pool"):
+    if row_dict["Account"].lower() not in ("spot", "earn", "pool"):
         raise UnexpectedTypeError(parser.in_header.index("Account"), "Account", row_dict["Account"])
 
     if row_dict["Operation"] in (
@@ -321,6 +321,7 @@ def _parse_binance_statements_row(tx_times, parser, data_row):
         "Simple Earn Flexible Interest",
         "Pool Distribution",
         "Savings distribution",
+        "Savings Distribution",
         "Launchpool Interest",
     ):
         data_row.t_record = TransactionOutRecord(
