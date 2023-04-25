@@ -87,8 +87,8 @@ def parse_hotbit_orders_v1(data_rows, parser, **kwargs):
     for row_index, data_row in enumerate(data_rows):
         if config.debug:
             sys.stderr.write(
-                "%sconv: row[%s] %s\n"
-                % (Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row)
+                f"{Fore.YELLOW}conv: "
+                f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
             )
 
         if data_row.parsed:
@@ -169,8 +169,8 @@ def parse_hotbit_trades(data_rows, parser, **_kwargs):
     for row_index, data_row in enumerate(data_rows):
         if config.debug:
             sys.stderr.write(
-                "%sconv: row[%s] %s\n"
-                % (Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row)
+                f"{Fore.YELLOW}conv: "
+                f" row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
             )
 
         if data_row.parsed:

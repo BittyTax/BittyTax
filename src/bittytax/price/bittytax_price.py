@@ -10,9 +10,10 @@ from decimal import Decimal, InvalidOperation
 
 import colorama
 import dateutil.parser
-from colorama import Back, Fore
+from colorama import Fore
 
 from ..config import config
+from ..constants import ERROR, WARNING
 from ..version import __version__
 from .assetdata import AssetData
 from .datasource import DataSourceBase
@@ -26,10 +27,8 @@ CMD_LIST = "list"
 if sys.stdout.encoding != "UTF-8":
     if sys.version_info[:2] >= (3, 7):
         sys.stdout.reconfigure(encoding="utf-8")
-    elif sys.version_info[:2] >= (3, 1):
-        sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
     else:
-        sys.stdout = codecs.getwriter("utf-8")(sys.stdout)
+        sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
 
 
 def main():
@@ -39,7 +38,7 @@ def main():
         "-v",
         "--version",
         action="version",
-        version="%s v%s" % (parser.prog, __version__),
+        version=f"{parser.prog} v{__version__}",
     )
 
     if sys.version_info[:2] >= (3, 7):
@@ -50,8 +49,8 @@ def main():
     parser_latest = subparsers.add_parser(
         CMD_LATEST,
         help="get the latest price of an asset",
-        description="Get the latest [asset] price (in %s). If no data source [-ds] is given, "
-        "the same data source(s) as 'bittytax' are used." % config.ccy,
+        description=f"Get the latest [asset] price (in {config.ccy}). "
+        "If no data source [-ds] is given, the same data source(s) as 'bittytax' are used.",
     )
     parser_latest.add_argument(
         "asset",
@@ -78,9 +77,8 @@ def main():
     parser_history = subparsers.add_parser(
         CMD_HISTORY,
         help="get the historical price of an asset",
-        description="Get the historic [asset] price (in %s) for the [date] specified. "
-        "If no data source [-ds] is given, the same data source(s) as 'bittytax' are used."
-        % config.ccy,
+        description=f"Get the historic [asset] price (in {config.ccy}) for the [date] specified. "
+        "If no data source [-ds] is given, the same data source(s) as 'bittytax' are used.",
     )
     parser_history.add_argument(
         "asset",
@@ -147,10 +145,10 @@ def main():
     config.debug = args.debug
 
     if config.debug:
-        print("%s%s v%s" % (Fore.YELLOW, parser.prog, __version__))
-        print("%spython: v%s" % (Fore.GREEN, platform.python_version()))
-        print("%ssystem: %s, release: %s" % (Fore.GREEN, platform.system(), platform.release()))
-        config.output_config()
+        print(f"{Fore.YELLOW}{parser.prog} v{__version__}")
+        print(f"{Fore.GREEN}python: v{platform.python_version()}")
+        print(f"{Fore.GREEN}system: {platform.system()}, release: {platform.release()}")
+        config.output_config(sys.stdout)
 
     if args.command in (CMD_LATEST, CMD_HISTORY):
         symbol = args.asset[0]
@@ -206,42 +204,27 @@ def main():
                     asset = True
 
         except DataSourceError as e:
-            parser.exit("%sERROR%s %s" % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED, e))
+            parser.exit(f"{ERROR} {e}")
 
         if not asset:
-            parser.exit(
-                "%sWARNING%s Prices for %s are not supported"
-                % (Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW, symbol)
-            )
+            parser.exit(f"{WARNING} Prices for {symbol} are not supported")
 
         if not price:
             if args.command == CMD_HISTORY:
                 parser.exit(
-                    "%sWARNING%s Price for %s on %s is not available"
-                    % (
-                        Back.YELLOW + Fore.BLACK,
-                        Back.RESET + Fore.YELLOW,
-                        symbol,
-                        args.date[0].strftime("%Y-%m-%d"),
-                    )
+                    f"{WARNING} Price for {symbol} on {args.date[0]:%Y-%m-%d} is not available"
                 )
             else:
-                parser.exit(
-                    "%sWARNING%s Current price for %s is not available"
-                    % (Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW, symbol)
-                )
+                parser.exit(f"{WARNING} Current price for {symbol} is not available")
     elif args.command == CMD_LIST:
         symbol = args.asset
         try:
             assets = AssetData().get_assets(symbol, args.datasource, args.search_terms)
         except DataSourceError as e:
-            parser.exit("%sERROR%s %s" % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED, e))
+            parser.exit(f"{ERROR} {e}")
 
         if symbol and not assets:
-            parser.exit(
-                "%sWARNING%s Asset %s not found"
-                % (Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW, symbol)
-            )
+            parser.exit(f"{WARNING} Asset {symbol} not found")
 
         if args.search_terms and not assets:
             parser.exit("No results found")
@@ -268,54 +251,34 @@ def get_historic_btc_price(date):
 
 
 def output_price(symbol, price_ccy, quantity):
-    print(
-        "%s1 %s=%s %s"
-        % (Fore.WHITE, symbol, config.sym() + "{:0,.2f}".format(price_ccy), config.ccy)
-    )
+    print(f"{Fore.WHITE}1 {symbol}={config.sym()}{price_ccy:0,.2f} {config.ccy}")
     if quantity:
         quantity = Decimal(quantity)
         print(
-            "%s%s %s=%s %s"
-            % (
-                Fore.WHITE,
-                "{:0,f}".format(quantity.normalize()),
-                symbol,
-                config.sym() + "{:0,.2f}".format(quantity * price_ccy),
-                config.ccy,
-            )
+            f"{Fore.WHITE}{quantity.normalize():0,f} {symbol}="
+            f"{config.sym()}{quantity * price_ccy:0,.2f} {config.ccy}"
         )
 
 
 def output_ds_price(asset):
     print(
-        "%s1 %s=%s %s %svia %s (%s)%s"
-        % (
-            Fore.YELLOW,
-            asset["symbol"],
-            "{:0,f}".format(asset["price"].normalize()),
-            asset["quote"],
-            Fore.CYAN,
-            asset["data_source"],
-            asset["name"],
-            Fore.YELLOW + " <-" if asset.get("priority") else "",
-        )
+        f'{Fore.YELLOW}1 {asset["symbol"]}={asset["price"].normalize():0,f} {asset["quote"]} '
+        f'{Fore.CYAN} via {asset["data_source"]} ({asset["name"]})'
+        f'{Fore.YELLOW + " <-" if asset.get("priority") else ""}'
     )
 
 
 def output_assets(assets):
     for asset in assets:
+        if asset["id"]:
+            id_str = f' [ID:{asset["id"]}]'
+        else:
+            id_str = ""
+
         print(
-            "%s%s (%s) %svia %s%s%s"
-            % (
-                Fore.WHITE,
-                # Fore.YELLOW if asset['priority'] else Fore.WHITE,
-                asset["symbol"],
-                asset["name"],
-                Fore.CYAN,
-                asset["data_source"],
-                " [ID:{}]".format(asset["id"]) if asset["id"] else "",
-                Fore.YELLOW + " <-" if asset["priority"] else "",
-            )
+            f'{Fore.WHITE}{asset["symbol"]} ({asset["name"]})'
+            f'{Fore.CYAN} via {asset["data_source"]}{id_str}'
+            f'{Fore.YELLOW + " <-" if asset["priority"] else ""}'
         )
 
 
@@ -332,8 +295,8 @@ def validate_date(value):
 
     try:
         date = dateutil.parser.parse(value, dayfirst=dayfirst)
-    except ValueError:
-        raise argparse.ArgumentTypeError("date is not valid")
+    except ValueError as e:
+        raise argparse.ArgumentTypeError("date is not valid") from e
 
     return date.replace(tzinfo=config.TZ_LOCAL)
 
@@ -341,8 +304,8 @@ def validate_date(value):
 def validate_quantity(value):
     try:
         quantity = Decimal(value.replace(",", ""))
-    except InvalidOperation:
-        raise argparse.ArgumentTypeError("quantity is not valid")
+    except InvalidOperation as e:
+        raise argparse.ArgumentTypeError("quantity is not valid") from e
 
     return quantity
 

@@ -5,6 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from ...config import config
+from ...constants import TZ_UTC
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
@@ -29,7 +30,7 @@ def parse_cgtcalculator(data_row, parser, **_kwargs):
             wallet=WALLET,
         )
     elif row_dict["B/S"] == "S":
-        if data_row.timestamp >= datetime(2008, 4, 6, tzinfo=config.TZ_UTC):
+        if data_row.timestamp >= datetime(2008, 4, 6, tzinfo=TZ_UTC):
             data_row.t_record = TransactionOutRecord(
                 TransactionOutRecord.TYPE_TRADE,
                 data_row.timestamp,

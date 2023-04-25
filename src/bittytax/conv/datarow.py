@@ -6,14 +6,15 @@ import datetime
 from colorama import Back, Fore
 
 from ..config import config
+from ..constants import TZ_UTC
 from .exceptions import DataRowError
 from .mergers import *  # pylint: disable=wildcard-import, unused-wildcard-import
 from .parsers import *  # pylint: disable=wildcard-import, unused-wildcard-import
 
-DEFAULT_TIMESTAMP = datetime.datetime(datetime.MINYEAR, 1, 1, tzinfo=config.TZ_UTC)
+DEFAULT_TIMESTAMP = datetime.datetime(datetime.MINYEAR, 1, 1, tzinfo=TZ_UTC)
 
 
-class DataRow(object):
+class DataRow:
     def __init__(self, line_num, row, in_header):
         self.line_num = line_num
         self.row = row
@@ -46,18 +47,17 @@ class DataRow(object):
 
     def __str__(self):
         if self.failure and isinstance(self.failure, DataRowError):
-            return (
-                "["
-                + ", ".join(
-                    [
-                        "%s'%s'%s" % (Back.RED, data, Back.RESET)
-                        if self.failure.col_num == num
-                        else "'%s'" % data
-                        for num, data in enumerate(self.row)
-                    ]
-                )
-                + "]"
+            row_str = ", ".join(
+                [
+                    f"{Back.RED}'{data}'{Back.RESET}"
+                    if self.failure.col_num == num
+                    else f"'{data}'"
+                    for num, data in enumerate(self.row)
+                ]
             )
+            return f"[{row_str}]"
+
+        row_str = "', '".join(self.row)
         if self.failure:
-            return Fore.RED + "[" + "'%s'" % "', '".join(self.row) + "]"
-        return "[" + "'%s'" % "', '".join(self.row) + "]"
+            return f"{Fore.RED}['{row_str}']"
+        return f"['{row_str}']"

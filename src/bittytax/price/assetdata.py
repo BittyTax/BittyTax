@@ -4,18 +4,19 @@
 import os
 
 from ..config import config
+from ..constants import CACHE_DIR
 from .datasource import BittyTaxAPI, DataSourceBase, Frankfurter
 from .exceptions import UnexpectedDataSourceError
 
 
-class AssetData(object):
+class AssetData:
     FIAT_DATASOURCES = (BittyTaxAPI.__name__, Frankfurter.__name__)
 
     def __init__(self):
         self.data_sources = {}
 
-        if not os.path.exists(config.CACHE_DIR):
-            os.mkdir(config.CACHE_DIR)
+        if not os.path.exists(CACHE_DIR):
+            os.mkdir(CACHE_DIR)
 
         for data_source_class in DataSourceBase.__subclasses__():
             self.data_sources[data_source_class.__name__.upper()] = data_source_class()
@@ -128,7 +129,7 @@ class AssetData(object):
                 else:
                     asset_id["quote"] = "BTC"
 
-                date = req_date.strftime("%Y-%m-%d")
+                date = f"{req_date:%Y-%m-%d}"
                 pair = req_symbol + "/" + asset_id["quote"]
 
                 if not no_cache:

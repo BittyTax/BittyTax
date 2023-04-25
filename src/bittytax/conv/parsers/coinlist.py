@@ -106,8 +106,8 @@ def parse_coinlist_pro(data_rows, parser, **_kwargs):
     for data_row in data_rows:
         if config.debug:
             sys.stderr.write(
-                "%sconv: row[%s] %s\n"
-                % (Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row)
+                f"{Fore.YELLOW}conv: "
+                f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
             )
 
         try:

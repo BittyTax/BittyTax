@@ -3,13 +3,14 @@
 
 from decimal import Decimal
 
-from colorama import Back, Fore
+from colorama import Fore
 from tqdm import tqdm
 
 from .config import config
+from .constants import WARNING
 
 
-class Holdings(object):
+class Holdings:
     def __init__(self, asset):
         self.asset = asset
         self.quantity = Decimal(0)
@@ -29,21 +30,12 @@ class Holdings(object):
 
         if config.debug:
             print(
-                "%ssection104:   %s=%s (+%s) cost=%s %s (+%s %s) fees=%s %s (+%s %s)"
-                % (
-                    Fore.YELLOW,
-                    self.asset,
-                    "{:0,f}".format(self.quantity.normalize()),
-                    "{:0,f}".format(quantity.normalize()),
-                    config.sym() + "{:0,.2f}".format(self.cost),
-                    config.ccy,
-                    config.sym() + "{:0,.2f}".format(cost),
-                    config.ccy,
-                    config.sym() + "{:0,.2f}".format(self.fees),
-                    config.ccy,
-                    config.sym() + "{:0,.2f}".format(fees),
-                    config.ccy,
-                )
+                f"{Fore.YELLOW}section104:   "
+                f"{self.asset}={self.quantity.normalize():0,f} (+{quantity.normalize():0,f}) "
+                f"cost={config.sym()}{self.cost:0,.2f} {config.ccy} "
+                f"(+{config.sym()}{cost:0,.2f} {config.ccy}) "
+                f"fees={config.sym()}{self.fees:0,.2f} {config.ccy} "
+                f"(+{config.sym()}{fees:0,.2f} {config.ccy})"
             )
 
     def subtract_tokens(self, quantity, cost, fees, is_withdrawal):
@@ -56,34 +48,18 @@ class Holdings(object):
 
         if config.debug:
             print(
-                "%ssection104:   %s=%s (-%s) cost=%s %s (-%s %s) fees=%s %s (-%s %s)"
-                % (
-                    Fore.YELLOW,
-                    self.asset,
-                    "{:0,f}".format(self.quantity.normalize()),
-                    "{:0,f}".format(quantity.normalize()),
-                    config.sym() + "{:0,.2f}".format(self.cost),
-                    config.ccy,
-                    config.sym() + "{:0,.2f}".format(cost),
-                    config.ccy,
-                    config.sym() + "{:0,.2f}".format(self.fees),
-                    config.ccy,
-                    config.sym() + "{:0,.2f}".format(fees),
-                    config.ccy,
-                )
+                f"{Fore.YELLOW}section104:   "
+                f"{self.asset}={self.quantity.normalize():0,f} (-{quantity.normalize():0,f}) "
+                f"cost={config.sym()}{self.cost:0,.2f} {config.ccy} "
+                f"(-{config.sym()}{cost:0,.2f} {config.ccy}) "
+                f"fees={config.sym()}{self.fees:0,.2f} {config.ccy} "
+                f"(-{config.sym()}{fees:0,.2f} {config.ccy})"
             )
 
     def check_transfer_mismatch(self):
         if self.withdrawals > 0 and self.withdrawals != self.deposits:
             tqdm.write(
-                "%sWARNING%s Disposal detected between a Withdrawal and a Deposit "
-                "(%s:%s) for %s, cost basis will be wrong"
-                % (
-                    Back.RED + Fore.BLACK,
-                    Back.RESET + Fore.RED,
-                    self.withdrawals,
-                    self.deposits,
-                    self.asset,
-                )
+                f"{WARNING} Disposal detected between a Withdrawal and a Deposit "
+                f"({self.withdrawals}:{self.deposits}) for {self.asset}, cost basis will be wrong"
             )
             self.mismatches += 1

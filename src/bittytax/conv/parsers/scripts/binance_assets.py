@@ -24,14 +24,15 @@ def get_assets():
 
         print("\nQUOTE_ASSETS = [")
         for i in sorted(quote_assets):
-            print('    "%s",' % i)
+            print(f'    "{i}",')
         print("]")
 
         rows = []
         for i in range(0, len(base_assets), 10):
-            rows.append(", ".join("'{}'".format(v) for v in sorted(base_assets)[i : i + 10]))
+            rows.append(", ".join(f"'{v}'" for v in sorted(base_assets)[i : i + 10]))
 
-        print("\nBASE_ASSETS = [%s]\n" % (",\n               ".join(rows)))
+        rows_str = ",/\n               ".join(rows)
+        print(f"\nBASE_ASSETS = [{rows_str}]\n")
 
 
 if __name__ == "__main__":

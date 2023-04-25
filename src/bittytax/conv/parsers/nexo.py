@@ -38,9 +38,9 @@ def parse_nexo(data_row, parser, **_kwargs):
         buy_asset = row_dict["Output Currency"]
         sell_asset = row_dict["Input Currency"]
 
-    for local_asset in ASSET_NORMALISE:
-        buy_asset = buy_asset.replace(local_asset, ASSET_NORMALISE[local_asset])
-        sell_asset = sell_asset.replace(local_asset, ASSET_NORMALISE[local_asset])
+    for nexo_asset, asset in ASSET_NORMALISE.items():
+        buy_asset = buy_asset.replace(nexo_asset, asset)
+        sell_asset = sell_asset.replace(nexo_asset, asset)
 
     if "Amount" in row_dict:
         if row_dict["Type"] != "Exchange":

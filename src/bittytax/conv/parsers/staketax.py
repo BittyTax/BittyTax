@@ -82,10 +82,7 @@ def parse_staketax_default(data_row, parser, **_kwargs):
 
 
 def _get_wallet(exchange, wallet_address):
-    return "%s-%s" % (
-        exchange.replace("_blockchain", "").capitalize(),
-        wallet_address[0:16],
-    )
+    return f'{exchange.replace("_blockchain", "").capitalize()}-{wallet_address[0:16]}'
 
 
 def parse_staketax_bittytax(data_row, parser, **_kwargs):

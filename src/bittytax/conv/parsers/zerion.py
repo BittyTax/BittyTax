@@ -22,8 +22,8 @@ def parse_zerion(data_rows, parser, **_kwargs):
     for row_index, data_row in enumerate(data_rows):
         if config.debug:
             sys.stderr.write(
-                "%sconv: row[%s] %s\n"
-                % (Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row)
+                f"{Fore.YELLOW}conv: "
+                f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
             )
 
         if data_row.parsed:
@@ -187,8 +187,8 @@ def _do_zerion_multi_withdrawal(data_row, data_rows, row_index, t_outs):
 
         if config.debug:
             sys.stderr.write(
-                "%sconv: split_fee_quantity=%s split_fee_value=%s\n"
-                % (Fore.GREEN, split_fee_quantity, split_fee_value)
+                f"{Fore.GREEN}conv: "
+                f"split_fee_quantity={split_fee_quantity} split_fee_value={split_fee_value}\n"
             )
 
         t_record = TransactionOutRecord(
@@ -223,12 +223,12 @@ def _do_zerion_multi_sell(data_row, data_rows, row_index, t_ins, t_outs):
 
     if config.debug:
         sys.stderr.write(
-            "%sconv: buy_quantity=%s buy_asset=%s buy_value=%s\n"
-            % (Fore.GREEN, buy_quantity, buy_asset, buy_value)
+            f"{Fore.GREEN}conv: "
+            f"buy_quantity={buy_quantity} buy_asset={buy_asset} buy_value={buy_value}\n"
         )
         sys.stderr.write(
-            "%sconv: fee_quantity=%s fee_asset=%s fee_value=%s\n"
-            % (Fore.GREEN, fee_quantity, fee_asset, fee_value)
+            f"{Fore.GREEN}conv: "
+            f"fee_quantity={fee_quantity} fee_asset={fee_asset} fee_value={fee_value}\n"
         )
 
     for cnt, t_out in enumerate(t_outs):
@@ -247,12 +247,12 @@ def _do_zerion_multi_sell(data_row, data_rows, row_index, t_ins, t_outs):
 
         if config.debug:
             sys.stderr.write(
-                "%sconv: split_buy_quantity=%s split_buy_value=%s\n"
-                % (Fore.GREEN, split_buy_quantity, split_buy_value)
+                f"{Fore.GREEN}conv: "
+                f"split_buy_quantity={split_buy_quantity} split_buy_value={split_buy_value}\n"
             )
             sys.stderr.write(
-                "%sconv: split_fee_quantity=%s split_fee_value=%s\n"
-                % (Fore.GREEN, split_fee_quantity, split_fee_value)
+                f"{Fore.GREEN}conv: "
+                f"split_fee_quantity={split_fee_quantity} split_fee_value={split_fee_value}\n"
             )
 
         sell_quantity, sell_asset, sell_value = _get_data_json(data_row, t_out)
@@ -290,12 +290,12 @@ def _do_zerion_multi_buy(data_row, data_rows, row_index, t_ins, t_outs):
     sell_quantity, sell_asset, sell_value = _get_data_json(data_row, t_outs[0])
     if config.debug:
         sys.stderr.write(
-            "%sconv: sell_quantity=%s sell_asset=%s sell_value=%s\n"
-            % (Fore.GREEN, sell_quantity, sell_asset, sell_value)
+            f"{Fore.GREEN}conv: "
+            f"sell_quantity={sell_quantity} sell_asset={sell_asset} sell_value={sell_value}\n"
         )
         sys.stderr.write(
-            "%sconv: fee_quantity=%s fee_asset=%s fee_value=%s\n"
-            % (Fore.GREEN, fee_quantity, fee_asset, fee_value)
+            f"{Fore.GREEN}conv: "
+            f"fee_quantity={fee_quantity} fee_asset={fee_asset} fee_value={fee_value}\n"
         )
 
     for cnt, t_in in enumerate(t_ins):
@@ -314,12 +314,12 @@ def _do_zerion_multi_buy(data_row, data_rows, row_index, t_ins, t_outs):
 
         if config.debug:
             sys.stderr.write(
-                "%sconv: split_sell_quantity=%s split_sell_value=%s\n"
-                % (Fore.GREEN, split_sell_quantity, split_sell_value)
+                f"{Fore.GREEN}conv: "
+                f"split_sell_quantity={split_sell_quantity} split_sell_value={split_sell_value}\n"
             )
             sys.stderr.write(
-                "%sconv: split_fee_quantity=%s split_fee_value=%s\n"
-                % (Fore.GREEN, split_fee_quantity, split_fee_value)
+                f"{Fore.GREEN}conv: "
+                f"split_fee_quantity={split_fee_quantity} split_fee_value={split_fee_value}\n"
             )
 
         buy_quantity, buy_asset, buy_value = _get_data_json(data_row, t_in)

@@ -53,13 +53,13 @@ def parse_etherscan(data_row, _parser, **_kwargs):
 
 
 def _get_wallet(address):
-    return "%s-%s" % (WALLET, address.lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN])
+    return f"{WALLET}-{address.lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN]}"
 
 
 def _get_note(row_dict):
     if row_dict["Status"] != "":
         if row_dict.get("Method"):
-            return "Failure (%s)" % row_dict["Method"]
+            return f'Failure ({row_dict["Method"]})'
         return "Failure"
 
     if row_dict.get("Method"):
@@ -137,7 +137,7 @@ def parse_etherscan_nfts(data_row, _parser, **kwargs):
             TransactionOutRecord.TYPE_DEPOSIT,
             data_row.timestamp,
             buy_quantity=1,
-            buy_asset="{} #{}".format(row_dict["TokenName"], row_dict["TokenId"]),
+            buy_asset=f'{row_dict["TokenName"]} #{row_dict["TokenId"]}',
             wallet=_get_wallet(row_dict["To"]),
         )
     elif row_dict["From"].lower() in kwargs["filename"].lower():
@@ -145,7 +145,7 @@ def parse_etherscan_nfts(data_row, _parser, **kwargs):
             TransactionOutRecord.TYPE_WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=1,
-            sell_asset="{} #{}".format(row_dict["TokenName"], row_dict["TokenId"]),
+            sell_asset=f'{row_dict["TokenName"]} #{row_dict["TokenId"]}',
             wallet=_get_wallet(row_dict["From"]),
         )
     else:

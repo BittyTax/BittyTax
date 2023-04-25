@@ -35,8 +35,8 @@ def parse_gravity_v1(data_rows, parser, **kwargs):
     for data_row in data_rows:
         if config.debug:
             sys.stderr.write(
-                "%sconv: row[%s] %s\n"
-                % (Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row)
+                f"{Fore.YELLOW}conv: "
+                f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
             )
 
         if data_row.parsed:

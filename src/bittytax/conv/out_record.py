@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import sys
 from decimal import Decimal
 
 from ..config import config
 from ..record import TransactionRecord
 
 
-class TransactionOutRecord(object):  # pylint: disable=too-many-instance-attributes
+class TransactionOutRecord:  # pylint: disable=too-many-instance-attributes
     TYPE_DEPOSIT = TransactionRecord.TYPE_DEPOSIT
     TYPE_MINING = TransactionRecord.TYPE_MINING
     TYPE_STAKING = TransactionRecord.TYPE_STAKING
@@ -81,40 +80,40 @@ class TransactionOutRecord(object):  # pylint: disable=too-many-instance-attribu
 
     def __str__(self):
         if self.t_type == self.TYPE_TRADE:
-            return "%s %s %s%s <- %s %s%s%s '%s' %s %s" % (
-                self.t_type,
-                self.format_quantity(self.buy_quantity),
-                self.format_str(self.buy_asset),
-                self.format_value(self.buy_value),
-                self.format_quantity(self.sell_quantity),
-                self.format_str(self.sell_asset),
-                self.format_value(self.sell_value),
-                self.format_fee(),
-                self.format_str(self.wallet),
-                self.format_timestamp(self.timestamp),
-                self.format_note(self.note),
+            return (
+                f"{self.t_type} "
+                f"{self.format_quantity(self.buy_quantity)} "
+                f"{self.buy_asset}"
+                f"{self.format_value(self.buy_value)} <- "
+                f"{self.format_quantity(self.sell_quantity)} "
+                f"{self.sell_asset}"
+                f"{self.format_value(self.sell_value)}"
+                f"{self.format_fee()} "
+                f"'{self.wallet}' "
+                f"{self.format_timestamp(self.timestamp)} "
+                f"{self.format_note(self.note)}"
             )
         if self.t_type in self.BUY_TYPES:
-            return "%s %s %s%s%s '%s' %s %s" % (
-                self.t_type,
-                self.format_quantity(self.buy_quantity),
-                self.format_str(self.buy_asset),
-                self.format_value(self.buy_value),
-                self.format_fee(),
-                self.format_str(self.wallet),
-                self.format_timestamp(self.timestamp),
-                self.format_note(self.note),
+            return (
+                f"{self.t_type} "
+                f"{self.format_quantity(self.buy_quantity)} "
+                f"{self.buy_asset}"
+                f"{self.format_value(self.buy_value)}"
+                f"{self.format_fee()} "
+                f"'{self.wallet}' "
+                f"{self.format_timestamp(self.timestamp)} "
+                f"{self.format_note(self.note)}"
             )
         if self.t_type in self.SELL_TYPES:
-            return "%s %s %s%s%s '%s' %s %s" % (
-                self.t_type,
-                self.format_quantity(self.sell_quantity),
-                self.format_str(self.sell_asset),
-                self.format_value(self.sell_value),
-                self.format_fee(),
-                self.format_str(self.wallet),
-                self.format_timestamp(self.timestamp),
-                self.format_note(self.note),
+            return (
+                f"{self.t_type} "
+                f"{self.format_quantity(self.sell_quantity)} "
+                f"{self.sell_asset}"
+                f"{self.format_value(self.sell_value)}"
+                f"{self.format_fee()} "
+                f"'{self.wallet}' "
+                f"{self.format_timestamp(self.timestamp)} "
+                f"{self.format_note(self.note)}"
             )
         return []
 
@@ -137,39 +136,30 @@ class TransactionOutRecord(object):  # pylint: disable=too-many-instance-attribu
     def format_quantity(quantity):
         if quantity is None:
             return ""
-        return "{:0,f}".format(quantity.normalize())
+        return f"{quantity.normalize():0,f}"
 
     def format_fee(self):
         if self.fee_quantity:
-            return " + fee=%s %s%s" % (
-                self.format_quantity(self.fee_quantity),
-                self.format_str(self.fee_asset),
-                self.format_value(self.fee_value),
+            return (
+                f" + fee={self.format_quantity(self.fee_quantity)} "
+                f"{self.fee_asset}{self.format_value(self.fee_value)}"
             )
         return ""
 
     @staticmethod
     def format_value(value):
         if value is not None:
-            return " (%s %s)" % (config.sym() + "{:0,.2f}".format(value), config.ccy)
+            return f" ({config.sym()}{value:0,.2f} {config.ccy})"
         return ""
 
     @staticmethod
     def format_note(note):
         if note:
-            if sys.version_info[0] < 3:
-                return "'%s' " % note.decode("utf8")
-            return "'%s' " % note
+            return f"'{note}' "
         return ""
 
     @staticmethod
     def format_timestamp(timestamp):
         if timestamp.microsecond:
-            return timestamp.strftime("%Y-%m-%dT%H:%M:%S.%f %Z")
-        return timestamp.strftime("%Y-%m-%dT%H:%M:%S %Z")
-
-    @staticmethod
-    def format_str(string):
-        if sys.version_info[0] < 3:
-            return string.decode("utf8")
-        return string
+            return f"{timestamp:%Y-%m-%dT%H:%M:%S.%f %Z}"
+        return f"{timestamp:%Y-%m-%dT%H:%M:%S %Z}"

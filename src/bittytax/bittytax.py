@@ -10,10 +10,11 @@ import platform
 import sys
 
 import colorama
-from colorama import Back, Fore
+from colorama import Fore
 
 from .audit import AuditRecords
 from .config import config
+from .constants import ERROR, TAX_RULES_UK_COMPANY, TAX_RULES_UK_INDIVIDUAL, WARNING
 from .exceptions import ImportFailureError
 from .export_records import ExportRecords
 from .import_records import ImportRecords
@@ -28,10 +29,8 @@ from .version import __version__
 if sys.stdout.encoding != "UTF-8":
     if sys.version_info[:2] >= (3, 7):
         sys.stdout.reconfigure(encoding="utf-8")
-    elif sys.version_info[:2] >= (3, 1):
-        sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
     else:
-        sys.stdout = codecs.getwriter("utf-8")(sys.stdout)
+        sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
 
 
 def main():
@@ -47,22 +46,24 @@ def main():
         "-v",
         "--version",
         action="version",
-        version="%s v%s" % (parser.prog, __version__),
+        version=f"{parser.prog} v{__version__}",
     )
     parser.add_argument("-d", "--debug", action="store_true", help="enable debug logging")
     parser.add_argument(
         "-ty",
         "--taxyear",
         type=validate_year,
-        help="tax year must be in the range (%s-%s)"
-        % (min(CCG.CG_DATA_INDIVIDUAL), max(CCG.CG_DATA_INDIVIDUAL)),
+        help=(
+            f"tax year must be in the range "
+            f"({min(CCG.CG_DATA_INDIVIDUAL)}-{max(CCG.CG_DATA_INDIVIDUAL)})"
+        ),
     )
     parser.add_argument(
         "--taxrules",
-        choices=[config.TAX_RULES_UK_INDIVIDUAL] + config.TAX_RULES_UK_COMPANY,
+        choices=[TAX_RULES_UK_INDIVIDUAL] + TAX_RULES_UK_COMPANY,
         metavar="{UK_INDIVIDUAL, UK_COMPANY_XXX} "
         "where XXX is the month which starts the financial year, i.e. JAN, FEB, etc.",
-        default=str(config.TAX_RULES_UK_INDIVIDUAL),
+        default=TAX_RULES_UK_INDIVIDUAL,
         type=str.upper,
         dest="tax_rules",
         help="specify tax rules to use, default: UK_INDIVIDUAL",
@@ -99,22 +100,19 @@ def main():
     config.debug = args.debug
 
     if config.debug:
-        print("%s%s v%s" % (Fore.YELLOW, parser.prog, __version__))
-        print("%spython: v%s" % (Fore.GREEN, platform.python_version()))
-        print("%ssystem: %s, release: %s" % (Fore.GREEN, platform.system(), platform.release()))
-        config.output_config()
+        print(f"{Fore.YELLOW}{parser.prog} v{__version__}")
+        print(f"{Fore.GREEN}python: v{platform.python_version()}")
+        print(f"{Fore.GREEN}system: {platform.system()}, release: {platform.release()}")
+        config.output_config(sys.stdout)
 
-    if args.tax_rules in config.TAX_RULES_UK_COMPANY:
-        config.start_of_year_month = config.TAX_RULES_UK_COMPANY.index(args.tax_rules) + 1
+    if args.tax_rules in TAX_RULES_UK_COMPANY:
+        config.start_of_year_month = TAX_RULES_UK_COMPANY.index(args.tax_rules) + 1
         config.start_of_year_day = 1
 
     try:
         transaction_records = do_import(args.filename)
     except IOError:
-        parser.exit(
-            "%sERROR%s File could not be read: %s"
-            % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED, args.filename)
-        )
+        parser.exit(f"{ERROR} File could not be read: {args.filename}")
     except ImportFailureError:
         parser.exit()
 
@@ -137,7 +135,7 @@ def main():
         do_each_tax_year(tax, args.taxyear, args.summary, value_asset)
 
     except DataSourceError as e:
-        parser.exit("%sERROR%s %s" % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED, e))
+        parser.exit(f"{ERROR} {e}")
 
     if args.nopdf:
         ReportLog(audit, tax.tax_report, value_asset.price_report, tax.holdings_report, args)
@@ -156,8 +154,8 @@ def validate_year(value):
     year = int(value)
     if year not in CCG.CG_DATA_INDIVIDUAL:
         raise argparse.ArgumentTypeError(
-            "tax year %d is not supported, must be in the range (%s-%s)"
-            % (year, min(CCG.CG_DATA_INDIVIDUAL), max(CCG.CG_DATA_INDIVIDUAL))
+            f"tax year {year} is not supported, must be in the range "
+            f"({min(CCG.CG_DATA_INDIVIDUAL)}-{max(CCG.CG_DATA_INDIVIDUAL)})",
         )
 
     return year
@@ -176,19 +174,11 @@ def do_import(filename):
             with io.open(filename, newline="", encoding="utf-8") as csv_file:
                 import_records.import_csv(csv_file)
     else:
-        if sys.version_info[0] < 3:
-            import_records.import_csv(codecs.getreader("utf-8")(sys.stdin))
-        else:
-            import_records.import_csv(sys.stdin)
+        import_records.import_csv(sys.stdin)
 
     print(
-        "%simport %s (success=%s, failure=%s)"
-        % (
-            Fore.WHITE,
-            "successful" if import_records.failure_cnt <= 0 else "failure",
-            import_records.success_cnt,
-            import_records.failure_cnt,
-        )
+        f"{Fore.WHITE}import {'successful' if import_records.failure_cnt <= 0 else 'failure'} "
+        f"(success={import_records.success_cnt}, failure={import_records.failure_cnt})"
     )
 
     if import_records.failure_cnt > 0:
@@ -205,9 +195,9 @@ def do_tax(transaction_records, tax_rules, skip_integrity_check):
     tax.pool_same_day()
     tax.match_sell(tax.DISPOSAL_SAME_DAY)
 
-    if tax_rules == config.TAX_RULES_UK_INDIVIDUAL:
+    if tax_rules == TAX_RULES_UK_INDIVIDUAL:
         tax.match_buyback(tax.DISPOSAL_BED_AND_BREAKFAST)
-    elif tax_rules in config.TAX_RULES_UK_COMPANY:
+    elif tax_rules in TAX_RULES_UK_COMPANY:
         tax.match_sell(tax.DISPOSAL_TEN_DAY)
 
     tax.process_section104(skip_integrity_check)
@@ -227,28 +217,21 @@ def do_integrity_check(audit, holdings):
     if not pools_match or transfer_mismatch:
         int_passed = False
 
-    print(
-        "%sintegrity check: %s%s" % (Fore.CYAN, Fore.YELLOW, "passed" if int_passed else "failed")
-    )
+    print(f"{Fore.CYAN}integrity check: {Fore.YELLOW}{'passed' if int_passed else 'failed'}")
 
     if transfer_mismatch:
         print(
-            "%sWARNING%s Integrity check failed: disposal(s) detected during transfer, "
-            "turn on logging [-d] to see transactions"
-            % (Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW)
+            f"{WARNING} Integrity check failed: disposal(s) detected during transfer, "
+            f"turn on logging [-d] to see transactions"
         )
     elif not pools_match:
         if not config.transfers_include:
             print(
-                "%sWARNING%s Integrity check failed: audit does not match section 104 pools, "
-                "please check Withdrawals and Deposits for missing fees"
-                % (Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW)
+                f"{WARNING} Integrity check failed: audit does not match section 104 pools, "
+                f"please check Withdrawals and Deposits for missing fees"
             )
         else:
-            print(
-                "%sERROR%s Integrity check failed: audit does not match section 104 pools"
-                % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED)
-            )
+            print(f"{ERROR} Integrity check failed: audit does not match section 104 pools")
         audit.report_failures()
     return int_passed
 
@@ -259,7 +242,7 @@ def transfer_mismatches(holdings):
 
 def do_each_tax_year(tax, tax_year, summary, value_asset):
     if tax_year:
-        print("%scalculating tax year %s" % (Fore.CYAN, config.format_tax_year(tax_year)))
+        print(f"{Fore.CYAN}calculating tax year {config.format_tax_year(tax_year)}")
 
         tax.calculate_capital_gains(tax_year)
         if not summary:
@@ -267,17 +250,14 @@ def do_each_tax_year(tax, tax_year, summary, value_asset):
     else:
         # Calculate for all years
         for year in sorted(tax.tax_events):
-            print("%scalculating tax year %s" % (Fore.CYAN, config.format_tax_year(year)))
+            print(f"{Fore.CYAN}calculating tax year {config.format_tax_year(year)}")
 
             if year in CCG.CG_DATA_INDIVIDUAL:
                 tax.calculate_capital_gains(year)
                 if not summary:
                     tax.calculate_income(year)
             else:
-                print(
-                    "%sWARNING%s Tax year %s is not supported"
-                    % (Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW, year)
-                )
+                print(f"{WARNING} Tax year {year} is not supported")
 
         if not summary:
             tax.calculate_holdings(value_asset)

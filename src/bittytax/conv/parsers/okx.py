@@ -14,11 +14,7 @@ from ..out_record import TransactionOutRecord
 
 WALLET = "OKX"
 TZ_INFOS = {"CST": dateutil.tz.gettz("Asia/Shanghai")}
-
-if sys.version_info[0] < 3:
-    BOM = "\xef\xbb\xbf"
-else:
-    BOM = "\ufeff"  # pylint: disable=anomalous-unicode-escape-in-string
+BOM = "\ufeff"  # pylint: disable=anomalous-unicode-escape-in-string
 
 
 def parse_okx_trades_v2(data_rows, parser, **_kwargs):
@@ -42,8 +38,8 @@ def parse_okx_trades_v2(data_rows, parser, **_kwargs):
     for data_row in data_rows:
         if config.debug:
             sys.stderr.write(
-                "%sconv: row[%s] %s\n"
-                % (Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row)
+                f"{Fore.YELLOW}conv: "
+                f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
             )
 
         if data_row.parsed:
@@ -115,20 +111,12 @@ def parse_okx_trades_v1(data_rows, parser, **_kwargs):
         try:
             if config.debug:
                 sys.stderr.write(
-                    "%sconv: row[%s] %s\n"
-                    % (
-                        Fore.YELLOW,
-                        parser.in_header_row_num + buy_row.line_num,
-                        buy_row,
-                    )
+                    f"{Fore.YELLOW}conv: "
+                    f"row[{parser.in_header_row_num + buy_row.line_num}] {buy_row}\n"
                 )
                 sys.stderr.write(
-                    "%sconv: row[%s] %s\n"
-                    % (
-                        Fore.YELLOW,
-                        parser.in_header_row_num + sell_row.line_num,
-                        sell_row,
-                    )
+                    f"{Fore.YELLOW}conv: "
+                    f"row[{parser.in_header_row_num + sell_row.line_num}] {sell_row}\n"
                 )
 
             _parse_okx_trades_v1_row(buy_row, sell_row, parser)

@@ -48,7 +48,7 @@ def parse_trezor_suite_v2(data_row, parser, **_kwargs):
         )
     elif row_dict["Type"] == "FAILED":
         if row_dict["Label"]:
-            note = "Failure (%s)" % row_dict["Label"]
+            note = f'Failure ({row_dict["Label"]})'
         else:
             note = "Failure"
 

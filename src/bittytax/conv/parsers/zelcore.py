@@ -44,15 +44,13 @@ def _get_wallet(filename, chain_id):
 
     if match:
         if match.group(1) is None:
-            return "%s-%s:%s" % (
-                WALLET,
-                match.group(2).lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN],
-                chain_id,
+            return (
+                f"{WALLET}-{match.group(2).lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN]}:"
+                f"{chain_id}"
             )
-        return "%s-k:%s:%s" % (
-            WALLET,
-            match.group(2).lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN],
-            chain_id,
+        return (
+            f"{WALLET}-k:{match.group(2).lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN]}:"
+            f"{chain_id}"
         )
     return WALLET
 

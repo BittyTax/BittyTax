@@ -5,13 +5,14 @@ import csv
 import os
 import sys
 
-from colorama import Back, Fore
+from colorama import Fore
 
 from ..config import config
+from ..constants import FORMAT_RECAP, WARNING
 from .out_record import TransactionOutRecord
 
 
-class OutputBase(object):  # pylint: disable=too-few-public-methods
+class OutputBase:  # pylint: disable=too-few-public-methods
     DEFAULT_FILENAME = "BittyTax_Records"
     EXCEL_PRECISION = 15
     BITTYTAX_OUT_HEADER = [
@@ -38,19 +39,19 @@ class OutputBase(object):  # pylint: disable=too-few-public-methods
         if filename:
             filepath, file_extension = os.path.splitext(filename)
             if file_extension != extension_type:
-                filepath = filepath + "." + extension_type
+                filepath = f"{filepath}.{extension_type}"
         else:
-            filepath = OutputBase.DEFAULT_FILENAME + "." + extension_type
+            filepath = f"{OutputBase.DEFAULT_FILENAME}.{extension_type}"
 
         if not os.path.exists(filepath):
             return filepath
 
         filepath, file_extension = os.path.splitext(filepath)
         i = 2
-        new_fname = "%s-%s%s" % (filepath, i, file_extension)
+        new_fname = f"{filepath}-{i}{file_extension}"
         while os.path.exists(new_fname):
             i += 1
-            new_fname = "%s-%s%s" % (filepath, i, file_extension)
+            new_fname = f"{filepath}-{i}{file_extension}"
 
         return new_fname
 
@@ -87,7 +88,7 @@ class OutputCsv(OutputBase):
     }
 
     def __init__(self, data_files, args):
-        super(OutputCsv, self).__init__(data_files)
+        super().__init__(data_files)
         if args.output_filename:
             self.filename = self.get_output_filename(args.output_filename, self.FILE_EXTENSION)
         else:
@@ -99,35 +100,26 @@ class OutputCsv(OutputBase):
         self.append_raw_data = args.append
 
     def out_header(self):
-        if self.csv_format == config.FORMAT_RECAP:
+        if self.csv_format == FORMAT_RECAP:
             return self.RECAP_OUT_HEADER
 
         return self.BITTYTAX_OUT_HEADER
 
     def in_header(self, in_header):
-        if self.csv_format == config.FORMAT_RECAP:
+        if self.csv_format == FORMAT_RECAP:
             return [name if name not in self.out_header() else name + "_" for name in in_header]
 
         return in_header
 
     def write_csv(self):
         if self.filename:
-            if sys.version_info[0] >= 3:
-                with open(self.filename, "w", newline="", encoding="utf-8") as csv_file:
-                    writer = csv.writer(csv_file, lineterminator="\n")
-                    self.write_rows(writer)
-            else:
-                with open(self.filename, "wb") as csv_file:
-                    writer = csv.writer(csv_file, lineterminator="\n")
-                    self.write_rows(writer)
+            with open(self.filename, "w", newline="", encoding="utf-8") as csv_file:
+                writer = csv.writer(csv_file, lineterminator="\n")
+                self.write_rows(writer)
 
-            sys.stderr.write(
-                "%soutput CSV file created: %s%s\n" % (Fore.WHITE, Fore.YELLOW, self.filename)
-            )
+            sys.stderr.write(f"{Fore.WHITE}output CSV file created: {Fore.YELLOW}{self.filename}\n")
         else:
-            if sys.version_info[0] > 3:
-                sys.stdout.reconfigure(encoding="utf-8")
-
+            sys.stdout.reconfigure(encoding="utf-8")
             writer = csv.writer(sys.stdout, lineterminator="\n")
             self.write_rows(writer)
 
@@ -158,16 +150,22 @@ class OutputCsv(OutputBase):
                     writer.writerow(self._to_csv(data_row.t_record))
 
     def _to_csv(self, t_record):
-        if self.csv_format == config.FORMAT_RECAP:
+        if self.csv_format == FORMAT_RECAP:
             return self._to_recap_csv(t_record)
 
         return self._to_bittytax_csv(t_record)
 
     @staticmethod
+    def _format_decimal(decimal):
+        if decimal is None:
+            return ""
+        return f"{decimal.normalize():0f}"
+
+    @staticmethod
     def _format_timestamp(timestamp):
         if timestamp.microsecond:
-            return timestamp.strftime("%Y-%m-%dT%H:%M:%S.%f %Z")
-        return timestamp.strftime("%Y-%m-%dT%H:%M:%S %Z")
+            return f"{timestamp:%Y-%m-%dT%H:%M:%S.%f %Z}"
+        return f"{timestamp:%Y-%m-%dT%H:%M:%S %Z}"
 
     @staticmethod
     def _to_bittytax_csv(tr):
@@ -176,14 +174,8 @@ class OutputCsv(OutputBase):
             and len(tr.buy_quantity.normalize().as_tuple().digits) > OutputBase.EXCEL_PRECISION
         ):
             sys.stderr.write(
-                "%sWARNING%s %d-digit precision exceeded for Buy Quantity: %s%s\n"
-                % (
-                    Back.YELLOW + Fore.BLACK,
-                    Back.RESET + Fore.YELLOW,
-                    OutputBase.EXCEL_PRECISION,
-                    tr.format_quantity(tr.buy_quantity),
-                    Fore.RESET,
-                )
+                f"{WARNING} {OutputBase.EXCEL_PRECISION}-digit precision exceeded for "
+                f"Buy Quantity: {tr.format_quantity(tr.buy_quantity)}{Fore.RESET}\n"
             )
 
         if (
@@ -191,14 +183,8 @@ class OutputCsv(OutputBase):
             and len(tr.sell_quantity.normalize().as_tuple().digits) > OutputBase.EXCEL_PRECISION
         ):
             sys.stderr.write(
-                "%sWARNING%s %d-digit precision exceeded for Sell Quantity: %s%s\n"
-                % (
-                    Back.YELLOW + Fore.BLACK,
-                    Back.RESET + Fore.YELLOW,
-                    OutputBase.EXCEL_PRECISION,
-                    tr.format_quantity(tr.sell_quantity),
-                    Fore.RESET,
-                )
+                f"{WARNING} {OutputBase.EXCEL_PRECISION}-digit precision exceeded for "
+                f"Sell Quantity: {tr.format_quantity(tr.sell_quantity)}{Fore.RESET}\n"
             )
 
         if (
@@ -206,26 +192,20 @@ class OutputCsv(OutputBase):
             and len(tr.fee_quantity.normalize().as_tuple().digits) > OutputBase.EXCEL_PRECISION
         ):
             sys.stderr.write(
-                "%sWARNING%s %d-digit precision exceeded for Fee Quantity: %s%s\n"
-                % (
-                    Back.YELLOW + Fore.BLACK,
-                    Back.RESET + Fore.YELLOW,
-                    OutputBase.EXCEL_PRECISION,
-                    tr.format_quantity(tr.fee_quantity),
-                    Fore.RESET,
-                )
+                f"{WARNING} {OutputBase.EXCEL_PRECISION}-digit precision exceeded for"
+                f"Fee Quantity: {tr.format_quantity(tr.fee_quantity)}{Fore.RESET}\n"
             )
         return [
             tr.t_type,
-            "{0:f}".format(tr.buy_quantity.normalize()) if tr.buy_quantity is not None else None,
+            OutputCsv._format_decimal(tr.buy_quantity),
             tr.buy_asset,
-            "{0:f}".format(tr.buy_value.normalize()) if tr.buy_value is not None else None,
-            "{0:f}".format(tr.sell_quantity.normalize()) if tr.sell_quantity is not None else None,
+            OutputCsv._format_decimal(tr.buy_value),
+            OutputCsv._format_decimal(tr.sell_quantity),
             tr.sell_asset,
-            "{0:f}".format(tr.sell_value.normalize()) if tr.sell_value is not None else None,
-            "{0:f}".format(tr.fee_quantity.normalize()) if tr.fee_quantity is not None else None,
+            OutputCsv._format_decimal(tr.sell_value),
+            OutputCsv._format_decimal(tr.fee_quantity),
             tr.fee_asset,
-            "{0:f}".format(tr.fee_value.normalize()) if tr.fee_value is not None else None,
+            OutputCsv._format_decimal(tr.fee_value),
             tr.wallet,
             OutputCsv._format_timestamp(tr.timestamp),
             tr.note,
@@ -235,11 +215,11 @@ class OutputCsv(OutputBase):
     def _to_recap_csv(tr):
         return [
             OutputCsv.RECAP_TYPE_MAPPING[tr.t_type],
-            tr.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-            "{0:f}".format(tr.buy_quantity.normalize()) if tr.buy_quantity is not None else None,
+            f"{tr.timestamp:%Y-%m-%d %H:%M:%S}",
+            OutputCsv._format_decimal(tr.buy_quantity),
             tr.buy_asset,
-            "{0:f}".format(tr.sell_quantity.normalize()) if tr.sell_quantity is not None else None,
+            OutputCsv._format_decimal(tr.sell_quantity),
             tr.sell_asset,
-            "{0:f}".format(tr.fee_quantity.normalize()) if tr.fee_quantity is not None else None,
+            OutputCsv._format_decimal(tr.fee_quantity),
             tr.fee_asset,
         ]

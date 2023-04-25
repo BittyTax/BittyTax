@@ -44,15 +44,12 @@ def get_quote_assets():
                 quote = response.json()["result"][pair]["quote"]
 
                 if bt_base and bt_quote and bt_base + "/" + bt_quote == wsname:
-                    print("%s = %s/%s [OK]" % (pair, bt_base, bt_quote))
+                    print(f"{pair} = {bt_base}/{bt_quote} [OK]")
                 elif bt_base == base and bt_quote == quote:
-                    print("%s = %s/%s [OK]" % (pair, bt_base, bt_quote))
+                    print(f"{pair} = {bt_base}/{bt_quote} [OK]")
                 else:
                     passed = False
-                    print(
-                        "%s = %s/%s [Failure] %s (%s & %s)"
-                        % (pair, bt_base, bt_quote, wsname, base, quote)
-                    )
+                    print(f"{pair} = {bt_base}/{bt_quote} [Failure] {wsname} ({base} & {quote})")
 
         if passed:
             print("===Split trading pairs PASSED===")
@@ -65,12 +62,12 @@ def get_quote_assets():
 def output_constants(alt_assets, quote_assets):
     print("\nQUOTE_ASSETS = [")
     for i in sorted(quote_assets):
-        print('    "%s",' % i)
+        print(f'    "{i}"')
     print("]")
 
     print("\nALT_ASSETS = {")
     for k, v in sorted(alt_assets.items()):
-        print('    "{}": "{}",'.format(k, v))
+        print(f'    "{k}": "{v}",')
     print("}")
 
 

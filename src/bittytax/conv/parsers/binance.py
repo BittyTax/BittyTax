@@ -251,8 +251,8 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
     for data_row in data_rows:
         if config.debug:
             sys.stderr.write(
-                "%sconv: row[%s] %s\n"
-                % (Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row)
+                f"{Fore.YELLOW}conv: "
+                f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
             )
 
         if data_row.parsed:
@@ -412,9 +412,7 @@ def _make_trade(operation, tx_times, default_asset=""):
                 split_buy_quantity = buy_quantity - tot_buy_quantity
 
             if config.debug:
-                sys.stderr.write(
-                    "%sconv: split_buy_quantity=%s\n" % (Fore.GREEN, split_buy_quantity)
-                )
+                sys.stderr.write(f"{Fore.GREEN}conv: split_buy_quantity={split_buy_quantity}\n")
         else:
             split_buy_quantity = buy_quantity
 

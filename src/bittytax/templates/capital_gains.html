@@ -1,4 +1,4 @@
-{% if args.tax_rules in config.TAX_RULES_UK_COMPANY %}
+{% if args.tax_rules in TAX_RULES_UK_COMPANY %}
    <h2>Chargeable Gains</h2>
 {% else %}
    <h2>Capital Gains</h2>
@@ -109,7 +109,7 @@
     <p>*Assets sold are more than {{(cgains.estimate['proceeds_limit'])|valuefilter}}, this needs to be reported to HMRC if you already complete a Self Assessment</p>
 {% endif %}
 {% if not args.summary %}
-    {% if args.tax_rules in config.TAX_RULES_UK_COMPANY %}
+    {% if args.tax_rules in TAX_RULES_UK_COMPANY %}
         {% include "ct_estimate.html" %}
     {% else %}
         {% include "cgt_estimate.html" %}

@@ -11,13 +11,14 @@ from colorama import Fore
 from tqdm import tqdm
 
 from .config import config
+from .constants import TAX_RULES_UK_COMPANY
 from .holdings import Holdings
 from .transactions import Buy, Sell
 
 PRECISION = Decimal("0.00")
 
 
-class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
+class TaxCalculator:  # pylint: disable=too-many-instance-attributes
     DISPOSAL_SAME_DAY = "Same Day"
     DISPOSAL_TEN_DAY = "Ten Day"
     DISPOSAL_BED_AND_BREAKFAST = "Bed & Breakfast"
@@ -58,12 +59,12 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
         sell_transactions = {}
 
         if config.debug:
-            print("%spool same day transactions" % Fore.CYAN)
+            print(f"{Fore.CYAN}pool same day transactions")
 
         for t in tqdm(
             transactions,
             unit="t",
-            desc="%spool same day%s" % (Fore.CYAN, Fore.GREEN),
+            desc=f"{Fore.CYAN}pool same day{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         ):
             if (
@@ -95,12 +96,12 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
         if config.debug:
             for t in sorted(self.all_transactions()):
                 if len(t.pooled) > 1:
-                    print("%spool: %s" % (Fore.GREEN, t.__str__(pooled_bold=True)))
+                    print(f"{Fore.GREEN}pool: {t.__str__(pooled_bold=True)}")
                     for tp in t.pooled:
-                        print("%spool:   (%s)" % (Fore.BLUE, tp))
+                        print(f"{Fore.BLUE}pool:   ({tp})")
 
         if config.debug:
-            print("%spool: total transactions=%d" % (Fore.CYAN, len(self.all_transactions())))
+            print(f"{Fore.CYAN}pool: total transactions={len(self.all_transactions())}")
 
     def match_buyback(self, rule):
         sell_index = buy_index = 0
@@ -109,12 +110,12 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
             return
 
         if config.debug:
-            print("%smatch %s transactions" % (Fore.CYAN, rule.lower()))
+            print(f"{Fore.CYAN}match {rule.lower()} transactions")
 
         pbar = tqdm(
             total=len(self.sells_ordered),
             unit="t",
-            desc="%smatch %s transactions%s" % (Fore.CYAN, rule.lower(), Fore.GREEN),
+            desc=f"{Fore.CYAN}match {rule.lower()} transactions{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         )
 
@@ -130,27 +131,27 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
             ):
                 if config.debug:
                     if b.quantity > s.quantity:
-                        print("%smatch: %s" % (Fore.GREEN, s.__str__(quantity_bold=True)))
-                        print("%smatch: %s" % (Fore.GREEN, b))
+                        print(f"{Fore.GREEN}match: {s.__str__(quantity_bold=True)}")
+                        print(f"{Fore.GREEN}match: {b}")
                     elif s.quantity > b.quantity:
-                        print("%smatch: %s" % (Fore.GREEN, s))
-                        print("%smatch: %s" % (Fore.GREEN, b.__str__(quantity_bold=True)))
+                        print(f"{Fore.GREEN}match: {s}")
+                        print(f"{Fore.GREEN}match: {b.__str__(quantity_bold=True)}")
                     else:
-                        print("%smatch: %s" % (Fore.GREEN, s.__str__(quantity_bold=True)))
-                        print("%smatch: %s" % (Fore.GREEN, b.__str__(quantity_bold=True)))
+                        print(f"{Fore.GREEN}match: {s.__str__(quantity_bold=True)}")
+                        print(f"{Fore.GREEN}match: {b.__str__(quantity_bold=True)}")
 
                 if b.quantity > s.quantity:
                     b_remainder = b.split_buy(s.quantity)
                     self.buys_ordered.insert(buy_index + 1, b_remainder)
                     if config.debug:
-                        print("%smatch:   split: %s" % (Fore.YELLOW, b.__str__(quantity_bold=True)))
-                        print("%smatch:   split: %s" % (Fore.YELLOW, b_remainder))
+                        print(f"{Fore.YELLOW}match:   split: {b.__str__(quantity_bold=True)}")
+                        print(f"{Fore.YELLOW}match:   split: {b_remainder}")
                 elif s.quantity > b.quantity:
                     s_remainder = s.split_sell(b.quantity)
                     self.sells_ordered.insert(sell_index + 1, s_remainder)
                     if config.debug:
-                        print("%smatch:   split: %s" % (Fore.YELLOW, s.__str__(quantity_bold=True)))
-                        print("%smatch:   split: %s" % (Fore.YELLOW, s_remainder))
+                        print(f"{Fore.YELLOW}match:   split: {s.__str__(quantity_bold=True)}")
+                        print(f"{Fore.YELLOW}match:   split: {s_remainder}")
                     pbar.total += 1
 
                 s.matched = b.matched = True
@@ -163,7 +164,7 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
                 )
                 self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
                 if config.debug:
-                    print("%smatch:   %s" % (Fore.CYAN, tax_event))
+                    print(f"{Fore.CYAN}match:   {tax_event}")
 
                 # Find next sell
                 sell_index += 1
@@ -179,7 +180,7 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
         pbar.close()
 
         if config.debug:
-            print("%smatch: total transactions=%d" % (Fore.CYAN, len(self.all_transactions())))
+            print(f"{Fore.CYAN}match: total transactions={len(self.all_transactions())}")
 
     def match_sell(self, rule):
         buy_index = sell_index = 0
@@ -188,12 +189,12 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
             return
 
         if config.debug:
-            print("%smatch %s transactions" % (Fore.CYAN, rule.lower()))
+            print(f"{Fore.CYAN}match {rule.lower()} transactions")
 
         pbar = tqdm(
             total=len(self.buys_ordered),
             unit="t",
-            desc="%smatch %s transactions%s" % (Fore.CYAN, rule.lower(), Fore.GREEN),
+            desc=f"{Fore.CYAN}match {rule.lower()} transactions{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         )
 
@@ -209,28 +210,28 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
             ):
                 if config.debug:
                     if b.quantity > s.quantity:
-                        print("%smatch: %s" % (Fore.GREEN, b))
-                        print("%smatch: %s" % (Fore.GREEN, s.__str__(quantity_bold=True)))
+                        print(f"{Fore.GREEN}match: {b}")
+                        print(f"{Fore.GREEN}match: {s.__str__(quantity_bold=True)}")
                     elif s.quantity > b.quantity:
-                        print("%smatch: %s" % (Fore.GREEN, b.__str__(quantity_bold=True)))
-                        print("%smatch: %s" % (Fore.GREEN, s))
+                        print(f"{Fore.GREEN}match: {b.__str__(quantity_bold=True)}")
+                        print(f"{Fore.GREEN}match: {s}")
                     else:
-                        print("%smatch: %s" % (Fore.GREEN, b.__str__(quantity_bold=True)))
-                        print("%smatch: %s" % (Fore.GREEN, s.__str__(quantity_bold=True)))
+                        print(f"{Fore.GREEN}match: {b.__str__(quantity_bold=True)}")
+                        print(f"{Fore.GREEN}match: {s.__str__(quantity_bold=True)}")
 
                 if b.quantity > s.quantity:
                     b_remainder = b.split_buy(s.quantity)
                     self.buys_ordered.insert(buy_index + 1, b_remainder)
                     if config.debug:
-                        print("%smatch:   split: %s" % (Fore.YELLOW, b.__str__(quantity_bold=True)))
-                        print("%smatch:   split: %s" % (Fore.YELLOW, b_remainder))
+                        print(f"{Fore.YELLOW}match:   split: {b.__str__(quantity_bold=True)}")
+                        print(f"{Fore.YELLOW}match:   split: {b_remainder}")
                     pbar.total += 1
                 elif s.quantity > b.quantity:
                     s_remainder = s.split_sell(b.quantity)
                     self.sells_ordered.insert(sell_index + 1, s_remainder)
                     if config.debug:
-                        print("%smatch:   split: %s" % (Fore.YELLOW, s.__str__(quantity_bold=True)))
-                        print("%smatch:   split: %s" % (Fore.YELLOW, s_remainder))
+                        print(f"{Fore.YELLOW}match:   split: {s.__str__(quantity_bold=True)}")
+                        print(f"{Fore.YELLOW}match:   split: {s_remainder}")
 
                 b.matched = s.matched = True
                 tax_event = TaxEventCapitalGains(
@@ -242,7 +243,7 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
                 )
                 self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
                 if config.debug:
-                    print("%smatch:   %s" % (Fore.CYAN, tax_event))
+                    print(f"{Fore.CYAN}match:   {tax_event}")
 
                 # Find next buy
                 buy_index += 1
@@ -258,7 +259,7 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
         pbar.close()
 
         if config.debug:
-            print("%smatch: total transactions=%d" % (Fore.CYAN, len(self.all_transactions())))
+            print(f"{Fore.CYAN}match: total transactions={len(self.all_transactions())}")
 
     def _rule_match(self, b_timestamp, s_timestamp, rule):
         if rule == self.DISPOSAL_SAME_DAY:
@@ -282,12 +283,12 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
 
     def process_section104(self, skip_integrity_check):
         if config.debug:
-            print("%sprocess section 104" % Fore.CYAN)
+            print(f"{Fore.CYAN}process section 104")
 
         for t in tqdm(
             sorted(self.all_transactions()),
             unit="t",
-            desc="%sprocess section 104%s" % (Fore.CYAN, Fore.GREEN),
+            desc=f"{Fore.CYAN}process section 104{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         ):
             if t.is_crypto() and t.asset not in self.holdings:
@@ -295,21 +296,21 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
 
             if t.matched:
                 if config.debug:
-                    print("%ssection104: //%s <- matched" % (Fore.BLUE, t))
+                    print(f"{Fore.BLUE}section104: //{t} <- matched")
                 continue
 
             if not config.transfers_include and t.t_type in self.TRANSFER_TYPES:
                 if config.debug:
-                    print("%ssection104: //%s <- transfer" % (Fore.BLUE, t))
+                    print(f"{Fore.BLUE}section104: //{t} <- transfer")
                 continue
 
             if not t.is_crypto():
                 if config.debug:
-                    print("%ssection104: //%s <- fiat" % (Fore.BLUE, t))
+                    print(f"{Fore.BLUE}section104: //{t} <- fiat")
                 continue
 
             if config.debug:
-                print("%ssection104: %s" % (Fore.GREEN, t))
+                print(f"{Fore.GREEN}section104: {t}")
 
             if isinstance(t, Buy):
                 self._add_tokens(t)
@@ -365,19 +366,19 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
 
             self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
             if config.debug:
-                print("%ssection104:   %s" % (Fore.CYAN, tax_event))
+                print(f"{Fore.CYAN}section104:   {tax_event}")
 
             if config.transfers_include and not skip_integrity_check:
                 self.holdings[t.asset].check_transfer_mismatch()
 
     def process_income(self):
         if config.debug:
-            print("%sprocess income" % Fore.CYAN)
+            print(f"{Fore.CYAN}process income")
 
         for t in tqdm(
             self.transactions,
             unit="t",
-            desc="%sprocess income%s" % (Fore.CYAN, Fore.GREEN),
+            desc=f"{Fore.CYAN}process income{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         ):
             if t.t_type in self.INCOME_TYPES and (t.is_crypto() or config.fiat_income):
@@ -399,7 +400,7 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
                 if isinstance(te, TaxEventCapitalGains):
                     self.tax_report[tax_year]["CapitalGains"].tax_summary(te)
 
-        if self.tax_rules in config.TAX_RULES_UK_COMPANY:
+        if self.tax_rules in TAX_RULES_UK_COMPANY:
             self.tax_report[tax_year]["CapitalGains"].tax_estimate_ct(tax_year)
         else:
             self.tax_report[tax_year]["CapitalGains"].tax_estimate_cgt(tax_year)
@@ -419,12 +420,12 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
         totals = {"cost": Decimal(0), "value": Decimal(0), "gain": Decimal(0)}
 
         if config.debug:
-            print("%scalculating holdings" % Fore.CYAN)
+            print(f"{Fore.CYAN}calculating holdings")
 
         for h in tqdm(
             self.holdings,
             unit="h",
-            desc="%scalculating holdings%s" % (Fore.CYAN, Fore.GREEN),
+            desc=f"{Fore.CYAN}calculating holdings{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         ):
             if self.holdings[h].quantity > 0 or config.show_empty_wallets:
@@ -464,7 +465,7 @@ class TaxCalculator(object):  # pylint: disable=too-many-instance-attributes
         return tax_year
 
 
-class TaxEvent(object):
+class TaxEvent:
     def __init__(self, date, asset):
         self.date = date
         self.asset = asset
@@ -481,7 +482,7 @@ class TaxEvent(object):
 
 class TaxEventCapitalGains(TaxEvent):
     def __init__(self, disposal_type, b, s, cost, fees):
-        super(TaxEventCapitalGains, self).__init__(s.timestamp, s.asset)
+        super().__init__(s.timestamp, s.asset)
         self.disposal_type = disposal_type
         self.quantity = s.quantity
         self.cost = cost.quantize(PRECISION)
@@ -495,26 +496,23 @@ class TaxEventCapitalGains(TaxEvent):
             TaxCalculator.DISPOSAL_BED_AND_BREAKFAST,
             TaxCalculator.DISPOSAL_TEN_DAY,
         ):
-            return "%s (%s)" % (
-                self.disposal_type,
-                self.acquisition_date.strftime("%d/%m/%Y"),
-            )
+            return f"{self.disposal_type} ({self.acquisition_date:%d/%m/%Y})"
 
         return self.disposal_type
 
     def __str__(self):
-        return "Disposal(%s) gain=%s (proceeds=%s - cost=%s - fees=%s)" % (
-            self.disposal_type.lower(),
-            config.sym() + "{:0,.2f}".format(self.gain),
-            config.sym() + "{:0,.2f}".format(self.proceeds),
-            config.sym() + "{:0,.2f}".format(self.cost),
-            config.sym() + "{:0,.2f}".format(self.fees),
+        return (
+            f"Disposal({self.disposal_type.lower()}) gain="
+            f"{config.sym()}{self.gain:0,.2f} "
+            f"(proceeds={config.sym()}{self.proceeds:0,.2f} - cost="
+            f"{config.sym()}{self.cost:0,.2f} - fees="
+            f"{config.sym()}{self.fees:0,.2f})"
         )
 
 
 class TaxEventIncome(TaxEvent):  # pylint: disable=too-few-public-methods
     def __init__(self, b):
-        super(TaxEventIncome, self).__init__(b.timestamp, b.asset)
+        super().__init__(b.timestamp, b.asset)
         self.type = b.t_type
         self.quantity = b.quantity
         self.amount = b.cost.quantize(PRECISION)
@@ -525,7 +523,7 @@ class TaxEventIncome(TaxEvent):  # pylint: disable=too-few-public-methods
             self.fees = Decimal(0)
 
 
-class CalculateCapitalGains(object):
+class CalculateCapitalGains:
     # Rate changes start from 6th April in previous year, i.e. 2022 is for tax year 2021/22
     CG_DATA_INDIVIDUAL = {
         2009: {"allowance": 9600, "basic_rate": 18, "higher_rate": 18},
@@ -590,7 +588,7 @@ class CalculateCapitalGains(object):
             "total_loss": Decimal(0),
         }
 
-        if tax_rules in config.TAX_RULES_UK_COMPANY:
+        if tax_rules in TAX_RULES_UK_COMPANY:
             self.estimate = {
                 "proceeds_warning": False,
                 "ct_small_rates": [],
@@ -705,7 +703,7 @@ class CalculateCapitalGains(object):
             self.estimate["ct_small_rates"] = []
 
 
-class CalculateIncome(object):
+class CalculateIncome:
     def __init__(self):
         self.totals = {"amount": Decimal(0), "fees": Decimal(0)}
         self.assets = {}
@@ -727,8 +725,8 @@ class CalculateIncome(object):
         self.types[te.type].append(te)
 
     def totals_by_type(self):
-        for income_type in self.types:
-            for te in self.types[income_type]:
+        for income_type, te_list in self.types.items():
+            for te in te_list:
                 if income_type not in self.type_totals:
                     self.type_totals[income_type] = {}
                     self.type_totals[income_type]["amount"] = te.amount

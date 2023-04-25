@@ -13,6 +13,7 @@ from openpyxl import load_workbook
 from tqdm import tqdm, trange
 
 from .config import config
+from .constants import ERROR, TZ_UTC
 from .exceptions import (
     DataValueError,
     MissingDataError,
@@ -25,7 +26,7 @@ from .record import TransactionRecord as TR
 from .transactions import Buy, Sell
 
 
-class ImportRecords(object):
+class ImportRecords:
     def __init__(self):
         self.t_rows = []
         self.success_cnt = 0
@@ -34,24 +35,24 @@ class ImportRecords(object):
     def import_excel_xlsx(self, filename):
         warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
         workbook = load_workbook(filename=filename, read_only=False, data_only=True)
-        print("%sExcel file: %s%s" % (Fore.WHITE, Fore.YELLOW, filename))
+        print(f"{Fore.WHITE}Excel file: {Fore.YELLOW}{filename}")
 
         for sheet_name in workbook.sheetnames:
             worksheet = workbook[sheet_name]
 
             if worksheet.title.startswith("--"):
-                print("%sskipping '%s' worksheet" % (Fore.GREEN, worksheet.title))
+                print(f"{Fore.GREEN}skipping '{worksheet.title}' worksheet")
                 continue
 
             if config.debug:
-                print("%simporting '%s' rows" % (Fore.CYAN, worksheet.title))
+                print(f"{Fore.CYAN}importing '{worksheet.title}' rows")
 
             for row_num, row in enumerate(
                 tqdm(
                     worksheet.rows,
                     total=worksheet.max_row,
                     unit=" row",
-                    desc="%simporting '%s' rows%s" % (Fore.CYAN, worksheet.title, Fore.GREEN),
+                    desc=f"{Fore.CYAN}importing '{worksheet.title}' rows{Fore.GREEN}",
                     disable=bool(config.debug or not sys.stdout.isatty()),
                 )
             ):
@@ -71,13 +72,10 @@ class ImportRecords(object):
                     t_row.failure = e
 
                 if config.debug or t_row.failure:
-                    tqdm.write("%simport: %s" % (Fore.YELLOW, t_row))
+                    tqdm.write(f"{Fore.YELLOW}import: {t_row}")
 
                 if t_row.failure:
-                    tqdm.write(
-                        "%sERROR%s %s"
-                        % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED, t_row.failure)
-                    )
+                    tqdm.write(f"{ERROR} {t_row.failure}")
 
                 self.t_rows.append(t_row)
                 self.update_cnts(t_row)
@@ -87,21 +85,21 @@ class ImportRecords(object):
 
     def import_excel_xls(self, filename):
         workbook = xlrd.open_workbook(filename)
-        print("%sExcel file: %s%s" % (Fore.WHITE, Fore.YELLOW, filename))
+        print(f"{Fore.WHITE}Excel file: {Fore.YELLOW}{filename}")
 
         for worksheet in workbook.sheets():
             if worksheet.name.startswith("--"):
-                print("%sskipping '%s' worksheet" % (Fore.GREEN, worksheet.name))
+                print(f"{Fore.GREEN}skipping '{worksheet.name}' worksheet")
                 continue
 
             if config.debug:
-                print("%simporting '%s' rows" % (Fore.CYAN, worksheet.name))
+                print(f"{Fore.CYAN}importing '{worksheet.name}' rows")
 
             for row_num in trange(
                 0,
                 worksheet.nrows,
                 unit=" row",
-                desc="%simporting '%s' rows%s" % (Fore.CYAN, worksheet.name, Fore.GREEN),
+                desc=f"{Fore.CYAN}importing '{worksheet.name}' rows{Fore.GREEN}",
                 disable=bool(config.debug or not sys.stdout.isatty()),
             ):
                 if row_num == 0:
@@ -123,13 +121,10 @@ class ImportRecords(object):
                     t_row.failure = e
 
                 if config.debug or t_row.failure:
-                    tqdm.write("%simport: %s" % (Fore.YELLOW, t_row))
+                    tqdm.write(f"{Fore.YELLOW}import: {t_row}")
 
                 if t_row.failure:
-                    tqdm.write(
-                        "%sERROR%s %s"
-                        % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED, t_row.failure)
-                    )
+                    tqdm.write(f"{ERROR} {t_row.failure}")
 
                 self.t_rows.append(t_row)
                 self.update_cnts(t_row)
@@ -141,9 +136,6 @@ class ImportRecords(object):
     def convert_cell_xlsx(cell):
         if cell.value is None:
             return ""
-
-        if sys.version_info[0] < 3 and cell.data_type == "s":
-            return cell.value.encode("utf-8")
         return str(cell.value)
 
     @staticmethod
@@ -151,9 +143,9 @@ class ImportRecords(object):
         if cell.ctype == xlrd.XL_CELL_DATE:
             datetime = xlrd.xldate.xldate_as_datetime(cell.value, workbook.datemode)
             if datetime.microsecond:
-                value = datetime.strftime("%Y-%m-%dT%H:%M:%S.%f")
+                value = f"{datetime:%Y-%m-%dT%H:%M:%S.%f}"
             else:
-                value = datetime.strftime("%Y-%m-%d %H:%M:%S")
+                value = f"{datetime:%Y-%m-%dT%H:%M:%S}"
         elif cell.ctype in (
             xlrd.XL_CELL_NUMBER,
             xlrd.XL_CELL_BOOLEAN,
@@ -162,28 +154,21 @@ class ImportRecords(object):
             # repr is required to ensure no precision is lost
             value = repr(cell.value)
         else:
-            if sys.version_info[0] >= 3:
-                value = str(cell.value)
-            else:
-                value = cell.value.encode("utf-8")
+            value = str(cell.value)
 
         return value
 
     def import_csv(self, import_file):
-        print("%sCSV file: %s%s" % (Fore.WHITE, Fore.YELLOW, import_file.name))
+        print(f"{Fore.WHITE}CSV file: {Fore.YELLOW}{import_file.name}")
         if config.debug:
-            print("%simporting rows" % Fore.CYAN)
+            print(f"{Fore.CYAN}importing rows")
 
-        if sys.version_info[0] < 3:
-            # Special handling required for utf-8 encoded CSV files
-            reader = csv.reader(self.utf_8_encoder(import_file))
-        else:
-            reader = csv.reader(import_file)
+        reader = csv.reader(import_file)
 
         for row in tqdm(
             reader,
             unit=" row",
-            desc="%simporting%s" % (Fore.CYAN, Fore.GREEN),
+            desc=f"{Fore.CYAN}importing{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         ):
             if reader.line_num == 1:
@@ -197,20 +182,13 @@ class ImportRecords(object):
                 t_row.failure = e
 
             if config.debug or t_row.failure:
-                tqdm.write("%simport: %s" % (Fore.YELLOW, t_row))
+                tqdm.write(f"{Fore.YELLOW}import: {t_row}")
 
             if t_row.failure:
-                tqdm.write(
-                    "%sERROR%s %s" % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED, t_row.failure)
-                )
+                tqdm.write(f"{ERROR} {t_row.failure}")
 
             self.t_rows.append(t_row)
             self.update_cnts(t_row)
-
-    @staticmethod
-    def utf_8_encoder(unicode_csv_data):
-        for line in unicode_csv_data:
-            yield line.encode("utf-8")
 
     def update_cnts(self, t_row):
         if t_row.failure is not None:
@@ -227,12 +205,12 @@ class ImportRecords(object):
 
         if config.debug:
             for t_row in self.t_rows:
-                print("%simport: %s" % (Fore.YELLOW, t_row))
+                print(f"{Fore.YELLOW}import: {t_row}")
 
         return transaction_records
 
 
-class TransactionRow(object):
+class TransactionRow:
     HEADER = [
         "Type",
         "Buy Quantity",
@@ -371,14 +349,14 @@ class TransactionRow(object):
     def parse_timestamp(self):
         try:
             timestamp = dateutil.parser.parse(self.row_dict["Timestamp"])
-        except ValueError:
+        except ValueError as e:
             raise TimestampParserError(
                 self.HEADER.index("Timestamp"), "Timestamp", self.row_dict["Timestamp"]
-            )
+            ) from e
 
         if timestamp.tzinfo is None:
             # Default to UTC if no timezone is specified
-            timestamp = timestamp.replace(tzinfo=config.TZ_UTC)
+            timestamp = timestamp.replace(tzinfo=TZ_UTC)
 
         return timestamp
 
@@ -387,12 +365,12 @@ class TransactionRow(object):
             if required:
                 try:
                     quantity = Decimal(self.strip_non_digits(self.row_dict[quantity_hdr]))
-                except InvalidOperation:
+                except InvalidOperation as e:
                     raise DataValueError(
                         self.HEADER.index(quantity_hdr),
                         quantity_hdr,
                         self.row_dict[quantity_hdr],
-                    )
+                    ) from e
 
                 if quantity < 0:
                     raise DataValueError(self.HEADER.index(quantity_hdr), quantity_hdr, quantity)
@@ -426,12 +404,12 @@ class TransactionRow(object):
             if required:
                 try:
                     value = Decimal(self.strip_non_digits(self.row_dict[value_hdr]))
-                except InvalidOperation:
+                except InvalidOperation as e:
                     raise DataValueError(
                         self.HEADER.index(value_hdr),
                         value_hdr,
                         self.row_dict[value_hdr],
-                    )
+                    ) from e
 
                 if value < 0:
                     raise DataValueError(self.HEADER.index(value_hdr), value_hdr, value)
@@ -453,30 +431,22 @@ class TransactionRow(object):
 
     def __str__(self):
         if self.t_record and self.t_record.tid:
-            tid_str = " %s[TID:%s]" % (Fore.MAGENTA, self.t_record.tid[0])
+            tid_str = f" {Fore.MAGENTA}[TID:{self.t_record.tid[0]}]"
         else:
             tid_str = ""
 
         if self.worksheet_name:
-            worksheet_str = "'%s' " % self.worksheet_name
+            worksheet_str = f"'{self.worksheet_name}' "
         else:
             worksheet_str = ""
 
-        if sys.version_info[0] < 3:
-            row = [r.decode("utf8") for r in self.row]
-        else:
-            row = self.row
+        row_str = ", ".join(
+            [
+                f"{Back.RED}'{data}'{Back.RESET}"
+                if self.failure and self.failure.col_num == num
+                else f"'{data}'"
+                for num, data in enumerate(self.row)
+            ]
+        )
 
-        if self.failure is not None:
-            row_str = ", ".join(
-                [
-                    "%s'%s'%s" % (Back.RED, data, Back.RESET)
-                    if self.failure.col_num == num
-                    else "'%s'" % data
-                    for num, data in enumerate(row)
-                ]
-            )
-        else:
-            row_str = "'%s'" % "', '".join(row)
-
-        return "%srow[%s] [%s]%s" % (worksheet_str, self.row_num, row_str, tid_str)
+        return f"{worksheet_str}row[{self.row_num}] [{row_str}]{tid_str}"

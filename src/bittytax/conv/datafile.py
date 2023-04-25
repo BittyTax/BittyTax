@@ -7,16 +7,17 @@ import sys
 import warnings
 
 import xlrd
-from colorama import Back, Fore
+from colorama import Fore
 from openpyxl import load_workbook
 
 from ..config import config
+from ..constants import ERROR, WARNING
 from .dataparser import DataParser
 from .datarow import DataRow
 from .exceptions import DataFormatUnrecognised, DataRowError
 
 
-class DataFile(object):
+class DataFile:
     CSV_DELIMITERS = (",", ";")
 
     remove_duplicates = False
@@ -48,13 +49,8 @@ class DataFile(object):
         else:
             if [dr for dr in other.data_rows if dr in self.data_rows]:
                 sys.stderr.write(
-                    '%sWARNING%s Duplicate rows detected for "%s", '
-                    "use the [--duplicates] option to remove them (use with care!)\n"
-                    % (
-                        Back.YELLOW + Fore.BLACK,
-                        Back.RESET + Fore.YELLOW,
-                        self.parser.name,
-                    )
+                    f'{WARNING} Duplicate rows detected for "{self.parser.name}", '
+                    f"use the [--duplicates] option to remove them (use with care)\n"
                 )
             self.data_rows += other.data_rows
 
@@ -65,12 +61,8 @@ class DataFile(object):
             for data_row in self.data_rows:
                 if config.debug:
                     sys.stderr.write(
-                        "%sconv: row[%s] %s\n"
-                        % (
-                            Fore.YELLOW,
-                            self.parser.in_header_row_num + data_row.line_num,
-                            data_row,
-                        )
+                        f"{Fore.YELLOW}conv: "
+                        f"row[{self.parser.in_header_row_num + data_row.line_num}] {data_row}\n"
                     )
 
                 data_row.parse(self.parser, **kwargs)
@@ -81,33 +73,17 @@ class DataFile(object):
         self.failures = [dr for dr in self.data_rows if dr.failure is not None]
 
         if self.failures:
-            sys.stderr.write(
-                '%sWARNING%s Parser failure for "%s"\n'
-                % (
-                    Back.YELLOW + Fore.BLACK,
-                    Back.RESET + Fore.YELLOW,
-                    self.parser.name,
-                )
-            )
+            sys.stderr.write(f'{WARNING} Parser failure for "{self.parser.name}"\n')
+
             for data_row in self.failures:
                 sys.stderr.write(
-                    "%srow[%s] %s\n"
-                    % (
-                        Fore.YELLOW,
-                        self.parser.in_header_row_num + data_row.line_num,
-                        data_row,
-                    )
+                    f"{Fore.YELLOW}"
+                    f"row[{self.parser.in_header_row_num + data_row.line_num}] {data_row}\n"
                 )
                 if isinstance(data_row.failure, DataRowError):
-                    sys.stderr.write(
-                        "%sERROR%s %s\n"
-                        % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED, data_row.failure)
-                    )
+                    sys.stderr.write(f"{ERROR} {data_row.failure}\n")
                 else:
-                    sys.stderr.write(
-                        '%sERROR%s Unexpected error: "%s"\n'
-                        % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED, data_row.failure)
-                    )
+                    sys.stderr.write(f'{ERROR} Unexpected error: "{data_row.failure}"\n')
 
     @classmethod
     def read_excel_xlsx(cls, filename):
@@ -117,15 +93,15 @@ class DataFile(object):
                 workbook = load_workbook(df, read_only=False, data_only=True)
 
                 if config.debug:
-                    sys.stderr.write("%sconv: EXCEL\n" % Fore.CYAN)
+                    sys.stderr.write(f"{Fore.CYAN}conv: EXCEL\n")
 
                 for sheet_name in workbook.sheetnames:
                     yield workbook[sheet_name]
 
                 workbook.close()
                 del workbook
-            except (IOError, KeyError):
-                raise DataFormatUnrecognised(filename)
+            except (IOError, KeyError) as e:
+                raise DataFormatUnrecognised(filename) from e
 
     @classmethod
     def read_worksheet_xlsx(cls, worksheet, filename, args):
@@ -136,26 +112,13 @@ class DataFile(object):
             raise DataFormatUnrecognised(filename, worksheet.title)
 
         sys.stderr.write(
-            "%sfile: %s%s '%s' %smatched as %s\"%s\"\n"
-            % (
-                Fore.WHITE,
-                Fore.YELLOW,
-                filename,
-                worksheet.title,
-                Fore.WHITE,
-                Fore.CYAN,
-                parser.name,
-            )
+            f"{Fore.WHITE}file: {Fore.YELLOW}{filename} '{worksheet.title}' "
+            f'{Fore.WHITE}matched as {Fore.CYAN}"{parser.name}"\n'
         )
 
         if parser.deprecated:
             sys.stderr.write(
-                '%sWARNING%s This parser is deprecated, please use "%s"\n'
-                % (
-                    Back.YELLOW + Fore.BLACK,
-                    Back.RESET + Fore.YELLOW,
-                    parser.deprecated.name,
-                )
+                f'{WARNING} This parser is deprecated, please use "{parser.deprecated.name}"\n'
             )
 
         data_file = DataFile(parser, reader)
@@ -173,12 +136,12 @@ class DataFile(object):
         try:
             with xlrd.open_workbook(filename) as workbook:
                 if config.debug:
-                    sys.stderr.write("%sconv: EXCEL\n" % Fore.CYAN)
+                    sys.stderr.write(f"{Fore.CYAN}conv: EXCEL\n")
 
                 for worksheet in workbook.sheets():
                     yield worksheet, workbook.datemode
-        except (xlrd.XLRDError, xlrd.compdoc.CompDocError):
-            raise DataFormatUnrecognised(filename)
+        except (xlrd.XLRDError, xlrd.compdoc.CompDocError) as e:
+            raise DataFormatUnrecognised(filename) from e
 
     @classmethod
     def read_worksheet_xls(cls, worksheet, datemode, filename, args):
@@ -189,26 +152,13 @@ class DataFile(object):
             raise DataFormatUnrecognised(filename, worksheet.name)
 
         sys.stderr.write(
-            "%sfile: %s%s '%s' %smatched as %s\"%s\"\n"
-            % (
-                Fore.WHITE,
-                Fore.YELLOW,
-                filename,
-                worksheet.name,
-                Fore.WHITE,
-                Fore.CYAN,
-                parser.name,
-            )
+            f"{Fore.WHITE}file: {Fore.YELLOW}{filename} '{worksheet.name}' "
+            f'{Fore.WHITE}matched as {Fore.CYAN}"{parser.name}"\n'
         )
 
         if parser.deprecated:
             sys.stderr.write(
-                '%sWARNING%s This parser is deprecated, please use "%s"\n'
-                % (
-                    Back.YELLOW + Fore.BLACK,
-                    Back.RESET + Fore.YELLOW,
-                    parser.deprecated.name,
-                )
+                f'{WARNING} This parser is deprecated, please use "{parser.deprecated.name}"\n'
             )
 
         data_file = DataFile(parser, reader)
@@ -231,8 +181,6 @@ class DataFile(object):
         if cell.value is None:
             return ""
 
-        if sys.version_info[0] < 3 and cell.data_type == "s":
-            return cell.value.encode("utf-8")
         return str(cell.value)
 
     @staticmethod
@@ -243,8 +191,8 @@ class DataFile(object):
     @staticmethod
     def convert_cell_xls(cell, datemode):
         if cell.ctype == xlrd.XL_CELL_DATE:
-            value = xlrd.xldate.xldate_as_datetime(cell.value, datemode).strftime(
-                "%Y-%m-%dT%H:%M:%S.%f %Z"
+            value = (
+                f"{xlrd.xldate.xldate_as_datetime(cell.value, datemode):%Y-%m-%dT%H:%M:%S.%f %Z}"
             )
         elif cell.ctype in (
             xlrd.XL_CELL_NUMBER,
@@ -254,10 +202,7 @@ class DataFile(object):
             # repr is required to ensure no precision is lost
             value = repr(cell.value)
         else:
-            if sys.version_info[0] >= 3:
-                value = str(cell.value)
-            else:
-                value = cell.value.encode("utf-8")
+            value = str(cell.value)
 
         return value
 
@@ -268,25 +213,14 @@ class DataFile(object):
 
             if parser is not None:
                 sys.stderr.write(
-                    '%sfile: %s%s %smatched as %s"%s"\n'
-                    % (
-                        Fore.WHITE,
-                        Fore.YELLOW,
-                        filename,
-                        Fore.WHITE,
-                        Fore.CYAN,
-                        parser.name,
-                    )
+                    f"{Fore.WHITE}file: {Fore.YELLOW}{filename} "
+                    f'{Fore.WHITE}matched as {Fore.CYAN}"{parser.name}"\n'
                 )
 
                 if parser.deprecated:
                     sys.stderr.write(
-                        '%sWARNING%s This parser is deprecated, please use "%s"\n'
-                        % (
-                            Back.YELLOW + Fore.BLACK,
-                            Back.RESET + Fore.YELLOW,
-                            parser.deprecated.name,
-                        )
+                        f"{WARNING} This parser is deprecated, please use "
+                        f'"{parser.deprecated.name}"\n'
                     )
 
                 data_file = DataFile(parser, reader)
@@ -307,15 +241,9 @@ class DataFile(object):
         with io.open(filename, newline="", encoding="utf-8-sig") as csv_file:
             for delimiter in cls.CSV_DELIMITERS:
                 if config.debug:
-                    sys.stderr.write("%sconv: CSV delimiter='%s'\n" % (Fore.CYAN, delimiter))
+                    sys.stderr.write(f"{Fore.CYAN}conv: CSV delimiter='{delimiter}'\n")
 
-                if sys.version_info[0] < 3:
-                    # Special handling required for utf-8 encoded CSV files
-                    reader = csv.reader(cls.utf_8_encoder(csv_file), delimiter=delimiter)
-                else:
-                    reader = csv.reader(csv_file, delimiter=delimiter)
-
-                yield reader
+                yield csv.reader(csv_file, delimiter=delimiter)
                 csv_file.seek(0)
 
     @classmethod
@@ -325,11 +253,6 @@ class DataFile(object):
         else:
             cls.data_files[data_file] = data_file
             cls.data_files_ordered.append(data_file)
-
-    @staticmethod
-    def utf_8_encoder(unicode_csv_data):
-        for line in unicode_csv_data:
-            yield line.encode("utf-8")
 
     @staticmethod
     def get_parser(reader):

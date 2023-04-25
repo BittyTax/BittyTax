@@ -2,7 +2,6 @@
 # (c) Nano Nano Ltd 2019
 
 import re
-import sys
 from decimal import Decimal
 
 from ...config import config
@@ -85,10 +84,10 @@ def parse_coinbase_usd(data_row, parser, **_kwargs):
 
 
 def _get_fiat_values(row_dict, currency, timestamp):
-    sp_header = "%s Spot Price at Transaction" % currency
-    st_header = "%s Subtotal" % currency
-    t_header = "%s Total (inclusive of fees)" % currency
-    f_header = "%s Fees" % currency
+    sp_header = f"{currency} Spot Price at Transaction"
+    st_header = f"{currency} Subtotal"
+    t_header = f"{currency} Total (inclusive of fees)"
+    f_header = f"{currency} Fees"
 
     spot_price_ccy = DataParser.convert_currency(row_dict[sp_header], currency, timestamp)
     total_ccy = DataParser.convert_currency(row_dict[t_header], currency, timestamp)
@@ -215,9 +214,6 @@ def _do_parse_coinbase(data_row, parser, fiat_values):
 
 
 def _get_convert_info(notes):
-    if sys.version_info[0] < 3:
-        notes = notes.decode("utf8")
-
     match = re.match(r"^Converted ([\d|,]*\.\d+) (\w+) to ([\d|,]*\.\d+) (\w+) *$", notes)
 
     if match:
@@ -226,9 +222,6 @@ def _get_convert_info(notes):
 
 
 def _get_currency(notes):
-    if sys.version_info[0] < 3:
-        notes = notes.decode("utf8")
-
     match = re.match(r".+for .{1}[\d|,]+\.\d{2} (\w{3}).*$", notes)
 
     if match:

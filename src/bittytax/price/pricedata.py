@@ -6,17 +6,18 @@ import os
 from colorama import Fore
 
 from ..config import config
+from ..constants import CACHE_DIR
 from .datasource import DataSourceBase
 from .exceptions import UnexpectedDataSourceError
 
 
-class PriceData(object):
+class PriceData:
     def __init__(self, data_sources_required, price_tool=False):
         self.price_tool = price_tool
         self.data_sources = {}
 
-        if not os.path.exists(config.CACHE_DIR):
-            os.mkdir(config.CACHE_DIR)
+        if not os.path.exists(CACHE_DIR):
+            os.mkdir(CACHE_DIR)
 
         for data_source_class in DataSourceBase.__subclasses__():
             if data_source_class.__name__.upper() in [ds.upper() for ds in data_sources_required]:
@@ -44,7 +45,7 @@ class PriceData(object):
     def get_historical_ds(self, data_source, asset, quote, timestamp, no_cache=False):
         if data_source.upper() in self.data_sources:
             if asset in self.data_sources[data_source.upper()].assets:
-                date = timestamp.strftime("%Y-%m-%d")
+                date = f"{timestamp:%Y-%m-%d}"
                 pair = asset + "/" + quote
 
                 if not no_cache:
@@ -84,28 +85,14 @@ class PriceData(object):
             if price is not None:
                 if config.debug:
                     print(
-                        "%sprice: <latest>, 1 %s=%s %s via %s (%s)"
-                        % (
-                            Fore.YELLOW,
-                            asset,
-                            "{:0,f}".format(price.normalize()),
-                            quote,
-                            self.data_sources[data_source.upper()].name(),
-                            name,
-                        )
+                        f"{Fore.YELLOW}price: <latest>, 1 "
+                        f"{asset}={price.normalize():0,f} {quote} via "
+                        f"{self.data_sources[data_source.upper()].name()} ({name})"
                     )
                 if self.price_tool:
                     print(
-                        "%s1 %s=%s %s %svia %s (%s)"
-                        % (
-                            Fore.YELLOW,
-                            asset,
-                            "{:0,f}".format(price.normalize()),
-                            quote,
-                            Fore.CYAN,
-                            self.data_sources[data_source.upper()].name(),
-                            name,
-                        )
+                        f"{Fore.YELLOW}1 {asset}={price.normalize():0,f} {quote} "
+                        f"{Fore.CYAN}via {self.data_sources[data_source.upper()].name()} ({name})"
                     )
                 return price, name, self.data_sources[data_source.upper()].name()
         return None, name, None
@@ -119,29 +106,14 @@ class PriceData(object):
             if price is not None:
                 if config.debug:
                     print(
-                        "%sprice: %s, 1 %s=%s %s via %s (%s)"
-                        % (
-                            Fore.YELLOW,
-                            timestamp.strftime("%Y-%m-%d"),
-                            asset,
-                            "{:0,f}".format(price.normalize()),
-                            quote,
-                            self.data_sources[data_source.upper()].name(),
-                            name,
-                        )
+                        f"{Fore.YELLOW}price: {timestamp:%Y-%m-%d}, 1 "
+                        f"{asset}={price.normalize():0,f} {quote} via "
+                        f"{self.data_sources[data_source.upper()].name()} ({name})"
                     )
                 if self.price_tool:
                     print(
-                        "%s1 %s=%s %s %svia %s (%s)"
-                        % (
-                            Fore.YELLOW,
-                            asset,
-                            "{:0,f}".format(price.normalize()),
-                            quote,
-                            Fore.CYAN,
-                            self.data_sources[data_source.upper()].name(),
-                            name,
-                        )
+                        f"{Fore.YELLOW}1 {asset}={price.normalize():0,f} {quote} "
+                        f"{Fore.CYAN}via {self.data_sources[data_source.upper()].name()} ({name})"
                     )
                 return price, name, self.data_sources[data_source.upper()].name(), url
         return None, name, None, None

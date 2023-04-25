@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-from __future__ import unicode_literals
-
 import os
 import sys
 from datetime import datetime, timedelta
@@ -10,39 +8,18 @@ from datetime import datetime, timedelta
 import dateutil.tz
 import pkg_resources
 import yaml
-from colorama import Back, Fore
+from colorama import Fore
+
+from .constants import BITTYTAX_PATH, ERROR
 
 
-class Config(object):
-    TZ_LOCAL = dateutil.tz.gettz("Europe/London")
-    TZ_UTC = dateutil.tz.UTC
-
-    BITTYTAX_PATH = os.path.expanduser("~/.bittytax")
+class Config:
     BITTYTAX_CONFIG = "bittytax.conf"
-    CACHE_DIR = os.path.join(BITTYTAX_PATH, "cache")
+
+    TZ_LOCAL = dateutil.tz.gettz("Europe/London")
 
     FIAT_LIST = ["GBP", "EUR", "USD"]
     CRYPTO_LIST = ["BTC", "ETH", "XRP", "LTC", "BCH", "USDT"]
-
-    FORMAT_CSV = "CSV"
-    FORMAT_EXCEL = "EXCEL"
-    FORMAT_RECAP = "RECAP"
-
-    TAX_RULES_UK_INDIVIDUAL = "UK_INDIVIDUAL"
-    TAX_RULES_UK_COMPANY = [
-        "UK_COMPANY_JAN",
-        "UK_COMPANY_FEB",
-        "UK_COMPANY_MAR",
-        "UK_COMPANY_APR",
-        "UK_COMPANY_MAY",
-        "UK_COMPANY_JUN",
-        "UK_COMPANY_JUL",
-        "UK_COMPANY_AUG",
-        "UK_COMPANY_SEP",
-        "UK_COMPANY_OCT",
-        "UK_COMPANY_NOV",
-        "UK_COMPANY_DEC",
-    ]
 
     TRADE_ASSET_TYPE_BUY = 0
     TRADE_ASSET_TYPE_SELL = 1
@@ -78,42 +55,28 @@ class Config(object):
 
     def __init__(self):
         self.debug = False
-        self.output = sys.stdout
         self.start_of_year_month = 4
         self.start_of_year_day = 6
 
-        if not os.path.exists(Config.BITTYTAX_PATH):
-            os.mkdir(Config.BITTYTAX_PATH)
+        if not os.path.exists(BITTYTAX_PATH):
+            os.mkdir(BITTYTAX_PATH)
 
-        if not os.path.exists(os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG)):
-            default_conf = pkg_resources.resource_string(
-                __name__, "config/" + Config.BITTYTAX_CONFIG
-            )
-            with open(
-                os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG), "wb"
-            ) as config_file:
+        if not os.path.exists(os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG)):
+            default_conf = pkg_resources.resource_string(__name__, "config/" + self.BITTYTAX_CONFIG)
+            with open(os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG), "wb") as config_file:
                 config_file.write(default_conf)
 
         try:
-            with open(
-                os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG), "rb"
-            ) as config_file:
+            with open(os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG), "rb") as config_file:
                 self.config = yaml.safe_load(config_file)
         except IOError:
             sys.stderr.write(
-                "%sERROR%s Config file cannot be loaded: %s\n"
-                % (
-                    Back.RED + Fore.BLACK,
-                    Back.RESET + Fore.RED,
-                    os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG),
-                )
+                f"{ERROR}Config file cannot be loaded: "
+                f"{os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG)}\n"
             )
             sys.exit(1)
         except yaml.scanner.ScannerError as e:
-            sys.stderr.write(
-                "%sERROR%s Config file contains an error:\n%s\n"
-                % (Back.RED + Fore.BLACK, Back.RESET + Fore.RED, e)
-            )
+            sys.stderr.write(f"{ERROR}Config file contains an error:\n{e}\n")
             sys.exit(1)
 
         for name, default in self.DEFAULT_CONFIG.items():
@@ -126,17 +89,13 @@ class Config(object):
     def __getattr__(self, name):
         return self.config[name]
 
-    def output_config(self):
-        self.output.write(
-            '%sconfig: "%s"\n'
-            % (
-                Fore.GREEN,
-                os.path.join(Config.BITTYTAX_PATH, Config.BITTYTAX_CONFIG),
-            )
+    def output_config(self, sys_out):
+        sys_out.write(
+            f'{Fore.GREEN}config: "{os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG)}"\n'
         )
 
         for name in self.DEFAULT_CONFIG:
-            self.output.write("%sconfig: %s: %s\n" % (Fore.GREEN, name, self.config[name]))
+            sys_out.write(f"{Fore.GREEN}config: {name}: {self.config[name]}\n")
 
     def sym(self):
         if self.ccy == "GBP":
@@ -185,8 +144,8 @@ class Config(object):
         end = self.get_tax_year_end(tax_year)
 
         if start.year == end.year:
-            return start.strftime("%Y")
-        return "{}/{}".format(start.strftime("%Y"), end.strftime("%y"))
+            return f"{start:%Y}"
+        return f"{start:%Y}/{end:%y}"
 
 
 config = Config()

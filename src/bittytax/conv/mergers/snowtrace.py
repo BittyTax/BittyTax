@@ -21,14 +21,14 @@ def merge_snowtrace(data_files):
             for data_row in data_files[TOKENS].data_rows:
                 if data_row.t_record:
                     address = data_row.t_record.wallet[-abs(TransactionOutRecord.WALLET_ADDR_LEN) :]
-                    data_row.t_record.wallet = "%s-%s" % (WALLET, address)
+                    data_row.t_record.wallet = f"{WALLET}-{address}"
 
         if NFTS in data_files:
             data_files[NFTS].parser.worksheet_name = WORKSHEET_NAME
             for data_row in data_files[NFTS].data_rows:
                 if data_row.t_record:
                     address = data_row.t_record.wallet[-abs(TransactionOutRecord.WALLET_ADDR_LEN) :]
-                    data_row.t_record.wallet = "%s-%s" % (WALLET, address)
+                    data_row.t_record.wallet = f"{WALLET}-{address}"
 
     return merge
 

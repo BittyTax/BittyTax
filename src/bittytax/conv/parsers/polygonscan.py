@@ -54,7 +54,7 @@ def parse_polygonscan(data_row, _parser, **_kwargs):
 
 
 def _get_wallet(address):
-    return "%s-%s" % (WALLET, address.lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN])
+    return f"{WALLET}-{address.lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN]}"
 
 
 def parse_polygonscan_internal(data_row, _parser, **_kwargs):

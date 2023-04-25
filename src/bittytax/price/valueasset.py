@@ -4,14 +4,15 @@
 from datetime import datetime
 from decimal import Decimal
 
-from colorama import Back, Fore, Style
+from colorama import Fore, Style
 from tqdm import tqdm
 
 from ..config import config
+from ..constants import WARNING
 from .pricedata import PriceData
 
 
-class ValueAsset(object):
+class ValueAsset:
     def __init__(self, price_tool=False):
         self.price_tool = price_tool
         self.price_report = {}
@@ -32,32 +33,16 @@ class ValueAsset(object):
             value = asset_price_ccy * quantity
             if config.debug:
                 print(
-                    "%sprice: %s, 1 %s=%s %s, %s %s=%s%s %s%s"
-                    % (
-                        Fore.YELLOW,
-                        timestamp.strftime("%Y-%m-%d"),
-                        asset,
-                        config.sym() + "{:0,.2f}".format(asset_price_ccy),
-                        config.ccy,
-                        "{:0,f}".format(quantity.normalize()),
-                        asset,
-                        Style.BRIGHT,
-                        config.sym() + "{:0,.2f}".format(value),
-                        config.ccy,
-                        Style.NORMAL,
-                    )
+                    f"{Fore.YELLOW}price: {timestamp:%Y-%m-%d}, 1 "
+                    f"{asset}={config.sym()}{asset_price_ccy:0,.2f} {config.ccy}, "
+                    f"{quantity.normalize():0,f} {asset}="
+                    f"{Style.BRIGHT}{config.sym()}{value:0,.2f} {config.ccy}{Style.NORMAL}"
                 )
             return value, False
 
         tqdm.write(
-            "%sWARNING%s Price for %s on %s is not available, using price of %s"
-            % (
-                Back.YELLOW + Fore.BLACK,
-                Back.RESET + Fore.YELLOW,
-                asset,
-                timestamp.strftime("%Y-%m-%d"),
-                config.sym() + "{:0,.2f}".format(0),
-            )
+            f"{WARNING} Price for {asset} on {timestamp:%Y-%m-%d} is not available, "
+            f"using price of {config.sym()}{0:0,.2f}"
         )
         return Decimal(0), False
 
@@ -73,14 +58,8 @@ class ValueAsset(object):
 
         if not self.price_tool and timestamp.date() >= datetime.now().date():
             tqdm.write(
-                "%sWARNING%s Price for %s on %s, no historic price available, "
-                "using latest price"
-                % (
-                    Back.YELLOW + Fore.BLACK,
-                    Back.RESET + Fore.YELLOW,
-                    asset,
-                    timestamp.strftime("%Y-%m-%d"),
-                )
+                f"{WARNING} Price for {asset} on {timestamp:Y-%m-%d}, no historic price available, "
+                f"using latest price"
             )
             return self.get_latest_price(asset)
 
@@ -146,7 +125,7 @@ class ValueAsset(object):
         if asset not in self.price_report[tax_year]:
             self.price_report[tax_year][asset] = {}
 
-        date = timestamp.strftime("%Y-%m-%d")
+        date = f"{timestamp:%Y-%m-%d}"
         if date not in self.price_report[tax_year][asset]:
             self.price_report[tax_year][asset][date] = {
                 "name": name,

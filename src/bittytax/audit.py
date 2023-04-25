@@ -4,29 +4,30 @@
 import sys
 from decimal import Decimal
 
-from colorama import Back, Fore, Style
+from colorama import Fore, Style
 from tqdm import tqdm
 
 from .config import config
+from .constants import WARNING
 
 
-class AuditRecords(object):
+class AuditRecords:
     def __init__(self, transaction_records):
         self.wallets = {}
         self.totals = {}
         self.failures = []
 
         if config.debug:
-            print("%saudit transaction records" % Fore.CYAN)
+            print(f"{Fore.CYAN}audit transaction records")
 
         for tr in tqdm(
             transaction_records,
             unit="tr",
-            desc="%saudit transaction records%s" % (Fore.CYAN, Fore.GREEN),
+            desc=f"{Fore.CYAN}audit transaction records{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         ):
             if config.debug:
-                print("%saudit: TR %s" % (Fore.MAGENTA, tr))
+                print(f"{Fore.MAGENTA}audit: TR {tr}")
             if tr.buy:
                 self._add_tokens(tr.wallet, tr.buy.asset, tr.buy.quantity)
 
@@ -37,32 +38,19 @@ class AuditRecords(object):
                 self._subtract_tokens(tr.wallet, tr.fee.asset, tr.fee.quantity)
 
         if config.debug:
-            print("%saudit: final balances by wallet" % Fore.CYAN)
+            print(f"{Fore.CYAN}audit: final balances by wallet")
             for wallet in sorted(self.wallets, key=str.lower):
                 for asset in sorted(self.wallets[wallet]):
                     print(
-                        "%saudit: %s:%s=%s%s%s"
-                        % (
-                            Fore.YELLOW,
-                            wallet,
-                            asset,
-                            Style.BRIGHT,
-                            "{:0,f}".format(self.wallets[wallet][asset].normalize()),
-                            Style.NORMAL,
-                        )
+                        f"{Fore.YELLOW}audit: {wallet}:{asset}={Style.BRIGHT}"
+                        f"{self.wallets[wallet][asset].normalize():0,f}{Style.NORMAL}"
                     )
 
-            print("%saudit: final balances by asset" % Fore.CYAN)
+            print(f"{Fore.CYAN}audit: final balances by asset")
             for asset in sorted(self.totals):
                 print(
-                    "%saudit: %s=%s%s%s"
-                    % (
-                        Fore.YELLOW,
-                        asset,
-                        Style.BRIGHT,
-                        "{:0,f}".format(self.totals[asset].normalize()),
-                        Style.NORMAL,
-                    )
+                    f"{Fore.YELLOW}audit: {asset}={Style.BRIGHT}"
+                    f"{self.totals[asset].normalize():0,f}{Style.NORMAL}"
                 )
 
         if config.audit_hide_empty:
@@ -93,14 +81,8 @@ class AuditRecords(object):
 
         if config.debug:
             print(
-                "%saudit:   %s:%s=%s (+%s)"
-                % (
-                    Fore.GREEN,
-                    wallet,
-                    asset,
-                    "{:0,f}".format(self.wallets[wallet][asset].normalize()),
-                    "{:0,f}".format(quantity.normalize()),
-                )
+                f"{Fore.GREEN}audit:   {wallet}:{asset}="
+                f"{self.wallets[wallet][asset].normalize():0,f} (+{quantity.normalize():0,f})"
             )
 
     def _subtract_tokens(self, wallet, asset, quantity):
@@ -119,26 +101,14 @@ class AuditRecords(object):
 
         if config.debug:
             print(
-                "%saudit:   %s:%s=%s (-%s)"
-                % (
-                    Fore.GREEN,
-                    wallet,
-                    asset,
-                    "{:0,f}".format(self.wallets[wallet][asset].normalize()),
-                    "{:0,f}".format(quantity.normalize()),
-                )
+                f"{Fore.GREEN}audit:   {wallet}:{asset}="
+                f"{self.wallets[wallet][asset].normalize():0,f} (-{quantity.normalize():0,f})"
             )
 
         if self.wallets[wallet][asset] < 0 and asset not in config.fiat_list:
             tqdm.write(
-                "%sWARNING%s Balance at %s:%s is negative %s"
-                % (
-                    Back.YELLOW + Fore.BLACK,
-                    Back.RESET + Fore.YELLOW,
-                    wallet,
-                    asset,
-                    "{:0,f}".format(self.wallets[wallet][asset].normalize()),
-                )
+                f"{WARNING} Balance at {wallet}:{asset} "
+                f"is negative {self.wallets[wallet][asset].normalize():0,f}"
             )
 
     def compare_pools(self, holdings):
@@ -150,25 +120,20 @@ class AuditRecords(object):
             if asset in holdings:
                 if self.totals[asset] == holdings[asset].quantity:
                     if config.debug:
-                        print("%scheck pool: %s (ok)" % (Fore.GREEN, asset))
+                        print(f"{Fore.GREEN}check pool: {asset} (ok)")
                 else:
                     if config.debug:
                         print(
-                            "%scheck pool: %s %s (mismatch)"
-                            % (
-                                Fore.RED,
-                                asset,
-                                "{:+0,f}".format(
-                                    (holdings[asset].quantity - self.totals[asset]).normalize()
-                                ),
-                            )
+                            f"{Fore.RED}check pool: {asset}"
+                            f"{(holdings[asset].quantity - self.totals[asset]).normalize():+0,f} "
+                            f"(mismatch)"
                         )
 
                     self._log_failure(asset, self.totals[asset], holdings[asset].quantity)
                     passed = False
             else:
                 if config.debug:
-                    print("%scheck pool: %s (missing)" % (Fore.RED, asset))
+                    print(f"{Fore.RED}check pool: {asset} (missing)")
 
                 self._log_failure(asset, self.totals[asset], None)
                 passed = False
@@ -184,35 +149,20 @@ class AuditRecords(object):
         self.failures.append(failure)
 
     def report_failures(self):
-        header = "%-8s %25s %25s %25s" % (
-            "Asset",
-            "Audit Balance",
-            "Section 104 Pool",
-            "Difference",
+        print(
+            f"\n{Fore.YELLOW}"
+            f'{"Asset":<8} {"Audit Balance":>25} {"Section 104 Pool":>25} {"Difference":>25}'
         )
 
-        print("\n%s%s" % (Fore.YELLOW, header))
         for failure in self.failures:
             if failure["s104"] is not None:
                 print(
-                    "%s%-8s %25s %25s %s%25s"
-                    % (
-                        Fore.WHITE,
-                        failure["asset"],
-                        "{:0,f}".format(failure["audit"].normalize()),
-                        "{:0,f}".format(failure["s104"].normalize()),
-                        Fore.RED,
-                        "{:+0,f}".format((failure["s104"] - failure["audit"]).normalize()),
-                    )
+                    f'{Fore.WHITE}{failure["asset"]:<8} {failure["audit"].normalize():25,f} '
+                    f'{failure["s104"].normalize():25,f} '
+                    f'{Fore.RED}{(failure["s104"] - failure["audit"]).normalize():+25,f}'
                 )
             else:
                 print(
-                    "%s%-8s %25s %s%25s"
-                    % (
-                        Fore.WHITE,
-                        failure["asset"],
-                        "{:0,f}".format(failure["audit"].normalize()),
-                        Fore.RED,
-                        "<missing>",
-                    )
+                    f'{Fore.WHITE}{failure["asset"]<8} {failure["audit"].normalize():25,f} '
+                    f'{Fore.RED}{"<missing>":>25}'
                 )

@@ -5,8 +5,9 @@ import re
 import sys
 from decimal import Decimal
 
-from colorama import Back, Fore
+from colorama import Fore
 
+from ...constants import WARNING
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
@@ -30,12 +31,10 @@ def parse_qt_wallet(data_row, parser, **kwargs):
 
     if row_dict["Confirmed"] == "false" and not kwargs["unconfirmed"]:
         sys.stderr.write(
-            "%srow[%s] %s\n" % (Fore.YELLOW, parser.in_header_row_num + data_row.line_num, data_row)
+            f"{Fore.YELLOW}row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
         )
         sys.stderr.write(
-            "%sWARNING%s Skipping unconfirmed transaction, "
-            "use the [-uc] option to include it\n"
-            % (Back.YELLOW + Fore.BLACK, Back.RESET + Fore.YELLOW)
+            f"{WARNING} Skipping unconfirmed transaction, use the [-uc] option to include it\n"
         )
         return
 

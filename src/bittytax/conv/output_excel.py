@@ -10,6 +10,7 @@ from colorama import Fore
 from xlsxwriter.utility import xl_rowcol_to_cell
 
 from ..config import config
+from ..constants import TZ_UTC
 from ..version import __version__
 from .exceptions import DataRowError
 from .out_record import TransactionOutRecord
@@ -32,7 +33,7 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
     PROJECT_URL = "https://github.com/BittyTax/BittyTax"
 
     def __init__(self, progname, data_files, args):
-        super(OutputExcel, self).__init__(data_files)
+        super().__init__(data_files)
         self.filename = self.get_output_filename(args.output_filename, self.FILE_EXTENSION)
         self.workbook = xlsxwriter.Workbook(self.filename)
         self.workbook.set_size(1800, 1200)
@@ -40,7 +41,7 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
         self.workbook.set_properties(
             {
                 "title": self.TITLE,
-                "author": "%s v%s" % (progname, __version__),
+                "author": f"{progname} v{__version__}",
                 "comments": self.PROJECT_URL,
             }
         )
@@ -134,12 +135,10 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             worksheet.autofit()
 
         self.workbook.close()
-        sys.stderr.write(
-            "%soutput EXCEL file created: %s%s\n" % (Fore.WHITE, Fore.YELLOW, self.filename)
-        )
+        sys.stderr.write(f"{Fore.WHITE}output EXCEL file created: {Fore.YELLOW}{self.filename}\n")
 
 
-class Worksheet(object):
+class Worksheet:
     SHEETNAME_MAX_LEN = 31
     MAX_COL_WIDTH = 30
 
@@ -167,11 +166,11 @@ class Worksheet(object):
             sheet_name = name
         else:
             self.sheet_names[name.lower()] += 1
-            sheet_name = "%s(%s)" % (name, self.sheet_names[name.lower()])
+            sheet_name = f"{name}({self.sheet_names[name.lower()]})"
             if len(sheet_name) > self.SHEETNAME_MAX_LEN:
-                sheet_name = "%s(%s)" % (
-                    name[: len(name) - (len(sheet_name) - self.SHEETNAME_MAX_LEN)],
-                    self.sheet_names[name.lower()],
+                sheet_name = (
+                    f"{name[: len(name) - (len(sheet_name) - self.SHEETNAME_MAX_LEN)]}"
+                    f"({self.sheet_names[name.lower()]})"
                 )
 
         return sheet_name
@@ -190,9 +189,6 @@ class Worksheet(object):
         return name
 
     def _make_columns(self, in_header):
-        if sys.version_info[0] < 3:
-            in_header = [h.decode("utf8") for h in in_header]
-
         col_names = {}
         columns = []
 
@@ -250,13 +246,8 @@ class Worksheet(object):
             self._xl_timestamp(data_row.t_record.timestamp, row_num, 11)
             self._xl_note(data_row.t_record.note, row_num, 12)
 
-        if sys.version_info[0] < 3:
-            in_row = [r.decode("utf8") for r in data_row.row]
-        else:
-            in_row = data_row.row
-
         # Add original data
-        for col_num, col_data in enumerate(in_row):
+        for col_num, col_data in enumerate(data_row.row):
             if (
                 data_row.failure
                 and isinstance(data_row.failure, DataRowError)
@@ -333,7 +324,7 @@ class Worksheet(object):
                 self.worksheet.write_string(
                     row_num,
                     col_num,
-                    "{0:f}".format(quantity.normalize()),
+                    f"{quantity.normalize():0f}",
                     self.output.format_num_string,
                 )
             else:
@@ -348,18 +339,13 @@ class Worksheet(object):
                     col_num,
                     {
                         "type": "formula",
-                        "criteria": "=INT(" + cell + ")=" + cell,
+                        "criteria": f"=INT({cell})={cell}",
                         "format": self.output.format_num_int,
                     },
                 )
-            self._autofit_calc(col_num, len("{:0,f}".format(quantity.normalize())))
+            self._autofit_calc(col_num, len(f"{quantity.normalize():0,f}"))
 
     def _xl_asset(self, asset, row_num, col_num):
-        if sys.version_info[0] < 3:
-            try:
-                asset = asset.decode("utf8")
-            except UnicodeEncodeError:
-                pass
         self.worksheet.write_string(row_num, col_num, asset)
         self._autofit_calc(col_num, len(asset))
 
@@ -368,18 +354,16 @@ class Worksheet(object):
             self.worksheet.write_number(
                 row_num, col_num, value.normalize(), self.output.format_currency
             )
-            self._autofit_calc(col_num, len("£{:0,.2f}".format(value)))
+            self._autofit_calc(col_num, len(f"£{value:0,.2f}"))
         else:
             self.worksheet.write_blank(row_num, col_num, None, self.output.format_currency)
 
     def _xl_wallet(self, wallet, row_num, col_num):
-        if sys.version_info[0] < 3:
-            wallet = wallet.decode("utf8")
         self.worksheet.write_string(row_num, col_num, wallet)
         self._autofit_calc(col_num, len(wallet))
 
     def _xl_timestamp(self, timestamp, row_num, col_num):
-        utc_timestamp = timestamp.astimezone(config.TZ_UTC)
+        utc_timestamp = timestamp.astimezone(TZ_UTC)
         utc_timestamp = timestamp.replace(tzinfo=None)
 
         if self.microseconds:
@@ -387,10 +371,10 @@ class Worksheet(object):
             self.worksheet.write_string(
                 row_num,
                 col_num,
-                utc_timestamp.strftime(self.output.STR_FORMAT_MS),
+                f"{utc_timestamp:{self.output.STR_FORMAT_MS}}",
                 self.output.format_num_string,
             )
-            self._autofit_calc(col_num, len(utc_timestamp.strftime(self.output.STR_FORMAT_MS)))
+            self._autofit_calc(col_num, len(f"{utc_timestamp:{self.output.STR_FORMAT_MS}}"))
         elif self.milliseconds:
             self.worksheet.write_datetime(
                 row_num, col_num, utc_timestamp, self.output.format_timestamp_ms
@@ -403,8 +387,6 @@ class Worksheet(object):
             self._autofit_calc(col_num, len(self.output.DATE_FORMAT))
 
     def _xl_note(self, note, row_num, col_num):
-        if sys.version_info[0] < 3:
-            note = note.decode("utf8")
         self.worksheet.write_string(row_num, col_num, note)
         self._autofit_calc(col_num, len(note) if note else self.MAX_COL_WIDTH)
 
@@ -419,8 +401,8 @@ class Worksheet(object):
             self.col_width[col_num] = width
 
     def autofit(self):
-        for col_num in self.col_width:
-            self.worksheet.set_column(col_num, col_num, self.col_width[col_num])
+        for col_num, col_width in self.col_width.items():
+            self.worksheet.set_column(col_num, col_num, col_width)
 
     def make_table(self, rows, parser_name):
         self.worksheet.add_table(

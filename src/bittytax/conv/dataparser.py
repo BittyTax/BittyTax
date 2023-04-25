@@ -10,12 +10,13 @@ import dateutil.tz
 from colorama import Fore, Style
 
 from ..config import config
+from ..constants import TZ_UTC
 from ..price.pricedata import PriceData
 
 TERM_WIDTH = 69
 
 
-class DataParser(object):  # pylint: disable=too-many-instance-attributes
+class DataParser:  # pylint: disable=too-many-instance-attributes
     TYPE_WALLET = "Wallets"
     TYPE_EXCHANGE = "Exchanges"
     TYPE_SAVINGS = "Savings, Loans & Investments"
@@ -78,9 +79,9 @@ class DataParser(object):  # pylint: disable=too-many-instance-attributes
             else:
                 header.append(col)
 
-        header_str = "'" + str(self.delimiter).join(header) + "'"
+        header_str = f"'{self.delimiter.join(header)}'"
 
-        return header_str[:TERM_WIDTH] + "..." if len(header_str) > TERM_WIDTH else header_str
+        return f"{header_str[:TERM_WIDTH]}..." if len(header_str) > TERM_WIDTH else header_str
 
     @classmethod
     def parse_timestamp(cls, timestamp_str, tzinfos=None, tz=None, dayfirst=False, fuzzy=False):
@@ -93,12 +94,12 @@ class DataParser(object):  # pylint: disable=too-many-instance-attributes
 
         if tz:
             timestamp = timestamp.replace(tzinfo=dateutil.tz.gettz(tz))
-            timestamp = timestamp.astimezone(config.TZ_UTC)
+            timestamp = timestamp.astimezone(TZ_UTC)
         elif timestamp.tzinfo is None:
             # Default to UTC if no timezone is specified
-            timestamp = timestamp.replace(tzinfo=config.TZ_UTC)
+            timestamp = timestamp.replace(tzinfo=TZ_UTC)
         else:
-            timestamp = timestamp.astimezone(config.TZ_UTC)
+            timestamp = timestamp.astimezone(TZ_UTC)
 
         return timestamp
 
@@ -125,20 +126,10 @@ class DataParser(object):  # pylint: disable=too-many-instance-attributes
 
         if config.debug:
             print(
-                "%sprice: %s, 1 %s=%s %s, %s %s=%s%s %s%s"
-                % (
-                    Fore.YELLOW,
-                    timestamp.strftime("%Y-%m-%d"),
-                    from_currency,
-                    config.sym() + "{:0,.2f}".format(rate_ccy),
-                    config.ccy,
-                    "{:0,f}".format(Decimal(value).normalize()),
-                    from_currency,
-                    Style.BRIGHT,
-                    config.sym() + "{:0,.2f}".format(value_in_ccy),
-                    config.ccy,
-                    Style.NORMAL,
-                )
+                f"{Fore.YELLOW}price: {timestamp:%Y-%m-%d}, 1 {from_currency}="
+                f"{config.sym()}{rate_ccy:0,.2f} {config.ccy}, {Decimal(value).normalize():0,f}"
+                f"{from_currency}{Style.BRIGHT}{config.sym()}{value_in_ccy:0,.2f} "
+                f"{config.ccy}{Style.NORMAL}"
             )
 
         return value_in_ccy
@@ -148,7 +139,7 @@ class DataParser(object):  # pylint: disable=too-many-instance-attributes
         row = [col.strip() for col in row]
         if config.debug:
             sys.stderr.write(
-                "%sheader: row[%s] TRY: %s\n" % (Fore.YELLOW, row_num + 1, cls.format_row(row))
+                f"{Fore.YELLOW}header: row[{row_num + 1}] TRY: {cls.format_row(row)}\n"
             )
 
         parsers_reduced = [p for p in cls.parsers if len(p.header) == len(row)]
@@ -167,13 +158,8 @@ class DataParser(object):  # pylint: disable=too-many-instance-attributes
             if match:
                 if config.debug:
                     sys.stderr.write(
-                        "%sheader: row[%s] MATCHED: %s as '%s'\n"
-                        % (
-                            Fore.CYAN,
-                            row_num + 1,
-                            cls.format_row(parser.header),
-                            parser.name,
-                        )
+                        f"{Fore.CYAN}header: row[{row_num + 1}] "
+                        f"MATCHED: {cls.format_row(parser.header)} as '{parser.name}'\n"
                     )
                 parser.in_header = row
                 parser.in_header_row_num = row_num + 1
@@ -181,13 +167,8 @@ class DataParser(object):  # pylint: disable=too-many-instance-attributes
 
             if config.debug:
                 sys.stderr.write(
-                    "%sheader: row[%s] NO MATCH: %s '%s'\n"
-                    % (
-                        Fore.BLUE,
-                        row_num + 1,
-                        cls.format_row(parser.header),
-                        parser.name,
-                    )
+                    f"{Fore.BLUE}header: row[{row_num + 1}] "
+                    f"NO MATCH: {cls.format_row(parser.header)} '{parser.name}'\n"
                 )
 
         raise KeyError
@@ -196,12 +177,12 @@ class DataParser(object):  # pylint: disable=too-many-instance-attributes
     def format_parsers(cls):
         txt = ""
         for p_type in cls.LIST_ORDER:
-            txt += " " * 2 + p_type.upper() + ":\n"
+            txt += f"  {p_type.upper()}:\n"
             prev_name = None
             for parser in sorted([parser for parser in cls.parsers if parser.p_type == p_type]):
                 if parser.name != prev_name:
-                    txt += " " * 4 + parser.name + "\n"
-                txt += " " * 6 + parser.format_header() + "\n"
+                    txt += f"    {parser.name}\n"
+                txt += f"      {parser.format_header()}\n"
 
                 prev_name = parser.name
 
@@ -216,6 +197,6 @@ class DataParser(object):  # pylint: disable=too-many-instance-attributes
             elif col is None:
                 row_out.append("*")
             else:
-                row_out.append("'%s'" % col)
+                row_out.append(f"'{col}'")
 
-        return "[" + ", ".join(row_out) + "]"
+        return f"[{', '.join(row_out)}]"
