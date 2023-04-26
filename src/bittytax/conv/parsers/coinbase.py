@@ -2,9 +2,13 @@
 # (c) Nano Nano Ltd 2019
 
 import re
+import sys
 from decimal import Decimal
 
+from colorama import Fore
+
 from ...config import config
+from ...constants import WARNING
 from ..dataparser import DataParser
 from ..exceptions import UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
@@ -139,11 +143,23 @@ def _do_parse_coinbase(data_row, parser, fiat_values):
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] in ("Buy", "Advanced Trade Buy"):
-        currency = _get_currency(row_dict["Notes"])
+        currency, quote = _get_currency(row_dict["Notes"])
         if currency is None:
             raise UnexpectedContentError(
                 parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
             )
+
+        if currency == quote:
+            sell_quantity = subtotal
+            fee_quantity = fees
+        else:
+            sys.stderr.write(
+                f"{Fore.YELLOW}row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
+                f"{WARNING} {quote} amount is not available, you will need to add this manually\n"
+            )
+            currency = quote
+            sell_quantity = None
+            fee_quantity = None
 
         if config.coinbase_zero_fees_are_gifts and Decimal(fees) == 0:
             # Zero fees "may" indicate an early referral reward, or airdrop
@@ -161,27 +177,39 @@ def _do_parse_coinbase(data_row, parser, fiat_values):
                 data_row.timestamp,
                 buy_quantity=row_dict["Quantity Transacted"],
                 buy_asset=row_dict["Asset"],
-                sell_quantity=subtotal,
+                sell_quantity=sell_quantity,
                 sell_asset=currency,
-                fee_quantity=fees,
+                fee_quantity=fee_quantity,
                 fee_asset=currency,
                 wallet=WALLET,
             )
     elif row_dict["Transaction Type"] in ("Sell", "Advanced Trade Sell"):
-        currency = _get_currency(row_dict["Notes"])
+        currency, quote = _get_currency(row_dict["Notes"])
         if currency is None:
             raise UnexpectedContentError(
                 parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
             )
 
+        if currency == quote:
+            buy_quantity = subtotal
+            fee_quantity = fees
+        else:
+            sys.stderr.write(
+                f"{Fore.YELLOW}row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
+                f"{WARNING} {quote} amount is not available, you will need to add this manually\n"
+            )
+            currency = quote
+            buy_quantity = None
+            fee_quantity = None
+
         data_row.t_record = TransactionOutRecord(
             TransactionOutRecord.TYPE_TRADE,
             data_row.timestamp,
-            buy_quantity=subtotal,
+            buy_quantity=buy_quantity,
             buy_asset=currency,
             sell_quantity=row_dict["Quantity Transacted"],
             sell_asset=row_dict["Asset"],
-            fee_quantity=fees,
+            fee_quantity=fee_quantity,
             fee_asset=currency,
             wallet=WALLET,
         )
@@ -222,11 +250,14 @@ def _get_convert_info(notes):
 
 
 def _get_currency(notes):
-    match = re.match(r".+for .{1}[\d|,]+\.\d{2} (\w{3}).*$", notes)
+    match = re.match(r".+for .{1}[\d|,]+\.\d{2} (\w{3})(?: on )?(\w+-\w+)?$", notes)
 
     if match:
-        return match.group(1)
-    return None
+        currency = quote = match.group(1)
+        if match.group(2):
+            quote = match.group(2).split("-")[1]
+        return currency, quote
+    return None, None
 
 
 def parse_coinbase_transfers(data_row, parser, **_kwargs):

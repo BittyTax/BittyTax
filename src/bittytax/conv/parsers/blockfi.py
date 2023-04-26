@@ -20,8 +20,6 @@ def parse_blockfi(data_row, parser, **kwargs):
     if row_dict["Confirmed At"] == "" and not kwargs["unconfirmed"]:
         sys.stderr.write(
             f"{Fore.YELLOW}row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
-        )
-        sys.stderr.write(
             f"{WARNING} Skipping unconfirmed transaction, use the [-uc] option to include it\n"
         )
         return

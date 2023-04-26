@@ -8,6 +8,7 @@ from decimal import Decimal
 from colorama import Fore
 
 from ...config import config
+from ...constants import WARNING
 from ..dataparser import DataParser
 from ..exceptions import (
     DataFilenameError,
@@ -347,9 +348,9 @@ def _parse_binance_statements_row(tx_times, parser, data_row):
             wallet=WALLET,
         )
     elif row_dict["Operation"] in ("Small assets exchange BNB", "Small Assets Exchange BNB"):
-        _make_trade(row_dict["Operation"], tx_times[row_dict["UTC_Time"]], "BNB")
+        _make_trade(row_dict["Operation"], tx_times[row_dict["UTC_Time"]], parser, "BNB")
     elif row_dict["Operation"] == "ETH 2.0 Staking":
-        _make_trade(row_dict["Operation"], tx_times[row_dict["UTC_Time"]])
+        _make_trade(row_dict["Operation"], tx_times[row_dict["UTC_Time"]], parser)
     elif row_dict["Operation"] in (
         "transfer_out",
         "transfer_in",
@@ -390,7 +391,7 @@ def _parse_binance_statements_row(tx_times, parser, data_row):
         )
 
 
-def _make_trade(operation, tx_times, default_asset=""):
+def _make_trade(operation, tx_times, parser, default_asset=""):
     op_rows = [dr for dr in tx_times if dr.row_dict["Operation"] == operation]
     buy_quantity, buy_asset = _get_buy_quantity(op_rows)
 
@@ -414,6 +415,11 @@ def _make_trade(operation, tx_times, default_asset=""):
             if config.debug:
                 sys.stderr.write(f"{Fore.GREEN}conv: split_buy_quantity={split_buy_quantity}\n")
         else:
+            sys.stderr.write(
+                f"{Fore.YELLOW}row[{parser.in_header_row_num + sell_row.line_num}] {sell_row}\n"
+                f"{WARNING} {buy_asset} amount is not available, "
+                "you will need to add this manually\n"
+            )
             split_buy_quantity = buy_quantity
 
         sell_row.t_record = TransactionOutRecord(
