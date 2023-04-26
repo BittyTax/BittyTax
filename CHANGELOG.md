@@ -10,6 +10,7 @@
 - Conversion tool: report and continue any unexpected parser/merger exceptions.
 - Binance parser: add renamed Operation/Account. ([#300](https://github.com/BittyTax/BittyTax/issues/300))
 - Make code Python 3 compliant.
+- Conversion tool: check if file is a directory before opening.
 
 ### Removed
 - Removed support for Python 2.7 as it is end of life.

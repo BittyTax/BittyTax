@@ -6,6 +6,7 @@ import codecs
 import errno
 import glob
 import hashlib
+import os
 import platform
 import sys
 
@@ -103,6 +104,10 @@ def main():
             pathnames = [filename]
 
         for pathname in pathnames:
+            if os.path.isdir(pathname):
+                sys.stderr.write(_file_msg(pathname, None, msg="is a directory"))
+                continue
+
             try:
                 file_type, file_hash = _get_file_info(pathname)
                 if file_hash in file_hashes:
@@ -128,8 +133,6 @@ def main():
             except IOError as e:
                 if e.errno == errno.ENOENT:
                     sys.stderr.write(_file_msg(pathname, None, msg="no such file or directory"))
-                elif e.errno == errno.EISDIR:
-                    sys.stderr.write(_file_msg(pathname, None, msg="is a directory"))
                 else:
                     sys.stderr.write(_file_msg(pathname, None, msg="read error"))
 
