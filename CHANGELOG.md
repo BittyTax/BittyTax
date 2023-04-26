@@ -1,5 +1,7 @@
 # Change Log
 ## [Unreleased]
+### Fixed
+- Conversion tool: prevent xlrd from outputting logging in some situations.
 ### Added
 - Conversion tool: identify data file types (.xls, .zip/.xlsx) using magic numbers.
 - Conversion tool: identify duplicate data files using hashes.

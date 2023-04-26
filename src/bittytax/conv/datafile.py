@@ -3,6 +3,7 @@
 
 import csv
 import io
+import os
 import sys
 import warnings
 
@@ -134,7 +135,7 @@ class DataFile:
     @classmethod
     def read_excel_xls(cls, filename):
         try:
-            with xlrd.open_workbook(filename) as workbook:
+            with xlrd.open_workbook(filename, logfile=open(os.devnull, "w")) as workbook:
                 if config.debug:
                     sys.stderr.write(f"{Fore.CYAN}conv: EXCEL\n")
 
