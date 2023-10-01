@@ -139,7 +139,7 @@ class ImportRecords:
     @staticmethod
     def convert_cell_xlsx(cell: Cell) -> str:
         if cell.value is None:
-            return ""  # type: ignore[unreachable]
+            return ""
         return str(cell.value)
 
     @staticmethod

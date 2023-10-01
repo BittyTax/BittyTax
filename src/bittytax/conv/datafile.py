@@ -202,7 +202,7 @@ class DataFile:
     @staticmethod
     def convert_cell_xlsx(cell: openpyxl.cell.cell.Cell) -> str:
         if cell.value is None:
-            return ""  # type: ignore[unreachable]
+            return ""
         return str(cell.value)
 
     @staticmethod
