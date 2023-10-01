@@ -7,10 +7,11 @@ import re
 import sys
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, List, Optional, Tuple, TypedDict, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import xlsxwriter
 from colorama import Fore
+from typing_extensions import TypedDict
 from xlsxwriter.utility import xl_rowcol_to_cell
 
 from ..config import config
