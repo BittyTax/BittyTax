@@ -2,46 +2,56 @@
 # (c) Nano Nano Ltd 2021
 
 import re
+from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from ..dataparser import DataParser
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Trezor"
 
 
-def parse_trezor_suite_v2(data_row, parser, **_kwargs):
+def parse_trezor_suite_v2(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["Timestamp"]))
 
     if row_dict["Type"] == "RECV":
         # Workaround: we have to ignore the fee as fee is for the sender
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Amount unit"],
             wallet=WALLET,
             note=row_dict["Label"],
         )
     elif row_dict["Type"] == "SENT":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=row_dict["Amount"],
+            sell_quantity=Decimal(row_dict["Amount"]),
             sell_asset=row_dict["Amount unit"],
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Fee unit"],
             wallet=WALLET,
             note=row_dict["Label"],
         )
     elif row_dict["Type"] == "SELF":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=0,
+            sell_quantity=Decimal(0),
             sell_asset=row_dict["Amount unit"],
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Fee unit"],
             wallet=WALLET,
             note=row_dict["Label"],
@@ -53,11 +63,11 @@ def parse_trezor_suite_v2(data_row, parser, **_kwargs):
             note = "Failure"
 
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_SPEND,
+            TrType.SPEND,
             data_row.timestamp,
-            sell_quantity=row_dict["Amount"],
+            sell_quantity=Decimal(row_dict["Amount"]),
             sell_asset=row_dict["Amount unit"],
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Fee unit"],
             wallet=WALLET,
             note=note,
@@ -66,7 +76,9 @@ def parse_trezor_suite_v2(data_row, parser, **_kwargs):
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
 
-def parse_trezor_suite_v1(data_row, parser, **kwargs):
+def parse_trezor_suite_v1(
+    data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     if "Date & Time" in row_dict:
         data_row.timestamp = DataParser.parse_timestamp(
@@ -81,46 +93,46 @@ def parse_trezor_suite_v1(data_row, parser, **kwargs):
         if match:
             symbol = match.group(1).upper()
         else:
-            raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet"))
+            raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet", ""))
     else:
         symbol = kwargs["cryptoasset"]
 
     if row_dict["Type"] == "RECV":
         # Workaround: we have to ignore the fee as fee is for the sender
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Total"],
+            buy_quantity=Decimal(row_dict["Total"]),
             buy_asset=symbol,
             wallet=WALLET,
         )
     elif row_dict["Type"] == "SENT":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=row_dict["Total"],
+            sell_quantity=Decimal(row_dict["Total"]),
             sell_asset=symbol,
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=symbol,
             wallet=WALLET,
         )
     elif row_dict["Type"] == "SELF":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=0,
+            sell_quantity=Decimal(0),
             sell_asset=symbol,
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=symbol,
             wallet=WALLET,
         )
     elif row_dict["Type"] == "FAILED":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_SPEND,
+            TrType.SPEND,
             data_row.timestamp,
-            sell_quantity=0,
+            sell_quantity=Decimal(0),
             sell_asset=symbol,
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=symbol,
             wallet=WALLET,
             note="Failure",
@@ -130,7 +142,7 @@ def parse_trezor_suite_v1(data_row, parser, **kwargs):
 
 
 DataParser(
-    DataParser.TYPE_WALLET,
+    ParserType.WALLET,
     "Trezor Suite",
     [
         "Timestamp",
@@ -152,7 +164,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_WALLET,
+    ParserType.WALLET,
     "Trezor Suite",
     ["Date & Time", "Type", "Transaction ID", "Addresses", "Fee", "Total"],
     worksheet_name="Trezor",

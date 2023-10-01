@@ -3,21 +3,30 @@
 
 import sys
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from colorama import Fore
+from typing_extensions import Unpack
 
 from ...constants import WARNING
-from ..dataparser import DataParser
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "BlockFi"
 
 
-def parse_blockfi(data_row, parser, **kwargs):
+def parse_blockfi(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
 
     if row_dict["Confirmed At"] == "" and not kwargs["unconfirmed"]:
+        if parser.in_header_row_num is None:
+            raise RuntimeError("Missing in_header_row_num")
+
         sys.stderr.write(
             f"{Fore.YELLOW}row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
             f"{WARNING} Skipping unconfirmed transaction, use the [-uc] option to include it\n"
@@ -28,9 +37,9 @@ def parse_blockfi(data_row, parser, **kwargs):
 
     if row_dict["Transaction Type"] in ("Deposit", "Wire Deposit", "ACH Deposit"):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Cryptocurrency"],
             wallet=WALLET,
         )
@@ -40,7 +49,7 @@ def parse_blockfi(data_row, parser, **kwargs):
         "ACH Withdrawal",
     ):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["Amount"])),
             sell_asset=row_dict["Cryptocurrency"],
@@ -48,9 +57,9 @@ def parse_blockfi(data_row, parser, **kwargs):
         )
     elif row_dict["Transaction Type"] == "Withdrawal Fee":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=0,
+            sell_quantity=Decimal(0),
             sell_asset=row_dict["Cryptocurrency"],
             fee_quantity=abs(Decimal(row_dict["Amount"])),
             fee_asset=row_dict["Cryptocurrency"],
@@ -58,17 +67,17 @@ def parse_blockfi(data_row, parser, **kwargs):
         )
     elif row_dict["Transaction Type"] == "Interest Payment":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_INTEREST,
+            TrType.INTEREST,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Cryptocurrency"],
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] in ("Bonus Payment", "Referral Bonus"):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_GIFT_RECEIVED,
+            TrType.GIFT_RECEIVED,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Cryptocurrency"],
             wallet=WALLET,
         )
@@ -83,14 +92,16 @@ def parse_blockfi(data_row, parser, **kwargs):
         )
 
 
-def parse_blockfi_trades(data_row, _parser, **_kwargs):
+def parse_blockfi_trades(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
 
     data_row.t_record = TransactionOutRecord(
-        TransactionOutRecord.TYPE_TRADE,
+        TrType.TRADE,
         data_row.timestamp,
-        buy_quantity=row_dict["Buy Quantity"],
+        buy_quantity=Decimal(row_dict["Buy Quantity"]),
         buy_asset=row_dict["Buy Currency"].upper(),
         sell_quantity=abs(Decimal(row_dict["Sold Quantity"])),
         sell_asset=row_dict["Sold Currency"].upper(),
@@ -99,7 +110,7 @@ def parse_blockfi_trades(data_row, _parser, **_kwargs):
 
 
 DataParser(
-    DataParser.TYPE_SAVINGS,
+    ParserType.SAVINGS,
     "BlockFi",
     ["Cryptocurrency", "Amount", "Transaction Type", "Confirmed At"],
     worksheet_name="BlockFi",
@@ -107,7 +118,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_SAVINGS,
+    ParserType.SAVINGS,
     "BlockFi Trades",
     [
         "Trade ID",

@@ -2,51 +2,102 @@
 # (c) Nano Nano Ltd 2019
 
 import sys
-from datetime import datetime
+from datetime import datetime, tzinfo
 from decimal import Decimal
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
 import dateutil.parser
 import dateutil.tz
 from colorama import Fore, Style
+from typing_extensions import NotRequired, Protocol, TypedDict, Unpack
 
 from ..config import config
 from ..constants import TZ_UTC
 from ..price.pricedata import PriceData
+from ..types import AssetSymbol, Timestamp
+from .exceptions import CurrencyConversionError
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 TERM_WIDTH = 69
 
 
-class DataParser:  # pylint: disable=too-many-instance-attributes
-    TYPE_WALLET = "Wallets"
-    TYPE_EXCHANGE = "Exchanges"
-    TYPE_SAVINGS = "Savings, Loans & Investments"
-    TYPE_EXPLORER = "Explorers"
-    TYPE_ACCOUNTING = "Accounting"
-    TYPE_SHARES = "Stocks & Shares"
-    TYPE_GENERIC = "Generic"
+class ParserType(Enum):
+    WALLET = "Wallets"
+    EXCHANGE = "Exchanges"
+    SAVINGS = "Savings, Loans & Investments"
+    EXPLORER = "Explorers"
+    ACCOUNTING = "Accounting"
+    SHARES = "Stocks & Shares"
+    GENERIC = "Generic"
 
+
+class RowHandler(Protocol):  # pylint: disable=too-few-public-methods
+    def __call__(
+        self, data_row: "DataRow", parser: "DataParser", **kwargs: Unpack["ParserArgs"]
+    ) -> None:
+        ...
+
+
+class RowHandler2(Protocol):  # pylint: disable=too-few-public-methods
+    def __call__(
+        self, data_row: "DataRow", _parser: "DataParser", **kwargs: Unpack["ParserArgs"]
+    ) -> None:
+        ...
+
+
+class AllHandler(Protocol):  # pylint: disable=too-few-public-methods
+    def __call__(
+        self,
+        data_rows: List["DataRow"],
+        parser: "DataParser",
+        **kwargs: Unpack[Union["ParserArgs"]],
+    ) -> None:
+        ...
+
+
+class AllHandler2(Protocol):  # pylint: disable=too-few-public-methods
+    def __call__(
+        self,
+        data_rows: List["DataRow"],
+        _parser: "DataParser",
+        **kwargs: Unpack[Union["ParserArgs"]],
+    ) -> None:
+        ...
+
+
+class ParserArgs(TypedDict):
+    filename: str
+    worksheet: NotRequired[str]
+    unconfirmed: bool
+    cryptoasset: str
+
+
+class DataParser:  # pylint: disable=too-many-instance-attributes
     LIST_ORDER = (
-        TYPE_WALLET,
-        TYPE_EXCHANGE,
-        TYPE_SAVINGS,
-        TYPE_EXPLORER,
-        TYPE_ACCOUNTING,
-        TYPE_SHARES,
+        ParserType.WALLET,
+        ParserType.EXCHANGE,
+        ParserType.SAVINGS,
+        ParserType.EXPLORER,
+        ParserType.ACCOUNTING,
+        ParserType.SHARES,
     )
 
     price_data = PriceData(config.data_source_fiat)
-    parsers = []
+    parsers: List["DataParser"] = []
 
     def __init__(
         self,
-        p_type,
-        name,
-        header,
-        delimiter=",",
-        worksheet_name=None,
-        deprecated=None,
-        row_handler=None,
-        all_handler=None,
+        p_type: ParserType,
+        name: str,
+        header: List[Optional[Union[str, Callable]]],
+        delimiter: str = ",",
+        worksheet_name: Optional[str] = None,
+        deprecated: Optional["DataParser"] = None,
+        row_handler: Optional[Union[RowHandler, RowHandler2]] = None,
+        all_handler: Optional[Union[AllHandler, AllHandler2]] = None,
     ):
         self.p_type = p_type
         self.name = name
@@ -56,22 +107,24 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         self.delimiter = delimiter
         self.row_handler = row_handler
         self.all_handler = all_handler
-        self.args = []
-        self.in_header = None
-        self.in_header_row_num = None
+        self.args: List[Any] = []
+        self.in_header: List[str] = []
+        self.in_header_row_num: Optional[int] = None
 
         self.parsers.append(self)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, DataParser):
+            return NotImplemented
         return self.name == other.name
 
-    def __ne__(self, other):
+    def __ne__(self, other: object) -> bool:
         return not self == other
 
-    def __lt__(self, other):
+    def __lt__(self, other: "DataParser") -> bool:
         return self.name < other.name
 
-    def format_header(self):
+    def format_header(self) -> str:
         header = []
         for col in self.header:
             if callable(col) or col is None:
@@ -84,7 +137,14 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         return f"{header_str[:TERM_WIDTH]}..." if len(header_str) > TERM_WIDTH else header_str
 
     @classmethod
-    def parse_timestamp(cls, timestamp_str, tzinfos=None, tz=None, dayfirst=False, fuzzy=False):
+    def parse_timestamp(
+        cls,
+        timestamp_str: Union[str, int, float],
+        tzinfos: Optional[Dict[str, Optional[tzinfo]]] = None,
+        tz: Optional[str] = None,
+        dayfirst: bool = False,
+        fuzzy: bool = False,
+    ) -> datetime:
         if isinstance(timestamp_str, (int, float)):
             timestamp = datetime.utcfromtimestamp(timestamp_str)
         else:
@@ -104,7 +164,9 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         return timestamp
 
     @classmethod
-    def convert_currency(cls, value, from_currency, timestamp):
+    def convert_currency(
+        cls, value: Optional[Union[Decimal, str]], from_currency: str, timestamp: datetime
+    ) -> Optional[Decimal]:
         if from_currency not in config.fiat_list:
             return None
 
@@ -118,24 +180,28 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
             return Decimal(value)
 
         if timestamp.date() >= datetime.now().date():
-            rate_ccy, _, _ = cls.price_data.get_latest(from_currency, config.ccy)
+            rate_ccy, _, _ = cls.price_data.get_latest(AssetSymbol(from_currency), config.ccy)
         else:
-            rate_ccy, _, _, _ = cls.price_data.get_historical(from_currency, config.ccy, timestamp)
-
-        value_in_ccy = Decimal(value) * rate_ccy
-
-        if config.debug:
-            print(
-                f"{Fore.YELLOW}price: {timestamp:%Y-%m-%d}, 1 {from_currency}="
-                f"{config.sym()}{rate_ccy:0,.2f} {config.ccy}, {Decimal(value).normalize():0,f}"
-                f"{from_currency}{Style.BRIGHT}{config.sym()}{value_in_ccy:0,.2f} "
-                f"{config.ccy}{Style.NORMAL}"
+            rate_ccy, _, _, _ = cls.price_data.get_historical(
+                AssetSymbol(from_currency), config.ccy, Timestamp(timestamp)
             )
 
-        return value_in_ccy
+        if rate_ccy is not None:
+            value_in_ccy = Decimal(value) * rate_ccy
+
+            if config.debug:
+                print(
+                    f"{Fore.YELLOW}price: {timestamp:%Y-%m-%d}, 1 {from_currency}="
+                    f"{config.sym()}{rate_ccy:0,.2f} {config.ccy}, {Decimal(value).normalize():0,f}"
+                    f"{from_currency}{Style.BRIGHT}{config.sym()}{value_in_ccy:0,.2f} "
+                    f"{config.ccy}{Style.NORMAL}"
+                )
+
+            return value_in_ccy
+        raise CurrencyConversionError(from_currency, config.ccy, timestamp)
 
     @classmethod
-    def match_header(cls, row, row_num):
+    def match_header(cls, row: list[str], row_num: int) -> "DataParser":
         row = [col.strip() for col in row]
         if config.debug:
             sys.stderr.write(
@@ -144,10 +210,11 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
 
         parsers_reduced = [p for p in cls.parsers if len(p.header) == len(row)]
         for parser in parsers_reduced:
+            parser.args = []
             match = False
             for i, row_field in enumerate(row):
                 if callable(parser.header[i]):
-                    match = parser.header[i](row_field)
+                    match = parser.header[i](row_field)  # type: ignore[operator, misc]
                     parser.args.append(match)
                 elif parser.header[i] is not None:
                     match = row_field == parser.header[i]
@@ -174,10 +241,10 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         raise KeyError
 
     @classmethod
-    def format_parsers(cls):
+    def format_parsers(cls) -> str:
         txt = ""
         for p_type in cls.LIST_ORDER:
-            txt += f"  {p_type.upper()}:\n"
+            txt += f"  {p_type.value.upper()}:\n"
             prev_name = None
             for parser in sorted([parser for parser in cls.parsers if parser.p_type == p_type]):
                 if parser.name != prev_name:
@@ -189,7 +256,7 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         return txt
 
     @staticmethod
-    def format_row(row):
+    def format_row(row: List) -> str:
         row_out = []
         for col in row:
             if callable(col):

@@ -3,23 +3,31 @@
 
 import sys
 from decimal import Decimal
+from typing import TYPE_CHECKING, Dict, List
 
 import dateutil.tz
 from colorama import Fore
+from typing_extensions import Unpack
 
 from ...config import config
-from ..dataparser import DataParser
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import DataRowError, UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "OKX"
 TZ_INFOS = {"CST": dateutil.tz.gettz("Asia/Shanghai")}
 BOM = "\ufeff"  # pylint: disable=anomalous-unicode-escape-in-string
 
 
-def parse_okx_trades_v2(data_rows, parser, **_kwargs):
-    ids = {}
-    orders = {}
+def parse_okx_trades_v2(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    ids: Dict[str, List["DataRow"]] = {}
+    orders: Dict[str, List["DataRow"]] = {}
 
     for dr in data_rows:
         if dr.row_dict.get(BOM + "id"):
@@ -37,6 +45,9 @@ def parse_okx_trades_v2(data_rows, parser, **_kwargs):
 
     for data_row in data_rows:
         if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
             sys.stderr.write(
                 f"{Fore.YELLOW}conv: "
                 f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
@@ -56,7 +67,12 @@ def parse_okx_trades_v2(data_rows, parser, **_kwargs):
             data_row.failure = e
 
 
-def _parse_okx_trades_v2_row(ids, orders, parser, data_row):
+def _parse_okx_trades_v2_row(
+    ids: Dict[str, List["DataRow"]],
+    orders: Dict[str, List["DataRow"]],
+    parser: DataParser,
+    data_row: "DataRow",
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
     data_row.parsed = True
@@ -78,7 +94,7 @@ def _parse_okx_trades_v2_row(ids, orders, parser, data_row):
         )
 
 
-def _make_trade(ids, data_row):
+def _make_trade(ids: List["DataRow"], data_row: "DataRow") -> bool:
     buy_rows = [dr for dr in ids if dr.row_dict["Type"] == "Buy"]
     sell_rows = [dr for dr in ids if dr.row_dict["Type"] == "Sell"]
 
@@ -91,11 +107,11 @@ def _make_trade(ids, data_row):
             buy_rows[0].parsed = True
 
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=buy_rows[0].row_dict["Amount"],
+            buy_quantity=Decimal(buy_rows[0].row_dict["Amount"]),
             buy_asset=buy_rows[0].row_dict["Unit"],
-            sell_quantity=sell_rows[0].row_dict["Amount"],
+            sell_quantity=Decimal(sell_rows[0].row_dict["Amount"]),
             sell_asset=sell_rows[0].row_dict["Unit"],
             fee_quantity=abs(Decimal(buy_rows[0].row_dict["Fee"])),
             fee_asset=buy_rows[0].row_dict["Unit"],
@@ -106,10 +122,15 @@ def _make_trade(ids, data_row):
     return False
 
 
-def parse_okx_trades_v1(data_rows, parser, **_kwargs):
+def parse_okx_trades_v1(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     for buy_row, sell_row in zip(data_rows[0::2], data_rows[1::2]):
         try:
             if config.debug:
+                if parser.in_header_row_num is None:
+                    raise RuntimeError("Missing in_header_row_num")
+
                 sys.stderr.write(
                     f"{Fore.YELLOW}conv: "
                     f"row[{parser.in_header_row_num + buy_row.line_num}] {buy_row}\n"
@@ -129,15 +150,15 @@ def parse_okx_trades_v1(data_rows, parser, **_kwargs):
             buy_row.failure = e
 
 
-def _parse_okx_trades_v1_row(buy_row, sell_row, parser):
+def _parse_okx_trades_v1_row(buy_row: "DataRow", sell_row: "DataRow", parser: DataParser) -> None:
     buy_row.timestamp = DataParser.parse_timestamp(buy_row.row_dict["time"], tzinfos=TZ_INFOS)
     sell_row.timestamp = DataParser.parse_timestamp(sell_row.row_dict["time"], tzinfos=TZ_INFOS)
 
     if buy_row.row_dict["type"] == "buy" and sell_row.row_dict["type"] == "sell":
         buy_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             buy_row.timestamp,
-            buy_quantity=buy_row.row_dict["size"],
+            buy_quantity=Decimal(buy_row.row_dict["size"]),
             buy_asset=buy_row.row_dict["currency"],
             sell_quantity=abs(Decimal(sell_row.row_dict["size"])),
             sell_asset=sell_row.row_dict["currency"],
@@ -149,43 +170,45 @@ def _parse_okx_trades_v1_row(buy_row, sell_row, parser):
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", buy_row.row_dict["type"])
 
 
-def parse_okx_funding(data_row, parser, **_kwargs):
+def parse_okx_funding(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
 
     if row_dict["Type"] == "Deposit":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Symbol"],
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Symbol"],
             wallet=WALLET,
         )
     elif row_dict["Type"] == "Withdrawal":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["Amount"])),
             sell_asset=row_dict["Symbol"],
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Symbol"],
             wallet=WALLET,
         )
     elif row_dict["Type"] == "Staking Yield":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_STAKING,
+            TrType.STAKING,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Symbol"],
             wallet=WALLET,
         )
     elif row_dict["Type"] == "Fee rebate":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_GIFT_RECEIVED,
+            TrType.GIFT_RECEIVED,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Symbol"],
             wallet=WALLET,
         )
@@ -204,7 +227,7 @@ def parse_okx_funding(data_row, parser, **_kwargs):
 
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "OKX Trades",
     [
         lambda h: h in ("id", BOM + "id", h),
@@ -228,7 +251,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "OKX Trades",
     ["time", "type", "size", "balance", "fee", "currency"],
     worksheet_name="OKX T",
@@ -236,7 +259,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "OKX Funding",
     [
         lambda h: h in ("id", BOM + "id", h),
@@ -253,7 +276,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "OKX Funding",
     [
         lambda h: h in ("id", BOM + "id", h),

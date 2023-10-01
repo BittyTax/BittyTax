@@ -7,7 +7,7 @@ import requests
 from bittytax.conv.parsers.kraken import _split_trading_pair
 
 
-def get_alt_assets():
+def get_alt_assets() -> dict[str, str]:
     response = requests.get("https://api.kraken.com/0/public/Assets", timeout=10)
 
     alt_assets = {}
@@ -16,11 +16,13 @@ def get_alt_assets():
             alt = response.json()["result"][asset]["altname"]
             if asset != alt:
                 alt_assets[asset] = alt
+    else:
+        print(f"{response.status_code} {response.reason}")
 
     return alt_assets
 
 
-def get_quote_assets():
+def get_quote_assets() -> list[str]:
     response = requests.get("https://api.kraken.com/0/public/AssetPairs", timeout=10)
 
     quote_assets = []
@@ -55,11 +57,13 @@ def get_quote_assets():
             print("===Split trading pairs PASSED===")
         else:
             print("===Split trading pairs FAILED===")
+    else:
+        print(f"{response.status_code} {response.reason}")
 
     return quote_assets
 
 
-def output_constants(alt_assets, quote_assets):
+def output_constants(alt_assets: dict[str, str], quote_assets: list[str]) -> None:
     print("\nQUOTE_ASSETS = [")
     for i in sorted(quote_assets):
         print(f'    "{i}"')

@@ -3,30 +3,53 @@
 
 from datetime import datetime
 from decimal import Decimal
+from typing import Dict, Optional, Tuple
 
 from colorama import Fore, Style
 from tqdm import tqdm
+from typing_extensions import TypedDict
 
 from ..config import config
 from ..constants import WARNING
+from ..types import (
+    AssetName,
+    AssetSymbol,
+    DataSourceName,
+    Date,
+    FixedValue,
+    QuoteSymbol,
+    SourceUrl,
+    Timestamp,
+    Year,
+)
 from .pricedata import PriceData
 
 
+class VaPriceReport(TypedDict):
+    name: AssetName
+    data_source: DataSourceName
+    url: SourceUrl
+    price_ccy: Optional[Decimal]
+    price_btc: Optional[Decimal]
+
+
 class ValueAsset:
-    def __init__(self, price_tool=False):
+    def __init__(self, price_tool: bool = False) -> None:
         self.price_tool = price_tool
-        self.price_report = {}
+        self.price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]] = {}
         data_sources_required = set(config.data_source_fiat + config.data_source_crypto) | {
             x.split(":")[0] for v in config.data_source_select.values() for x in v
         }
-        self.price_data = PriceData(data_sources_required, price_tool)
+        self.price_data = PriceData(list(data_sources_required), price_tool)
 
-    def get_value(self, asset, timestamp, quantity):
+    def get_value(
+        self, asset: AssetSymbol, timestamp: Timestamp, quantity: Decimal
+    ) -> Tuple[Decimal, FixedValue]:
         if asset == config.ccy:
-            return quantity, True
+            return quantity, FixedValue(True)
 
         if quantity == 0:
-            return Decimal(0), False
+            return Decimal(0), FixedValue(False)
 
         asset_price_ccy, _, _ = self.get_historical_price(asset, timestamp)
         if asset_price_ccy is not None:
@@ -38,22 +61,26 @@ class ValueAsset:
                     f"{quantity.normalize():0,f} {asset}="
                     f"{Style.BRIGHT}{config.sym()}{value:0,.2f} {config.ccy}{Style.NORMAL}"
                 )
-            return value, False
+            return value, FixedValue(False)
 
         tqdm.write(
             f"{WARNING} Price for {asset} on {timestamp:%Y-%m-%d} is not available, "
             f"using price of {config.sym()}{0:0,.2f}"
         )
-        return Decimal(0), False
+        return Decimal(0), FixedValue(False)
 
-    def get_current_value(self, asset, quantity):
+    def get_current_value(
+        self, asset: AssetSymbol, quantity: Decimal
+    ) -> Tuple[Optional[Decimal], AssetName, DataSourceName]:
         asset_price_ccy, name, data_source = self.get_latest_price(asset)
         if asset_price_ccy is not None:
             return asset_price_ccy * quantity, name, data_source
 
-        return None, None, None
+        return None, AssetName(""), DataSourceName("")
 
-    def get_historical_price(self, asset, timestamp, no_cache=False):
+    def get_historical_price(
+        self, asset: AssetSymbol, timestamp: Timestamp, no_cache: bool = False
+    ) -> Tuple[Optional[Decimal], AssetName, DataSourceName]:
         asset_price_ccy = None
 
         if not self.price_tool and timestamp.date() >= datetime.now().date():
@@ -70,7 +97,7 @@ class ValueAsset:
             self.price_report_cache(asset, timestamp, name, data_source, url, asset_price_ccy)
         else:
             asset_price_btc, name, data_source, url = self.price_data.get_historical(
-                asset, "BTC", timestamp, no_cache
+                asset, QuoteSymbol("BTC"), timestamp, no_cache
             )
             if asset_price_btc is not None:
                 (
@@ -78,11 +105,15 @@ class ValueAsset:
                     name2,
                     data_source2,
                     url2,
-                ) = self.price_data.get_historical("BTC", config.ccy, timestamp, no_cache)
+                ) = self.price_data.get_historical(
+                    AssetSymbol("BTC"), config.ccy, timestamp, no_cache
+                )
                 if btc_price_ccy is not None:
                     asset_price_ccy = btc_price_ccy * asset_price_btc
 
-                self.price_report_cache("BTC", timestamp, name2, data_source2, url2, btc_price_ccy)
+                self.price_report_cache(
+                    AssetSymbol("BTC"), timestamp, name2, data_source2, url2, btc_price_ccy
+                )
 
             self.price_report_cache(
                 asset,
@@ -96,28 +127,41 @@ class ValueAsset:
 
         return asset_price_ccy, name, data_source
 
-    def get_latest_price(self, asset):
+    def get_latest_price(
+        self, asset: AssetSymbol
+    ) -> Tuple[Optional[Decimal], AssetName, DataSourceName]:
         asset_price_ccy = None
 
         if asset == "BTC" or asset in config.fiat_list:
             asset_price_ccy, name, data_source = self.price_data.get_latest(asset, config.ccy)
         else:
-            asset_price_btc, name, data_source = self.price_data.get_latest(asset, "BTC")
+            asset_price_btc, name, data_source = self.price_data.get_latest(
+                asset, QuoteSymbol("BTC")
+            )
 
             if asset_price_btc is not None:
-                btc_price_ccy, _, _ = self.price_data.get_latest("BTC", config.ccy)
+                btc_price_ccy, _, _ = self.price_data.get_latest(AssetSymbol("BTC"), config.ccy)
                 if btc_price_ccy is not None:
                     asset_price_ccy = btc_price_ccy * asset_price_btc
 
         return asset_price_ccy, name, data_source
 
     def price_report_cache(
-        self, asset, timestamp, name, data_source, url, price_ccy, price_btc=None
-    ):
-        if timestamp > config.get_tax_year_end(timestamp.year):
-            tax_year = timestamp.year + 1
+        self,
+        asset: AssetSymbol,
+        timestamp: Timestamp,
+        name: AssetName,
+        data_source: DataSourceName,
+        url: SourceUrl,
+        price_ccy: Optional[Decimal],
+        price_btc: Optional[Decimal] = None,
+    ) -> None:
+        date = timestamp.date()
+
+        if date > config.get_tax_year_end(date.year):
+            tax_year = Year(date.year + 1)
         else:
-            tax_year = timestamp.year
+            tax_year = Year(date.year)
 
         if tax_year not in self.price_report:
             self.price_report[tax_year] = {}
@@ -125,12 +169,11 @@ class ValueAsset:
         if asset not in self.price_report[tax_year]:
             self.price_report[tax_year][asset] = {}
 
-        date = f"{timestamp:%Y-%m-%d}"
         if date not in self.price_report[tax_year][asset]:
-            self.price_report[tax_year][asset][date] = {
-                "name": name,
-                "data_source": data_source,
-                "url": url,
-                "price_ccy": price_ccy,
-                "price_btc": price_btc,
-            }
+            self.price_report[tax_year][asset][Date(date)] = VaPriceReport(
+                name=name,
+                data_source=data_source,
+                url=url,
+                price_ccy=price_ccy,
+                price_btc=price_btc,
+            )

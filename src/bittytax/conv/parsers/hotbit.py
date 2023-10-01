@@ -4,13 +4,19 @@
 import copy
 import sys
 from decimal import ROUND_DOWN, Decimal
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from colorama import Fore
+from typing_extensions import Unpack
 
 from ...config import config
-from ..dataparser import DataParser
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import DataRowError, UnexpectedTradingPairError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Hotbit"
 
@@ -49,6 +55,7 @@ QUOTE_ASSETS = [
     "THETA",
     "TRB",
     "TRX",
+    "TWT",
     "UNI",
     "USD",
     "USDC",
@@ -58,6 +65,7 @@ QUOTE_ASSETS = [
     "XMR",
     "XRP",
     "nUSD",
+    "vUSD",
 ]
 
 PRECISION = Decimal("0.00000000")
@@ -65,27 +73,32 @@ MAKER_FEE = Decimal(0.0005)
 TAKER_FEE = Decimal(0.002)
 
 
-def parse_hotbit_orders_v3(data_rows, parser, **kwargs):
-    parse_hotbit_orders_v1(data_rows, parser, type_str="Side", amount_str="Volume", **kwargs)
+def parse_hotbit_orders_v3(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    _parse_hotbit_orders(data_rows, parser, type_str="Side", amount_str="Volume")
 
 
-def parse_hotbit_orders_v2(data_rows, parser, **kwargs):
-    parse_hotbit_orders_v1(data_rows, parser, type_str="Side", amount_str="Amount", **kwargs)
+def parse_hotbit_orders_v2(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    _parse_hotbit_orders(data_rows, parser, type_str="Side", amount_str="Amount")
 
 
-def parse_hotbit_orders_v1(data_rows, parser, **kwargs):
-    if kwargs.get("type_str"):
-        type_str = kwargs["type_str"]
-    else:
-        type_str = "Type"
+def parse_hotbit_orders_v1(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    _parse_hotbit_orders(data_rows, parser, type_str="Type", amount_str="Amount")
 
-    if kwargs.get("amount_str"):
-        amount_str = kwargs["amount_str"]
-    else:
-        amount_str = "Amount"
 
+def _parse_hotbit_orders(
+    data_rows: List["DataRow"], parser: DataParser, type_str: str, amount_str: str
+) -> None:
     for row_index, data_row in enumerate(data_rows):
         if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
             sys.stderr.write(
                 f"{Fore.YELLOW}conv: "
                 f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
@@ -105,7 +118,14 @@ def parse_hotbit_orders_v1(data_rows, parser, **kwargs):
             data_row.failure = e
 
 
-def _parse_hotbit_orders_row(data_rows, parser, data_row, row_index, type_str, amount_str):
+def _parse_hotbit_orders_row(
+    data_rows: List["DataRow"],
+    parser: DataParser,
+    data_row: "DataRow",
+    row_index: int,
+    type_str: str,
+    amount_str: str,
+) -> None:
     if data_row.row[0] == "":
         return
 
@@ -122,7 +142,7 @@ def _parse_hotbit_orders_row(data_rows, parser, data_row, row_index, type_str, a
         dup_data_row = copy.copy(data_row)
         dup_data_row.row = []
         dup_data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_GIFT_RECEIVED,
+            TrType.GIFT_RECEIVED,
             data_row.timestamp,
             buy_quantity=(total * MAKER_FEE).quantize(PRECISION, rounding=ROUND_DOWN),
             buy_asset=row_dict["Fee"].split(" ")[1],
@@ -139,9 +159,9 @@ def _parse_hotbit_orders_row(data_rows, parser, data_row, row_index, type_str, a
 
     if row_dict[type_str] == "BUY":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict[amount_str].split(" ")[0],
+            buy_quantity=Decimal(row_dict[amount_str].split(" ")[0]),
             buy_asset=row_dict["Pair"].split("/")[0],
             sell_quantity=total.quantize(PRECISION),
             sell_asset=row_dict["Pair"].split("/")[1],
@@ -151,11 +171,11 @@ def _parse_hotbit_orders_row(data_rows, parser, data_row, row_index, type_str, a
         )
     elif row_dict[type_str] == "SELL":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=total.quantize(PRECISION),
             buy_asset=row_dict["Pair"].split("/")[1],
-            sell_quantity=row_dict[amount_str].split(" ")[0],
+            sell_quantity=Decimal(row_dict[amount_str].split(" ")[0]),
             sell_asset=row_dict["Pair"].split("/")[0],
             fee_quantity=fee_quantity,
             fee_asset=fee_asset,
@@ -165,9 +185,14 @@ def _parse_hotbit_orders_row(data_rows, parser, data_row, row_index, type_str, a
         raise UnexpectedTypeError(parser.in_header.index(type_str), type_str, row_dict[type_str])
 
 
-def parse_hotbit_trades(data_rows, parser, **_kwargs):
+def parse_hotbit_trades(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     for row_index, data_row in enumerate(data_rows):
         if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
             sys.stderr.write(
                 f"{Fore.YELLOW}conv: "
                 f" row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
@@ -187,7 +212,9 @@ def parse_hotbit_trades(data_rows, parser, **_kwargs):
             data_row.failure = e
 
 
-def _parse_hotbit_trades_row(data_rows, parser, data_row, row_index):
+def _parse_hotbit_trades_row(
+    data_rows: List["DataRow"], parser: DataParser, data_row: "DataRow", row_index: int
+) -> None:
     row_dict = data_row.row_dict
 
     if "_" in row_dict["time"]:
@@ -208,7 +235,7 @@ def _parse_hotbit_trades_row(data_rows, parser, data_row, row_index):
         dup_data_row.row = []
 
         dup_data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_GIFT_RECEIVED,
+            TrType.GIFT_RECEIVED,
             data_row.timestamp,
             buy_quantity=abs(Decimal(row_dict["fee"]).quantize(PRECISION)),
             buy_asset=quote_asset,
@@ -224,9 +251,9 @@ def _parse_hotbit_trades_row(data_rows, parser, data_row, row_index):
 
     if row_dict["side"] == "buy":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["amount"],
+            buy_quantity=Decimal(row_dict["amount"]),
             buy_asset=base_asset,
             sell_quantity=Decimal(row_dict["deal"]).quantize(PRECISION),
             sell_asset=quote_asset,
@@ -236,11 +263,11 @@ def _parse_hotbit_trades_row(data_rows, parser, data_row, row_index):
         )
     elif row_dict["side"] == "sell":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["deal"]).quantize(PRECISION),
             buy_asset=quote_asset,
-            sell_quantity=row_dict["amount"],
+            sell_quantity=Decimal(row_dict["amount"]),
             sell_asset=base_asset,
             fee_quantity=fee_quantity,
             fee_asset=fee_asset,
@@ -250,8 +277,8 @@ def _parse_hotbit_trades_row(data_rows, parser, data_row, row_index):
         raise UnexpectedTypeError(parser.in_header.index("side"), "side", row_dict["side"])
 
 
-def _split_trading_pair(market):
-    for quote_asset in QUOTE_ASSETS:
+def _split_trading_pair(market: str) -> Tuple[Optional[str], Optional[str]]:
+    for quote_asset in sorted(QUOTE_ASSETS, reverse=True):
         if market.endswith(quote_asset):
             return market[: -len(quote_asset)], quote_asset
 
@@ -259,7 +286,7 @@ def _split_trading_pair(market):
 
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Hotbit Trades",
     ["Date", "Pair", "Side", "Price", "Volume", "Fee", "Total"],
     worksheet_name="Hotbit T",
@@ -267,7 +294,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Hotbit Trades",
     ["Date", "Pair", "Side", "Price", "Amount", "Fee", "Total"],
     worksheet_name="Hotbit T",
@@ -275,7 +302,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Hotbit Trades",
     ["Date", "Pair", "Type", "Price", "Amount", "Fee", "Total", "Export"],
     worksheet_name="Hotbit T",
@@ -283,7 +310,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Hotbit Trades",
     ["time", "market", "side", "price", "amount", "deal", "fee"],
     worksheet_name="Hotbit T",
@@ -292,7 +319,7 @@ DataParser(
 
 # Format provided by request from support
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Hotbit Trades",
     [
         "time",

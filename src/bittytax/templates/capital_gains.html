@@ -82,7 +82,7 @@
     </tr>
     <tr>
         <td>Disposal proceeds:</td>
-        {% if cgains.estimate.proceeds_warning %}
+        {% if cgains.cgt_estimate.proceeds_warning %}
             <td align="right">*{{cgains.totals['proceeds']|valuefilter}}</td>
         {% else %}
             <td align="right">{{cgains.totals['proceeds']|valuefilter}}</td>
@@ -105,8 +105,8 @@
         <td></td>
     </tr>
 </table>
-{% if cgains.estimate.proceeds_warning %}
-    <p>*Assets sold are more than {{(cgains.estimate['proceeds_limit'])|valuefilter}}, this needs to be reported to HMRC if you already complete a Self Assessment</p>
+{% if cgains.cgt_estimate.proceeds_warning %}
+    <p>*Assets sold are more than {{(cgains.cgt_estimate['proceeds_limit'])|valuefilter}}, this needs to be reported to HMRC if you already complete a Self Assessment</p>
 {% endif %}
 {% if not args.summary %}
     {% if args.tax_rules in TAX_RULES_UK_COMPANY %}

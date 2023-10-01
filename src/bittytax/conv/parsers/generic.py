@@ -1,51 +1,62 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2021
 
-from ..dataparser import DataParser
+from decimal import Decimal
+from typing import TYPE_CHECKING
+
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 from ..output_csv import OutputBase
 
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
-def parse_generic(data_row, parser, **_kwargs):
+
+def parse_generic(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
 
-    if row_dict["Type"] not in TransactionOutRecord.ALL_TYPES:
-        raise UnexpectedTypeError(0, "Type", row_dict["Type"])
+    try:
+        t_type = TrType(row_dict["Type"])
+    except ValueError as e:
+        raise UnexpectedTypeError(0, "Type", row_dict["Type"]) from e
 
     if row_dict["Buy Quantity"]:
-        buy_quantity = row_dict["Buy Quantity"]
+        buy_quantity = Decimal(row_dict["Buy Quantity"])
     else:
         buy_quantity = None
 
     if row_dict["Buy Value in GBP"]:
-        buy_value = row_dict["Buy Value in GBP"]
+        buy_value = Decimal(row_dict["Buy Value in GBP"])
     else:
         buy_value = None
 
     if row_dict["Sell Quantity"]:
-        sell_quantity = row_dict["Sell Quantity"]
+        sell_quantity = Decimal(row_dict["Sell Quantity"])
     else:
         sell_quantity = None
 
     if row_dict["Sell Value in GBP"]:
-        sell_value = row_dict["Sell Value in GBP"]
+        sell_value = Decimal(row_dict["Sell Value in GBP"])
     else:
         sell_value = None
 
     if row_dict["Fee Quantity"]:
-        fee_quantity = row_dict["Fee Quantity"]
+        fee_quantity = Decimal(row_dict["Fee Quantity"])
     else:
         fee_quantity = None
 
     if row_dict["Fee Value in GBP"]:
-        fee_value = row_dict["Fee Value in GBP"]
+        fee_value = Decimal(row_dict["Fee Value in GBP"])
     else:
         fee_value = None
 
     data_row.t_record = TransactionOutRecord(
-        row_dict["Type"],
+        t_type,
         data_row.timestamp,
         buy_quantity=buy_quantity,
         buy_asset=row_dict["Buy Asset"],
@@ -69,7 +80,7 @@ def parse_generic(data_row, parser, **_kwargs):
 
 
 DataParser(
-    DataParser.TYPE_GENERIC,
+    ParserType.GENERIC,
     "Generic",
     [
         "Type",

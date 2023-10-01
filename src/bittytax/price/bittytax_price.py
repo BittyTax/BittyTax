@@ -7,6 +7,7 @@ import platform
 import re
 import sys
 from decimal import Decimal, InvalidOperation
+from typing import List
 
 import colorama
 import dateutil.parser
@@ -14,8 +15,9 @@ from colorama import Fore
 
 from ..config import config
 from ..constants import ERROR, WARNING
+from ..types import AssetSymbol, Timestamp
 from ..version import __version__
-from .assetdata import AssetData
+from .assetdata import AsPriceRecord, AsRecord, AssetData
 from .datasource import DataSourceBase
 from .exceptions import DataSourceError
 from .valueasset import ValueAsset
@@ -26,12 +28,12 @@ CMD_LIST = "list"
 
 if sys.stdout.encoding != "UTF-8":
     if sys.version_info[:2] >= (3, 7):
-        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
     else:
         sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
 
 
-def main():
+def main() -> None:
     colorama.init()
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -163,12 +165,12 @@ def main():
                 else:
                     assets = AssetData().get_latest_price_ds(symbol, args.datasource)
                 btc = None
-                for asset in assets:
-                    if asset["price"] is None:
+                for asset_data in assets:
+                    if asset_data["price"] is None:
                         continue
 
-                    output_ds_price(asset)
-                    if asset["quote"] == "BTC":
+                    output_ds_price(asset_data)
+                    if asset_data["quote"] == "BTC":
                         if btc is None:
                             if args.command == CMD_HISTORY:
                                 btc = get_historic_btc_price(args.date[0])
@@ -176,113 +178,125 @@ def main():
                                 btc = get_latest_btc_price()
 
                         if btc["price"] is not None:
-                            price_ccy = btc["price"] * asset["price"]
+                            price_ccy = btc["price"] * asset_data["price"]
                             output_ds_price(btc)
                             price = True
                     else:
-                        price_ccy = asset["price"]
+                        price_ccy = asset_data["price"]
                         price = True
 
                     output_price(symbol, price_ccy, args.quantity)
 
-                if not assets:
-                    asset = False
+                if assets:
+                    asset = True
             else:
                 value_asset = ValueAsset(price_tool=True)
                 if args.command == CMD_HISTORY:
-                    price_ccy, name, _ = value_asset.get_historical_price(
+                    price_ccy2, name, _ = value_asset.get_historical_price(
                         symbol, args.date[0], args.no_cache
                     )
                 else:
-                    price_ccy, name, _ = value_asset.get_latest_price(symbol)
+                    price_ccy2, name, _ = value_asset.get_latest_price(symbol)
 
-                if price_ccy is not None:
-                    output_price(symbol, price_ccy, args.quantity)
+                if price_ccy2 is not None:
+                    output_price(symbol, price_ccy2, args.quantity)
                     price = True
 
-                if name is not None:
+                if name:
                     asset = True
 
         except DataSourceError as e:
-            parser.exit(f"{ERROR} {e}")
+            parser.exit(message=f"{ERROR} {e}\n")
 
         if not asset:
-            parser.exit(f"{WARNING} Prices for {symbol} are not supported")
+            parser.exit(message=f"{WARNING} Prices for {symbol} are not supported\n")
 
         if not price:
             if args.command == CMD_HISTORY:
                 parser.exit(
-                    f"{WARNING} Price for {symbol} on {args.date[0]:%Y-%m-%d} is not available"
+                    message=f"{WARNING} Price for {symbol} on {args.date[0]:%Y-%m-%d} "
+                    "is not available\n"
                 )
             else:
-                parser.exit(f"{WARNING} Current price for {symbol} is not available")
+                parser.exit(message=f"{WARNING} Current price for {symbol} is not available\n")
     elif args.command == CMD_LIST:
         symbol = args.asset
         try:
-            assets = AssetData().get_assets(symbol, args.datasource, args.search_terms)
+            asset_list = AssetData().get_assets(symbol, args.datasource, args.search_terms)
         except DataSourceError as e:
-            parser.exit(f"{ERROR} {e}")
+            parser.exit(message=f"{ERROR} {e}\n")
 
-        if symbol and not assets:
-            parser.exit(f"{WARNING} Asset {symbol} not found")
+        if symbol and not asset_list:
+            parser.exit(message=f"{WARNING} Asset {symbol} not found\n")
 
-        if args.search_terms and not assets:
-            parser.exit("No results found")
+        if args.search_terms and not asset_list:
+            parser.exit(message="No results found\n")
 
-        output_assets(assets)
-
-
-def get_latest_btc_price():
-    btc = {}
-    btc["symbol"] = "BTC"
-    btc["quote"] = config.ccy
-    btc["price"], btc["name"], btc["data_source"] = ValueAsset().get_latest_price(btc["symbol"])
-    return btc
+        output_assets(asset_list)
 
 
-def get_historic_btc_price(date):
-    btc = {}
-    btc["symbol"] = "BTC"
-    btc["quote"] = config.ccy
-    btc["price"], btc["name"], btc["data_source"] = ValueAsset().get_historical_price(
-        btc["symbol"], date
-    )
-    return btc
+def get_latest_btc_price() -> AsPriceRecord:
+    price_ccy, name, data_source = ValueAsset().get_latest_price(AssetSymbol("BTC"))
+    if price_ccy is not None:
+        return AsPriceRecord(
+            symbol=AssetSymbol("BTC"),
+            name=name,
+            data_source=data_source,
+            price=price_ccy,
+            quote=config.ccy,
+        )
+    raise RuntimeError("BTC price is not available")
 
 
-def output_price(symbol, price_ccy, quantity):
+def get_historic_btc_price(date: Timestamp) -> AsPriceRecord:
+    price_ccy, name, data_source = ValueAsset().get_historical_price(AssetSymbol("BTC"), date)
+    if price_ccy is not None:
+        return AsPriceRecord(
+            symbol=AssetSymbol("BTC"),
+            name=name,
+            data_source=data_source,
+            price=price_ccy,
+            quote=config.ccy,
+        )
+    raise RuntimeError("BTC price is not available")
+
+
+def output_price(symbol: AssetSymbol, price_ccy: Decimal, quantity: Decimal) -> None:
     print(f"{Fore.WHITE}1 {symbol}={config.sym()}{price_ccy:0,.2f} {config.ccy}")
     if quantity:
-        quantity = Decimal(quantity)
         print(
             f"{Fore.WHITE}{quantity.normalize():0,f} {symbol}="
             f"{config.sym()}{quantity * price_ccy:0,.2f} {config.ccy}"
         )
 
 
-def output_ds_price(asset):
+def output_ds_price(asset_data: AsPriceRecord) -> None:
+    if asset_data["price"] is None:
+        raise RuntimeError("Missing price")
+
     print(
-        f'{Fore.YELLOW}1 {asset["symbol"]}={asset["price"].normalize():0,f} {asset["quote"]} '
-        f'{Fore.CYAN} via {asset["data_source"]} ({asset["name"]})'
-        f'{Fore.YELLOW + " <-" if asset.get("priority") else ""}'
+        f'{Fore.YELLOW}1 {asset_data["symbol"]}='
+        f'{asset_data["price"].normalize():0,f} {asset_data["quote"]} '
+        f'{Fore.CYAN} via {asset_data["data_source"]} ({asset_data["name"]})'
+        f'{Fore.YELLOW + " <-" if asset_data.get("priority") else ""}'
     )
 
 
-def output_assets(assets):
-    for asset in assets:
-        if asset["id"]:
-            id_str = f' [ID:{asset["id"]}]'
+def output_assets(asset_list: List[AsRecord]) -> None:
+    for asset_record in asset_list:
+        if asset_record["asset_id"]:
+            id_str = f' [ID:{asset_record["asset_id"]}]'
         else:
             id_str = ""
 
         print(
-            f'{Fore.WHITE}{asset["symbol"]} ({asset["name"]})'
-            f'{Fore.CYAN} via {asset["data_source"]}{id_str}'
-            f'{Fore.YELLOW + " <-" if asset["priority"] else ""}'
+            f'{Fore.WHITE}{asset_record["symbol"]} ({asset_record["name"]})'
+            f'{Fore.CYAN} via {asset_record["data_source"]}{id_str}'
+            f'{Fore.YELLOW + " <-" if asset_record["priority"] else ""}'
         )
 
 
-def validate_date(value):
+def validate_date(value: str) -> Timestamp:
     match = re.match(r"^([0-9]{4}-[0-9]{2}-[0-9]{2})|([0-9]{2}\/[0-9]{2}\/[0-9]{4})$", value)
 
     if not match:
@@ -298,10 +312,10 @@ def validate_date(value):
     except ValueError as e:
         raise argparse.ArgumentTypeError("date is not valid") from e
 
-    return date.replace(tzinfo=config.TZ_LOCAL)
+    return Timestamp(date.replace(tzinfo=config.TZ_LOCAL))
 
 
-def validate_quantity(value):
+def validate_quantity(value: str) -> Decimal:
     try:
         quantity = Decimal(value.replace(",", ""))
     except InvalidOperation as e:
@@ -310,7 +324,7 @@ def validate_quantity(value):
     return quantity
 
 
-def datasource_choices(upper=False):
+def datasource_choices(upper: bool = False) -> List[str]:
     if upper:
         return sorted([ds.__name__.upper() for ds in DataSourceBase.__subclasses__()])
     return sorted([ds.__name__ for ds in DataSourceBase.__subclasses__()])

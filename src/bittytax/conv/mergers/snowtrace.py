@@ -1,16 +1,22 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2021
 
-from ..datamerge import DataMerge
+from typing import TYPE_CHECKING, Dict, List
+
+from ...types import FileId
+from ..datamerge import DataMerge, ParserRequired
 from ..out_record import TransactionOutRecord
-from ..parsers.etherscan import ETHERSCAN_NFTS, ETHERSCAN_TOKENS
-from ..parsers.snowtrace import AVAX_INT, AVAX_TXNS, WALLET, WORKSHEET_NAME
+from ..parsers.etherscan import etherscan_nfts, etherscan_tokens
+from ..parsers.snowtrace import WALLET, WORKSHEET_NAME, avax_int, avax_txns
 from .etherscan import INTERNAL_TXNS, NFTS, TOKENS, TXNS, _do_merge_etherscan
 
-STAKE_ADDRESSES = []
+STAKE_ADDRESSES: List[str] = []
+
+if TYPE_CHECKING:
+    from ..datafile import DataFile
 
 
-def merge_snowtrace(data_files):
+def merge_snowtrace(data_files: Dict[FileId, "DataFile"]) -> bool:
     # Do same merge as Etherscan
     merge = _do_merge_etherscan(data_files, STAKE_ADDRESSES)
 
@@ -36,10 +42,10 @@ def merge_snowtrace(data_files):
 DataMerge(
     "SnowTrace fees & multi-token transactions",
     {
-        TXNS: {"req": DataMerge.MAN, "obj": AVAX_TXNS},
-        TOKENS: {"req": DataMerge.OPT, "obj": ETHERSCAN_TOKENS},
-        NFTS: {"req": DataMerge.OPT, "obj": ETHERSCAN_NFTS},
-        INTERNAL_TXNS: {"req": DataMerge.OPT, "obj": AVAX_INT},
+        TXNS: {"req": ParserRequired.MANDATORY, "obj": avax_txns},
+        TOKENS: {"req": ParserRequired.OPTIONAL, "obj": etherscan_tokens},
+        NFTS: {"req": ParserRequired.OPTIONAL, "obj": etherscan_nfts},
+        INTERNAL_TXNS: {"req": ParserRequired.OPTIONAL, "obj": avax_int},
     },
     merge_snowtrace,
 )

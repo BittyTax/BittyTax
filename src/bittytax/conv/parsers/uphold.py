@@ -2,54 +2,61 @@
 # (c) Nano Nano Ltd 2019
 
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from ..dataparser import DataParser
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Uphold"
 
 
-def parse_uphold_v2(data_row, parser, **_kwargs):
+def parse_uphold_v2(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
 
     if row_dict["Type"] == "in":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Origin Amount"],
+            buy_quantity=Decimal(row_dict["Origin Amount"]),
             buy_asset=row_dict["Origin Currency"],
-            fee_quantity=row_dict["Fee Amount"] if row_dict["Fee Amount"] else None,
+            fee_quantity=Decimal(row_dict["Fee Amount"]) if row_dict["Fee Amount"] else None,
             fee_asset=row_dict["Fee Currency"],
             wallet=WALLET,
         )
     elif row_dict["Type"] == "out":
         if row_dict["Origin Currency"] == row_dict["Destination Currency"]:
             data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_WITHDRAWAL,
+                TrType.WITHDRAWAL,
                 data_row.timestamp,
-                sell_quantity=row_dict["Destination Amount"],
+                sell_quantity=Decimal(row_dict["Destination Amount"]),
                 sell_asset=row_dict["Origin Currency"],
-                fee_quantity=row_dict["Fee Amount"] if row_dict["Fee Amount"] else None,
+                fee_quantity=Decimal(row_dict["Fee Amount"]) if row_dict["Fee Amount"] else None,
                 fee_asset=row_dict["Fee Currency"],
                 wallet=WALLET,
             )
         else:
             data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_WITHDRAWAL,
+                TrType.WITHDRAWAL,
                 data_row.timestamp,
-                sell_quantity=row_dict["Origin Amount"],
+                sell_quantity=Decimal(row_dict["Origin Amount"]),
                 sell_asset=row_dict["Origin Currency"],
                 wallet=WALLET,
             )
     elif row_dict["Type"] == "transfer":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["Destination Amount"],
+            buy_quantity=Decimal(row_dict["Destination Amount"]),
             buy_asset=row_dict["Destination Currency"],
-            sell_quantity=row_dict["Origin Amount"],
+            sell_quantity=Decimal(row_dict["Origin Amount"]),
             sell_asset=row_dict["Origin Currency"],
             wallet=WALLET,
         )
@@ -57,15 +64,15 @@ def parse_uphold_v2(data_row, parser, **_kwargs):
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
 
-def parse_uphold_v1(data_row, parser, **_kwargs):
+def parse_uphold_v1(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["date"])
 
     if row_dict["type"] in ("deposit", "in"):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["origin_amount"],
+            buy_quantity=Decimal(row_dict["origin_amount"]),
             buy_asset=row_dict["origin_currency"],
             fee_quantity=Decimal(row_dict["origin_amount"])
             - Decimal(row_dict["destination_amount"]),
@@ -76,9 +83,9 @@ def parse_uphold_v1(data_row, parser, **_kwargs):
         # Check if origin and destination currency are the same
         if row_dict["origin_currency"] == row_dict["destination_currency"]:
             data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_WITHDRAWAL,
+                TrType.WITHDRAWAL,
                 data_row.timestamp,
-                sell_quantity=row_dict["destination_amount"],
+                sell_quantity=Decimal(row_dict["destination_amount"]),
                 sell_asset=row_dict["origin_currency"],
                 fee_quantity=Decimal(row_dict["origin_amount"])
                 - Decimal(row_dict["destination_amount"]),
@@ -87,19 +94,19 @@ def parse_uphold_v1(data_row, parser, **_kwargs):
             )
         else:
             data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_WITHDRAWAL,
+                TrType.WITHDRAWAL,
                 data_row.timestamp,
-                sell_quantity=row_dict["origin_amount"],
+                sell_quantity=Decimal(row_dict["origin_amount"]),
                 sell_asset=row_dict["origin_currency"],
                 wallet=WALLET,
             )
     elif row_dict["type"] == "transfer":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["destination_amount"],
+            buy_quantity=Decimal(row_dict["destination_amount"]),
             buy_asset=row_dict["destination_currency"],
-            sell_quantity=row_dict["origin_amount"],
+            sell_quantity=Decimal(row_dict["origin_amount"]),
             sell_asset=row_dict["origin_currency"],
             wallet=WALLET,
         )
@@ -108,7 +115,7 @@ def parse_uphold_v1(data_row, parser, **_kwargs):
 
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Uphold",
     [
         "Date",
@@ -129,7 +136,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Uphold",
     [
         "date",

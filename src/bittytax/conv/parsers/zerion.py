@@ -5,22 +5,33 @@ import copy
 import json
 import sys
 from decimal import Decimal
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from colorama import Fore
+from typing_extensions import Unpack
 
 from ...config import config
-from ..dataparser import DataParser
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import DataRowError, UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 PRECISION = Decimal("0." + "0" * 18)
 
 WALLET = "Ethereum"
 
 
-def parse_zerion(data_rows, parser, **_kwargs):
+def parse_zerion(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     for row_index, data_row in enumerate(data_rows):
         if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
             sys.stderr.write(
                 f"{Fore.YELLOW}conv: "
                 f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
@@ -40,7 +51,9 @@ def parse_zerion(data_rows, parser, **_kwargs):
             data_row.failure = e
 
 
-def _parse_zerion_row(data_rows, parser, data_row, row_index):
+def _parse_zerion_row(
+    data_rows: List["DataRow"], parser: DataParser, data_row: "DataRow", row_index: int
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(
         row_dict["Date"] + " " + row_dict["Time"], tz="Europe/London"
@@ -53,7 +66,7 @@ def _parse_zerion_row(data_rows, parser, data_row, row_index):
 
     if row_dict["Status"] != "Confirmed":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_SPEND,
+            TrType.SPEND,
             data_row.timestamp,
             sell_quantity=Decimal(0),
             sell_asset=fee_asset,
@@ -82,7 +95,7 @@ def _parse_zerion_row(data_rows, parser, data_row, row_index):
             )
 
             data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_DEPOSIT,
+                TrType.DEPOSIT,
                 data_row.timestamp,
                 buy_quantity=buy_quantity,
                 buy_asset=buy_asset,
@@ -110,11 +123,11 @@ def _parse_zerion_row(data_rows, parser, data_row, row_index):
 
             # If a Spend only contains fees, we must include a sell of zero
             if sell_quantity is None:
-                sell_quantity = 0
+                sell_quantity = Decimal(0)
                 sell_asset = fee_asset
 
             data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_WITHDRAWAL,
+                TrType.WITHDRAWAL,
                 data_row.timestamp,
                 sell_quantity=sell_quantity,
                 sell_asset=sell_asset,
@@ -146,11 +159,13 @@ def _parse_zerion_row(data_rows, parser, data_row, row_index):
         )
 
 
-def _do_zerion_multi_deposit(data_row, data_rows, row_index, t_ins):
+def _do_zerion_multi_deposit(
+    data_row: "DataRow", data_rows: List["DataRow"], row_index: int, t_ins: List[Any]
+) -> None:
     for cnt, t_in in enumerate(t_ins):
         buy_quantity, buy_asset, buy_value = _get_data_json(data_row, t_in)
         t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
             buy_quantity=buy_quantity,
             buy_asset=buy_asset,
@@ -167,23 +182,30 @@ def _do_zerion_multi_deposit(data_row, data_rows, row_index, t_ins):
             data_rows.insert(row_index + cnt, dup_data_row)
 
 
-def _do_zerion_multi_withdrawal(data_row, data_rows, row_index, t_outs):
+def _do_zerion_multi_withdrawal(
+    data_row: "DataRow", data_rows: List["DataRow"], row_index: int, t_outs: List[Any]
+) -> None:
     fee_quantity, fee_asset, fee_value = _get_data(
         data_row, "Fee Amount", "Fee Currency", "Fee Fiat Amount", "Fee Fiat Currency"
     )
-    tot_fee_quantity = 0
+    tot_fee_quantity = Decimal(0)
 
     for cnt, t_out in enumerate(t_outs):
         sell_quantity, sell_asset, sell_value = _get_data_json(data_row, t_out)
 
-        split_fee_value = fee_value / len(t_outs) if fee_value else None
+        if fee_quantity:
+            split_fee_value = fee_value / len(t_outs) if fee_value else None
 
-        if cnt < len(t_outs) - 1:
-            split_fee_quantity = (fee_quantity / len(t_outs)).quantize(PRECISION)
-            tot_fee_quantity += split_fee_quantity
+            if cnt < len(t_outs) - 1:
+                split_fee_quantity = Decimal(fee_quantity / len(t_outs)).quantize(PRECISION)
+                tot_fee_quantity += split_fee_quantity
+            else:
+                # Last t_out, use up remainder
+                split_fee_quantity = fee_quantity - tot_fee_quantity
         else:
-            # Last t_out, use up remainder
-            split_fee_quantity = fee_quantity - tot_fee_quantity if fee_quantity else None
+            split_fee_quantity = None
+            split_fee_value = None
+            fee_asset = ""
 
         if config.debug:
             sys.stderr.write(
@@ -192,7 +214,7 @@ def _do_zerion_multi_withdrawal(data_row, data_rows, row_index, t_outs):
             )
 
         t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=sell_quantity,
             sell_asset=sell_asset,
@@ -212,12 +234,18 @@ def _do_zerion_multi_withdrawal(data_row, data_rows, row_index, t_outs):
             data_rows.insert(row_index + cnt, dup_data_row)
 
 
-def _do_zerion_multi_sell(data_row, data_rows, row_index, t_ins, t_outs):
+def _do_zerion_multi_sell(
+    data_row: "DataRow",
+    data_rows: List["DataRow"],
+    row_index: int,
+    t_ins: List[Any],
+    t_outs: List[Any],
+) -> None:
     fee_quantity, fee_asset, fee_value = _get_data(
         data_row, "Fee Amount", "Fee Currency", "Fee Fiat Amount", "Fee Fiat Currency"
     )
-    tot_buy_quantity = 0
-    tot_fee_quantity = 0
+    tot_buy_quantity = Decimal(0)
+    tot_fee_quantity = Decimal(0)
 
     buy_quantity, buy_asset, buy_value = _get_data_json(data_row, t_ins[0])
 
@@ -233,17 +261,27 @@ def _do_zerion_multi_sell(data_row, data_rows, row_index, t_ins, t_outs):
 
     for cnt, t_out in enumerate(t_outs):
         split_buy_value = buy_value / len(t_outs) if buy_value else None
-        split_fee_value = fee_value / len(t_outs) if fee_value else None
 
         if cnt < len(t_outs) - 1:
-            split_buy_quantity = (buy_quantity / len(t_outs)).quantize(PRECISION)
+            split_buy_quantity = Decimal(buy_quantity / len(t_outs)).quantize(PRECISION)
             tot_buy_quantity += split_buy_quantity
-            split_fee_quantity = (fee_quantity / len(t_outs)).quantize(PRECISION)
-            tot_fee_quantity += split_fee_quantity
         else:
             # Last t_out, use up remainder
             split_buy_quantity = buy_quantity - tot_buy_quantity
-            split_fee_quantity = fee_quantity - tot_fee_quantity if fee_quantity else None
+
+        if fee_quantity:
+            split_fee_value = fee_value / len(t_outs) if fee_value else None
+
+            if cnt < len(t_outs) - 1:
+                split_fee_quantity = Decimal(fee_quantity / len(t_outs)).quantize(PRECISION)
+                tot_fee_quantity += split_fee_quantity
+            else:
+                # Last t_out, use up remainder
+                split_fee_quantity = fee_quantity - tot_fee_quantity
+        else:
+            split_fee_quantity = None
+            split_fee_value = None
+            fee_asset = ""
 
         if config.debug:
             sys.stderr.write(
@@ -257,7 +295,7 @@ def _do_zerion_multi_sell(data_row, data_rows, row_index, t_ins, t_outs):
 
         sell_quantity, sell_asset, sell_value = _get_data_json(data_row, t_out)
         t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=split_buy_quantity,
             buy_asset=buy_asset,
@@ -280,12 +318,18 @@ def _do_zerion_multi_sell(data_row, data_rows, row_index, t_ins, t_outs):
             data_rows.insert(row_index + cnt, dup_data_row)
 
 
-def _do_zerion_multi_buy(data_row, data_rows, row_index, t_ins, t_outs):
+def _do_zerion_multi_buy(
+    data_row: "DataRow",
+    data_rows: List["DataRow"],
+    row_index: int,
+    t_ins: List[Any],
+    t_outs: List[Any],
+) -> None:
     fee_quantity, fee_asset, fee_value = _get_data(
         data_row, "Fee Amount", "Fee Currency", "Fee Fiat Amount", "Fee Fiat Currency"
     )
-    tot_sell_quantity = 0
-    tot_fee_quantity = 0
+    tot_sell_quantity = Decimal(0)
+    tot_fee_quantity = Decimal(0)
 
     sell_quantity, sell_asset, sell_value = _get_data_json(data_row, t_outs[0])
     if config.debug:
@@ -300,17 +344,27 @@ def _do_zerion_multi_buy(data_row, data_rows, row_index, t_ins, t_outs):
 
     for cnt, t_in in enumerate(t_ins):
         split_sell_value = sell_value / len(t_ins) if sell_value else None
-        split_fee_value = fee_value / len(t_ins) if fee_value else None
 
         if cnt < len(t_ins) - 1:
-            split_sell_quantity = (sell_quantity / len(t_ins)).quantize(PRECISION)
+            split_sell_quantity = Decimal(sell_quantity / len(t_ins)).quantize(PRECISION)
             tot_sell_quantity += split_sell_quantity
-            split_fee_quantity = (fee_quantity / len(t_ins)).quantize(PRECISION)
-            tot_fee_quantity += split_fee_quantity
         else:
             # Last t_in, use up remainder
             split_sell_quantity = sell_quantity - tot_sell_quantity
-            split_fee_quantity = fee_quantity - tot_fee_quantity if fee_quantity else None
+
+        if fee_quantity:
+            split_fee_value = fee_value / len(t_ins) if fee_value else None
+
+            if cnt < len(t_ins) - 1:
+                split_fee_quantity = Decimal(fee_quantity / len(t_ins)).quantize(PRECISION)
+                tot_fee_quantity += split_fee_quantity
+            else:
+                # Last t_in, use up remainder
+                split_fee_quantity = fee_quantity - tot_fee_quantity
+        else:
+            split_fee_quantity = None
+            split_fee_value = None
+            fee_asset = ""
 
         if config.debug:
             sys.stderr.write(
@@ -324,7 +378,7 @@ def _do_zerion_multi_buy(data_row, data_rows, row_index, t_ins, t_outs):
 
         buy_quantity, buy_asset, buy_value = _get_data_json(data_row, t_in)
         t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=buy_quantity,
             buy_asset=buy_asset,
@@ -347,7 +401,14 @@ def _do_zerion_multi_buy(data_row, data_rows, row_index, t_ins, t_outs):
             data_rows.insert(row_index + cnt, dup_data_row)
 
 
-def _get_data(data_row, quantity_hdr, asset_hdr, value_hdr, value_currency_hdr, changes=None):
+def _get_data(
+    data_row: "DataRow",
+    quantity_hdr: str,
+    asset_hdr: str,
+    value_hdr: str,
+    value_currency_hdr: str,
+    changes: Optional[List[Any]] = None,
+) -> Tuple[Optional[Decimal], str, Optional[Decimal]]:
     if changes:
         # Use values from json if available for better precision
         quantity, asset, value = _get_data_json(data_row, changes[0])
@@ -368,7 +429,9 @@ def _get_data(data_row, quantity_hdr, asset_hdr, value_hdr, value_currency_hdr, 
     return quantity, asset, value
 
 
-def _get_data_json(data_row, changes):
+def _get_data_json(
+    data_row: "DataRow", changes: Dict[str, Any]
+) -> Tuple[Decimal, str, Optional[Decimal]]:
     quantity = Decimal(changes["amount"])
     asset = changes["symbol"]
     value = DataParser.convert_currency(
@@ -378,7 +441,7 @@ def _get_data_json(data_row, changes):
 
 
 DataParser(
-    DataParser.TYPE_EXPLORER,
+    ParserType.EXPLORER,
     "Zerion (ETH Transactions)",
     [
         "Date",

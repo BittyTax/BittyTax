@@ -1,16 +1,22 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2021
 
-from ..datamerge import DataMerge
+from typing import TYPE_CHECKING, Dict
+
+from ...types import FileId
+from ..datamerge import DataMerge, ParserRequired
 from ..out_record import TransactionOutRecord
-from ..parsers.bscscan import BSC_INT, BSC_TXNS, WALLET, WORKSHEET_NAME
-from ..parsers.etherscan import ETHERSCAN_NFTS, ETHERSCAN_TOKENS
+from ..parsers.bscscan import WALLET, WORKSHEET_NAME, bsc_int, bsc_txns
+from ..parsers.etherscan import etherscan_nfts, etherscan_tokens
 from .etherscan import INTERNAL_TXNS, NFTS, TOKENS, TXNS, _do_merge_etherscan
 
 STAKE_ADDRESSES = ["0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82"]  # PancakeSwap
 
+if TYPE_CHECKING:
+    from ..datafile import DataFile
 
-def merge_bscscan(data_files):
+
+def merge_bscscan(data_files: Dict[FileId, "DataFile"]) -> bool:
     # Do same merge as Etherscan
     merge = _do_merge_etherscan(data_files, STAKE_ADDRESSES)
 
@@ -36,10 +42,10 @@ def merge_bscscan(data_files):
 DataMerge(
     "BscScan fees & multi-token transactions",
     {
-        TXNS: {"req": DataMerge.MAN, "obj": BSC_TXNS},
-        TOKENS: {"req": DataMerge.OPT, "obj": ETHERSCAN_TOKENS},
-        NFTS: {"req": DataMerge.OPT, "obj": ETHERSCAN_NFTS},
-        INTERNAL_TXNS: {"req": DataMerge.OPT, "obj": BSC_INT},
+        TXNS: {"req": ParserRequired.MANDATORY, "obj": bsc_txns},
+        TOKENS: {"req": ParserRequired.OPTIONAL, "obj": etherscan_tokens},
+        NFTS: {"req": ParserRequired.OPTIONAL, "obj": etherscan_nfts},
+        INTERNAL_TXNS: {"req": ParserRequired.OPTIONAL, "obj": bsc_int},
     },
     merge_bscscan,
 )

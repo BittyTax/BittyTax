@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import datetime
 import os
 import sys
-from datetime import datetime, timedelta
+from typing import Any, TextIO
 
 import dateutil.tz
 import pkg_resources
@@ -53,7 +54,7 @@ class Config:
         "binance_multi_bnb_split_even": False,
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.debug = False
         self.start_of_year_month = 4
         self.start_of_year_day = 6
@@ -86,10 +87,10 @@ class Config:
         self.ccy = self.config["local_currency"]
         self.asset_priority = self.config["fiat_list"] + self.config["crypto_list"]
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         return self.config[name]
 
-    def output_config(self, sys_out):
+    def output_config(self, sys_out: TextIO) -> None:
         sys_out.write(
             f'{Fore.GREEN}config: "{os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG)}"\n'
         )
@@ -97,7 +98,7 @@ class Config:
         for name in self.DEFAULT_CONFIG:
             sys_out.write(f"{Fore.GREEN}config: {name}: {self.config[name]}\n")
 
-    def sym(self):
+    def sym(self) -> str:
         if self.ccy == "GBP":
             return "\xA3"  # £
         if self.ccy == "EUR":
@@ -107,39 +108,35 @@ class Config:
         if self.ccy in ("DKK", "NOK", "SEK"):
             return "kr."
 
-        raise ValueError("Currency not supported")
+        raise RuntimeError("Currency not supported")
 
-    def get_tax_year_start(self, tax_year):
+    def get_tax_year_start(self, tax_year: int) -> datetime.date:
         if self.start_of_year_month != 1:
-            return datetime(
+            return datetime.date(
                 tax_year - 1,
                 self.start_of_year_month,
                 self.start_of_year_day,
-                tzinfo=config.TZ_LOCAL,
             )
-        return datetime(
+        return datetime.date(
             tax_year,
             self.start_of_year_month,
             self.start_of_year_day,
-            tzinfo=config.TZ_LOCAL,
         )
 
-    def get_tax_year_end(self, tax_year):
+    def get_tax_year_end(self, tax_year: int) -> datetime.date:
         if self.start_of_year_month == 1:
-            return datetime(
+            return datetime.date(
                 tax_year + 1,
                 self.start_of_year_month,
                 self.start_of_year_day,
-                tzinfo=config.TZ_LOCAL,
-            ) - timedelta(microseconds=1)
-        return datetime(
+            ) - datetime.timedelta(days=1)
+        return datetime.date(
             tax_year,
             self.start_of_year_month,
             self.start_of_year_day,
-            tzinfo=config.TZ_LOCAL,
-        ) - timedelta(microseconds=1)
+        ) - datetime.timedelta(days=1)
 
-    def format_tax_year(self, tax_year):
+    def format_tax_year(self, tax_year: int) -> str:
         start = self.get_tax_year_start(tax_year)
         end = self.get_tax_year_end(tax_year)
 

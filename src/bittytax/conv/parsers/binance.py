@@ -4,12 +4,15 @@
 import re
 import sys
 from decimal import Decimal
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from colorama import Fore
+from typing_extensions import Unpack
 
 from ...config import config
 from ...constants import WARNING
-from ..dataparser import DataParser
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import (
     DataFilenameError,
     DataRowError,
@@ -18,11 +21,15 @@ from ..exceptions import (
 )
 from ..out_record import TransactionOutRecord
 
+if TYPE_CHECKING:
+    from ..datarow import DataRow
+
 PRECISION = Decimal("0." + "0" * 8)
 
 WALLET = "Binance"
 
 QUOTE_ASSETS = [
+    "ARS",
     "AUD",
     "BIDR",
     "BKRW",
@@ -36,6 +43,7 @@ QUOTE_ASSETS = [
     "DOT",
     "ETH",
     "EUR",
+    "FDUSD",
     "GBP",
     "GYEN",
     "IDRT",
@@ -61,7 +69,9 @@ QUOTE_ASSETS = [
 BASE_ASSETS = ["1INCH", "1INCHDOWN", "1INCHUP"]
 
 
-def parse_binance_trades(data_row, parser, **_kwargs):
+def parse_binance_trades(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date(UTC)"])
 
@@ -73,25 +83,25 @@ def parse_binance_trades(data_row, parser, **_kwargs):
 
     if row_dict["Type"] == "BUY":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=base_asset,
-            sell_quantity=row_dict["Total"],
+            sell_quantity=Decimal(row_dict["Total"]),
             sell_asset=quote_asset,
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Fee Coin"],
             wallet=WALLET,
         )
     elif row_dict["Type"] == "SELL":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["Total"],
+            buy_quantity=Decimal(row_dict["Total"]),
             buy_asset=quote_asset,
-            sell_quantity=row_dict["Amount"],
+            sell_quantity=Decimal(row_dict["Amount"]),
             sell_asset=base_asset,
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Fee Coin"],
             wallet=WALLET,
         )
@@ -99,7 +109,9 @@ def parse_binance_trades(data_row, parser, **_kwargs):
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
 
-def parse_binance_convert(data_row, parser, **_kwargs):
+def parse_binance_convert(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
 
@@ -111,17 +123,19 @@ def parse_binance_convert(data_row, parser, **_kwargs):
         raise UnexpectedTradingPairError(parser.in_header.index("Pair"), "Pair", row_dict["Pair"])
 
     data_row.t_record = TransactionOutRecord(
-        TransactionOutRecord.TYPE_TRADE,
+        TrType.TRADE,
         data_row.timestamp,
-        buy_quantity=row_dict["Buy"].split(" ")[0],
+        buy_quantity=Decimal(row_dict["Buy"].split(" ")[0]),
         buy_asset=row_dict["Buy"].split(" ")[1],
-        sell_quantity=row_dict["Sell"].split(" ")[0],
+        sell_quantity=Decimal(row_dict["Sell"].split(" ")[0]),
         sell_asset=row_dict["Sell"].split(" ")[1],
         wallet=WALLET,
     )
 
 
-def parse_binance_trades_statement(data_row, parser, **_kwargs):
+def parse_binance_trades_statement(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date(UTC)"])
     fee_quantity, fee_asset = _split_asset(row_dict["Fee"].replace(",", ""))
@@ -131,7 +145,7 @@ def parse_binance_trades_statement(data_row, parser, **_kwargs):
         sell_quantity, sell_asset = _split_asset(row_dict["Amount"].replace(",", ""))
 
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=buy_quantity,
             buy_asset=buy_asset,
@@ -146,7 +160,7 @@ def parse_binance_trades_statement(data_row, parser, **_kwargs):
         sell_quantity, sell_asset = _split_asset(row_dict["Executed"].replace(",", ""))
 
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=buy_quantity,
             buy_asset=buy_asset,
@@ -160,7 +174,7 @@ def parse_binance_trades_statement(data_row, parser, **_kwargs):
         raise UnexpectedTypeError(parser.in_header.index("Side"), "Side", row_dict["Side"])
 
 
-def _split_trading_pair(trading_pair):
+def _split_trading_pair(trading_pair: str) -> Tuple[Optional[str], Optional[str]]:
     for quote_asset in QUOTE_ASSETS:
         if trading_pair.endswith(quote_asset):
             return trading_pair[: -len(quote_asset)], quote_asset
@@ -168,18 +182,20 @@ def _split_trading_pair(trading_pair):
     return None, None
 
 
-def _split_asset(amount):
+def _split_asset(amount: str) -> Tuple[Optional[Decimal], str]:
     for base_asset in BASE_ASSETS:
         if amount.endswith(base_asset):
-            return amount[: -len(base_asset)], base_asset
+            return Decimal(amount[: -len(base_asset)]), base_asset
 
     match = re.match(r"([\d|,]*\.\d+)(\w+)$", amount)
     if match:
-        return match.group(1), match.group(2)
+        return Decimal(match.group(1)), match.group(2)
     return None, ""
 
 
-def parse_binance_deposits_withdrawals_crypto(data_row, _parser, **kwargs):
+def parse_binance_deposits_withdrawals_crypto(
+    data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(data_row.row[0])
 
@@ -188,21 +204,21 @@ def parse_binance_deposits_withdrawals_crypto(data_row, _parser, **kwargs):
 
     if "deposit" in kwargs["filename"].lower():
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Coin"],
-            fee_quantity=row_dict["TransactionFee"],
+            fee_quantity=Decimal(row_dict["TransactionFee"]),
             fee_asset=row_dict["Coin"],
             wallet=WALLET,
         )
     elif "withdraw" in kwargs["filename"].lower():
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=row_dict["Amount"],
+            sell_quantity=Decimal(row_dict["Amount"]),
             sell_asset=row_dict["Coin"],
-            fee_quantity=row_dict["TransactionFee"],
+            fee_quantity=Decimal(row_dict["TransactionFee"]),
             fee_asset=row_dict["Coin"],
             wallet=WALLET,
         )
@@ -210,7 +226,9 @@ def parse_binance_deposits_withdrawals_crypto(data_row, _parser, **kwargs):
         raise DataFilenameError(kwargs["filename"], "Transaction Type (Deposit or Withdrawal)")
 
 
-def parse_binance_deposits_withdrawals_cash(data_row, _parser, **kwargs):
+def parse_binance_deposits_withdrawals_cash(
+    data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date(UTC)"])
 
@@ -219,21 +237,21 @@ def parse_binance_deposits_withdrawals_cash(data_row, _parser, **kwargs):
 
     if "deposit" in kwargs["filename"].lower():
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Indicated Amount"],
+            buy_quantity=Decimal(row_dict["Indicated Amount"]),
             buy_asset=row_dict["Coin"],
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Coin"],
             wallet=WALLET,
         )
     elif "withdraw" in kwargs["filename"].lower():
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=row_dict["Amount"],
+            sell_quantity=Decimal(row_dict["Amount"]),
             sell_asset=row_dict["Coin"],
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Coin"],
             wallet=WALLET,
         )
@@ -241,8 +259,10 @@ def parse_binance_deposits_withdrawals_cash(data_row, _parser, **kwargs):
         raise DataFilenameError(kwargs["filename"], "Transaction Type (Deposit or Withdrawal)")
 
 
-def parse_binance_statements(data_rows, parser, **_kwargs):
-    tx_times = {}
+def parse_binance_statements(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    tx_times: Dict[str, List["DataRow"]] = {}
     for dr in data_rows:
         if dr.row_dict["UTC_Time"] in tx_times:
             tx_times[dr.row_dict["UTC_Time"]].append(dr)
@@ -251,6 +271,9 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
 
     for data_row in data_rows:
         if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
             sys.stderr.write(
                 f"{Fore.YELLOW}conv: "
                 f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
@@ -270,7 +293,9 @@ def parse_binance_statements(data_rows, parser, **_kwargs):
             data_row.failure = e
 
 
-def _parse_binance_statements_row(tx_times, parser, data_row):
+def _parse_binance_statements_row(
+    tx_times: Dict[str, List["DataRow"]], parser: DataParser, data_row: "DataRow"
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["UTC_Time"])
 
@@ -286,24 +311,24 @@ def _parse_binance_statements_row(tx_times, parser, data_row):
         "Referral Kickback",
     ):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_GIFT_RECEIVED,
+            TrType.GIFT_RECEIVED,
             data_row.timestamp,
-            buy_quantity=row_dict["Change"],
+            buy_quantity=Decimal(row_dict["Change"]),
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
         )
     elif row_dict["Operation"] == "Distribution":
         if Decimal(row_dict["Change"]) > 0:
             data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_AIRDROP,
+                TrType.AIRDROP,
                 data_row.timestamp,
-                buy_quantity=row_dict["Change"],
+                buy_quantity=Decimal(row_dict["Change"]),
                 buy_asset=row_dict["Coin"],
                 wallet=WALLET,
             )
         else:
             data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_SPEND,
+                TrType.SPEND,
                 data_row.timestamp,
                 sell_quantity=abs(Decimal(row_dict["Change"])),
                 sell_asset=row_dict["Coin"],
@@ -311,9 +336,9 @@ def _parse_binance_statements_row(tx_times, parser, data_row):
             )
     elif row_dict["Operation"] == "Super BNB Mining":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_MINING,
+            TrType.MINING,
             data_row.timestamp,
-            buy_quantity=row_dict["Change"],
+            buy_quantity=Decimal(row_dict["Change"]),
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
         )
@@ -326,9 +351,9 @@ def _parse_binance_statements_row(tx_times, parser, data_row):
         "Launchpool Interest",
     ):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_INTEREST,
+            TrType.INTEREST,
             data_row.timestamp,
-            buy_quantity=row_dict["Change"],
+            buy_quantity=Decimal(row_dict["Change"]),
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
         )
@@ -341,9 +366,9 @@ def _parse_binance_statements_row(tx_times, parser, data_row):
         "DOT Slot Auction Rewards",
     ):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_STAKING,
+            TrType.STAKING,
             data_row.timestamp,
-            buy_quantity=row_dict["Change"],
+            buy_quantity=Decimal(row_dict["Change"]),
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
         )
@@ -391,7 +416,9 @@ def _parse_binance_statements_row(tx_times, parser, data_row):
         )
 
 
-def _make_trade(operation, tx_times, parser, default_asset=""):
+def _make_trade(
+    operation: str, tx_times: List["DataRow"], parser: DataParser, default_asset: str = ""
+) -> None:
     op_rows = [dr for dr in tx_times if dr.row_dict["Operation"] == operation]
     buy_quantity, buy_asset = _get_buy_quantity(op_rows)
 
@@ -399,7 +426,7 @@ def _make_trade(operation, tx_times, parser, default_asset=""):
         buy_asset = default_asset
 
     sell_rows = [dr for dr in op_rows if not dr.parsed]
-    tot_buy_quantity = 0
+    tot_buy_quantity = Decimal(0)
 
     for cnt, sell_row in enumerate(sell_rows):
         sell_row.timestamp = DataParser.parse_timestamp(sell_row.row_dict["UTC_Time"])
@@ -407,33 +434,45 @@ def _make_trade(operation, tx_times, parser, default_asset=""):
 
         if buy_quantity and default_asset == "BNB":
             if cnt < len(sell_rows) - 1:
-                split_buy_quantity = (buy_quantity / len(sell_rows)).quantize(PRECISION)
+                split_buy_quantity = Decimal(buy_quantity / len(sell_rows)).quantize(PRECISION)
                 tot_buy_quantity += split_buy_quantity
             else:
                 split_buy_quantity = buy_quantity - tot_buy_quantity
 
             if config.debug:
                 sys.stderr.write(f"{Fore.GREEN}conv: split_buy_quantity={split_buy_quantity}\n")
+
+            sell_row.t_record = TransactionOutRecord(
+                TrType.TRADE,
+                sell_row.timestamp,
+                buy_quantity=split_buy_quantity,
+                buy_asset=buy_asset,
+                sell_quantity=abs(Decimal(sell_row.row_dict["Change"])),
+                sell_asset=sell_row.row_dict["Coin"],
+                wallet=WALLET,
+            )
         else:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
             sys.stderr.write(
                 f"{Fore.YELLOW}row[{parser.in_header_row_num + sell_row.line_num}] {sell_row}\n"
                 f"{WARNING} {buy_asset} amount is not available, "
                 "you will need to add this manually\n"
             )
-            split_buy_quantity = buy_quantity
 
-        sell_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
-            sell_row.timestamp,
-            buy_quantity=split_buy_quantity,
-            buy_asset=buy_asset,
-            sell_quantity=abs(Decimal(sell_row.row_dict["Change"])),
-            sell_asset=sell_row.row_dict["Coin"],
-            wallet=WALLET,
-        )
+            sell_row.t_record = TransactionOutRecord(
+                TrType.TRADE,
+                sell_row.timestamp,
+                buy_quantity=buy_quantity,
+                buy_asset=buy_asset,
+                sell_quantity=abs(Decimal(sell_row.row_dict["Change"])),
+                sell_asset=sell_row.row_dict["Coin"],
+                wallet=WALLET,
+            )
 
 
-def _get_buy_quantity(op_rows):
+def _get_buy_quantity(op_rows: List["DataRow"]) -> Tuple[Optional[Decimal], str]:
     buy_found = False
     buy_quantity = None
     buy_asset = ""
@@ -466,7 +505,7 @@ def _get_buy_quantity(op_rows):
 
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Binance Trades",
     ["Date(UTC)", "Market", "Type", "Price", "Amount", "Total", "Fee", "Fee Coin"],
     worksheet_name="Binance T",
@@ -474,7 +513,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Binance Trades",
     [
         "Date",
@@ -492,7 +531,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Binance Trades",
     [
         "Date",
@@ -511,7 +550,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Binance Trades",
     ["Date(UTC)", "Pair", "Side", "Price", "Executed", "Amount", "Fee"],
     worksheet_name="Binance T",
@@ -519,7 +558,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Binance Deposits/Withdrawals",
     [
         "Date(UTC)",
@@ -538,7 +577,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Binance Deposits/Withdrawals",
     [
         "Date(UTC)",
@@ -556,7 +595,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Binance Deposits/Withdrawals",
     [
         "Date",
@@ -574,7 +613,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Binance Deposits/Withdrawals",
     [
         "Date(UTC)",
@@ -591,7 +630,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Binance Statements",
     ["User_ID", "UTC_Time", "Account", "Operation", "Coin", "Change", "Remark"],
     worksheet_name="Binance S",
@@ -599,7 +638,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Binance Statements",
     ["UTC_Time", "Account", "Operation", "Coin", "Change", "Remark"],
     worksheet_name="Binance S",

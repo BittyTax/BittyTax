@@ -2,27 +2,35 @@
 # (c) Nano Nano Ltd 2022
 
 import re
+from decimal import Decimal
+from typing import TYPE_CHECKING, Optional, Tuple
 
-from ..dataparser import DataParser
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Volt"
 
 
-def parse_volt(data_row, parser, **_kwargs):
+def parse_volt(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(
         row_dict["time"], tz="Europe/London", dayfirst=True
     )
 
     amount, symbol = _get_amount(row_dict["amount"].replace(",", ""))
-    if amount is None:
+    if amount is None or symbol is None:
         raise UnexpectedContentError(parser.in_header.index("amount"), "amount", row_dict["amount"])
 
     if row_dict["status"] == "Received":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
             buy_quantity=amount,
             buy_asset=symbol,
@@ -30,7 +38,7 @@ def parse_volt(data_row, parser, **_kwargs):
         )
     elif row_dict["status"] == "OUT":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=amount,
             sell_asset=symbol,
@@ -40,18 +48,18 @@ def parse_volt(data_row, parser, **_kwargs):
         raise UnexpectedTypeError(parser.in_header.index("status"), "status", row_dict["status"])
 
 
-def _get_amount(amount):
-    match = re.match(r"^[-+](\d+|\d+\.\d+) (\w{3,4}) |$", amount)
+def _get_amount(amount_str: str) -> Tuple[Optional[Decimal], str]:
+    match = re.match(r"^[-+](\d+|\d+\.\d+) (\w{3,4}) |$", amount_str)
 
     if match:
         amount = match.group(1)
         symbol = match.group(2)
-        return amount, symbol
-    return None, None
+        return Decimal(amount), symbol
+    return None, ""
 
 
 DataParser(
-    DataParser.TYPE_WALLET,
+    ParserType.WALLET,
     "Volt",
     ["time", "status", "address", "amount", "txid"],
     worksheet_name="Volt",
@@ -59,7 +67,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_WALLET,
+    ParserType.WALLET,
     "Volt",
     ["time", "status", "address", "amount", "txid", ""],
     worksheet_name="Volt",

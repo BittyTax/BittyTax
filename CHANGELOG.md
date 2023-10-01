@@ -6,6 +6,7 @@
 - Conversion tool: identify data file types (.xls, .zip/.xlsx) using magic numbers.
 - Conversion tool: identify duplicate data files using hashes.
 - Binance parser: warning if BNB amount is not available.
+- Added static typing. ([#230](https://github.com/BittyTax/BittyTax/issues/230))
 ### Changed
 - Accounting tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
 - Conversion tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))

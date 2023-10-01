@@ -2,33 +2,42 @@
 # (c) Nano Nano Ltd 2019
 
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from ..dataparser import DataParser
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Bittrex"
 
 
-def parse_bittrex_trades_v3(data_row, parser, **_kwargs):
+def parse_bittrex_trades_v3(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Opened (UTC)"])
 
     if row_dict["Type"] in ("LIMIT_BUY", "MARKET_BUY"):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Quantity"]) - Decimal(row_dict["Remaining"]),
             buy_asset=row_dict["Exchange"].split("-")[1],
-            sell_quantity=row_dict["Price"],
+            sell_quantity=Decimal(row_dict["Price"]),
             sell_asset=row_dict["Exchange"].split("-")[0],
             wallet=WALLET,
         )
     elif row_dict["Type"] in ("LIMIT_SELL", "MARKET_SELL"):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["Price"],
+            buy_quantity=Decimal(row_dict["Price"]),
             buy_asset=row_dict["Exchange"].split("-")[0],
             sell_quantity=Decimal(row_dict["Quantity"]) - Decimal(row_dict["Remaining"]),
             sell_asset=row_dict["Exchange"].split("-")[1],
@@ -38,31 +47,33 @@ def parse_bittrex_trades_v3(data_row, parser, **_kwargs):
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
 
-def parse_bittrex_trades_v2(data_row, parser, **_kwargs):
+def parse_bittrex_trades_v2(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["TimeStamp"])
 
     if row_dict["OrderType"] in ("LIMIT_BUY", "MARKET_BUY"):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Quantity"]) - Decimal(row_dict["QuantityRemaining"]),
             buy_asset=row_dict["Exchange"].split("-")[1],
-            sell_quantity=row_dict["Price"],
+            sell_quantity=Decimal(row_dict["Price"]),
             sell_asset=row_dict["Exchange"].split("-")[0],
-            fee_quantity=row_dict["Commission"],
+            fee_quantity=Decimal(row_dict["Commission"]),
             fee_asset=row_dict["Exchange"].split("-")[0],
             wallet=WALLET,
         )
     elif row_dict["OrderType"] in ("LIMIT_SELL", "MARKET_SELL"):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["Price"],
+            buy_quantity=Decimal(row_dict["Price"]),
             buy_asset=row_dict["Exchange"].split("-")[0],
             sell_quantity=Decimal(row_dict["Quantity"]) - Decimal(row_dict["QuantityRemaining"]),
             sell_asset=row_dict["Exchange"].split("-")[1],
-            fee_quantity=row_dict["Commission"],
+            fee_quantity=Decimal(row_dict["Commission"]),
             fee_asset=row_dict["Exchange"].split("-")[0],
             wallet=WALLET,
         )
@@ -72,31 +83,33 @@ def parse_bittrex_trades_v2(data_row, parser, **_kwargs):
         )
 
 
-def parse_bittrex_trades_v1(data_row, parser, **_kwargs):
+def parse_bittrex_trades_v1(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Opened"])
 
     if row_dict["Type"] in ("LIMIT_BUY", "MARKET_BUY"):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["Quantity"],
+            buy_quantity=Decimal(row_dict["Quantity"]),
             buy_asset=row_dict["Exchange"].split("-")[1],
-            sell_quantity=row_dict["Price"],
+            sell_quantity=Decimal(row_dict["Price"]),
             sell_asset=row_dict["Exchange"].split("-")[0],
-            fee_quantity=row_dict["CommissionPaid"],
+            fee_quantity=Decimal(row_dict["CommissionPaid"]),
             fee_asset=row_dict["Exchange"].split("-")[0],
             wallet=WALLET,
         )
     elif row_dict["Type"] in ("LIMIT_SELL", "MARKET_SELL"):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["Price"],
+            buy_quantity=Decimal(row_dict["Price"]),
             buy_asset=row_dict["Exchange"].split("-")[0],
-            sell_quantity=row_dict["Quantity"],
+            sell_quantity=Decimal(row_dict["Quantity"]),
             sell_asset=row_dict["Exchange"].split("-")[1],
-            fee_quantity=row_dict["CommissionPaid"],
+            fee_quantity=Decimal(row_dict["CommissionPaid"]),
             fee_asset=row_dict["Exchange"].split("-")[0],
             wallet=WALLET,
         )
@@ -104,7 +117,9 @@ def parse_bittrex_trades_v1(data_row, parser, **_kwargs):
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
 
-def parse_bittrex_deposits_v2(data_row, _parser, **_kwargs):
+def parse_bittrex_deposits_v2(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["LastUpdatedDate"])
 
@@ -112,28 +127,32 @@ def parse_bittrex_deposits_v2(data_row, _parser, **_kwargs):
         return
 
     data_row.t_record = TransactionOutRecord(
-        TransactionOutRecord.TYPE_DEPOSIT,
+        TrType.DEPOSIT,
         data_row.timestamp,
-        buy_quantity=row_dict["Amount"],
+        buy_quantity=Decimal(row_dict["Amount"]),
         buy_asset=row_dict["Currency"],
         wallet=WALLET,
     )
 
 
-def parse_bittrex_deposits_v1(data_row, _parser, **_kwargs):
+def parse_bittrex_deposits_v1(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["LastUpdated"])
 
     data_row.t_record = TransactionOutRecord(
-        TransactionOutRecord.TYPE_DEPOSIT,
+        TrType.DEPOSIT,
         data_row.timestamp,
-        buy_quantity=row_dict["Amount"],
+        buy_quantity=Decimal(row_dict["Amount"]),
         buy_asset=row_dict["Currency"],
         wallet=WALLET,
     )
 
 
-def parse_bittrex_withdrawals(data_row, _parser, **_kwargs):
+def parse_bittrex_withdrawals(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
 
     if "Opened" in row_dict:
@@ -144,18 +163,18 @@ def parse_bittrex_withdrawals(data_row, _parser, **_kwargs):
 
     if row_dict["Authorized"].lower() == "true" and row_dict["Canceled"].lower() == "false":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=row_dict["Amount"],
+            sell_quantity=Decimal(row_dict["Amount"]),
             sell_asset=row_dict["Currency"],
-            fee_quantity=row_dict["TxFee"],
+            fee_quantity=Decimal(row_dict["TxFee"]),
             fee_asset=row_dict["Currency"],
             wallet=WALLET,
         )
 
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bittrex Trades",
     [
         "Uuid",
@@ -175,7 +194,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bittrex Trades",
     [
         "Uuid",
@@ -201,7 +220,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bittrex Trades",
     [
         "Uuid",
@@ -225,7 +244,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bittrex Trades",
     [
         "OrderUuid",
@@ -243,7 +262,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bittrex Deposits",
     [
         "Id",
@@ -264,7 +283,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bittrex Deposits",
     [
         "Id",
@@ -281,7 +300,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bittrex Deposits",
     [
         "Id",
@@ -297,7 +316,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bittrex Deposits",
     [
         "Id",
@@ -313,7 +332,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bittrex Withdrawals",
     [
         "PaymentUuid",
@@ -334,7 +353,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bittrex Withdrawals",
     [
         "PaymentUuid",
@@ -353,7 +372,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bittrex Withdrawals",
     [
         "PaymentUuid",

@@ -3,22 +3,22 @@
 <table width="75%">
     <tr>
         <td>Taxable gain:</td>
-        <td align="right">{{cgains.estimate['taxable_gain']|valuefilter}}</td>
+        <td align="right">{{cgains.ct_estimate['taxable_gain']|valuefilter}}</td>
         <td></td>
     </tr>
-    {% if 'ct_small' in cgains.estimate %}
+    {% if 'ct_small' in cgains.ct_estimate %}
         <tr>
             <td>Corporation Tax (Small profits rate):</td>
-            <td align="right">{{cgains.estimate['ct_small']|valuefilter}}</td>
-            <td align="left" style="padding-left:2px">({{cgains.estimate['ct_small_rates']|ratesfilter}})</td>
+            <td align="right">{{cgains.ct_estimate['ct_small']|valuefilter}}</td>
+            <td align="left" style="padding-left:2px">({{cgains.ct_estimate['ct_small_rates']|ratesfilter}})</td>
         </tr>
     {% endif %}
     <tr>
         <td>Corporation Tax (Main rate):</td>
-        <td align="right">{{cgains.estimate['ct_main']|valuefilter}}</td>
-        <td align="left" style="padding-left:2px">({{cgains.estimate['ct_main_rates']|ratesfilter}})</td>
+        <td align="right">{{cgains.ct_estimate['ct_main']|valuefilter}}</td>
+        <td align="left" style="padding-left:2px">({{cgains.ct_estimate['ct_main_rates']|ratesfilter}})</td>
     </tr>
 </table>
-{% if None in cgains.estimate['ct_small_rates'] %}
+{% if None in cgains.ct_estimate['ct_small_rates'] %}
     <p>*Main rate used</p>
 {% endif %}

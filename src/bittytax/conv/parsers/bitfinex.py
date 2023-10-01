@@ -3,20 +3,31 @@
 
 import re
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from ..dataparser import DataParser
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Bitfinex"
 
 PRECISION = Decimal("0.00000000")
 
 
-def parse_bitfinex_trades_v2(data_row, _parser, **_kwargs):
+def parse_bitfinex_trades_v2(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     parse_bitfinex_trades_v1(data_row, _parser, **_kwargs)
 
 
-def parse_bitfinex_trades_v1(data_row, _parser, **_kwargs):
+def parse_bitfinex_trades_v1(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["DATE"], dayfirst=True)
 
@@ -29,9 +40,9 @@ def parse_bitfinex_trades_v1(data_row, _parser, **_kwargs):
         sell_quantity = Decimal(row_dict["PRICE"]) * Decimal(row_dict["AMOUNT"])
 
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["AMOUNT"],
+            buy_quantity=Decimal(row_dict["AMOUNT"]),
             buy_asset=row_dict["PAIR"].split("/")[0],
             sell_quantity=sell_quantity.quantize(PRECISION),
             sell_asset=row_dict["PAIR"].split("/")[1],
@@ -43,7 +54,7 @@ def parse_bitfinex_trades_v1(data_row, _parser, **_kwargs):
         buy_quantity = Decimal(row_dict["PRICE"]) * abs(Decimal(row_dict["AMOUNT"]))
 
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=buy_quantity.quantize(PRECISION),
             buy_asset=row_dict["PAIR"].split("/")[1],
@@ -55,7 +66,9 @@ def parse_bitfinex_trades_v1(data_row, _parser, **_kwargs):
         )
 
 
-def parse_bitfinex_deposits_withdrawals(data_row, _parser, **_kwargs):
+def parse_bitfinex_deposits_withdrawals(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["DATE"], dayfirst=True)
 
@@ -64,9 +77,9 @@ def parse_bitfinex_deposits_withdrawals(data_row, _parser, **_kwargs):
 
     if Decimal(row_dict["AMOUNT"]) > 0:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["AMOUNT"],
+            buy_quantity=Decimal(row_dict["AMOUNT"]),
             buy_asset=row_dict["CURRENCY"],
             fee_quantity=abs(Decimal(row_dict["FEES"])),
             fee_asset=row_dict["CURRENCY"],
@@ -74,7 +87,7 @@ def parse_bitfinex_deposits_withdrawals(data_row, _parser, **_kwargs):
         )
     else:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["AMOUNT"])),
             sell_asset=row_dict["CURRENCY"],
@@ -84,21 +97,23 @@ def parse_bitfinex_deposits_withdrawals(data_row, _parser, **_kwargs):
         )
 
 
-def parse_bitfinex_ledger(data_row, _parser, **_kwargs):
+def parse_bitfinex_ledger(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["DATE"], dayfirst=True)
 
     if _is_referral(row_dict["DESCRIPTION"]):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_GIFT_RECEIVED,
+            TrType.GIFT_RECEIVED,
             data_row.timestamp,
-            buy_quantity=row_dict["AMOUNT"],
+            buy_quantity=Decimal(row_dict["AMOUNT"]),
             buy_asset=row_dict["CURRENCY"],
             wallet=WALLET,
         )
 
 
-def _is_referral(description):
+def _is_referral(description: str) -> bool:
     if re.match(
         r"^Earned fees from user (\d+) on wallet exchange$|^Affiliate Rebate.*$",
         description,
@@ -108,7 +123,7 @@ def _is_referral(description):
 
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bitfinex Trades",
     [
         "#",
@@ -127,7 +142,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bitfinex Trades",
     ["#", "PAIR", "AMOUNT", "PRICE", "FEE", "FEE CURRENCY", "DATE", "ORDER ID"],
     worksheet_name="Bitfinex T",
@@ -135,7 +150,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bitfinex Deposits/Withdrawals",
     [
         "#",
@@ -153,7 +168,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bitfinex Deposits/Withdrawals",
     [
         "#",
@@ -170,7 +185,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bitfinex Ledger",
     ["#", "DESCRIPTION", "CURRENCY", "AMOUNT", "BALANCE", "DATE", "WALLET"],
     worksheet_name="Bitfinex L",
@@ -178,7 +193,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bitfinex Ledger",
     ["DESCRIPTION", "CURRENCY", "AMOUNT", "BALANCE", "DATE", "WALLET"],
     worksheet_name="Bitfinex L",

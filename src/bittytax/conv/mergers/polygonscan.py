@@ -1,16 +1,22 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2021
 
-from ..datamerge import DataMerge
+from typing import TYPE_CHECKING, Dict, List
+
+from ...types import FileId
+from ..datamerge import DataMerge, ParserRequired
 from ..out_record import TransactionOutRecord
-from ..parsers.etherscan import ETHERSCAN_NFTS, ETHERSCAN_TOKENS
-from ..parsers.polygonscan import MATIC_INT, MATIC_TXNS, WALLET, WORKSHEET_NAME
+from ..parsers.etherscan import etherscan_nfts, etherscan_tokens
+from ..parsers.polygonscan import WALLET, WORKSHEET_NAME, matic_int, matic_txns
 from .etherscan import INTERNAL_TXNS, NFTS, TOKENS, TXNS, _do_merge_etherscan
 
-STAKE_ADDRESSES = []
+STAKE_ADDRESSES: List[str] = []
+
+if TYPE_CHECKING:
+    from ..datafile import DataFile
 
 
-def merge_polygonscan(data_files):
+def merge_polygonscan(data_files: Dict[FileId, "DataFile"]) -> bool:
     # Do same merge as Etherscan
     merge = _do_merge_etherscan(data_files, STAKE_ADDRESSES)
 
@@ -36,10 +42,10 @@ def merge_polygonscan(data_files):
 DataMerge(
     "PolygonScan fees & multi-token transactions",
     {
-        TXNS: {"req": DataMerge.MAN, "obj": MATIC_TXNS},
-        TOKENS: {"req": DataMerge.OPT, "obj": ETHERSCAN_TOKENS},
-        NFTS: {"req": DataMerge.OPT, "obj": ETHERSCAN_NFTS},
-        INTERNAL_TXNS: {"req": DataMerge.OPT, "obj": MATIC_INT},
+        TXNS: {"req": ParserRequired.MANDATORY, "obj": matic_txns},
+        TOKENS: {"req": ParserRequired.OPTIONAL, "obj": etherscan_tokens},
+        NFTS: {"req": ParserRequired.OPTIONAL, "obj": etherscan_nfts},
+        INTERNAL_TXNS: {"req": ParserRequired.OPTIONAL, "obj": matic_int},
     },
     merge_polygonscan,
 )

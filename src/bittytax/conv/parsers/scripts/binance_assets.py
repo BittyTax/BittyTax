@@ -5,7 +5,7 @@
 import requests
 
 
-def get_assets():
+def get_assets() -> None:
     response = requests.get("https://api.binance.com/api/v3/exchangeInfo", timeout=10)
 
     if response:
@@ -33,6 +33,8 @@ def get_assets():
 
         rows_str = ",/\n               ".join(rows)
         print(f"\nBASE_ASSETS = [{rows_str}]\n")
+    else:
+        print(f"{response.status_code} {response.reason}")
 
 
 if __name__ == "__main__":

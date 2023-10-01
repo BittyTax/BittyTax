@@ -8,10 +8,11 @@ from tqdm import tqdm
 
 from .config import config
 from .constants import WARNING
+from .types import AssetSymbol
 
 
 class Holdings:
-    def __init__(self, asset):
+    def __init__(self, asset: AssetSymbol) -> None:
         self.asset = asset
         self.quantity = Decimal(0)
         self.cost = Decimal(0)
@@ -20,7 +21,7 @@ class Holdings:
         self.deposits = 0
         self.mismatches = 0
 
-    def add_tokens(self, quantity, cost, fees, is_deposit):
+    def add_tokens(self, quantity: Decimal, cost: Decimal, fees: Decimal, is_deposit: bool) -> None:
         self.quantity += quantity
         self.cost += cost
         self.fees += fees
@@ -38,7 +39,9 @@ class Holdings:
                 f"(+{config.sym()}{fees:0,.2f} {config.ccy})"
             )
 
-    def subtract_tokens(self, quantity, cost, fees, is_withdrawal):
+    def subtract_tokens(
+        self, quantity: Decimal, cost: Decimal, fees: Decimal, is_withdrawal: bool
+    ) -> None:
         self.quantity -= quantity
         self.cost -= cost
         self.fees -= fees
@@ -56,7 +59,7 @@ class Holdings:
                 f"(-{config.sym()}{fees:0,.2f} {config.ccy})"
             )
 
-    def check_transfer_mismatch(self):
+    def check_transfer_mismatch(self) -> None:
         if self.withdrawals > 0 and self.withdrawals != self.deposits:
             tqdm.write(
                 f"{WARNING} Disposal detected between a Withdrawal and a Deposit "

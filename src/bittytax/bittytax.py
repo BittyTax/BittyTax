@@ -8,6 +8,7 @@ import io
 import os
 import platform
 import sys
+from typing import Dict, List, Tuple
 
 import colorama
 from colorama import Fore
@@ -17,23 +18,26 @@ from .config import config
 from .constants import ERROR, TAX_RULES_UK_COMPANY, TAX_RULES_UK_INDIVIDUAL, WARNING
 from .exceptions import ImportFailureError
 from .export_records import ExportRecords
+from .holdings import Holdings
 from .import_records import ImportRecords
 from .price.exceptions import DataSourceError
 from .price.valueasset import ValueAsset
+from .record import TransactionRecord
 from .report import ReportLog, ReportPdf
 from .tax import CalculateCapitalGains as CCG
 from .tax import TaxCalculator
 from .transactions import TransactionHistory
+from .types import AssetSymbol, Year
 from .version import __version__
 
 if sys.stdout.encoding != "UTF-8":
     if sys.version_info[:2] >= (3, 7):
-        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
     else:
         sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
 
 
-def main():
+def main() -> None:
     colorama.init()
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -112,7 +116,7 @@ def main():
     try:
         transaction_records = do_import(args.filename)
     except IOError:
-        parser.exit(f"{ERROR} File could not be read: {args.filename}")
+        parser.exit(message=f"{ERROR} File could not be read: {args.filename}\n")
     except ImportFailureError:
         parser.exit()
 
@@ -135,7 +139,7 @@ def main():
         do_each_tax_year(tax, args.taxyear, args.summary, value_asset)
 
     except DataSourceError as e:
-        parser.exit(f"{ERROR} {e}")
+        parser.exit(message=f"{ERROR} {e}\n")
 
     if args.nopdf:
         ReportLog(audit, tax.tax_report, value_asset.price_report, tax.holdings_report, args)
@@ -150,7 +154,7 @@ def main():
         )
 
 
-def validate_year(value):
+def validate_year(value: str) -> int:
     year = int(value)
     if year not in CCG.CG_DATA_INDIVIDUAL:
         raise argparse.ArgumentTypeError(
@@ -161,7 +165,7 @@ def validate_year(value):
     return year
 
 
-def do_import(filename):
+def do_import(filename: str) -> List[TransactionRecord]:
     import_records = ImportRecords()
 
     if filename:
@@ -187,7 +191,9 @@ def do_import(filename):
     return import_records.get_records()
 
 
-def do_tax(transaction_records, tax_rules, skip_integrity_check):
+def do_tax(
+    transaction_records: List[TransactionRecord], tax_rules: str, skip_integrity_check: bool
+) -> Tuple[TaxCalculator, ValueAsset]:
     value_asset = ValueAsset()
     transaction_history = TransactionHistory(transaction_records, value_asset)
 
@@ -204,7 +210,7 @@ def do_tax(transaction_records, tax_rules, skip_integrity_check):
     return tax, value_asset
 
 
-def do_integrity_check(audit, holdings):
+def do_integrity_check(audit: AuditRecords, holdings: Dict[AssetSymbol, Holdings]) -> bool:
     int_passed = True
 
     if config.transfers_include:
@@ -236,36 +242,40 @@ def do_integrity_check(audit, holdings):
     return int_passed
 
 
-def transfer_mismatches(holdings):
+def transfer_mismatches(holdings: Dict[AssetSymbol, Holdings]) -> bool:
     return bool([asset for asset in holdings if holdings[asset].mismatches])
 
 
-def do_each_tax_year(tax, tax_year, summary, value_asset):
+def do_each_tax_year(
+    tax: TaxCalculator, tax_year: Year, summary: bool, value_asset: ValueAsset
+) -> None:
     if tax_year:
         print(f"{Fore.CYAN}calculating tax year {config.format_tax_year(tax_year)}")
 
-        tax.calculate_capital_gains(tax_year)
+        calc_cgt = tax.calculate_capital_gains(tax_year)
         if not summary:
-            tax.calculate_income(tax_year)
+            calc_income = tax.calculate_income(tax_year)
+
+        tax.tax_report[tax_year] = {"CapitalGains": calc_cgt, "Income": calc_income}
     else:
         # Calculate for all years
         for year in sorted(tax.tax_events):
             print(f"{Fore.CYAN}calculating tax year {config.format_tax_year(year)}")
 
             if year in CCG.CG_DATA_INDIVIDUAL:
-                tax.calculate_capital_gains(year)
+                calc_cgt = tax.calculate_capital_gains(year)
                 if not summary:
-                    tax.calculate_income(year)
+                    calc_income = tax.calculate_income(year)
             else:
                 print(f"{WARNING} Tax year {year} is not supported")
+
+            tax.tax_report[year] = {"CapitalGains": calc_cgt, "Income": calc_income}
 
         if not summary:
             tax.calculate_holdings(value_asset)
 
-    return tax, value_asset
 
-
-def do_export(transaction_records):
+def do_export(transaction_records: List[TransactionRecord]) -> None:
     value_asset = ValueAsset()
     TransactionHistory(transaction_records, value_asset)
     ExportRecords(transaction_records).write_csv()

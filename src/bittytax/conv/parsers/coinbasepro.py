@@ -3,19 +3,27 @@
 
 import sys
 from decimal import Decimal
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from colorama import Fore
+from typing_extensions import Unpack
 
 from ...config import config
-from ..dataparser import DataParser
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import DataRowError, MissingComponentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Coinbase Pro"
 
 
-def parse_coinbase_pro_account_v2(data_rows, parser, **_kwargs):
-    trade_ids = {}
+def parse_coinbase_pro_account_v2(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    trade_ids: Dict[str, List["DataRow"]] = {}
     for dr in data_rows:
         if dr.row_dict["trade id"] in trade_ids:
             trade_ids[dr.row_dict["trade id"]].append(dr)
@@ -24,6 +32,9 @@ def parse_coinbase_pro_account_v2(data_rows, parser, **_kwargs):
 
     for data_row in data_rows:
         if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
             sys.stderr.write(
                 f"{Fore.YELLOW}conv: "
                 f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
@@ -43,14 +54,16 @@ def parse_coinbase_pro_account_v2(data_rows, parser, **_kwargs):
             data_row.failure = e
 
 
-def _parse_coinbase_pro_row(trade_ids, parser, data_row):
+def _parse_coinbase_pro_row(
+    trade_ids: Dict[str, List["DataRow"]], parser: DataParser, data_row: "DataRow"
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["time"])
     data_row.parsed = True
 
     if row_dict["type"] == "withdrawal":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["amount"])),
             sell_asset=row_dict["amount/balance unit"],
@@ -58,20 +71,20 @@ def _parse_coinbase_pro_row(trade_ids, parser, data_row):
         )
     elif row_dict["type"] == "deposit":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["amount"],
+            buy_quantity=Decimal(row_dict["amount"]),
             buy_asset=row_dict["amount/balance unit"],
             wallet=WALLET,
         )
     elif row_dict["type"] == "match":
         if Decimal(row_dict["amount"]) < 0:
-            sell_quantity = abs(Decimal(row_dict["amount"]))
+            sell_quantity: Optional[Decimal] = abs(Decimal(row_dict["amount"]))
             sell_asset = row_dict["amount/balance unit"]
 
             buy_quantity, buy_asset = _get_trade(trade_ids[row_dict["trade id"]], "match")
         else:
-            buy_quantity = row_dict["amount"]
+            buy_quantity = Decimal(row_dict["amount"])
             buy_asset = row_dict["amount/balance unit"]
 
             sell_quantity, sell_asset = _get_trade(trade_ids[row_dict["trade id"]], "match")
@@ -84,7 +97,7 @@ def _parse_coinbase_pro_row(trade_ids, parser, data_row):
         fee_quantity, fee_asset = _get_trade(trade_ids[row_dict["trade id"]], "fee")
 
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=buy_quantity,
             buy_asset=buy_asset,
@@ -98,7 +111,7 @@ def _parse_coinbase_pro_row(trade_ids, parser, data_row):
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
 
-def _get_trade(trade_id_rows, t_type):
+def _get_trade(trade_id_rows: List["DataRow"], t_type: str) -> Tuple[Optional[Decimal], str]:
     quantity = None
     asset = ""
 
@@ -113,7 +126,9 @@ def _get_trade(trade_id_rows, t_type):
     return quantity, asset
 
 
-def parse_coinbase_pro_account_v1(data_row, parser, **_kwargs):
+def parse_coinbase_pro_account_v1(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     # This legacy version only uses the account report for deposits/withdrawals
     # everything else comes from the fills report
     row_dict = data_row.row_dict
@@ -121,7 +136,7 @@ def parse_coinbase_pro_account_v1(data_row, parser, **_kwargs):
 
     if row_dict["type"] == "withdrawal":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["amount"])),
             sell_asset=row_dict["amount/balance unit"],
@@ -129,9 +144,9 @@ def parse_coinbase_pro_account_v1(data_row, parser, **_kwargs):
         )
     elif row_dict["type"] == "deposit":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["amount"],
+            buy_quantity=Decimal(row_dict["amount"]),
             buy_asset=row_dict["amount/balance unit"],
             wallet=WALLET,
         )
@@ -142,36 +157,40 @@ def parse_coinbase_pro_account_v1(data_row, parser, **_kwargs):
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
 
-def parse_coinbase_pro_fills_v2(data_row, parser, **kwargs):
+def parse_coinbase_pro_fills_v2(
+    data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
+) -> None:
     # Deprecated, you can now use just the account statement
     parse_coinbase_pro_fills_v1(data_row, parser, **kwargs)
 
 
-def parse_coinbase_pro_fills_v1(data_row, parser, **_kwargs):
+def parse_coinbase_pro_fills_v1(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["created at"])
 
     if row_dict["side"] == "BUY":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["size"],
+            buy_quantity=Decimal(row_dict["size"]),
             buy_asset=row_dict["size unit"],
             sell_quantity=abs(Decimal(row_dict["total"])) - Decimal(row_dict["fee"]),
             sell_asset=row_dict["price/fee/total unit"],
-            fee_quantity=row_dict["fee"],
+            fee_quantity=Decimal(row_dict["fee"]),
             fee_asset=row_dict["price/fee/total unit"],
             wallet=WALLET,
         )
     elif row_dict["side"] == "SELL":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["total"]) + Decimal(row_dict["fee"]),
             buy_asset=row_dict["price/fee/total unit"],
-            sell_quantity=row_dict["size"],
+            sell_quantity=Decimal(row_dict["size"]),
             sell_asset=row_dict["size unit"],
-            fee_quantity=row_dict["fee"],
+            fee_quantity=Decimal(row_dict["fee"]),
             fee_asset=row_dict["price/fee/total unit"],
             wallet=WALLET,
         )
@@ -180,7 +199,7 @@ def parse_coinbase_pro_fills_v1(data_row, parser, **_kwargs):
 
 
 ACCOUNT = DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Coinbase Pro Account",
     [
         "portfolio",
@@ -198,7 +217,7 @@ ACCOUNT = DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Coinbase Pro Fills",
     [
         "portfolio",
@@ -220,7 +239,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Coinbase Pro Fills",
     [
         "trade id",
@@ -239,7 +258,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Coinbase Pro Account",
     [
         "type",

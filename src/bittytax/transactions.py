@@ -3,18 +3,24 @@
 
 import copy
 import sys
+from decimal import Decimal
+from typing import Dict, List, Optional, Tuple, Union
 
 from colorama import Fore, Style
 from tqdm import tqdm
 
 from .config import config
+from .price.valueasset import ValueAsset
 from .record import TransactionRecord
+from .types import AssetSymbol, Date, FixedValue, Note, Timestamp, TrType, Wallet
 
 
 class TransactionHistory:
-    def __init__(self, transaction_records, value_asset):
+    def __init__(
+        self, transaction_records: List[TransactionRecord], value_asset: ValueAsset
+    ) -> None:
         self.value_asset = value_asset
-        self.transactions = []
+        self.transactions: List[Union[Buy, Sell]] = []
 
         if config.debug:
             print(f"{Fore.CYAN}split transaction records")
@@ -65,7 +71,7 @@ class TransactionHistory:
                         tr.fee.fee_value = tr.fee.proceeds
                         tr.fee.fee_fixed = tr.fee.proceeds_fixed
 
-            if tr.t_type != TransactionRecord.TYPE_LOST:
+            if tr.t_type is not TrType.LOST:
                 if tr.buy and (tr.buy.quantity or tr.buy.fee_value):
                     tr.buy.set_tid()
                     self.transactions.append(tr.buy)
@@ -100,7 +106,7 @@ class TransactionHistory:
         if config.debug:
             print(f"{Fore.CYAN}split: total transactions={len(self.transactions)}")
 
-    def get_all_values(self, tr):
+    def get_all_values(self, tr: TransactionRecord) -> None:
         if tr.buy and tr.buy.acquisition and tr.buy.cost is None:
             if tr.sell:
                 (tr.buy.cost, tr.buy.cost_fixed) = self.which_asset_value(tr)
@@ -155,7 +161,10 @@ class TransactionHistory:
                     tr.fee.asset, tr.fee.timestamp, tr.fee.quantity
                 )
 
-    def which_asset_value(self, tr):
+    def which_asset_value(self, tr: TransactionRecord) -> Tuple[Decimal, FixedValue]:
+        if not tr.buy or not tr.sell:
+            raise RuntimeError("Missing buy/sell")
+
         if config.trade_asset_type == config.TRADE_ASSET_TYPE_BUY:
             if tr.buy.cost is None:
                 value, fixed = self.value_asset.get_value(
@@ -199,40 +208,49 @@ class TransactionHistory:
 class TransactionBase:  # pylint: disable=too-many-instance-attributes
     POOLED = "<pooled>"
 
-    def __init__(self, t_type, asset, quantity):
-        self.tid = None
-        self.t_record = None
+    def __init__(self, t_type: TrType, asset: AssetSymbol, quantity: Decimal) -> None:
+        self.tid: Optional[List[int]] = None
+        self.t_record: Optional[TransactionRecord] = None
         self.t_type = t_type
         self.asset = asset
         self.quantity = quantity
-        self.fee_value = None
-        self.fee_fixed = True
-        self.wallet = None
-        self.timestamp = None
-        self.note = None
+        self.fee_value: Optional[Decimal] = None
+        self.fee_fixed: FixedValue = FixedValue(True)
+        self.wallet: Wallet = Wallet("")
+        self.timestamp: Timestamp
+        self.note: Note = Note("")
         self.matched = False
-        self.pooled = []
+        self.pooled: List[Union[Buy, Sell]] = []
 
-    def name(self):
+    def name(self) -> str:
         return self.__class__.__name__
 
-    def set_tid(self):
+    def set_tid(self) -> None:
+        if not self.t_record:
+            raise RuntimeError("Missing t_record")
+
         self.tid = self.t_record.set_tid()
 
-    def is_crypto(self):
+    def _format_tid(self) -> str:
+        if self.tid:
+            return f"[TID:{self.tid[0]}.{self.tid[1]}]"
+        return ""
+
+    def is_crypto(self) -> bool:
         return bool(self.asset not in config.fiat_list)
 
-    def _format_quantity(self):
-        if self.quantity is None:
-            return ""
+    def date(self) -> Date:
+        return Date(self.timestamp.date())
+
+    def _format_quantity(self) -> str:
         return f"{self.quantity.normalize():0,f}"
 
-    def _format_note(self):
+    def _format_note(self) -> str:
         if self.note:
             return f"'{self.note}' "
         return ""
 
-    def _format_pooled(self, bold=False):
+    def _format_pooled(self, bold: bool = False) -> str:
         if self.pooled:
             return (
                 f" {Style.BRIGHT if bold else ''}({len(self.pooled)})"
@@ -240,7 +258,7 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
             )
         return ""
 
-    def _format_fee(self):
+    def _format_fee(self) -> str:
         if self.fee_value is not None:
             return (
                 f" + fee={'' if self.fee_fixed else '~'}"
@@ -249,21 +267,26 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
 
         return ""
 
-    def _format_timestamp(self):
+    def _format_timestamp(self) -> str:
+        if not self.timestamp:
+            raise RuntimeError("Missing timestamp")
+
         if self.timestamp.microsecond:
             return f"{self.timestamp:%Y-%m-%dT%H:%M:%S.%f %Z}"
         return f"{self.timestamp:%Y-%m-%dT%H:%M:%S %Z}"
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TransactionBase):
+            return NotImplemented
         return (self.asset, self.timestamp) == (other.asset, other.timestamp)
 
-    def __ne__(self, other):
+    def __ne__(self, other: object) -> bool:
         return not self == other
 
-    def __lt__(self, other):
+    def __lt__(self, other: "TransactionBase") -> bool:
         return (self.asset, self.timestamp) < (other.asset, other.timestamp)
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo: Dict[int, object]) -> "TransactionBase":
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
@@ -277,45 +300,46 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
 
 
 class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
-    TYPE_DEPOSIT = TransactionRecord.TYPE_DEPOSIT
-    TYPE_MINING = TransactionRecord.TYPE_MINING
-    TYPE_STAKING = TransactionRecord.TYPE_STAKING
-    TYPE_INTEREST = TransactionRecord.TYPE_INTEREST
-    TYPE_DIVIDEND = TransactionRecord.TYPE_DIVIDEND
-    TYPE_INCOME = TransactionRecord.TYPE_INCOME
-    TYPE_GIFT_RECEIVED = TransactionRecord.TYPE_GIFT_RECEIVED
-    TYPE_AIRDROP = TransactionRecord.TYPE_AIRDROP
-    TYPE_TRADE = TransactionRecord.TYPE_TRADE
-
     ACQUISITION_TYPES = {
-        TYPE_MINING,
-        TYPE_STAKING,
-        TYPE_INTEREST,
-        TYPE_DIVIDEND,
-        TYPE_INCOME,
-        TYPE_GIFT_RECEIVED,
-        TYPE_AIRDROP,
-        TYPE_TRADE,
+        TrType.MINING,
+        TrType.STAKING,
+        TrType.INTEREST,
+        TrType.DIVIDEND,
+        TrType.INCOME,
+        TrType.GIFT_RECEIVED,
+        TrType.AIRDROP,
+        TrType.TRADE,
     }
 
-    def __init__(self, t_type, buy_quantity, buy_asset, buy_value):
+    def __init__(
+        self,
+        t_type: TrType,
+        buy_quantity: Decimal,
+        buy_asset: AssetSymbol,
+        buy_value: Optional[Decimal],
+    ):
         super().__init__(t_type, buy_asset, buy_quantity)
         self.acquisition = bool(self.t_type in self.ACQUISITION_TYPES)
         self.cost = None
-        self.cost_fixed = False
+        self.cost_fixed: FixedValue = FixedValue(False)
 
         if self.acquisition and buy_value is not None:
             self.cost = buy_value
-            self.cost_fixed = True
+            self.cost_fixed = FixedValue(True)
 
-    def __iadd__(self, other):
+    def __iadd__(self, other: "Buy") -> "Buy":
         if not self.pooled:
             self.pooled.append(copy.deepcopy(self))
 
         # Pool buys
         if self.asset != other.asset:
-            raise ValueError("Assets do not match")
+            raise RuntimeError("Assets do not match")
+
         self.quantity += other.quantity
+
+        if self.cost is None or other.cost is None:
+            raise RuntimeError("Missing cost")
+
         self.cost += other.cost
 
         if self.fee_value is not None and other.fee_value is not None:
@@ -328,22 +352,25 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
             self.timestamp = other.timestamp
 
         if other.wallet != self.wallet:
-            self.wallet = self.POOLED
+            self.wallet = Wallet(self.POOLED)
 
         if other.cost_fixed != self.cost_fixed:
-            self.cost_fixed = False
+            self.cost_fixed = FixedValue(False)
 
         if other.fee_fixed != self.fee_fixed:
-            self.fee_fixed = False
+            self.fee_fixed = FixedValue(False)
 
         if other.note != self.note:
-            self.note = self.POOLED
+            self.note = Note(self.POOLED)
 
         self.pooled.append(other)
         return self
 
-    def split_buy(self, sell_quantity):
+    def split_buy(self, sell_quantity: Decimal) -> "Buy":
         remainder = copy.deepcopy(self)
+
+        if self.cost is None or remainder.cost is None:
+            raise RuntimeError("Missing cost")
 
         self.cost = self.cost * (sell_quantity / self.quantity)
 
@@ -357,14 +384,14 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
         remainder.cost = remainder.cost - self.cost
         # pylint: enable=attribute-defined-outside-init
 
-        if self.fee_value:
+        if self.fee_value and remainder.fee_value:
             remainder.fee_value = remainder.fee_value - self.fee_value
 
         remainder.quantity = remainder.quantity - sell_quantity
         remainder.set_tid()
         return remainder
 
-    def _format_cost(self):
+    def _format_cost(self) -> str:
         if self.cost is not None:
             return (
                 f" ({'=' if self.cost_fixed else '~'}"
@@ -372,10 +399,10 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
             )
         return ""
 
-    def __str__(self, pooled_bold=False, quantity_bold=False):
+    def format_str(self, quantity_bold: bool = False) -> str:
         return (
             f"{self.name().upper()}{'*' if not self.acquisition else ''} "
-            f"{self.t_type}"
+            f"{self.t_type.value}"
             f"{Style.BRIGHT if quantity_bold else ''} "
             f"{self._format_quantity()} "
             f"{self.asset}"
@@ -385,47 +412,53 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
             f"'{self.wallet}' "
             f"{self._format_timestamp()} "
             f"{self._format_note()}"
-            f"[TID:{self.tid[0]}.{self.tid[1]}]"
+            f"{self._format_tid()}"
             f"{self._format_pooled()}"
         )
 
+    def __str__(self) -> str:
+        return self.format_str()
+
 
 class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
-    TYPE_WITHDRAWAL = TransactionRecord.TYPE_WITHDRAWAL
-    TYPE_SPEND = TransactionRecord.TYPE_SPEND
-    TYPE_GIFT_SENT = TransactionRecord.TYPE_GIFT_SENT
-    TYPE_GIFT_SPOUSE = TransactionRecord.TYPE_GIFT_SPOUSE
-    TYPE_CHARITY_SENT = TransactionRecord.TYPE_CHARITY_SENT
-    TYPE_LOST = TransactionRecord.TYPE_LOST
-    TYPE_TRADE = TransactionRecord.TYPE_TRADE
-
     DISPOSAL_TYPES = {
-        TYPE_SPEND,
-        TYPE_GIFT_SENT,
-        TYPE_GIFT_SPOUSE,
-        TYPE_CHARITY_SENT,
-        TYPE_LOST,
-        TYPE_TRADE,
+        TrType.SPEND,
+        TrType.GIFT_SENT,
+        TrType.GIFT_SPOUSE,
+        TrType.CHARITY_SENT,
+        TrType.LOST,
+        TrType.TRADE,
     }
 
-    def __init__(self, t_type, sell_quantity, sell_asset, sell_value):
+    def __init__(
+        self,
+        t_type: TrType,
+        sell_quantity: Decimal,
+        sell_asset: AssetSymbol,
+        sell_value: Optional[Decimal],
+    ):
         super().__init__(t_type, sell_asset, sell_quantity)
         self.disposal = bool(self.t_type in self.DISPOSAL_TYPES)
         self.proceeds = None
-        self.proceeds_fixed = False
+        self.proceeds_fixed: FixedValue = FixedValue(False)
 
         if self.disposal and sell_value is not None:
             self.proceeds = sell_value
-            self.proceeds_fixed = True
+            self.proceeds_fixed = FixedValue(True)
 
-    def __iadd__(self, other):
+    def __iadd__(self, other: "Sell") -> "Sell":
         if not self.pooled:
             self.pooled.append(copy.deepcopy(self))
 
         # Pool sells
         if self.asset != other.asset:
-            raise ValueError("Assets do not match")
+            raise RuntimeError("Assets do not match")
+
         self.quantity += other.quantity
+
+        if self.proceeds is None or other.proceeds is None:
+            raise RuntimeError("Missing proceeds")
+
         self.proceeds += other.proceeds
 
         if self.fee_value is not None and other.fee_value is not None:
@@ -438,22 +471,25 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
             self.timestamp = other.timestamp
 
         if other.wallet != self.wallet:
-            self.wallet = self.POOLED
+            self.wallet = Wallet(self.POOLED)
 
         if other.proceeds_fixed != self.proceeds_fixed:
-            self.proceeds_fixed = False
+            self.proceeds_fixed = FixedValue(False)
 
         if other.fee_fixed != self.fee_fixed:
-            self.fee_fixed = False
+            self.fee_fixed = FixedValue(False)
 
         if other.note != self.note:
-            self.note = self.POOLED
+            self.note = Note(self.POOLED)
 
         self.pooled.append(other)
         return self
 
-    def split_sell(self, buy_quantity):
+    def split_sell(self, buy_quantity: Decimal) -> "Sell":
         remainder = copy.deepcopy(self)
+
+        if self.proceeds is None or remainder.proceeds is None:
+            raise RuntimeError("Missing proceeds")
 
         self.proceeds = self.proceeds * (buy_quantity / self.quantity)
 
@@ -467,14 +503,14 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
         remainder.proceeds = remainder.proceeds - self.proceeds
         # pylint: enable=attribute-defined-outside-init
 
-        if self.fee_value:
+        if self.fee_value and remainder.fee_value:
             remainder.fee_value = remainder.fee_value - self.fee_value
 
         remainder.quantity = remainder.quantity - buy_quantity
         remainder.set_tid()
         return remainder
 
-    def _format_proceeds(self):
+    def _format_proceeds(self) -> str:
         if self.proceeds is not None:
             return (
                 f" ({'=' if self.proceeds_fixed else '~'}"
@@ -482,10 +518,10 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
             )
         return ""
 
-    def __str__(self, pooled_bold=False, quantity_bold=False):
+    def format_str(self, quantity_bold: bool = False) -> str:
         return (
             f"{self.name().upper()}{'*' if not self.disposal else ''} "
-            f"{self.t_type}"
+            f"{self.t_type.value}"
             f"{Style.BRIGHT if quantity_bold else ''} "
             f"{self._format_quantity()} "
             f"{self.asset}"
@@ -495,6 +531,9 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
             f"'{self.wallet}' "
             f"{self._format_timestamp()} "
             f"{self._format_note()}"
-            f"[TID:{self.tid[0]}.{self.tid[1]}]"
+            f"{self._format_tid()}"
             f"{self._format_pooled()}"
         )
+
+    def __str__(self) -> str:
+        return self.format_str()

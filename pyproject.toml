@@ -9,3 +9,15 @@ target-version = ['py36']
 [tool.isort]
 profile = "black"
 line_length = 100
+
+[tool.mypy]
+# https://mypy.readthedocs.io/en/latest/config_file.html
+ignore_missing_imports = true
+check_untyped_defs = true
+disallow_untyped_defs = true
+warn_unused_configs = true
+warn_unused_ignores = true
+warn_unreachable = true
+warn_redundant_casts = true
+disallow_untyped_decorators = true
+disallow_untyped_calls = true

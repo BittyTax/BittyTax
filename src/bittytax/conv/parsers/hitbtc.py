@@ -4,20 +4,31 @@
 import copy
 import sys
 from decimal import Decimal
+from typing import TYPE_CHECKING, List
 
 from colorama import Fore
+from typing_extensions import Unpack
 
 from ...config import config
-from ..dataparser import DataParser
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import DataRowError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "HitBTC"
 
 
-def parse_hitbtc_trades_v2(data_rows, parser, **_kwargs):
+def parse_hitbtc_trades_v2(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     for row_index, data_row in enumerate(data_rows):
         if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
             sys.stderr.write(
                 f"{Fore.YELLOW}conv: "
                 f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
@@ -37,7 +48,9 @@ def parse_hitbtc_trades_v2(data_rows, parser, **_kwargs):
             data_row.failure = e
 
 
-def _parse_hitbtc_trades_row(data_rows, parser, data_row, row_index):
+def _parse_hitbtc_trades_row(
+    data_rows: List["DataRow"], parser: DataParser, data_row: "DataRow", row_index: int
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date (UTC)"])
     data_row.parsed = True
@@ -47,7 +60,7 @@ def _parse_hitbtc_trades_row(data_rows, parser, data_row, row_index):
         dup_data_row = copy.copy(data_row)
         dup_data_row.row = []
         dup_data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_GIFT_RECEIVED,
+            TrType.GIFT_RECEIVED,
             data_row.timestamp,
             buy_quantity=abs(Decimal(row_dict["Fee"])),
             buy_asset=row_dict["Instrument"].split("/")[1],
@@ -55,17 +68,17 @@ def _parse_hitbtc_trades_row(data_rows, parser, data_row, row_index):
         )
         data_rows.insert(row_index + 1, dup_data_row)
 
-        fee_quantity = 0
+        fee_quantity = Decimal(0)
     else:
-        fee_quantity = row_dict["Fee"]
+        fee_quantity = Decimal(row_dict["Fee"])
 
     fee_asset = row_dict["Instrument"].split("/")[1]
 
     if row_dict["Side"] == "buy":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["Quantity"],
+            buy_quantity=Decimal(row_dict["Quantity"]),
             buy_asset=row_dict["Instrument"].split("/")[0],
             sell_quantity=Decimal(row_dict["Quantity"]) * Decimal(row_dict["Price"]),
             sell_asset=row_dict["Instrument"].split("/")[1],
@@ -75,11 +88,11 @@ def _parse_hitbtc_trades_row(data_rows, parser, data_row, row_index):
         )
     elif row_dict["Side"] == "sell":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Quantity"]) * Decimal(row_dict["Price"]),
             buy_asset=row_dict["Instrument"].split("/")[1],
-            sell_quantity=row_dict["Quantity"],
+            sell_quantity=Decimal(row_dict["Quantity"]),
             sell_asset=row_dict["Instrument"].split("/")[0],
             fee_quantity=fee_quantity,
             fee_asset=fee_asset,
@@ -89,31 +102,33 @@ def _parse_hitbtc_trades_row(data_rows, parser, data_row, row_index):
         raise UnexpectedTypeError(parser.in_header.index("Side"), "Side", row_dict["Side"])
 
 
-def parse_hitbtc_trades_v1(data_row, parser, **_kwargs):
+def parse_hitbtc_trades_v1(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date (UTC)"])
 
     if row_dict["Side"] == "buy":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["Quantity"],
+            buy_quantity=Decimal(row_dict["Quantity"]),
             buy_asset=row_dict["Instrument"].split("/")[0],
             sell_quantity=Decimal(row_dict["Volume"]) - Decimal(row_dict["Rebate"]),
             sell_asset=row_dict["Instrument"].split("/")[1],
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Instrument"].split("/")[1],
             wallet=WALLET,
         )
     elif row_dict["Side"] == "sell":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Volume"]) + Decimal(row_dict["Rebate"]),
             buy_asset=row_dict["Instrument"].split("/")[1],
-            sell_quantity=row_dict["Quantity"],
+            sell_quantity=Decimal(row_dict["Quantity"]),
             sell_asset=row_dict["Instrument"].split("/")[0],
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Instrument"].split("/")[1],
             wallet=WALLET,
         )
@@ -121,7 +136,9 @@ def parse_hitbtc_trades_v1(data_row, parser, **_kwargs):
         raise UnexpectedTypeError(parser.in_header.index("Side"), "Side", row_dict["Side"])
 
 
-def parse_hitbtc_deposits_withdrawals_v2(data_row, _parser, **_kwargs):
+def parse_hitbtc_deposits_withdrawals_v2(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date (UTC)"])
 
@@ -129,7 +146,7 @@ def parse_hitbtc_deposits_withdrawals_v2(data_row, _parser, **_kwargs):
     #  failed transactions have no transaction hash
     if row_dict["Type"] in ("Withdraw", "") and row_dict["Transaction hash"] != "":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["Amount"])),
             sell_asset=row_dict["Currency"].upper(),
@@ -137,21 +154,23 @@ def parse_hitbtc_deposits_withdrawals_v2(data_row, _parser, **_kwargs):
         )
     elif row_dict["Type"] == "Deposit" and row_dict["Transaction hash"] != "":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Currency"].upper(),
             wallet=WALLET,
         )
 
 
-def parse_hitbtc_deposits_withdrawals_v1(data_row, _parser, **_kwargs):
+def parse_hitbtc_deposits_withdrawals_v1(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date (UTC)"])
 
     if row_dict["Type"] == "Withdraw":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["Amount"])),
             sell_asset=data_row.row[6],
@@ -159,16 +178,16 @@ def parse_hitbtc_deposits_withdrawals_v1(data_row, _parser, **_kwargs):
         )
     elif row_dict["Type"] == "Deposit":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=data_row.row[6],
             wallet=WALLET,
         )
 
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "HitBTC Trades",
     [
         "Email",
@@ -190,7 +209,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "HitBTC Trades",
     [
         "Email",
@@ -211,7 +230,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "HitBTC Trades",
     [
         "Date (UTC)",
@@ -231,7 +250,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "HitBTC Deposits/Withdrawals",
     [
         "Email",
@@ -248,7 +267,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "HitBTC Deposits/Withdrawals",
     [
         "Date (UTC)",

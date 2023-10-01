@@ -1,19 +1,23 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import argparse
 import csv
 import io
 import os
 import sys
 import warnings
+from typing import Dict, Generator, Iterator, List, Optional
 
+import openpyxl
 import xlrd
 from colorama import Fore
 from openpyxl import load_workbook
+from typing_extensions import Unpack
 
 from ..config import config
 from ..constants import ERROR, WARNING
-from .dataparser import DataParser
+from .dataparser import DataParser, ParserArgs, ParserType
 from .datarow import DataRow
 from .exceptions import DataFormatUnrecognised, DataRowError
 
@@ -22,26 +26,29 @@ class DataFile:
     CSV_DELIMITERS = (",", ";")
 
     remove_duplicates = False
-    data_files = {}
-    data_files_ordered = []
+    data_files: Dict["DataFile", "DataFile"] = {}
+    data_files_ordered: List["DataFile"] = []
 
-    def __init__(self, parser, reader):
+    def __init__(self, parser: DataParser, reader: Iterator) -> None:
         self.parser = parser
         self.data_rows = [
             DataRow(line_num + 1, row, parser.in_header) for line_num, row in enumerate(reader)
         ]
-        self.failures = []
+        self.failures: List[DataRow] = []
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, DataFile):
+            return NotImplemented
+
         return (self.parser.row_handler, self.parser.all_handler) == (
             other.parser.row_handler,
             other.parser.all_handler,
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.parser.row_handler, self.parser.all_handler))
 
-    def __iadd__(self, other):
+    def __iadd__(self, other: "DataFile") -> "DataFile":
         if len(other.parser.header) > len(self.parser.header):
             self.parser = other.parser
 
@@ -57,10 +64,13 @@ class DataFile:
 
         return self
 
-    def parse(self, **kwargs):
+    def parse(self, **kwargs: Unpack[ParserArgs]) -> None:
         if self.parser.row_handler:
             for data_row in self.data_rows:
                 if config.debug:
+                    if self.parser.in_header_row_num is None:
+                        raise RuntimeError("Missing in_header_row_num")
+
                     sys.stderr.write(
                         f"{Fore.YELLOW}conv: "
                         f"row[{self.parser.in_header_row_num + data_row.line_num}] {data_row}\n"
@@ -77,6 +87,9 @@ class DataFile:
             sys.stderr.write(f'{WARNING} Parser failure for "{self.parser.name}"\n')
 
             for data_row in self.failures:
+                if self.parser.in_header_row_num is None:
+                    raise RuntimeError("Missing in_header_row_num")
+
                 sys.stderr.write(
                     f"{Fore.YELLOW}"
                     f"row[{self.parser.in_header_row_num + data_row.line_num}] {data_row}\n"
@@ -87,7 +100,7 @@ class DataFile:
                     sys.stderr.write(f'{ERROR} Unexpected error: "{data_row.failure}"\n')
 
     @classmethod
-    def read_excel_xlsx(cls, filename):
+    def read_excel_xlsx(cls, filename: str) -> Generator:
         warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
         with open(filename, "rb") as df:
             try:
@@ -105,7 +118,12 @@ class DataFile:
                 raise DataFormatUnrecognised(filename) from e
 
     @classmethod
-    def read_worksheet_xlsx(cls, worksheet, filename, args):
+    def read_worksheet_xlsx(
+        cls,
+        worksheet: openpyxl.worksheet.worksheet.Worksheet,
+        filename: str,
+        args: argparse.Namespace,
+    ) -> None:
         reader = cls.get_cell_values_xlsx(worksheet.rows)
         parser = cls.get_parser(reader)
 
@@ -133,7 +151,7 @@ class DataFile:
         cls.consolidate_datafiles(data_file)
 
     @classmethod
-    def read_excel_xls(cls, filename):
+    def read_excel_xls(cls, filename: str) -> Generator:
         try:
             with xlrd.open_workbook(
                 filename, logfile=open(os.devnull, "w", encoding="utf-8")
@@ -147,7 +165,9 @@ class DataFile:
             raise DataFormatUnrecognised(filename) from e
 
     @classmethod
-    def read_worksheet_xls(cls, worksheet, datemode, filename, args):
+    def read_worksheet_xls(
+        cls, worksheet: xlrd.sheet.Sheet, datemode: int, filename: str, args: argparse.Namespace
+    ) -> None:
         reader = cls.get_cell_values_xls(worksheet.get_rows(), datemode)
         parser = cls.get_parser(reader)
 
@@ -175,24 +195,23 @@ class DataFile:
         cls.consolidate_datafiles(data_file)
 
     @staticmethod
-    def get_cell_values_xlsx(rows):
+    def get_cell_values_xlsx(rows: Generator) -> Generator:
         for row in rows:
             yield [DataFile.convert_cell_xlsx(cell) for cell in row]
 
     @staticmethod
-    def convert_cell_xlsx(cell):
+    def convert_cell_xlsx(cell: openpyxl.cell.cell.Cell) -> str:
         if cell.value is None:
-            return ""
-
+            return ""  # type: ignore[unreachable]
         return str(cell.value)
 
     @staticmethod
-    def get_cell_values_xls(rows, datemode):
+    def get_cell_values_xls(rows: Generator, datemode: int) -> Generator:
         for row in rows:
             yield [DataFile.convert_cell_xls(cell, datemode) for cell in row]
 
     @staticmethod
-    def convert_cell_xls(cell, datemode):
+    def convert_cell_xls(cell: xlrd.sheet.Cell, datemode: int) -> str:
         if cell.ctype == xlrd.XL_CELL_DATE:
             value = (
                 f"{xlrd.xldate.xldate_as_datetime(cell.value, datemode):%Y-%m-%dT%H:%M:%S.%f %Z}"
@@ -210,7 +229,7 @@ class DataFile:
         return value
 
     @classmethod
-    def read_csv(cls, filename, args):
+    def read_csv(cls, filename: str, args: argparse.Namespace) -> None:
         for reader in cls.read_csv_with_delimiter(filename):
             parser = cls.get_parser(reader)
 
@@ -240,7 +259,7 @@ class DataFile:
             raise DataFormatUnrecognised(filename)
 
     @classmethod
-    def read_csv_with_delimiter(cls, filename):
+    def read_csv_with_delimiter(cls, filename: str) -> Generator:
         with io.open(filename, newline="", encoding="utf-8-sig") as csv_file:
             for delimiter in cls.CSV_DELIMITERS:
                 if config.debug:
@@ -250,15 +269,15 @@ class DataFile:
                 csv_file.seek(0)
 
     @classmethod
-    def consolidate_datafiles(cls, data_file):
-        if data_file.parser.p_type != DataParser.TYPE_GENERIC and data_file in cls.data_files:
+    def consolidate_datafiles(cls, data_file: "DataFile") -> None:
+        if data_file.parser.p_type != ParserType.GENERIC and data_file in cls.data_files:
             cls.data_files[data_file] += data_file
         else:
             cls.data_files[data_file] = data_file
             cls.data_files_ordered.append(data_file)
 
     @staticmethod
-    def get_parser(reader):
+    def get_parser(reader: Iterator) -> Optional[DataParser]:
         parser = None
         # Header might not be on first line
         for row in range(8):

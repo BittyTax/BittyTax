@@ -1,30 +1,39 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2022
 
-from ..dataparser import DataParser
+from decimal import Decimal
+from typing import TYPE_CHECKING
+
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Nault"
 
 
-def parse_nault(data_row, parser, **_kwargs):
+def parse_nault(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["time"])
 
     if row_dict["type"] == "receive":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["amount"],
+            buy_quantity=Decimal(row_dict["amount"]),
             buy_asset="XNO",
             wallet=WALLET,
         )
     elif row_dict["type"] == "send":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=row_dict["amount"],
+            sell_quantity=Decimal(row_dict["amount"]),
             sell_asset="XNO",
             wallet=WALLET,
         )
@@ -33,7 +42,7 @@ def parse_nault(data_row, parser, **_kwargs):
 
 
 DataParser(
-    DataParser.TYPE_WALLET,
+    ParserType.WALLET,
     "Nault",
     ["account", "type", "amount", "hash", "height", "time"],
     worksheet_name="Nault",

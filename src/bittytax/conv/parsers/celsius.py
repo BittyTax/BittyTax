@@ -3,22 +3,31 @@
 
 import sys
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from colorama import Fore
+from typing_extensions import Unpack
 
 from ...constants import WARNING
-from ..dataparser import DataParser
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Celsius"
 
 
-def parse_celsius(data_row, parser, **kwargs):
+def parse_celsius(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date and time"])
 
     if row_dict["Confirmed"] != "Yes" and not kwargs["unconfirmed"]:
+        if parser.in_header_row_num is None:
+            raise RuntimeError("Missing in_header_row_num")
+
         sys.stderr.write(
             f"{Fore.YELLOW}row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
             f"{WARNING} Skipping unconfirmed transaction, use the [-uc] option to include it\n"
@@ -33,9 +42,9 @@ def parse_celsius(data_row, parser, **kwargs):
         "Transfer",
     ):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Coin amount"],
+            buy_quantity=Decimal(row_dict["Coin amount"]),
             buy_asset=row_dict["Coin type"],
             wallet=WALLET,
         )
@@ -46,7 +55,7 @@ def parse_celsius(data_row, parser, **kwargs):
         "Outbound Transfer",
     ):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["Coin amount"])),
             sell_asset=row_dict["Coin type"],
@@ -54,9 +63,9 @@ def parse_celsius(data_row, parser, **kwargs):
         )
     elif row_dict["Transaction type"] in ("interest", "Interest", "reward", "Reward"):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_INTEREST,
+            TrType.INTEREST,
             data_row.timestamp,
-            buy_quantity=row_dict["Coin amount"],
+            buy_quantity=Decimal(row_dict["Coin amount"]),
             buy_asset=row_dict["Coin type"],
             buy_value=DataParser.convert_currency(row_dict["USD Value"], "USD", data_row.timestamp),
             wallet=WALLET,
@@ -72,9 +81,9 @@ def parse_celsius(data_row, parser, **kwargs):
         "Bonus Token",
     ):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_GIFT_RECEIVED,
+            TrType.GIFT_RECEIVED,
             data_row.timestamp,
-            buy_quantity=row_dict["Coin amount"],
+            buy_quantity=Decimal(row_dict["Coin amount"]),
             buy_asset=row_dict["Coin type"],
             buy_value=DataParser.convert_currency(row_dict["USD Value"], "USD", data_row.timestamp),
             wallet=WALLET,
@@ -88,7 +97,7 @@ def parse_celsius(data_row, parser, **kwargs):
 
 
 DataParser(
-    DataParser.TYPE_SAVINGS,
+    ParserType.SAVINGS,
     "Celsius",
     [
         "Internal id",
@@ -106,7 +115,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_SAVINGS,
+    ParserType.SAVINGS,
     "Celsius",
     [
         "Internal id",

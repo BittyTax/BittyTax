@@ -1,49 +1,31 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+from decimal import Decimal
+from typing import TYPE_CHECKING, List, Optional
+
 from .config import config
+from .types import Note, Timestamp, TrType, Wallet
+
+if TYPE_CHECKING:
+    from .transactions import Buy, Sell
 
 
 # pylint: disable=too-few-public-methods, too-many-instance-attributes
 class TransactionRecord:
-    TYPE_DEPOSIT = "Deposit"
-    TYPE_MINING = "Mining"
-    TYPE_STAKING = "Staking"
-    TYPE_INTEREST = "Interest"
-    TYPE_DIVIDEND = "Dividend"
-    TYPE_INCOME = "Income"
-    TYPE_GIFT_RECEIVED = "Gift-Received"
-    TYPE_AIRDROP = "Airdrop"
-    TYPE_WITHDRAWAL = "Withdrawal"
-    TYPE_SPEND = "Spend"
-    TYPE_GIFT_SENT = "Gift-Sent"
-    TYPE_GIFT_SPOUSE = "Gift-Spouse"
-    TYPE_CHARITY_SENT = "Charity-Sent"
-    TYPE_LOST = "Lost"
-    TYPE_TRADE = "Trade"
-
-    ALL_TYPES = (
-        TYPE_DEPOSIT,
-        TYPE_MINING,
-        TYPE_STAKING,
-        TYPE_INCOME,
-        TYPE_INTEREST,
-        TYPE_DIVIDEND,
-        TYPE_GIFT_RECEIVED,
-        TYPE_AIRDROP,
-        TYPE_WITHDRAWAL,
-        TYPE_SPEND,
-        TYPE_GIFT_SENT,
-        TYPE_GIFT_SPOUSE,
-        TYPE_CHARITY_SENT,
-        TYPE_LOST,
-        TYPE_TRADE,
-    )
-
     cnt = 0
 
-    def __init__(self, t_type, buy, sell, fee, wallet, timestamp, note):
-        self.tid = None
+    def __init__(
+        self,
+        t_type: TrType,
+        buy: Optional["Buy"],
+        sell: Optional["Sell"],
+        fee: Optional["Sell"],
+        wallet: Wallet,
+        timestamp: Timestamp,
+        note: Note,
+    ) -> None:
+        self.tid: Optional[List[int]] = None
         self.t_type = t_type
         self.buy = buy
         self.sell = sell
@@ -68,7 +50,7 @@ class TransactionRecord:
             self.fee.wallet = self.wallet
             self.fee.note = self.note
 
-    def set_tid(self):
+    def set_tid(self) -> List[int]:
         if self.tid is None:
             TransactionRecord.cnt += 1
             self.tid = [TransactionRecord.cnt, 0]
@@ -77,7 +59,12 @@ class TransactionRecord:
 
         return list(self.tid)
 
-    def _format_fee(self):
+    def _format_tid(self) -> str:
+        if self.tid:
+            return f"[TID:{self.tid[0]}]"
+        return ""
+
+    def _format_fee(self) -> str:
         if self.fee:
             return (
                 f" + fee={self._format_quantity(self.fee.quantity)} "
@@ -85,49 +72,49 @@ class TransactionRecord:
             )
         return ""
 
+    def _format_note(self) -> str:
+        if self.note:
+            return f"'{self.note}' "
+        return ""
+
+    def _format_timestamp(self) -> str:
+        if self.timestamp.microsecond:
+            return f"{self.timestamp:%Y-%m-%dT%H:%M:%S.%f %Z}"
+        return f"{self.timestamp:%Y-%m-%dT%H:%M:%S %Z}"
+
     @staticmethod
-    def _format_quantity(quantity):
+    def _format_quantity(quantity: Optional[Decimal]) -> str:
         if quantity is None:
             return ""
         return f"{quantity.normalize():0,f}"
 
     @staticmethod
-    def _format_value(value):
+    def _format_value(value: Optional[Decimal]) -> str:
         if value is not None:
             return f" ({config.sym()}{value:0,.2f} {config.ccy})"
         return ""
 
     @staticmethod
-    def _format_note(note):
-        if note:
-            return f"'{note}' "
-        return ""
-
-    @staticmethod
-    def _format_timestamp(timestamp):
-        if timestamp.microsecond:
-            return f"{timestamp:%Y-%m-%dT%H:%M:%S.%f %Z}"
-        return f"{timestamp:%Y-%m-%dT%H:%M:%S %Z}"
-
-    @staticmethod
-    def _format_decimal(decimal):
+    def _format_decimal(decimal: Optional[Decimal]) -> str:
         if decimal is None:
             return ""
         return f"{decimal.normalize():0f}"
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TransactionRecord):
+            return NotImplemented
         return self.timestamp == other.timestamp
 
-    def __ne__(self, other):
+    def __ne__(self, other: object) -> bool:
         return not self == other
 
-    def __lt__(self, other):
+    def __lt__(self, other: "TransactionRecord") -> bool:
         return self.timestamp < other.timestamp
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.buy and self.sell:
             return (
-                f"{self.t_type} "
+                f"{self.t_type.value} "
                 f"{self._format_quantity(self.buy.quantity)} "
                 f"{self.buy.asset}"
                 f"{self._format_value(self.buy.cost)} <- "
@@ -136,40 +123,40 @@ class TransactionRecord:
                 f"{self._format_value(self.sell.proceeds)}"
                 f"{self._format_fee()} "
                 f"'{self.wallet}' "
-                f"{self._format_timestamp(self.timestamp)} "
-                f"{self._format_note(self.note)}"
-                f"[TID:{self.tid[0]}]"
+                f"{self._format_timestamp()} "
+                f"{self._format_note()}"
+                f"{self._format_tid()}"
             )
         if self.buy:
             return (
-                f"{self.t_type} "
+                f"{self.t_type.value} "
                 f"{self._format_quantity(self.buy.quantity)} "
                 f"{self.buy.asset}"
                 f"{self._format_value(self.buy.cost)}"
                 f"{self._format_fee()} "
                 f"'{self.wallet}' "
-                f"{self._format_timestamp(self.timestamp)} "
-                f"{self._format_note(self.note)}"
-                f"[TID:{self.tid[0]}]"
+                f"{self._format_timestamp()} "
+                f"{self._format_note()}"
+                f"{self._format_tid()}"
             )
         if self.sell:
             return (
-                f"{self.t_type} "
+                f"{self.t_type.value} "
                 f"{self._format_quantity(self.sell.quantity)} "
                 f"{self.sell.asset}"
                 f"{self._format_value(self.sell.proceeds)}"
                 f"{self._format_fee()} "
                 f"'{self.wallet}' "
-                f"{self._format_timestamp(self.timestamp)} "
-                f"{self._format_note(self.note)}"
-                f"[TID:{self.tid[0]}]"
+                f"{self._format_timestamp()} "
+                f"{self._format_note()}"
+                f"{self._format_tid()}"
             )
-        return []
+        return ""
 
-    def to_csv(self):
+    def to_csv(self) -> List[str]:
         if self.buy and self.sell:
             return [
-                self.t_type,
+                self.t_type.value,
                 self._format_decimal(self.buy.quantity),
                 self.buy.asset,
                 self._format_decimal(self.buy.cost),
@@ -180,12 +167,12 @@ class TransactionRecord:
                 self.fee.asset if self.fee else "",
                 self._format_decimal(self.fee.proceeds) if self.fee else "",
                 self.wallet,
-                self._format_timestamp(self.timestamp),
+                self._format_timestamp(),
                 self.note,
             ]
         if self.buy:
             return [
-                self.t_type,
+                self.t_type.value,
                 self._format_decimal(self.buy.quantity),
                 self.buy.asset,
                 self._format_decimal(self.buy.cost),
@@ -196,12 +183,12 @@ class TransactionRecord:
                 self.fee.asset if self.fee else "",
                 self._format_decimal(self.fee.proceeds) if self.fee else "",
                 self.wallet,
-                self._format_timestamp(self.timestamp),
+                self._format_timestamp(),
                 self.note,
             ]
         if self.sell:
             return [
-                self.t_type,
+                self.t_type.value,
                 "",
                 "",
                 "",
@@ -212,7 +199,7 @@ class TransactionRecord:
                 self.fee.asset if self.fee else "",
                 self._format_decimal(self.fee.proceeds) if self.fee else "",
                 self.wallet,
-                self._format_timestamp(self.timestamp),
+                self._format_timestamp(),
                 self.note,
             ]
         return []

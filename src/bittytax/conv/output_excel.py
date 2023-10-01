@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import argparse
 import platform
 import re
 import sys
+from datetime import datetime
+from decimal import Decimal
+from typing import Dict, List, Optional, Tuple, TypedDict, Union
 
 import xlsxwriter
 from colorama import Fore
@@ -11,7 +15,10 @@ from xlsxwriter.utility import xl_rowcol_to_cell
 
 from ..config import config
 from ..constants import TZ_UTC
+from ..types import BUY_TYPES, SELL_TYPES, TrType, UnmappedType
 from ..version import __version__
+from .datafile import DataFile
+from .datarow import DataRow
 from .exceptions import DataRowError
 from .out_record import TransactionOutRecord
 from .output_csv import OutputBase
@@ -23,6 +30,11 @@ else:
     FONT_SIZE = 11
 
 
+class Column(TypedDict):
+    header: str
+    header_format: xlsxwriter.worksheet.Format
+
+
 class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
     FILE_EXTENSION = "xlsx"
     DATE_FORMAT = "yyyy-mm-dd hh:mm:ss"
@@ -32,7 +44,7 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
     TITLE = "BittyTax Records"
     PROJECT_URL = "https://github.com/BittyTax/BittyTax"
 
-    def __init__(self, progname, data_files, args):
+    def __init__(self, progname: str, data_files: List[DataFile], args: argparse.Namespace) -> None:
         super().__init__(data_files)
         self.filename = self.get_output_filename(args.output_filename, self.FILE_EXTENSION)
         self.workbook = xlsxwriter.Workbook(self.filename)
@@ -116,7 +128,7 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             }
         )
 
-    def write_excel(self):
+    def write_excel(self) -> None:
         data_files = sorted(self.data_files, key=lambda df: df.parser.worksheet_name, reverse=False)
         for data_file in data_files:
             worksheet = Worksheet(self, data_file)
@@ -142,21 +154,21 @@ class Worksheet:
     SHEETNAME_MAX_LEN = 31
     MAX_COL_WIDTH = 30
 
-    sheet_names = {}
-    table_names = {}
+    sheet_names: Dict[str, int] = {}
+    table_names: Dict[str, int] = {}
 
-    def __init__(self, output, data_file):
+    def __init__(self, output: OutputExcel, data_file: DataFile) -> None:
         self.output = output
         self.worksheet = output.workbook.add_worksheet(
             self._sheet_name(data_file.parser.worksheet_name)
         )
-        self.col_width = {}
+        self.col_width: Dict[int, int] = {}
         self.columns = self._make_columns(data_file.parser.in_header)
         self.microseconds, self.milliseconds = self._is_microsecond_timestamp(data_file.data_rows)
 
         self.worksheet.freeze_panes(1, len(self.output.BITTYTAX_OUT_HEADER))
 
-    def _sheet_name(self, parser_name):
+    def _sheet_name(self, parser_name: str) -> str:
         # Remove special characters
         name = re.sub(r"[/\\\?\*\[\]:]", "", parser_name)
         name = name[: self.SHEETNAME_MAX_LEN] if len(name) > self.SHEETNAME_MAX_LEN else name
@@ -175,7 +187,7 @@ class Worksheet:
 
         return sheet_name
 
-    def _table_name(self, parser_name):
+    def _table_name(self, parser_name: str) -> str:
         # Remove characters which are not allowed
         name = parser_name.replace(" ", "_")
         name = re.sub(r"[^a-zA-Z0-9\._]", "", name)
@@ -188,7 +200,7 @@ class Worksheet:
 
         return name
 
-    def _make_columns(self, in_header):
+    def _make_columns(self, in_header: List[str]) -> List[Column]:
         col_names = {}
         columns = []
 
@@ -200,16 +212,20 @@ class Worksheet:
                 col_name += str(col_names[col_name.lower()])
 
             if col_num < len(self.output.BITTYTAX_OUT_HEADER):
-                columns.append({"header": col_name, "header_format": self.output.format_out_header})
+                columns.append(
+                    Column({"header": col_name, "header_format": self.output.format_out_header})
+                )
             else:
-                columns.append({"header": col_name, "header_format": self.output.format_in_header})
+                columns.append(
+                    Column({"header": col_name, "header_format": self.output.format_in_header})
+                )
 
             self._autofit_calc(col_num, len(col_name))
 
         return columns
 
     @staticmethod
-    def _is_microsecond_timestamp(data_rows):
+    def _is_microsecond_timestamp(data_rows: List[DataRow]) -> Tuple[bool, bool]:
         milliseconds = bool(
             [
                 dr.t_record.timestamp
@@ -227,7 +243,7 @@ class Worksheet:
 
         return milliseconds, microseconds
 
-    def add_row(self, data_row, row_num):
+    def add_row(self, data_row: DataRow, row_num: int) -> None:
         self.worksheet.set_row(row_num, None, self.output.format_out_data)
 
         # Add transaction record
@@ -268,42 +284,44 @@ class Worksheet:
 
             self._autofit_calc(len(self.output.BITTYTAX_OUT_HEADER) + col_num, len(col_data))
 
-    def _xl_type(self, t_type, row_num, col_num, t_record):
-        if t_type == TransactionOutRecord.TYPE_TRADE or t_record.buy_asset and t_record.sell_asset:
+    def _xl_type(
+        self,
+        t_type: Union[TrType, UnmappedType],
+        row_num: int,
+        col_num: int,
+        t_record: TransactionOutRecord,
+    ) -> None:
+        if t_type is TrType.TRADE or t_record.buy_asset and t_record.sell_asset:
             self.worksheet.data_validation(
                 row_num,
                 col_num,
                 row_num,
                 col_num,
-                {"validate": "list", "source": [TransactionOutRecord.TYPE_TRADE]},
+                {"validate": "list", "source": [TrType.TRADE.value]},
             )
-        elif (
-            t_type in TransactionOutRecord.BUY_TYPES
-            or t_record.buy_asset
-            and not t_record.sell_asset
-        ):
+        elif t_type in BUY_TYPES or t_record.buy_asset and not t_record.sell_asset:
             self.worksheet.data_validation(
                 row_num,
                 col_num,
                 row_num,
                 col_num,
-                {"validate": "list", "source": list(TransactionOutRecord.BUY_TYPES)},
+                {"validate": "list", "source": [t.value for t in BUY_TYPES]},
             )
-        elif (
-            t_type in TransactionOutRecord.SELL_TYPES
-            or t_record.sell_asset
-            and not t_record.buy_asset
-        ):
+        elif t_type in SELL_TYPES or t_record.sell_asset and not t_record.buy_asset:
             self.worksheet.data_validation(
                 row_num,
                 col_num,
                 row_num,
                 col_num,
-                {"validate": "list", "source": list(TransactionOutRecord.SELL_TYPES)},
+                {"validate": "list", "source": [t.value for t in SELL_TYPES]},
             )
-        self.worksheet.write_string(row_num, col_num, t_type)
+        if isinstance(t_type, TrType):
+            self.worksheet.write_string(row_num, col_num, t_type.value)
+            self._autofit_calc(col_num, len(t_type.value))
+        else:
+            self.worksheet.write_string(row_num, col_num, t_type)
+            self._autofit_calc(col_num, len(t_type))
 
-        if t_type not in TransactionOutRecord.ALL_TYPES:
             self.worksheet.conditional_format(
                 row_num,
                 col_num,
@@ -316,9 +334,8 @@ class Worksheet:
                     "format": self.output.format_out_data_err,
                 },
             )
-        self._autofit_calc(col_num, len(t_type))
 
-    def _xl_quantity(self, quantity, row_num, col_num):
+    def _xl_quantity(self, quantity: Optional[Decimal], row_num: int, col_num: int) -> None:
         if quantity is not None:
             if len(quantity.normalize().as_tuple().digits) > OutputBase.EXCEL_PRECISION:
                 self.worksheet.write_string(
@@ -345,11 +362,11 @@ class Worksheet:
                 )
             self._autofit_calc(col_num, len(f"{quantity.normalize():0,f}"))
 
-    def _xl_asset(self, asset, row_num, col_num):
+    def _xl_asset(self, asset: str, row_num: int, col_num: int) -> None:
         self.worksheet.write_string(row_num, col_num, asset)
         self._autofit_calc(col_num, len(asset))
 
-    def _xl_value(self, value, row_num, col_num):
+    def _xl_value(self, value: Optional[Decimal], row_num: int, col_num: int) -> None:
         if value is not None:
             self.worksheet.write_number(
                 row_num, col_num, value.normalize(), self.output.format_currency
@@ -358,11 +375,11 @@ class Worksheet:
         else:
             self.worksheet.write_blank(row_num, col_num, None, self.output.format_currency)
 
-    def _xl_wallet(self, wallet, row_num, col_num):
+    def _xl_wallet(self, wallet: str, row_num: int, col_num: int) -> None:
         self.worksheet.write_string(row_num, col_num, wallet)
         self._autofit_calc(col_num, len(wallet))
 
-    def _xl_timestamp(self, timestamp, row_num, col_num):
+    def _xl_timestamp(self, timestamp: datetime, row_num: int, col_num: int) -> None:
         utc_timestamp = timestamp.astimezone(TZ_UTC)
         utc_timestamp = timestamp.replace(tzinfo=None)
 
@@ -386,11 +403,11 @@ class Worksheet:
             )
             self._autofit_calc(col_num, len(self.output.DATE_FORMAT))
 
-    def _xl_note(self, note, row_num, col_num):
+    def _xl_note(self, note: str, row_num: int, col_num: int) -> None:
         self.worksheet.write_string(row_num, col_num, note)
         self._autofit_calc(col_num, len(note) if note else self.MAX_COL_WIDTH)
 
-    def _autofit_calc(self, col_num, width):
+    def _autofit_calc(self, col_num: int, width: int) -> None:
         if width > self.MAX_COL_WIDTH:
             width = self.MAX_COL_WIDTH
 
@@ -400,11 +417,11 @@ class Worksheet:
         else:
             self.col_width[col_num] = width
 
-    def autofit(self):
+    def autofit(self) -> None:
         for col_num, col_width in self.col_width.items():
             self.worksheet.set_column(col_num, col_num, col_width)
 
-    def make_table(self, rows, parser_name):
+    def make_table(self, rows: int, parser_name: str) -> None:
         self.worksheet.add_table(
             0,
             0,

@@ -4,11 +4,14 @@
 import re
 import sys
 from decimal import Decimal
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from colorama import Fore
+from typing_extensions import Unpack
 
 from ...config import config
-from ..dataparser import DataParser
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import (
     DataRowError,
     MissingComponentError,
@@ -17,17 +20,20 @@ from ..exceptions import (
 )
 from ..out_record import TransactionOutRecord
 
+if TYPE_CHECKING:
+    from ..datarow import DataRow
+
 WALLET = "CoinList"
 
 
-def parse_coinlist(data_row, parser, **_kwargs):
+def parse_coinlist(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"][:-4], tz="US/Eastern")
-    amount = row_dict["Amount"].replace(",", "")
+    amount = Decimal(row_dict["Amount"].replace(",", ""))
 
     if "Deposit" in row_dict["Description"]:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
             buy_quantity=amount,
             buy_asset=row_dict["Asset"],
@@ -35,15 +41,15 @@ def parse_coinlist(data_row, parser, **_kwargs):
         )
     elif "Withdrawal" in row_dict["Description"]:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=abs(Decimal(amount)),
+            sell_quantity=abs(amount),
             sell_asset=row_dict["Asset"],
             wallet=WALLET,
         )
     elif "Staking" in row_dict["Description"]:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_STAKING,
+            TrType.STAKING,
             data_row.timestamp,
             buy_quantity=amount,
             buy_asset=row_dict["Asset"],
@@ -51,7 +57,7 @@ def parse_coinlist(data_row, parser, **_kwargs):
         )
     elif "Distribution" in row_dict["Description"]:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_AIRDROP,
+            TrType.AIRDROP,
             data_row.timestamp,
             buy_quantity=amount,
             buy_asset=row_dict["Asset"],
@@ -67,11 +73,11 @@ def parse_coinlist(data_row, parser, **_kwargs):
             )
 
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=buy_quantity,
             buy_asset=buy_asset,
-            sell_quantity=abs(Decimal(amount)),
+            sell_quantity=abs(amount),
             sell_asset=row_dict["Asset"],
             wallet=WALLET,
         )
@@ -86,17 +92,19 @@ def parse_coinlist(data_row, parser, **_kwargs):
         )
 
 
-def _get_buy_quantity(description):
+def _get_buy_quantity(description: str) -> Tuple[Optional[Decimal], str]:
     match = re.match(r"^Sold ([\d|,]*\.\d+) (\w+) for (\$?[\d|,]*\.\d+) ?(\w+)?$", description)
     if match:
         if match.group(4):
-            return match.group(3), match.group(4)
-        return match.group(3).strip("$"), "USD"
+            return Decimal(match.group(3)), match.group(4)
+        return Decimal(match.group(3).strip("$")), "USD"
     return None, ""
 
 
-def parse_coinlist_pro(data_rows, parser, **_kwargs):
-    tx_times = {}
+def parse_coinlist_pro(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    tx_times: Dict[str, List["DataRow"]] = {}
     for dr in data_rows:
         if dr.row_dict["time"] in tx_times:
             tx_times[dr.row_dict["time"]].append(dr)
@@ -105,6 +113,9 @@ def parse_coinlist_pro(data_rows, parser, **_kwargs):
 
     for data_row in data_rows:
         if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
             sys.stderr.write(
                 f"{Fore.YELLOW}conv: "
                 f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
@@ -121,20 +132,22 @@ def parse_coinlist_pro(data_rows, parser, **_kwargs):
             data_row.failure = e
 
 
-def _parse_coinlist_pro_row(tx_times, parser, data_row):
+def _parse_coinlist_pro_row(
+    tx_times: Dict[str, List["DataRow"]], parser: DataParser, data_row: "DataRow"
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["time"])
 
     if row_dict["type"] in ("match", "fee"):
         buy, sell = _get_buy_sell(data_row, "match", tx_times[row_dict["time"]])
         fee = _get_fee(data_row, tx_times[row_dict["time"]])
-        if buy is None or fee is None:
+        if buy is None or sell is None or fee is None:
             raise MissingComponentError(parser.in_header.index("time"), "time", row_dict["time"])
 
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=buy.row_dict["amount"],
+            buy_quantity=Decimal(buy.row_dict["amount"]),
             buy_asset=buy.row_dict["balance"],
             sell_quantity=abs(Decimal(sell.row_dict["amount"])),
             sell_asset=sell.row_dict["balance"],
@@ -144,13 +157,13 @@ def _parse_coinlist_pro_row(tx_times, parser, data_row):
         )
     elif row_dict["type"] == "admin":
         buy, sell = _get_buy_sell(data_row, "admin", tx_times[row_dict["time"]])
-        if buy is None:
+        if buy is None or sell is None:
             raise MissingComponentError(parser.in_header.index("time"), "time", row_dict["time"])
 
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=buy.row_dict["amount"],
+            buy_quantity=Decimal(buy.row_dict["amount"]),
             buy_asset=buy.row_dict["balance"],
             sell_quantity=abs(Decimal(sell.row_dict["amount"])),
             sell_asset=sell.row_dict["balance"],
@@ -163,7 +176,9 @@ def _parse_coinlist_pro_row(tx_times, parser, data_row):
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
 
-def _get_buy_sell(data_row, tx_type, tx_times):
+def _get_buy_sell(
+    data_row: "DataRow", tx_type: str, tx_times: List["DataRow"]
+) -> Tuple[Optional["DataRow"], Optional["DataRow"]]:
     t_rows = [dr for dr in tx_times if dr.row_dict["type"] == tx_type]
     buys = [dr for dr in t_rows if Decimal(dr.row_dict["amount"]) > 0]
     sells = [dr for dr in t_rows if Decimal(dr.row_dict["amount"]) < 0]
@@ -177,7 +192,7 @@ def _get_buy_sell(data_row, tx_type, tx_times):
     return None, None
 
 
-def _get_fee(data_row, tx_times):
+def _get_fee(data_row: "DataRow", tx_times: List["DataRow"]) -> Optional["DataRow"]:
     fees = [dr for dr in tx_times if dr.row_dict["type"] == "fee"]
 
     if len(fees) == 1:
@@ -188,7 +203,7 @@ def _get_fee(data_row, tx_times):
 
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "CoinList",
     ["Date", "Description", "Asset", "Amount", "Balance"],
     worksheet_name="CoinList",
@@ -196,7 +211,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "CoinList Pro",
     [
         "portfolio",

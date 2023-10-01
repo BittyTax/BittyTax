@@ -2,28 +2,35 @@
 # (c) Nano Nano Ltd 2023
 
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from ..dataparser import DataParser
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Yoroi"
 
 
-def parse_yoroi(data_row, parser, **_kwargs):
+def parse_yoroi(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
 
     if row_dict["Type (Trade, IN or OUT)"] == "Deposit":
         if row_dict["Comment (optional)"].startswith("Staking Reward"):
-            t_type = TransactionOutRecord.TYPE_STAKING
+            t_type = TrType.STAKING
         else:
-            t_type = TransactionOutRecord.TYPE_DEPOSIT
+            t_type = TrType.DEPOSIT
 
         data_row.t_record = TransactionOutRecord(
             t_type,
             data_row.timestamp,
-            buy_quantity=row_dict["Buy Amount"],
+            buy_quantity=Decimal(row_dict["Buy Amount"]),
             buy_asset=row_dict["Buy Cur."],
             wallet=WALLET,
             note=row_dict["Comment (optional)"],
@@ -31,16 +38,16 @@ def parse_yoroi(data_row, parser, **_kwargs):
 
     elif row_dict["Type (Trade, IN or OUT)"] == "Withdrawal":
         if Decimal(row_dict["Sell Amount"]) == 0:
-            t_type = TransactionOutRecord.TYPE_SPEND
+            t_type = TrType.SPEND
         else:
-            t_type = TransactionOutRecord.TYPE_WITHDRAWAL
+            t_type = TrType.WITHDRAWAL
 
         data_row.t_record = TransactionOutRecord(
             t_type,
             data_row.timestamp,
-            sell_quantity=row_dict["Sell Amount"],
+            sell_quantity=Decimal(row_dict["Sell Amount"]),
             sell_asset=row_dict["Sell Cur."],
-            fee_quantity=row_dict["Fee Amount (optional)"],
+            fee_quantity=Decimal(row_dict["Fee Amount (optional)"]),
             fee_asset=row_dict["Fee Cur. (optional)"],
             wallet=WALLET,
             note=row_dict["Comment (optional)"],
@@ -54,7 +61,7 @@ def parse_yoroi(data_row, parser, **_kwargs):
 
 
 DataParser(
-    DataParser.TYPE_WALLET,
+    ParserType.WALLET,
     "Yoroi",
     [
         "Type (Trade, IN or OUT)",
