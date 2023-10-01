@@ -4,6 +4,7 @@
 import csv
 import os
 import sys
+from typing import List
 
 import _csv
 from colorama import Fore
@@ -30,7 +31,7 @@ class ExportRecords:
         "Note",
     ]
 
-    def __init__(self, transaction_records: list[TransactionRecord]) -> None:
+    def __init__(self, transaction_records: List[TransactionRecord]) -> None:
         self.transaction_records = transaction_records
 
     @staticmethod

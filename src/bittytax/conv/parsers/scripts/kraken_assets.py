@@ -2,12 +2,14 @@
 # (c) Nano Nano Ltd 2020
 # Generate the constants for the Kraken parser and verify the split method
 
+from typing import Dict, List
+
 import requests
 
 from bittytax.conv.parsers.kraken import _split_trading_pair
 
 
-def get_alt_assets() -> dict[str, str]:
+def get_alt_assets() -> Dict[str, str]:
     response = requests.get("https://api.kraken.com/0/public/Assets", timeout=10)
 
     alt_assets = {}
@@ -22,7 +24,7 @@ def get_alt_assets() -> dict[str, str]:
     return alt_assets
 
 
-def get_quote_assets() -> list[str]:
+def get_quote_assets() -> List[str]:
     response = requests.get("https://api.kraken.com/0/public/AssetPairs", timeout=10)
 
     quote_assets = []
@@ -63,7 +65,7 @@ def get_quote_assets() -> list[str]:
     return quote_assets
 
 
-def output_constants(alt_assets: dict[str, str], quote_assets: list[str]) -> None:
+def output_constants(alt_assets: Dict[str, str], quote_assets: List[str]) -> None:
     print("\nQUOTE_ASSETS = [")
     for i in sorted(quote_assets):
         print(f'    "{i}"')

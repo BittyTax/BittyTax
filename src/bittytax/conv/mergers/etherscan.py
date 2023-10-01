@@ -263,7 +263,7 @@ def _method_handling(
 
 
 def _do_etherscan_multi_sell(
-    t_ins: list["DataRow"], t_outs: list["DataRow"], t_fee: Optional["DataRow"]
+    t_ins: List["DataRow"], t_outs: List["DataRow"], t_fee: Optional["DataRow"]
 ) -> None:
     if config.debug:
         sys.stderr.write(f"{Fore.YELLOW}merge:     trade sell(s):\n")
