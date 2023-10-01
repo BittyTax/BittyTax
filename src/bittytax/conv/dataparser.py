@@ -201,7 +201,7 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         raise CurrencyConversionError(from_currency, config.ccy, timestamp)
 
     @classmethod
-    def match_header(cls, row: list[str], row_num: int) -> "DataParser":
+    def match_header(cls, row: List[str], row_num: int) -> "DataParser":
         row = [col.strip() for col in row]
         if config.debug:
             sys.stderr.write(
