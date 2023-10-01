@@ -446,7 +446,7 @@ class CryptoCompare(DataSourceBase):
             f"https://min-api.cryptocompare.com/data/histoday?aggregate=1"
             f"&extraParams={self.USER_AGENT}&fsym={asset}&tsym={quote}"
             f"&limit={self.MAX_DAYS}"
-            f"&toTs={self.epoch_time(timestamp + timedelta(days=self.MAX_DAYS))}"
+            f"&toTs={self.epoch_time(Timestamp(timestamp + timedelta(days=self.MAX_DAYS)))}"
         )
 
         json_resp = self.get_json(url)

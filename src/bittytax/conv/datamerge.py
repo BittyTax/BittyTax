@@ -4,10 +4,10 @@
 import sys
 from decimal import Decimal
 from enum import Enum
-from typing import TYPE_CHECKING, Dict, List, Optional, TypedDict
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from colorama import Fore
-from typing_extensions import Protocol
+from typing_extensions import Protocol, TypedDict
 
 from ..config import config
 from ..constants import ERROR

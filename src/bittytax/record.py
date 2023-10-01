@@ -36,17 +36,17 @@ class TransactionRecord:
 
         if self.buy:
             self.buy.t_record = self
-            self.buy.timestamp = self.timestamp.astimezone(config.TZ_LOCAL)
+            self.buy.timestamp = Timestamp(self.timestamp.astimezone(config.TZ_LOCAL))
             self.buy.wallet = self.wallet
             self.buy.note = self.note
         if self.sell:
             self.sell.t_record = self
-            self.sell.timestamp = self.timestamp.astimezone(config.TZ_LOCAL)
+            self.sell.timestamp = Timestamp(self.timestamp.astimezone(config.TZ_LOCAL))
             self.sell.wallet = self.wallet
             self.sell.note = self.note
         if self.fee:
             self.fee.t_record = self
-            self.fee.timestamp = self.timestamp.astimezone(config.TZ_LOCAL)
+            self.fee.timestamp = Timestamp(self.timestamp.astimezone(config.TZ_LOCAL))
             self.fee.wallet = self.wallet
             self.fee.note = self.note
 
