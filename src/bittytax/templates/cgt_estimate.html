@@ -7,20 +7,20 @@
         {% else %}
             <td>Taxable gain:</td>
         {% endif %}
-        <td align="right">{{cgains.estimate['taxable_gain']|valuefilter}}</td>
+        <td align="right">{{cgains.cgt_estimate['taxable_gain']|valuefilter}}</td>
         <td></td>
     </tr>
     <tr>
         <td>Capital Gains Tax (Basic rate):</td>
-        <td align="right">{{cgains.estimate['cgt_basic']|valuefilter}}</td>
-        <td align="left" style="padding-left:2px">({{cgains.estimate['cgt_basic_rate']|ratefilter}})</td>
+        <td align="right">{{cgains.cgt_estimate['cgt_basic']|valuefilter}}</td>
+        <td align="left" style="padding-left:2px">({{cgains.cgt_estimate['cgt_basic_rate']|ratefilter}})</td>
     </tr>
     <tr>
         <td>Capital Gains Tax (Higher rate):</td>
-        <td align="right">{{cgains.estimate['cgt_higher']|valuefilter}}</td>
-        <td align="left" style="padding-left:2px">({{cgains.estimate['cgt_higher_rate']|ratefilter}})</td>
+        <td align="right">{{cgains.cgt_estimate['cgt_higher']|valuefilter}}</td>
+        <td align="left" style="padding-left:2px">({{cgains.cgt_estimate['cgt_higher_rate']|ratefilter}})</td>
     </tr>
 </table>
-{% if cgains.estimate['allowance_used'] %}
-    <p>*{{cgains.estimate['allowance_used']|valuefilter}} of the tax-free allowance ({{cgains.estimate['allowance']|valuefilter}}) used</p>
+{% if cgains.cgt_estimate['allowance_used'] %}
+    <p>*{{cgains.cgt_estimate['allowance_used']|valuefilter}} of the tax-free allowance ({{cgains.cgt_estimate['allowance']|valuefilter}}) used</p>
 {% endif %}

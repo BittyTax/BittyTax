@@ -3,15 +3,22 @@
 
 import json
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from ..dataparser import DataParser
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "HandCash"
 
 
-def parse_handcash(data_row, parser, **_kwargs):
+def parse_handcash(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     if row_dict.get("updatedAt"):
         data_row.timestamp = DataParser.parse_timestamp(row_dict["updatedAt"])
@@ -21,9 +28,9 @@ def parse_handcash(data_row, parser, **_kwargs):
     participants = json.loads(row_dict["participants"])
     if row_dict["type"] == "receive":
         if participants[0]["type"] == "user":
-            t_type = TransactionOutRecord.TYPE_GIFT_RECEIVED
+            t_type = TrType.GIFT_RECEIVED
         else:
-            t_type = TransactionOutRecord.TYPE_DEPOSIT
+            t_type = TrType.DEPOSIT
 
         data_row.t_record = TransactionOutRecord(
             t_type,
@@ -35,9 +42,9 @@ def parse_handcash(data_row, parser, **_kwargs):
         )
     elif row_dict["type"] == "send":
         if participants[0]["type"] == "user":
-            t_type = TransactionOutRecord.TYPE_GIFT_SENT
+            t_type = TrType.GIFT_SENT
         else:
-            t_type = TransactionOutRecord.TYPE_WITHDRAWAL
+            t_type = TrType.WITHDRAWAL
 
         data_row.t_record = TransactionOutRecord(
             t_type,
@@ -54,7 +61,7 @@ def parse_handcash(data_row, parser, **_kwargs):
 
 
 DataParser(
-    DataParser.TYPE_WALLET,
+    ParserType.WALLET,
     "HandCash",
     [
         "type",
@@ -73,7 +80,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_WALLET,
+    ParserType.WALLET,
     "HandCash",
     [
         "type",

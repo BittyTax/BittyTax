@@ -2,62 +2,73 @@
 # (c) Nano Nano Ltd 2021
 
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from ..dataparser import DataParser
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..out_record import TransactionOutRecord
 from .etherscan import _get_note
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Avalanche chain"
 WORKSHEET_NAME = "SnowTrace"
 
 
-def parse_snowtrace(data_row, _parser, **_kwargs):
+def parse_snowtrace(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
 
     if row_dict["Status"] != "":
         # Failed transactions should not have a Value_OUT
-        row_dict["Value_OUT(AVAX)"] = 0
+        row_dict["Value_OUT(AVAX)"] = "0"
 
     if Decimal(row_dict["Value_IN(AVAX)"]) > 0:
         if row_dict["Status"] == "":
             data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_DEPOSIT,
+                TrType.DEPOSIT,
                 data_row.timestamp,
-                buy_quantity=row_dict["Value_IN(AVAX)"],
+                buy_quantity=Decimal(row_dict["Value_IN(AVAX)"]),
                 buy_asset="AVAX",
                 wallet=_get_wallet(row_dict["To"]),
                 note=_get_note(row_dict),
             )
     elif Decimal(row_dict["Value_OUT(AVAX)"]) > 0:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=row_dict["Value_OUT(AVAX)"],
+            sell_quantity=Decimal(row_dict["Value_OUT(AVAX)"]),
             sell_asset="AVAX",
-            fee_quantity=row_dict["TxnFee(AVAX)"],
+            fee_quantity=Decimal(row_dict["TxnFee(AVAX)"]),
             fee_asset="AVAX",
             wallet=_get_wallet(row_dict["From"]),
             note=_get_note(row_dict),
         )
     else:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_SPEND,
+            TrType.SPEND,
             data_row.timestamp,
-            sell_quantity=row_dict["Value_OUT(AVAX)"],
+            sell_quantity=Decimal(row_dict["Value_OUT(AVAX)"]),
             sell_asset="AVAX",
-            fee_quantity=row_dict["TxnFee(AVAX)"],
+            fee_quantity=Decimal(row_dict["TxnFee(AVAX)"]),
             fee_asset="AVAX",
             wallet=_get_wallet(row_dict["From"]),
             note=_get_note(row_dict),
         )
 
 
-def _get_wallet(address):
+def _get_wallet(address: str) -> str:
     return f"{WALLET}-{address.lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN]}"
 
 
-def parse_snowtrace_internal(data_row, _parser, **_kwargs):
+def parse_snowtrace_internal(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
 
@@ -67,25 +78,25 @@ def parse_snowtrace_internal(data_row, _parser, **_kwargs):
 
     if Decimal(row_dict["Value_IN(AVAX)"]) > 0:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Value_IN(AVAX)"],
+            buy_quantity=Decimal(row_dict["Value_IN(AVAX)"]),
             buy_asset="AVAX",
             wallet=_get_wallet(row_dict["TxTo"]),
         )
     elif Decimal(row_dict["Value_OUT(AVAX)"]) > 0:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=row_dict["Value_OUT(AVAX)"],
+            sell_quantity=Decimal(row_dict["Value_OUT(AVAX)"]),
             sell_asset="AVAX",
             wallet=_get_wallet(row_dict["From"]),
         )
 
 
 # Tokens and internal transactions have the same header as Etherscan
-AVAX_TXNS = DataParser(
-    DataParser.TYPE_EXPLORER,
+avax_txns = DataParser(
+    ParserType.EXPLORER,
     "SnowTrace (AVAX Transactions)",
     [
         "Txhash",
@@ -109,7 +120,7 @@ AVAX_TXNS = DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXPLORER,
+    ParserType.EXPLORER,
     "SnowTrace (AVAX Transactions)",
     [
         "Txhash",
@@ -133,8 +144,8 @@ DataParser(
     row_handler=parse_snowtrace,
 )
 
-AVAX_INT = DataParser(
-    DataParser.TYPE_EXPLORER,
+avax_int = DataParser(
+    ParserType.EXPLORER,
     "SnowTrace (AVAX Internal Transactions)",
     [
         "Txhash",
@@ -160,7 +171,7 @@ AVAX_INT = DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXPLORER,
+    ParserType.EXPLORER,
     "SnowTrace (AVAX Internal Transactions)",
     [
         "Txhash",

@@ -4,19 +4,27 @@
 import re
 import sys
 from decimal import ROUND_DOWN, Decimal
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from colorama import Fore
+from typing_extensions import Unpack
 
 from ...config import config
-from ..dataparser import DataParser
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import DataRowError, UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "CEX.IO"
 
 
-def parse_cexio(data_rows, parser, **_kwargs):
-    tx_times = {}
+def parse_cexio(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    tx_times: Dict[str, List["DataRow"]] = {}
 
     for dr in data_rows:
         if dr.row_dict["DateUTC"] in tx_times:
@@ -26,6 +34,9 @@ def parse_cexio(data_rows, parser, **_kwargs):
 
     for data_row in data_rows:
         if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
             sys.stderr.write(
                 f"{Fore.YELLOW}conv: "
                 f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
@@ -45,12 +56,14 @@ def parse_cexio(data_rows, parser, **_kwargs):
             data_row.failure = e
 
 
-def _parse_cexio_row(tx_times, parser, data_row):
+def _parse_cexio_row(
+    tx_times: Dict[str, List["DataRow"]], parser: DataParser, data_row: "DataRow"
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["DateUTC"])
 
     if row_dict["FeeAmount"]:
-        fee_quantity = row_dict["FeeAmount"]
+        fee_quantity = Decimal(row_dict["FeeAmount"])
         fee_asset = row_dict["FeeSymbol"]
     else:
         fee_quantity = None
@@ -62,9 +75,9 @@ def _parse_cexio_row(tx_times, parser, data_row):
 
         if row_dict["Comment"].endswith("Completed") or row_dict["Comment"].startswith("Confirmed"):
             data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_DEPOSIT,
+                TrType.DEPOSIT,
                 data_row.timestamp,
-                buy_quantity=row_dict["Amount"],
+                buy_quantity=Decimal(row_dict["Amount"]),
                 buy_asset=row_dict["Symbol"],
                 fee_quantity=fee_quantity,
                 fee_asset=fee_asset,
@@ -73,12 +86,12 @@ def _parse_cexio_row(tx_times, parser, data_row):
             )
     elif row_dict["Type"] == "withdraw":
         if fee_quantity:
-            sell_quantity = abs(Decimal(row_dict["Amount"])) - Decimal(fee_quantity)
+            sell_quantity = abs(Decimal(row_dict["Amount"])) - fee_quantity
         else:
             sell_quantity = abs(Decimal(row_dict["Amount"]))
 
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=sell_quantity,
             sell_asset=row_dict["Symbol"],
@@ -96,7 +109,7 @@ def _parse_cexio_row(tx_times, parser, data_row):
             )
 
         if trade_info[0] == "Bought":
-            buy_quantity = row_dict["Amount"]
+            buy_quantity = Decimal(row_dict["Amount"])
             buy_asset = row_dict["Symbol"]
             sell_quantity = Decimal(trade_info[1]) * Decimal(trade_info[3])
             sell_asset = trade_info[4]
@@ -108,14 +121,14 @@ def _parse_cexio_row(tx_times, parser, data_row):
             else:
                 buy_quantity = Decimal(row_dict["Amount"])
             buy_asset = row_dict["Symbol"]
-            sell_quantity = trade_info[1]
+            sell_quantity = Decimal(trade_info[1])
             sell_asset = trade_info[2]
         else:
             # Skip corresponding "Buy/Sell Order" row
             return
 
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=buy_quantity,
             buy_asset=buy_asset,
@@ -130,18 +143,18 @@ def _parse_cexio_row(tx_times, parser, data_row):
         _make_trade(tx_times[row_dict["DateUTC"]], data_row, parser)
     elif row_dict["Type"] in ("referral", "checksum", "costsNothing"):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_GIFT_RECEIVED,
+            TrType.GIFT_RECEIVED,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Symbol"],
             wallet=WALLET,
             note=row_dict["Comment"],
         )
     elif row_dict["Type"] == "staking":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_STAKING,
+            TrType.STAKING,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Symbol"],
             wallet=WALLET,
             note=row_dict["Comment"],
@@ -153,7 +166,7 @@ def _parse_cexio_row(tx_times, parser, data_row):
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
 
-def _get_trade_info(comment, t_type):
+def _get_trade_info(comment: str, t_type: str) -> Optional[Tuple[Any, ...]]:
     if t_type == "buy":
         match = re.match(
             r"^(Bought) (\d+|\d+\.\d+) (\w+) at (\d+|\d+\.\d+) (\w+)$|^Buy Order.*$",
@@ -172,7 +185,7 @@ def _get_trade_info(comment, t_type):
     return None
 
 
-def _make_trade(tx_times, data_row, parser):
+def _make_trade(tx_times: List["DataRow"], data_row: "DataRow", parser: DataParser) -> None:
     buy_rows = [dr for dr in tx_times if dr.row_dict["Type"] == "wallet_buy"]
     sell_rows = [dr for dr in tx_times if dr.row_dict["Type"] == "wallet_sell"]
 
@@ -186,9 +199,9 @@ def _make_trade(tx_times, data_row, parser):
 
         # Assumes there are no trading fees
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=buy_rows[0].row_dict["Amount"],
+            buy_quantity=Decimal(buy_rows[0].row_dict["Amount"]),
             buy_asset=buy_rows[0].row_dict["Symbol"],
             sell_quantity=abs(Decimal(sell_rows[0].row_dict["Amount"])),
             sell_asset=sell_rows[0].row_dict["Symbol"],
@@ -201,7 +214,7 @@ def _make_trade(tx_times, data_row, parser):
 
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "CEX.IO",
     [
         "DateUTC",

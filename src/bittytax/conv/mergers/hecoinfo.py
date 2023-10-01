@@ -1,16 +1,22 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2021
 
-from ..datamerge import DataMerge
+from typing import TYPE_CHECKING, Dict
+
+from ...types import FileId
+from ..datamerge import DataMerge, ParserRequired
 from ..out_record import TransactionOutRecord
-from ..parsers.etherscan import ETHERSCAN_NFTS, ETHERSCAN_TOKENS
-from ..parsers.hecoinfo import HECO_INT, HECO_TXNS, WALLET, WORKSHEET_NAME
+from ..parsers.etherscan import etherscan_nfts, etherscan_tokens
+from ..parsers.hecoinfo import WALLET, WORKSHEET_NAME, heco_int, heco_txns
 from .etherscan import INTERNAL_TXNS, NFTS, TOKENS, TXNS, _do_merge_etherscan
 
 STAKE_ADDRESSES = ["0x5fad6fbba4bba686ba9b8052cf0bd51699f38b93"]  # MakiSwap
 
+if TYPE_CHECKING:
+    from ..datafile import DataFile
 
-def merge_hecoinfo(data_files):
+
+def merge_hecoinfo(data_files: Dict[FileId, "DataFile"]) -> bool:
     # Do same merge as Etherscan
     merge = _do_merge_etherscan(data_files, STAKE_ADDRESSES)
 
@@ -36,10 +42,10 @@ def merge_hecoinfo(data_files):
 DataMerge(
     "HecoInfo fees & multi-token transactions",
     {
-        TXNS: {"req": DataMerge.MAN, "obj": HECO_TXNS},
-        TOKENS: {"req": DataMerge.OPT, "obj": ETHERSCAN_TOKENS},
-        NFTS: {"req": DataMerge.OPT, "obj": ETHERSCAN_NFTS},
-        INTERNAL_TXNS: {"req": DataMerge.OPT, "obj": HECO_INT},
+        TXNS: {"req": ParserRequired.MANDATORY, "obj": heco_txns},
+        TOKENS: {"req": ParserRequired.OPTIONAL, "obj": etherscan_tokens},
+        NFTS: {"req": ParserRequired.OPTIONAL, "obj": etherscan_nfts},
+        INTERNAL_TXNS: {"req": ParserRequired.OPTIONAL, "obj": heco_int},
     },
     merge_hecoinfo,
 )

@@ -4,37 +4,45 @@
 import copy
 import sys
 from decimal import Decimal
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from colorama import Fore
 
 from ...config import config
 from ...constants import WARNING
-from ..datamerge import DataMerge, MergeDataRow
+from ...types import FileId, TrType
+from ..datamerge import DataMerge, MergeDataRow, ParserRequired
 from ..exceptions import UnexpectedContentError
 from ..out_record import TransactionOutRecord
 from ..parsers.etherscan import (
-    ETHERSCAN_INT,
-    ETHERSCAN_NFTS,
-    ETHERSCAN_TOKENS,
-    ETHERSCAN_TXNS,
     _get_note,
+    etherscan_int,
+    etherscan_nfts,
+    etherscan_tokens,
+    etherscan_txns,
 )
+
+if TYPE_CHECKING:
+    from ..datafile import DataFile
+    from ..datarow import DataRow
 
 PRECISION = Decimal("0." + "0" * 18)
 
-TXNS = "txn"
-TOKENS = "token"
-NFTS = "nft"
-INTERNAL_TXNS = "int"
+TXNS = FileId("txn")
+TOKENS = FileId("token")
+NFTS = FileId("nft")
+INTERNAL_TXNS = FileId("int")
 
 
-def merge_etherscan(data_files):
+def merge_etherscan(data_files: Dict[FileId, "DataFile"]) -> bool:
     return _do_merge_etherscan(data_files, [])
 
 
-def _do_merge_etherscan(data_files, staking_addresses):  # pylint: disable=too-many-locals
+def _do_merge_etherscan(
+    data_files: Dict[FileId, "DataFile"], staking_addresses: List[str]
+) -> bool:  # pylint: disable=too-many-locals
     merge = False
-    tx_ids = {}
+    tx_ids: Dict[str, Dict[str, List[MergeDataRow]]] = {}
 
     for file_id in data_files:
         for dr in data_files[file_id].data_rows:
@@ -81,6 +89,9 @@ def _do_merge_etherscan(data_files, staking_addresses):  # pylint: disable=too-m
                 sys.stderr.write(f"{Fore.YELLOW}merge:     merge:\n")
 
             if t_fee:
+                if not t_fee.t_record:
+                    raise RuntimeError("Missing t_record")
+
                 fee_quantity = t_fee.t_record.fee_quantity
                 fee_asset = t_fee.t_record.fee_asset
 
@@ -103,14 +114,21 @@ def _do_merge_etherscan(data_files, staking_addresses):  # pylint: disable=too-m
                         "Txhash",
                         mdr.data_row.row_dict["Txhash"],
                     )
+
+                    if mdr.data_file.parser.in_header_row_num is None:
+                        raise RuntimeError("Missing in_header_row_num")
+
                     sys.stderr.write(
                         f"{Fore.YELLOW}"
-                        f"row[{mdr.data_file.parser.in_header_row_num + mdr.data_row.line_num}] "
-                        f"{mdr.data_row}\n"
+                        f"row[{mdr.data_file.parser.in_header_row_num + mdr.data_row.line_num}]"
+                        f" {mdr.data_row}\n"
                     )
                 continue
 
             if t_fee:
+                if fee_quantity is None:
+                    raise RuntimeError("Missing fee_quantity")
+
                 # Split fees
                 t_all = [t for t in t_ins_orig + t_outs if t.t_record]
                 _do_fee_split(t_all, t_fee, fee_quantity, fee_asset)
@@ -123,17 +141,18 @@ def _do_merge_etherscan(data_files, staking_addresses):  # pylint: disable=too-m
     return merge
 
 
-def _get_ins_outs(tx_ids):
+def _get_ins_outs(
+    tx_ids: List[MergeDataRow],
+) -> Tuple[List["DataRow"], List["DataRow"], Optional["DataRow"]]:
     t_ins = [
         t.data_row
         for t in tx_ids
-        if t.data_row.t_record and t.data_row.t_record.t_type == TransactionOutRecord.TYPE_DEPOSIT
+        if t.data_row.t_record and t.data_row.t_record.t_type is TrType.DEPOSIT
     ]
     t_outs = [
         t.data_row
         for t in tx_ids
-        if t.data_row.t_record
-        and t.data_row.t_record.t_type == TransactionOutRecord.TYPE_WITHDRAWAL
+        if t.data_row.t_record and t.data_row.t_record.t_type is TrType.WITHDRAWAL
     ]
     t_fees = [
         t.data_row for t in tx_ids if t.data_row.t_record and t.data_row.t_record.fee_quantity
@@ -149,12 +168,15 @@ def _get_ins_outs(tx_ids):
     return t_ins, t_outs, t_fee
 
 
-def _consolidate(tx_ids, file_ids):
+def _consolidate(tx_ids: List[MergeDataRow], file_ids: List[str]) -> None:
     tx_assets = {}
 
     for txn in list(tx_ids):
         if txn.data_file_id not in file_ids:
             return
+
+        if not txn.data_row.t_record:
+            continue
 
         asset = txn.data_row.t_record.get_asset()
         if asset not in tx_assets:
@@ -166,21 +188,24 @@ def _consolidate(tx_ids, file_ids):
             tx_ids.remove(txn)
 
     for _, txn in tx_assets.items():
+        if not txn.data_row.t_record:
+            continue
+
         if txn.quantity > 0:
-            txn.data_row.t_record.t_type = TransactionOutRecord.TYPE_DEPOSIT
+            txn.data_row.t_record.t_type = TrType.DEPOSIT
             txn.data_row.t_record.buy_asset = asset
             txn.data_row.t_record.buy_quantity = txn.quantity
             txn.data_row.t_record.sell_asset = ""
             txn.data_row.t_record.sell_quantity = None
         elif tx_assets[asset].quantity < 0:
-            txn.data_row.t_record.t_type = TransactionOutRecord.TYPE_WITHDRAWAL
+            txn.data_row.t_record.t_type = TrType.WITHDRAWAL
             txn.data_row.t_record.buy_asset = ""
             txn.data_row.t_record.buy_quantity = None
             txn.data_row.t_record.sell_asset = asset
             txn.data_row.t_record.sell_quantity = abs(txn.quantity)
         else:
             if txn.data_row.t_record.fee_quantity:
-                txn.data_row.t_record.t_type = TransactionOutRecord.TYPE_SPEND
+                txn.data_row.t_record.t_type = TrType.SPEND
                 txn.data_row.t_record.buy_asset = ""
                 txn.data_row.t_record.buy_quantity = None
                 txn.data_row.t_record.sell_asset = asset
@@ -189,7 +214,9 @@ def _consolidate(tx_ids, file_ids):
                 tx_ids.remove(txn)
 
 
-def _output_records(t_ins, t_outs, t_fee):
+def _output_records(
+    t_ins: List["DataRow"], t_outs: List["DataRow"], t_fee: Optional["DataRow"]
+) -> None:
     dup = bool(t_fee and t_fee in t_ins + t_outs)
 
     if t_fee:
@@ -205,7 +232,9 @@ def _output_records(t_ins, t_outs, t_fee):
         )
 
 
-def _method_handling(t_ins, t_fee, staking_addresses):
+def _method_handling(
+    t_ins: List["DataRow"], t_fee: "DataRow", staking_addresses: List[str]
+) -> None:
     if t_fee.row_dict.get("Method") in (
         "Enter Staking",
         "Leave Staking",
@@ -221,7 +250,10 @@ def _method_handling(t_ins, t_fee, staking_addresses):
             ]
             if staking:
                 if len(staking) == 1:
-                    staking[0].t_record.t_type = TransactionOutRecord.TYPE_STAKING
+                    if not staking[0].t_record:
+                        raise RuntimeError("Missing t_record")
+
+                    staking[0].t_record.t_type = TrType.STAKING
                     t_ins.remove(staking[0])
 
                     if config.debug:
@@ -230,14 +262,22 @@ def _method_handling(t_ins, t_fee, staking_addresses):
                     raise ValueError("Multiple transactions")
 
 
-def _do_etherscan_multi_sell(t_ins, t_outs, t_fee):
+def _do_etherscan_multi_sell(
+    t_ins: list["DataRow"], t_outs: list["DataRow"], t_fee: Optional["DataRow"]
+) -> None:
     if config.debug:
         sys.stderr.write(f"{Fore.YELLOW}merge:     trade sell(s):\n")
 
-    tot_buy_quantity = 0
+    tot_buy_quantity = Decimal(0)
+
+    if not t_ins[0].t_record:
+        raise RuntimeError("Missing t_record")
 
     buy_quantity = t_ins[0].t_record.buy_quantity
     buy_asset = t_ins[0].t_record.buy_asset
+
+    if buy_quantity is None:
+        raise RuntimeError("Missing buy_quantity")
 
     if config.debug:
         sys.stderr.write(
@@ -247,7 +287,7 @@ def _do_etherscan_multi_sell(t_ins, t_outs, t_fee):
 
     for cnt, t_out in enumerate(t_outs):
         if cnt < len(t_outs) - 1:
-            split_buy_quantity = (buy_quantity / len(t_outs)).quantize(PRECISION)
+            split_buy_quantity = Decimal(buy_quantity / len(t_outs)).quantize(PRECISION)
             tot_buy_quantity += split_buy_quantity
         else:
             # Last t_out, use up remainder
@@ -259,7 +299,10 @@ def _do_etherscan_multi_sell(t_ins, t_outs, t_fee):
                 f"{TransactionOutRecord.format_quantity(split_buy_quantity)}\n"
             )
 
-        t_out.t_record.t_type = TransactionOutRecord.TYPE_TRADE
+        if not t_out.t_record:
+            raise RuntimeError("Missing t_record")
+
+        t_out.t_record.t_type = TrType.TRADE
         t_out.t_record.buy_quantity = split_buy_quantity
         t_out.t_record.buy_asset = buy_asset
         if t_fee:
@@ -269,14 +312,22 @@ def _do_etherscan_multi_sell(t_ins, t_outs, t_fee):
     t_ins[0].t_record = None
 
 
-def _do_etherscan_multi_buy(t_ins, t_outs, t_fee):
+def _do_etherscan_multi_buy(
+    t_ins: List["DataRow"], t_outs: List["DataRow"], t_fee: Optional["DataRow"]
+) -> None:
     if config.debug:
         sys.stderr.write(f"{Fore.YELLOW}merge:     trade buy(s):\n")
 
-    tot_sell_quantity = 0
+    tot_sell_quantity = Decimal(0)
+
+    if not t_outs[0].t_record:
+        raise RuntimeError("Missing t_record")
 
     sell_quantity = t_outs[0].t_record.sell_quantity
     sell_asset = t_outs[0].t_record.sell_asset
+
+    if sell_quantity is None:
+        raise RuntimeError("Missing sell_quantity")
 
     if config.debug:
         sys.stderr.write(
@@ -286,7 +337,7 @@ def _do_etherscan_multi_buy(t_ins, t_outs, t_fee):
 
     for cnt, t_in in enumerate(t_ins):
         if cnt < len(t_ins) - 1:
-            split_sell_quantity = (sell_quantity / len(t_ins)).quantize(PRECISION)
+            split_sell_quantity = Decimal(sell_quantity / len(t_ins)).quantize(PRECISION)
             tot_sell_quantity += split_sell_quantity
         else:
             # Last t_in, use up remainder
@@ -298,7 +349,10 @@ def _do_etherscan_multi_buy(t_ins, t_outs, t_fee):
                 f"{TransactionOutRecord.format_quantity(split_sell_quantity)}\n"
             )
 
-        t_in.t_record.t_type = TransactionOutRecord.TYPE_TRADE
+        if not t_in.t_record:
+            raise RuntimeError("Missing t_record")
+
+        t_in.t_record.t_type = TrType.TRADE
         t_in.t_record.sell_quantity = split_sell_quantity
         t_in.t_record.sell_asset = sell_asset
         if t_fee:
@@ -308,7 +362,12 @@ def _do_etherscan_multi_buy(t_ins, t_outs, t_fee):
     t_outs[0].t_record = None
 
 
-def _do_fee_split(t_all, t_fee, fee_quantity, fee_asset):
+def _do_fee_split(
+    t_all: List["DataRow"],
+    t_fee: "DataRow",
+    fee_quantity: Decimal,
+    fee_asset: str,
+) -> None:
     if config.debug:
         sys.stderr.write(f"{Fore.YELLOW}merge:     split fees:\n")
         sys.stderr.write(
@@ -316,15 +375,15 @@ def _do_fee_split(t_all, t_fee, fee_quantity, fee_asset):
             f"{TransactionOutRecord.format_quantity(fee_quantity)} fee_asset={fee_asset}\n"
         )
 
-    tot_fee_quantity = 0
+    tot_fee_quantity = Decimal(0)
 
     for cnt, t in enumerate(t_all):
         if cnt < len(t_all) - 1:
-            split_fee_quantity = (fee_quantity / len(t_all)).quantize(PRECISION)
+            split_fee_quantity = Decimal(fee_quantity / len(t_all)).quantize(PRECISION)
             tot_fee_quantity += split_fee_quantity
         else:
             # Last t, use up remainder
-            split_fee_quantity = fee_quantity - tot_fee_quantity if fee_quantity else None
+            split_fee_quantity = fee_quantity - tot_fee_quantity
 
         if config.debug:
             sys.stderr.write(
@@ -332,13 +391,16 @@ def _do_fee_split(t_all, t_fee, fee_quantity, fee_asset):
                 f"{TransactionOutRecord.format_quantity(split_fee_quantity)}\n"
             )
 
+        if not t.t_record:
+            raise RuntimeError("Missing t_record")
+
         t.t_record.fee_quantity = split_fee_quantity
         t.t_record.fee_asset = fee_asset
         t.t_record.note = _get_note(t_fee.row_dict)
 
     # Remove TR for fee now it's been added to each withdrawal
     if t_fee.t_record and t_fee not in t_all:
-        if t_fee.t_record.t_type == TransactionOutRecord.TYPE_SPEND:
+        if t_fee.t_record.t_type is TrType.SPEND:
             t_fee.t_record = None
         else:
             t_fee.t_record.fee_quantity = None
@@ -348,10 +410,10 @@ def _do_fee_split(t_all, t_fee, fee_quantity, fee_asset):
 DataMerge(
     "Etherscan fees & multi-token transactions",
     {
-        TXNS: {"req": DataMerge.MAN, "obj": ETHERSCAN_TXNS},
-        TOKENS: {"req": DataMerge.OPT, "obj": ETHERSCAN_TOKENS},
-        NFTS: {"req": DataMerge.OPT, "obj": ETHERSCAN_NFTS},
-        INTERNAL_TXNS: {"req": DataMerge.OPT, "obj": ETHERSCAN_INT},
+        TXNS: {"req": ParserRequired.MANDATORY, "obj": etherscan_txns},
+        TOKENS: {"req": ParserRequired.OPTIONAL, "obj": etherscan_tokens},
+        NFTS: {"req": ParserRequired.OPTIONAL, "obj": etherscan_nfts},
+        INTERNAL_TXNS: {"req": ParserRequired.OPTIONAL, "obj": etherscan_int},
     },
     merge_etherscan,
 )

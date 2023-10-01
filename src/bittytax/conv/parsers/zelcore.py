@@ -3,43 +3,54 @@
 
 import re
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from ..dataparser import DataParser
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Zelcore"
 
 
-def parse_zelcore_kda(data_row, _parser, **kwargs):
+def parse_zelcore_kda(
+    data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["timestamp"]) / 1000)
 
     if row_dict["isError"] != "0":
-        row_dict["amount"] = 0
+        quantity = Decimal(0)
         note = "Failure"
     else:
+        quantity = Decimal(row_dict["amount"])
         note = ""
 
     if Decimal(row_dict["amount"]) > 0:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["amount"],
+            buy_quantity=quantity,
             buy_asset="KDA",
             wallet=_get_wallet(kwargs["filename"], row_dict["chainid"]),
+            note=note,
         )
     else:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=abs(Decimal(row_dict["amount"])),
+            sell_quantity=abs(quantity),
             sell_asset="KDA",
             wallet=_get_wallet(kwargs["filename"], row_dict["chainid"]),
             note=note,
         )
 
 
-def _get_wallet(filename, chain_id):
+def _get_wallet(filename: str, chain_id: str) -> str:
     match = re.match(r".+KDA_transactions_(k_)?(\w+).csv$", filename)
 
     if match:
@@ -56,7 +67,7 @@ def _get_wallet(filename, chain_id):
 
 
 DataParser(
-    DataParser.TYPE_WALLET,
+    ParserType.WALLET,
     "Zelcore Kadena",
     [
         "txid",

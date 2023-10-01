@@ -17,7 +17,7 @@
             <tr>
                 <td>{{te.asset}}</td>
                 <td>{{te.date|datefilter}}</td>
-                <td>{{te.type}}</td>
+                <td>{{te.type.value}}</td>
                 <td width="30%">{{te.note|lenfilter(40)|nowrapfilter}}</td>
                 <td align="right">{{te.quantity|quantityfilter}}</td>
                 {% set asset_totals.quantity = asset_totals.quantity + te.quantity %}

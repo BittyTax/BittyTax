@@ -2,10 +2,17 @@
 # (c) Nano Nano Ltd 2022
 
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from ..dataparser import DataParser
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 HEADER = [
     "ID",
@@ -23,7 +30,7 @@ HEADER = [
 WALLET = "Bitpanda"
 
 
-def parse_bitpanda(data_row, parser, **_kwargs):
+def parse_bitpanda(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     # Skip break between tables
     if len(data_row.row) < len(HEADER) or data_row.row == HEADER:
         return
@@ -36,55 +43,55 @@ def parse_bitpanda(data_row, parser, **_kwargs):
 
     if row_dict["Type"] == "deposit":
         if Decimal(row_dict["Amount Asset"]) == Decimal(0):
-            buy_quantity = row_dict["Amount Fiat"]
+            buy_quantity = Decimal(row_dict["Amount Fiat"])
             buy_asset = row_dict["Fiat"]
         else:
-            buy_quantity = row_dict["Amount Asset"]
+            buy_quantity = Decimal(row_dict["Amount Asset"])
             buy_asset = row_dict["Asset"]
 
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=Decimal(buy_quantity) + Decimal(row_dict["Fee"]),
+            buy_quantity=buy_quantity + Decimal(row_dict["Fee"]),
             buy_asset=buy_asset,
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=buy_asset,
             wallet=WALLET,
         )
     elif row_dict["Type"] == "withdrawal":
         if Decimal(row_dict["Amount Asset"]) == Decimal(0):
-            sell_quantity = row_dict["Amount Fiat"]
+            sell_quantity = Decimal(row_dict["Amount Fiat"])
             sell_asset = row_dict["Fiat"]
         else:
-            sell_quantity = row_dict["Amount Asset"]
+            sell_quantity = Decimal(row_dict["Amount Asset"])
             sell_asset = row_dict["Asset"]
 
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=sell_quantity,
             sell_asset=sell_asset,
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=sell_asset,
             wallet=WALLET,
         )
     elif row_dict["Type"] == "buy":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount Asset"],
+            buy_quantity=Decimal(row_dict["Amount Asset"]),
             buy_asset=row_dict["Asset"],
-            sell_quantity=row_dict["Amount Fiat"],
+            sell_quantity=Decimal(row_dict["Amount Fiat"]),
             sell_asset=row_dict["Fiat"],
             wallet=WALLET,
         )
     elif row_dict["Type"] == "sell":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount Fiat"],
+            buy_quantity=Decimal(row_dict["Amount Fiat"]),
             buy_asset=row_dict["Fiat"],
-            sell_quantity=row_dict["Amount Asset"],
+            sell_quantity=Decimal(row_dict["Amount Asset"]),
             sell_asset=row_dict["Asset"],
             wallet=WALLET,
         )
@@ -93,9 +100,9 @@ def parse_bitpanda(data_row, parser, **_kwargs):
 
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Bitpanda",
-    HEADER,
+    list(HEADER),
     worksheet_name="bitpanda",
     row_handler=parse_bitpanda,
 )

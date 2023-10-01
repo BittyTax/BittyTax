@@ -4,32 +4,41 @@
 import re
 import sys
 from decimal import Decimal
+from typing import TYPE_CHECKING, Tuple
 
 from colorama import Fore
+from typing_extensions import Unpack
 
 from ...constants import WARNING
-from ..dataparser import DataParser
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Qt Wallet"
 
 
-def parse_qt_wallet(data_row, parser, **kwargs):
+def parse_qt_wallet(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], tz="Europe/London")
 
     amount, symbol = _get_amount(data_row.row[5])
 
-    if not kwargs["cryptoasset"]:
-        if parser.args and parser.args[0].group(1):
-            symbol = parser.args[0].group(1)
-        elif not symbol:
-            raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet"))
-    else:
-        symbol = kwargs["cryptoasset"]
+    if parser.args and parser.args[0].group(1):
+        symbol = parser.args[0].group(1)
+    elif not symbol:
+        if kwargs["cryptoasset"]:
+            symbol = kwargs["cryptoasset"]
+        else:
+            raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet", ""))
 
     if row_dict["Confirmed"] == "false" and not kwargs["unconfirmed"]:
+        if parser.in_header_row_num is None:
+            raise RuntimeError("Missing in_header_row_num")
+
         sys.stderr.write(
             f"{Fore.YELLOW}row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
             f"{WARNING} Skipping unconfirmed transaction, use the [-uc] option to include it\n"
@@ -38,7 +47,7 @@ def parse_qt_wallet(data_row, parser, **kwargs):
 
     if row_dict["Type"] == "Received with":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
             buy_quantity=amount,
             buy_asset=symbol,
@@ -47,7 +56,7 @@ def parse_qt_wallet(data_row, parser, **kwargs):
         )
     elif row_dict["Type"] == "Sent to":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=amount,
             sell_asset=symbol,
@@ -56,7 +65,7 @@ def parse_qt_wallet(data_row, parser, **kwargs):
         )
     elif row_dict["Type"] == "Mined":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_MINING,
+            TrType.MINING,
             data_row.timestamp,
             buy_quantity=amount,
             buy_asset=symbol,
@@ -65,7 +74,7 @@ def parse_qt_wallet(data_row, parser, **kwargs):
         )
     elif row_dict["Type"] == "Masternode Reward":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_STAKING,
+            TrType.STAKING,
             data_row.timestamp,
             buy_quantity=amount,
             buy_asset=symbol,
@@ -74,9 +83,9 @@ def parse_qt_wallet(data_row, parser, **kwargs):
         )
     elif row_dict["Type"] == "Payment to yourself":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=0,
+            sell_quantity=Decimal(0),
             sell_asset=symbol,
             fee_quantity=amount,
             fee_asset=symbol,
@@ -85,7 +94,7 @@ def parse_qt_wallet(data_row, parser, **kwargs):
         )
     elif row_dict["Type"] == "Name operation":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_SPEND,
+            TrType.SPEND,
             data_row.timestamp,
             sell_quantity=amount,
             sell_asset=symbol,
@@ -96,31 +105,33 @@ def parse_qt_wallet(data_row, parser, **kwargs):
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
 
-def _get_amount(amount):
+def _get_amount(amount: str) -> Tuple[Decimal, str]:
     match = re.match(r"^(-?\d+\.\d+) (\w{3,4})$", amount)
 
     if match:
         amount = match.group(1)
         symbol = match.group(2)
         return abs(Decimal(amount)), symbol
-    return abs(Decimal(amount)), None
+    return abs(Decimal(amount)), ""
 
 
-def parse_vericoin_qt_wallet(data_row, parser, **_kwargs):
+def parse_vericoin_qt_wallet(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date/Time"], tz="Europe/London")
 
     if row_dict["Type"] == "Receive":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset="VRC",
             wallet=WALLET,
         )
     elif row_dict["Type"] == "Send":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["Amount"])),
             sell_asset="VRC",
@@ -128,9 +139,9 @@ def parse_vericoin_qt_wallet(data_row, parser, **_kwargs):
         )
     elif row_dict["Type"] == "Stake":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_STAKING,
+            TrType.STAKING,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset="VRC",
             wallet=WALLET,
         )
@@ -139,7 +150,7 @@ def parse_vericoin_qt_wallet(data_row, parser, **_kwargs):
 
 
 DataParser(
-    DataParser.TYPE_WALLET,
+    ParserType.WALLET,
     "Qt Wallet (i.e. Bitcoin Core, etc)",
     [
         "Confirmed",
@@ -155,7 +166,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_WALLET,
+    ParserType.WALLET,
     "Qt Wallet (i.e. Bitcoin Core, etc)",
     ["Confirmed", "Date", "Type", "Label", "Address", "Amount", "ID"],
     worksheet_name="Qt Wallet",
@@ -163,7 +174,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_WALLET,
+    ParserType.WALLET,
     "Qt Wallet (i.e. Bitcoin Core, etc)",
     ["Transaction", "Block", "Date/Time", "Type", "Amount", "Total"],
     worksheet_name="Qt Wallet",

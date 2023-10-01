@@ -3,19 +3,28 @@
 
 import re
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from ..dataparser import DataParser
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Trezor"
 
 
-def parse_trezor_labeled(data_row, parser, **kwargs):
+def parse_trezor_labeled(
+    data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
+) -> None:
     parse_trezor(data_row, parser, **kwargs)
 
 
-def parse_trezor(data_row, parser, **kwargs):
+def parse_trezor(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(
         row_dict["Date"] + "T" + row_dict["Time"], tz="GMT+1"
@@ -27,15 +36,15 @@ def parse_trezor(data_row, parser, **kwargs):
         if match:
             symbol = match.group(1).upper()
         else:
-            raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet"))
+            raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet", ""))
     else:
         symbol = kwargs["cryptoasset"]
 
     if row_dict["TX type"] == "IN":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Value"],
+            buy_quantity=Decimal(row_dict["Value"]),
             buy_asset=symbol,
             fee_quantity=Decimal(row_dict["TX total"]) - Decimal(row_dict["Value"]),
             fee_asset=symbol,
@@ -44,9 +53,9 @@ def parse_trezor(data_row, parser, **kwargs):
         )
     elif row_dict["TX type"] == "OUT":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=row_dict["Value"],
+            sell_quantity=Decimal(row_dict["Value"]),
             sell_asset=symbol,
             fee_quantity=abs(Decimal(row_dict["TX total"])) - Decimal(row_dict["Value"]),
             fee_asset=symbol,
@@ -55,9 +64,9 @@ def parse_trezor(data_row, parser, **kwargs):
         )
     elif row_dict["TX type"] == "SELF":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=0,
+            sell_quantity=Decimal(0),
             sell_asset=symbol,
             fee_quantity=abs(Decimal(row_dict["TX total"])),
             fee_asset=symbol,
@@ -69,7 +78,7 @@ def parse_trezor(data_row, parser, **kwargs):
 
 
 DataParser(
-    DataParser.TYPE_WALLET,
+    ParserType.WALLET,
     "Trezor",
     [
         "Date",
@@ -87,7 +96,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_WALLET,
+    ParserType.WALLET,
     "Trezor",
     ["Date", "Time", "TX id", "Address", "TX type", "Value", "TX total", "Balance"],
     worksheet_name="Trezor",

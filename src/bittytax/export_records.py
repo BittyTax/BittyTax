@@ -5,7 +5,10 @@ import csv
 import os
 import sys
 
+import _csv
 from colorama import Fore
+
+from .record import TransactionRecord
 
 
 class ExportRecords:
@@ -27,11 +30,11 @@ class ExportRecords:
         "Note",
     ]
 
-    def __init__(self, transaction_records):
+    def __init__(self, transaction_records: list[TransactionRecord]) -> None:
         self.transaction_records = transaction_records
 
     @staticmethod
-    def get_output_filename():
+    def get_output_filename() -> str:
         filepath = ExportRecords.DEFAULT_FILENAME + "." + ExportRecords.FILE_EXTENSION
 
         if not os.path.exists(filepath):
@@ -46,7 +49,7 @@ class ExportRecords:
 
         return new_fname
 
-    def write_csv(self):
+    def write_csv(self) -> None:
         filename = self.get_output_filename()
 
         with open(filename, "w", newline="", encoding="utf-8") as csv_file:
@@ -55,7 +58,7 @@ class ExportRecords:
 
         sys.stderr.write(f"{Fore.WHITE}export file created: {Fore.YELLOW}{filename}\n")
 
-    def write_rows(self, writer):
+    def write_rows(self, writer: "_csv._writer") -> None:
         writer.writerow(self.OUT_HEADER)
 
         for tr in self.transaction_records:

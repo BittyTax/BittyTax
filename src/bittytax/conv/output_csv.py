@@ -1,15 +1,24 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import argparse
 import csv
 import os
 import sys
+from datetime import datetime
+from decimal import Decimal
+from typing import TYPE_CHECKING, List, Optional, Union
 
+import _csv
 from colorama import Fore
 
 from ..config import config
 from ..constants import FORMAT_RECAP, WARNING
+from ..types import TrType, UnmappedType
 from .out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from .datafile import DataFile
 
 
 class OutputBase:  # pylint: disable=too-few-public-methods
@@ -31,11 +40,12 @@ class OutputBase:  # pylint: disable=too-few-public-methods
         "Note",
     ]
 
-    def __init__(self, data_files):
+    def __init__(self, data_files: List["DataFile"]) -> None:
         self.data_files = data_files
+        self.filename: Optional[str] = None
 
     @staticmethod
-    def get_output_filename(filename, extension_type):
+    def get_output_filename(filename: str, extension_type: str) -> str:
         if filename:
             filepath, file_extension = os.path.splitext(filename)
             if file_extension != extension_type:
@@ -70,48 +80,46 @@ class OutputCsv(OutputBase):
     ]
 
     RECAP_TYPE_MAPPING = {
-        TransactionOutRecord.TYPE_DEPOSIT: "Deposit",
-        TransactionOutRecord.TYPE_MINING: "Mining",
-        TransactionOutRecord.TYPE_STAKING: "StakingReward",
-        TransactionOutRecord.TYPE_INTEREST: "LoanInterest",
-        TransactionOutRecord.TYPE_DIVIDEND: "Income",
-        TransactionOutRecord.TYPE_INCOME: "Income",
-        TransactionOutRecord.TYPE_GIFT_RECEIVED: "Gift",
-        TransactionOutRecord.TYPE_AIRDROP: "Airdrop",
-        TransactionOutRecord.TYPE_WITHDRAWAL: "Withdrawal",
-        TransactionOutRecord.TYPE_SPEND: "Purchase",
-        TransactionOutRecord.TYPE_GIFT_SENT: "Gift",
-        TransactionOutRecord.TYPE_GIFT_SPOUSE: "Spouse",
-        TransactionOutRecord.TYPE_CHARITY_SENT: "Donation",
-        TransactionOutRecord.TYPE_LOST: "Lost",
-        TransactionOutRecord.TYPE_TRADE: "Trade",
+        TrType.DEPOSIT: "Deposit",
+        TrType.MINING: "Mining",
+        TrType.STAKING: "StakingReward",
+        TrType.INTEREST: "LoanInterest",
+        TrType.DIVIDEND: "Income",
+        TrType.INCOME: "Income",
+        TrType.GIFT_RECEIVED: "Gift",
+        TrType.AIRDROP: "Airdrop",
+        TrType.WITHDRAWAL: "Withdrawal",
+        TrType.SPEND: "Purchase",
+        TrType.GIFT_SENT: "Gift",
+        TrType.GIFT_SPOUSE: "Spouse",
+        TrType.CHARITY_SENT: "Donation",
+        TrType.LOST: "Lost",
+        TrType.TRADE: "Trade",
     }
 
-    def __init__(self, data_files, args):
+    def __init__(self, data_files: List["DataFile"], args: argparse.Namespace) -> None:
         super().__init__(data_files)
         if args.output_filename:
             self.filename = self.get_output_filename(args.output_filename, self.FILE_EXTENSION)
-        else:
-            self.filename = None
 
         self.csv_format = args.format
         self.sort = args.sort
         self.no_header = args.noheader
         self.append_raw_data = args.append
 
-    def out_header(self):
+    def out_header(self) -> List[str]:
         if self.csv_format == FORMAT_RECAP:
             return self.RECAP_OUT_HEADER
 
         return self.BITTYTAX_OUT_HEADER
 
-    def in_header(self, in_header):
+    def in_header(self, in_header: List[str]) -> List[str]:
         if self.csv_format == FORMAT_RECAP:
             return [name if name not in self.out_header() else name + "_" for name in in_header]
 
         return in_header
 
-    def write_csv(self):
+    def write_csv(self) -> None:
         if self.filename:
             with open(self.filename, "w", newline="", encoding="utf-8") as csv_file:
                 writer = csv.writer(csv_file, lineterminator="\n")
@@ -119,11 +127,11 @@ class OutputCsv(OutputBase):
 
             sys.stderr.write(f"{Fore.WHITE}output CSV file created: {Fore.YELLOW}{self.filename}\n")
         else:
-            sys.stdout.reconfigure(encoding="utf-8")
+            sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
             writer = csv.writer(sys.stdout, lineterminator="\n")
             self.write_rows(writer)
 
-    def write_rows(self, writer):
+    def write_rows(self, writer: "_csv._writer") -> None:
         data_rows = []
         for data_file in self.data_files:
             data_rows.extend(data_file.data_rows)
@@ -149,26 +157,32 @@ class OutputCsv(OutputBase):
                 if data_row.t_record:
                     writer.writerow(self._to_csv(data_row.t_record))
 
-    def _to_csv(self, t_record):
+    def _to_csv(self, t_record: TransactionOutRecord) -> List[str]:
         if self.csv_format == FORMAT_RECAP:
             return self._to_recap_csv(t_record)
 
         return self._to_bittytax_csv(t_record)
 
     @staticmethod
-    def _format_decimal(decimal):
+    def _format_type(t_type: Union[TrType, UnmappedType]) -> str:
+        if isinstance(t_type, TrType):
+            return t_type.value
+        return t_type
+
+    @staticmethod
+    def _format_decimal(decimal: Optional[Decimal]) -> str:
         if decimal is None:
             return ""
         return f"{decimal.normalize():0f}"
 
     @staticmethod
-    def _format_timestamp(timestamp):
+    def _format_timestamp(timestamp: datetime) -> str:
         if timestamp.microsecond:
             return f"{timestamp:%Y-%m-%dT%H:%M:%S.%f %Z}"
         return f"{timestamp:%Y-%m-%dT%H:%M:%S %Z}"
 
     @staticmethod
-    def _to_bittytax_csv(tr):
+    def _to_bittytax_csv(tr: TransactionOutRecord) -> List[str]:
         if (
             tr.buy_quantity is not None
             and len(tr.buy_quantity.normalize().as_tuple().digits) > OutputBase.EXCEL_PRECISION
@@ -196,7 +210,7 @@ class OutputCsv(OutputBase):
                 f"Fee Quantity: {tr.format_quantity(tr.fee_quantity)}{Fore.RESET}\n"
             )
         return [
-            tr.t_type,
+            OutputCsv._format_type(tr.t_type),
             OutputCsv._format_decimal(tr.buy_quantity),
             tr.buy_asset,
             OutputCsv._format_decimal(tr.buy_value),
@@ -212,9 +226,14 @@ class OutputCsv(OutputBase):
         ]
 
     @staticmethod
-    def _to_recap_csv(tr):
+    def _to_recap_csv(tr: TransactionOutRecord) -> List[str]:
+        if isinstance(tr.t_type, TrType):
+            r_type = OutputCsv.RECAP_TYPE_MAPPING[tr.t_type]
+        else:
+            r_type = tr.t_type
+
         return [
-            OutputCsv.RECAP_TYPE_MAPPING[tr.t_type],
+            r_type,
             f"{tr.timestamp:%Y-%m-%d %H:%M:%S}",
             OutputCsv._format_decimal(tr.buy_quantity),
             tr.buy_asset,

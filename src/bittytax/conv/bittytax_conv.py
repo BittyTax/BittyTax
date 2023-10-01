@@ -9,6 +9,7 @@ import hashlib
 import os
 import platform
 import sys
+from typing import Optional, Tuple
 
 import colorama
 from colorama import Fore
@@ -30,12 +31,12 @@ from .output_excel import OutputExcel
 
 if sys.stderr.encoding != "UTF-8":
     if sys.version_info[:2] >= (3, 7):
-        sys.stderr.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
     else:
         sys.stderr = codecs.getwriter("utf-8")(sys.stderr.detach())
 
 
-def main():
+def main() -> None:
     colorama.init()
     parser = argparse.ArgumentParser(
         epilog=f"supported data file formats:\n{DataParser.format_parsers()}",
@@ -122,12 +123,12 @@ def main():
             except UnknownUsernameError as e:
                 sys.stderr.write(Fore.RESET)
                 parser.exit(
-                    f"{parser.prog}: error: {e}, please specify usernames in the "
-                    f"{config.BITTYTAX_CONFIG} file"
+                    message=f"{parser.prog}: error: {e}, please specify usernames in the "
+                    f"{config.BITTYTAX_CONFIG} file\n"
                 )
             except DataFilenameError as e:
                 sys.stderr.write(Fore.RESET)
-                parser.exit(f"{parser.prog}: error: {e}")
+                parser.exit(message=f"{parser.prog}: error: {e}\n")
             except DataFormatUnrecognised:
                 sys.stderr.write(_file_msg(pathname, None, msg="unrecognised"))
             except IOError as e:
@@ -140,19 +141,19 @@ def main():
         DataMerge.match_merge(DataFile.data_files)
 
         if args.format == FORMAT_EXCEL:
-            output = OutputExcel(parser.prog, DataFile.data_files_ordered, args)
-            output.write_excel()
+            output_excel = OutputExcel(parser.prog, DataFile.data_files_ordered, args)
+            output_excel.write_excel()
         else:
-            output = OutputCsv(DataFile.data_files_ordered, args)
+            output_csv = OutputCsv(DataFile.data_files_ordered, args)
             sys.stderr.write(Fore.RESET)
             sys.stderr.flush()
-            output.write_csv()
+            output_csv.write_csv()
     else:
         sys.stderr.write(Fore.RESET)
         parser.exit(3, f"{parser.prog}: error: no data file(s) could be processed\n")
 
 
-def _do_read_file(file_type, pathname, args):
+def _do_read_file(file_type: str, pathname: str, args: argparse.Namespace) -> None:
     if file_type == "zip":
         for worksheet in DataFile.read_excel_xlsx(pathname):
             try:
@@ -169,8 +170,8 @@ def _do_read_file(file_type, pathname, args):
         DataFile.read_csv(pathname, args)
 
 
-def _get_file_info(filename):
-    file_type = None
+def _get_file_info(filename: str) -> Tuple[str, str]:
+    file_type = ""
 
     with open(filename, "rb") as df:
         file_hash = hashlib.sha1()
@@ -188,7 +189,7 @@ def _get_file_info(filename):
     return file_type, file_hash.hexdigest()
 
 
-def _file_msg(filename, worksheet_name, msg):
+def _file_msg(filename: str, worksheet_name: Optional[str], msg: str) -> str:
     if worksheet_name:
         worksheet_str = f" '{worksheet_name}'"
     else:

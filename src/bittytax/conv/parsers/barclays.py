@@ -1,13 +1,22 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+from decimal import Decimal
+from typing import TYPE_CHECKING
+
+from typing_extensions import Unpack
+
 from ...config import config
-from ..dataparser import DataParser
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
-def parse_barclays(data_row, parser, **_kwargs):
+
+def parse_barclays(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
 
@@ -16,21 +25,21 @@ def parse_barclays(data_row, parser, **_kwargs):
 
     if row_dict["Buy/Sell"] == "Buy":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["Quantity"],
+            buy_quantity=Decimal(row_dict["Quantity"]),
             buy_asset=row_dict["Investment"],
-            sell_quantity=row_dict["Cost/Proceeds"],
+            sell_quantity=Decimal(row_dict["Cost/Proceeds"]),
             sell_asset=config.ccy,
             wallet=row_dict["Account"],
         )
     elif row_dict["Buy/Sell"] == "Sell":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["Cost/Proceeds"],
+            buy_quantity=Decimal(row_dict["Cost/Proceeds"]),
             buy_asset=config.ccy,
-            sell_quantity=row_dict["Quantity"],
+            sell_quantity=Decimal(row_dict["Quantity"]),
             sell_asset=row_dict["Investment"],
             wallet=row_dict["Account"],
         )
@@ -41,7 +50,7 @@ def parse_barclays(data_row, parser, **_kwargs):
 
 
 DataParser(
-    DataParser.TYPE_SHARES,
+    ParserType.SHARES,
     "Barclays Smart Investor",
     [
         "Investment",

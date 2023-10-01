@@ -10,9 +10,9 @@
     {% for h in holdings_report['holdings']|sort %}
         <tr>
             {% if holdings_report['holdings'][h]['name'] %}
-                <td>{{holdings_report['holdings'][h]['asset']}} ({{holdings_report['holdings'][h]['name']|nowrapfilter}})</td>
+                <td>{{h}} ({{holdings_report['holdings'][h]['name']|nowrapfilter}})</td>
             {% else %}
-                <td>{{holdings_report['holdings'][h]['asset']}}</td>
+                <td>{{h}}</td>
             {% endif %}
             <td align="right">{{holdings_report['holdings'][h]['quantity']|quantityfilter}}</td>
             <td align="right">{{holdings_report['holdings'][h]['cost']|valuefilter}}</td>

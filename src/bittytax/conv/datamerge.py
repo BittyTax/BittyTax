@@ -3,22 +3,45 @@
 
 import sys
 from decimal import Decimal
+from enum import Enum
+from typing import TYPE_CHECKING, Dict, List, Optional, TypedDict
 
 from colorama import Fore
+from typing_extensions import Protocol
 
 from ..config import config
 from ..constants import ERROR
+from ..types import FileId
+from .dataparser import DataParser
+
+if TYPE_CHECKING:
+    from .datafile import DataFile
+    from .datarow import DataRow
+
+
+class ParserRequired(Enum):
+    OPTIONAL = "Optional"
+    MANDATORY = "Mandatory"
+
+
+class Parser(TypedDict):
+    req: ParserRequired
+    obj: DataParser
+
+
+class MergeHandler(Protocol):  # pylint: disable=too-few-public-methods
+    def __call__(self, data_files: Dict[FileId, "DataFile"]) -> bool:
+        ...
 
 
 class DataMerge:  # pylint: disable=too-few-public-methods
-    OPT = "Optional"
-    MAN = "Mandatory"
-
     SEPARATOR_AND = f'"{Fore.WHITE} & {Fore.CYAN}"'
 
-    mergers = []
+    mergers: List["DataMerge"] = []
 
-    def __init__(self, name, parsers, merge_handler):
+    def __init__(
+        self, name: str, parsers: Dict[FileId, Parser], merge_handler: MergeHandler
+    ) -> None:
         self.name = name
         self.parsers = parsers
         self.merge_handler = merge_handler
@@ -26,12 +49,16 @@ class DataMerge:  # pylint: disable=too-few-public-methods
         self.mergers.append(self)
 
     @classmethod
-    def match_merge(cls, data_files):
+    def match_merge(cls, data_files: Dict["DataFile", "DataFile"]) -> None:
         for data_merge in cls.mergers:
-            matched_data_files = {}
+            matched_data_files: Dict[FileId, "DataFile"] = {}
 
             man_tot = len(
-                [p for p in data_merge.parsers if data_merge.parsers[p]["req"] == cls.MAN]
+                [
+                    p
+                    for p in data_merge.parsers
+                    if data_merge.parsers[p]["req"] == ParserRequired.MANDATORY
+                ]
             )
             man_cnt = 0
             opt_cnt = 0
@@ -41,9 +68,9 @@ class DataMerge:  # pylint: disable=too-few-public-methods
 
                 if data_file:
                     matched_data_files[parser] = data_file
-                    if data_merge.parsers[parser]["req"] == cls.MAN:
+                    if data_merge.parsers[parser]["req"] == ParserRequired.MANDATORY:
                         man_cnt += 1
-                    elif data_merge.parsers[parser]["req"] == cls.OPT:
+                    elif data_merge.parsers[parser]["req"] == ParserRequired.OPTIONAL:
                         opt_cnt += 1
 
             if man_cnt == 1 and opt_cnt > 0 or man_cnt > 1 and man_cnt == man_tot:
@@ -70,7 +97,9 @@ class DataMerge:  # pylint: disable=too-few-public-methods
                         sys.stderr.write(f"{Fore.YELLOW}merge: nothing to merge\n")
 
     @classmethod
-    def _match_datafile(cls, data_files, parser):
+    def _match_datafile(
+        cls, data_files: Dict["DataFile", "DataFile"], parser: Parser
+    ) -> Optional["DataFile"]:
         for data_file in data_files:
             if (data_file.parser.row_handler, data_file.parser.all_handler) == (
                 parser["obj"].row_handler,
@@ -81,7 +110,7 @@ class DataMerge:  # pylint: disable=too-few-public-methods
 
 
 class MergeDataRow:  # pylint: disable=too-few-public-methods
-    def __init__(self, data_row, data_file, data_file_id):
+    def __init__(self, data_row: "DataRow", data_file: "DataFile", data_file_id: str):
         self.data_row = data_row
         self.data_file = data_file
         self.data_file_id = data_file_id

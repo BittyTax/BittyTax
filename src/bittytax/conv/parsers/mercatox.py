@@ -1,53 +1,62 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2022
 
-from ..dataparser import DataParser
+from decimal import Decimal
+from typing import TYPE_CHECKING
+
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Mercatox"
 
 
-def parse_mercatox(data_row, parser, **_kwargs):
+def parse_mercatox(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
 
     if row_dict["Type"] == "Deposit":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Currency"],
             wallet=WALLET,
         )
     elif row_dict["Type"] == "Withdraw":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=row_dict["Amount"],
+            sell_quantity=Decimal(row_dict["Amount"]),
             sell_asset=row_dict["Currency"],
-            fee_quantity=row_dict["Fee"],
+            fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Currency"],
             wallet=WALLET,
         )
     elif row_dict["Type"] == "Deal":
         if row_dict["Action"] == "buy":
             data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_TRADE,
+                TrType.TRADE,
                 data_row.timestamp,
-                buy_quantity=row_dict["Amount"],
+                buy_quantity=Decimal(row_dict["Amount"]),
                 buy_asset=row_dict["Pair"].split("/")[0],
-                sell_quantity=row_dict["Total"],
+                sell_quantity=Decimal(row_dict["Total"]),
                 sell_asset=row_dict["Pair"].split("/")[1],
                 wallet=WALLET,
             )
         elif row_dict["Action"] == "sell":
             data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_TRADE,
+                TrType.TRADE,
                 data_row.timestamp,
-                buy_quantity=row_dict["Total"],
+                buy_quantity=Decimal(row_dict["Total"]),
                 buy_asset=row_dict["Pair"].split("/")[1],
-                sell_quantity=row_dict["Amount"],
+                sell_quantity=Decimal(row_dict["Amount"]),
                 sell_asset=row_dict["Pair"].split("/")[0],
                 wallet=WALLET,
             )
@@ -57,9 +66,9 @@ def parse_mercatox(data_row, parser, **_kwargs):
             )
     elif row_dict["Type"] == "Promo":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_AIRDROP,
+            TrType.AIRDROP,
             data_row.timestamp,
-            buy_quantity=row_dict["Amount"],
+            buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Currency"],
             wallet=WALLET,
         )
@@ -68,7 +77,7 @@ def parse_mercatox(data_row, parser, **_kwargs):
 
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "Mercatox",
     [
         "MX Transaction Id",

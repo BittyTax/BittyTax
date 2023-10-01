@@ -3,61 +3,72 @@
 
 import json
 from decimal import Decimal
+from typing import TYPE_CHECKING, Union
 
-from ..dataparser import DataParser
+from typing_extensions import Unpack
+
+from ...types import TrType, UnmappedType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 from ..output_csv import OutputBase
 
+if TYPE_CHECKING:
+    from ..datarow import DataRow
+
 STAKETAX_MAPPING = {
-    "STAKING": TransactionOutRecord.TYPE_STAKING,
-    "AIRDROP": TransactionOutRecord.TYPE_AIRDROP,
-    "TRADE": TransactionOutRecord.TYPE_TRADE,
-    "TRANSFER": "_TRANSFER",
-    "SPEND": TransactionOutRecord.TYPE_SPEND,
-    "INCOME": TransactionOutRecord.TYPE_INCOME,
-    "BORROW": "_BORROW",
-    "REPAY": "_REPAY",
-    "LP_DEPOSIT": TransactionOutRecord.TYPE_TRADE,
-    "LP_WITHDRAW": TransactionOutRecord.TYPE_TRADE,
-    "MARGIN_TRADE_FEE": "_MARGIN_TRADE_FEE",
+    "STAKING": TrType.STAKING,
+    "AIRDROP": TrType.AIRDROP,
+    "TRADE": TrType.TRADE,
+    "SPEND": TrType.SPEND,
+    "INCOME": TrType.INCOME,
+    "LP_DEPOSIT": TrType.TRADE,
+    "LP_WITHDRAW": TrType.TRADE,
 }
 
 
-def parse_staketax_default(data_row, parser, **_kwargs):
+def parse_staketax_default(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     if row_dict["timestamp"]:
         data_row.timestamp = DataParser.parse_timestamp(row_dict["timestamp"])
 
-    t_type = STAKETAX_MAPPING.get(row_dict["tx_type"], row_dict["tx_type"])
+    if row_dict["tx_type"].startswith("_"):
+        t_type: Union[TrType, UnmappedType] = UnmappedType(row_dict["tx_type"])
+    else:
+        if row_dict["tx_type"] in STAKETAX_MAPPING:
+            t_type = STAKETAX_MAPPING[row_dict["tx_type"]]
+        else:
+            t_type = UnmappedType(f'_{row_dict["tx_type"]}')
 
     if row_dict["received_amount"]:
-        buy_quantity = row_dict["received_amount"]
+        buy_quantity = Decimal(row_dict["received_amount"])
     else:
         buy_quantity = None
 
     if row_dict["sent_amount"]:
-        sell_quantity = row_dict["sent_amount"]
+        sell_quantity = Decimal(row_dict["sent_amount"])
     else:
         sell_quantity = None
 
     if row_dict["fee"]:
-        fee_quantity = row_dict["fee"]
+        fee_quantity = Decimal(row_dict["fee"])
     else:
         fee_quantity = None
 
     if row_dict["tx_type"] == "TRANSFER":
-        if buy_quantity and not sell_quantity:
-            t_type = TransactionOutRecord.TYPE_DEPOSIT
-        elif sell_quantity and not buy_quantity:
-            t_type = TransactionOutRecord.TYPE_WITHDRAWAL
+        if buy_quantity is not None and sell_quantity is None:
+            t_type = TrType.DEPOSIT
+        elif sell_quantity is not None and buy_quantity is None:
+            t_type = TrType.WITHDRAWAL
         else:
             raise UnexpectedTypeError(
                 parser.in_header.index("tx_type"), "tx_type", row_dict["tx_type"]
             )
 
     # Add a dummy sell_quantity if fee is on it's own
-    if fee_quantity and (not buy_quantity and not sell_quantity):
+    if fee_quantity is not None and (buy_quantity is None and sell_quantity is None):
         sell_quantity = Decimal(0)
         sell_asset = row_dict["fee_currency"]
     else:
@@ -81,32 +92,39 @@ def parse_staketax_default(data_row, parser, **_kwargs):
     )
 
 
-def _get_wallet(exchange, wallet_address):
+def _get_wallet(exchange: str, wallet_address: str) -> str:
     return f'{exchange.replace("_blockchain", "").capitalize()}-{wallet_address[0:16]}'
 
 
-def parse_staketax_bittytax(data_row, parser, **_kwargs):
+def parse_staketax_bittytax(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     if row_dict["Timestamp"]:
         data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
 
+    try:
+        t_type: Union[TrType, UnmappedType] = TrType(row_dict["Type"])
+    except ValueError:
+        t_type = UnmappedType(row_dict["Type"])
+
     if row_dict["Buy Quantity"]:
-        buy_quantity = row_dict["Buy Quantity"]
+        buy_quantity = Decimal(row_dict["Buy Quantity"])
     else:
         buy_quantity = None
 
     if row_dict["Sell Quantity"]:
-        sell_quantity = row_dict["Sell Quantity"]
+        sell_quantity = Decimal(row_dict["Sell Quantity"])
     else:
         sell_quantity = None
 
     if row_dict["Fee Quantity"]:
-        fee_quantity = row_dict["Fee Quantity"]
+        fee_quantity = Decimal(row_dict["Fee Quantity"])
     else:
         fee_quantity = None
 
     data_row.t_record = TransactionOutRecord(
-        row_dict["Type"],
+        t_type,
         data_row.timestamp,
         buy_quantity=buy_quantity,
         buy_asset=row_dict["Buy Asset"],
@@ -128,7 +146,7 @@ def parse_staketax_bittytax(data_row, parser, **_kwargs):
 
 
 DataParser(
-    DataParser.TYPE_ACCOUNTING,
+    ParserType.ACCOUNTING,
     "StakeTax",
     [
         "timestamp",
@@ -150,7 +168,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_GENERIC,
+    ParserType.GENERIC,
     "StakeTax",
     [
         "Type",

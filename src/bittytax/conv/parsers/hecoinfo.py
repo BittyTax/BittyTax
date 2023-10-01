@@ -2,62 +2,71 @@
 # (c) Nano Nano Ltd 2021
 
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from ..dataparser import DataParser
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..out_record import TransactionOutRecord
 from .etherscan import _get_note
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Huobi Eco Chain"
 WORKSHEET_NAME = "HecoInfo"
 
 
-def parse_hecoinfo(data_row, _parser, **_kwargs):
+def parse_hecoinfo(data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
 
     if row_dict["Status"] != "":
         # Failed transactions should not have a Value_OUT
-        row_dict["Value_OUT(HT)"] = 0
+        row_dict["Value_OUT(HT)"] = "0"
 
     if Decimal(row_dict["Value_IN(HT)"]) > 0:
         if row_dict["Status"] == "":
             data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_DEPOSIT,
+                TrType.DEPOSIT,
                 data_row.timestamp,
-                buy_quantity=row_dict["Value_IN(HT)"],
+                buy_quantity=Decimal(row_dict["Value_IN(HT)"]),
                 buy_asset="HT",
                 wallet=_get_wallet(row_dict["To"]),
                 note=_get_note(row_dict),
             )
     elif Decimal(row_dict["Value_OUT(HT)"]) > 0:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=row_dict["Value_OUT(HT)"],
+            sell_quantity=Decimal(row_dict["Value_OUT(HT)"]),
             sell_asset="HT",
-            fee_quantity=row_dict["TxnFee(HT)"],
+            fee_quantity=Decimal(row_dict["TxnFee(HT)"]),
             fee_asset="HT",
             wallet=_get_wallet(row_dict["From"]),
             note=_get_note(row_dict),
         )
     else:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_SPEND,
+            TrType.SPEND,
             data_row.timestamp,
-            sell_quantity=row_dict["Value_OUT(HT)"],
+            sell_quantity=Decimal(row_dict["Value_OUT(HT)"]),
             sell_asset="HT",
-            fee_quantity=row_dict["TxnFee(HT)"],
+            fee_quantity=Decimal(row_dict["TxnFee(HT)"]),
             fee_asset="HT",
             wallet=_get_wallet(row_dict["From"]),
             note=_get_note(row_dict),
         )
 
 
-def _get_wallet(address):
+def _get_wallet(address: str) -> str:
     return f"{WALLET}-{address.lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN]}"
 
 
-def parse_hecoinfo_internal(data_row, _parser, **_kwargs):
+def parse_hecoinfo_internal(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
 
@@ -67,25 +76,25 @@ def parse_hecoinfo_internal(data_row, _parser, **_kwargs):
 
     if Decimal(row_dict["Value_IN(HT)"]) > 0:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Value_IN(HT)"],
+            buy_quantity=Decimal(row_dict["Value_IN(HT)"]),
             buy_asset="HT",
             wallet=_get_wallet(row_dict["TxTo"]),
         )
     elif Decimal(row_dict["Value_OUT(HT)"]) > 0:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=row_dict["Value_OUT(HT)"],
+            sell_quantity=Decimal(row_dict["Value_OUT(HT)"]),
             sell_asset="HT",
             wallet=_get_wallet(row_dict["From"]),
         )
 
 
 # Tokens and internal transactions have the same header as Etherscan
-HECO_TXNS = DataParser(
-    DataParser.TYPE_EXPLORER,
+heco_txns = DataParser(
+    ParserType.EXPLORER,
     "HecoInfo (HECO Transactions)",
     [
         "Txhash",
@@ -109,7 +118,7 @@ HECO_TXNS = DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXPLORER,
+    ParserType.EXPLORER,
     "HecoInfo (HECO Transactions)",
     [
         "Txhash",
@@ -134,7 +143,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXPLORER,
+    ParserType.EXPLORER,
     "HecoInfo (HECO Transactions)",
     [
         "Txhash",
@@ -159,7 +168,7 @@ DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXPLORER,
+    ParserType.EXPLORER,
     "HecoInfo (HECO Transactions)",
     [
         "Txhash",
@@ -184,8 +193,8 @@ DataParser(
     row_handler=parse_hecoinfo,
 )
 
-HECO_INT = DataParser(
-    DataParser.TYPE_EXPLORER,
+heco_int = DataParser(
+    ParserType.EXPLORER,
     "HecoInfo (HECO Internal Transactions)",
     [
         "Txhash",
@@ -211,7 +220,7 @@ HECO_INT = DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXPLORER,
+    ParserType.EXPLORER,
     "HecoInfo (HECO Internal Transactions)",
     [
         "Txhash",

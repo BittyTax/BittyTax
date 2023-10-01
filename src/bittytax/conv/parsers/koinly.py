@@ -3,42 +3,50 @@
 
 import copy
 import sys
+from decimal import Decimal
+from typing import TYPE_CHECKING, List, Union
 
 from colorama import Fore
+from typing_extensions import Unpack
 
 from ...config import config
-from ..dataparser import DataParser
+from ...types import TrType, UnmappedType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import DataRowError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
+if TYPE_CHECKING:
+    from ..datarow import DataRow
+
 KOINLY_D_MAPPING = {
-    "": TransactionOutRecord.TYPE_GIFT_RECEIVED,
-    "airdrop": TransactionOutRecord.TYPE_AIRDROP,
-    "fork": TransactionOutRecord.TYPE_GIFT_RECEIVED,
-    "mining": TransactionOutRecord.TYPE_MINING,
-    "reward": TransactionOutRecord.TYPE_GIFT_RECEIVED,
-    "income": TransactionOutRecord.TYPE_INCOME,
-    "loan_interest": TransactionOutRecord.TYPE_INTEREST,
-    "staking": TransactionOutRecord.TYPE_STAKING,
-    "realized_gain": "_realized_gain",
+    "": TrType.GIFT_RECEIVED,
+    "airdrop": TrType.AIRDROP,
+    "fork": TrType.GIFT_RECEIVED,
+    "mining": TrType.MINING,
+    "reward": TrType.GIFT_RECEIVED,
+    "income": TrType.INCOME,
+    "loan_interest": TrType.INTEREST,
+    "staking": TrType.STAKING,
 }
 
 KOINLY_W_MAPPING = {
-    "": TransactionOutRecord.TYPE_GIFT_SENT,
-    "gift": TransactionOutRecord.TYPE_GIFT_SENT,
-    "lost": TransactionOutRecord.TYPE_LOST,
-    "cost": TransactionOutRecord.TYPE_SPEND,
-    "donation": TransactionOutRecord.TYPE_CHARITY_SENT,
-    "interest_payment": TransactionOutRecord.TYPE_SPEND,
-    "margin_fee": "_margin_fee",
-    "realized_gain": "_realized_gain",
-    "swap": "_swap",
+    "": TrType.GIFT_SENT,
+    "gift": TrType.GIFT_SENT,
+    "lost": TrType.LOST,
+    "cost": TrType.SPEND,
+    "donation": TrType.CHARITY_SENT,
+    "interest_payment": TrType.SPEND,
 }
 
 
-def parse_koinly(data_rows, parser, **_kwargs):
+def parse_koinly(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     for row_index, data_row in enumerate(data_rows):
         if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
             sys.stderr.write(
                 f"{Fore.YELLOW}conv: "
                 f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
@@ -58,31 +66,33 @@ def parse_koinly(data_rows, parser, **_kwargs):
             data_row.failure = e
 
 
-def _parse_koinly_row(data_rows, parser, data_row, row_index):
+def _parse_koinly_row(
+    data_rows: List["DataRow"], parser: DataParser, data_row: "DataRow", row_index: int
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
     data_row.parsed = True
 
     if row_dict["Fee Amount"]:
-        fee_quantity = row_dict["Fee Amount"]
+        fee_quantity = Decimal(row_dict["Fee Amount"])
     else:
         fee_quantity = None
 
     if row_dict["Fee Value (GBP)"]:
-        fee_value = row_dict["Fee Value (GBP)"]
+        fee_value = Decimal(row_dict["Fee Value (GBP)"])
     else:
         fee_value = None
 
     if row_dict["Type"] in ("buy", "sell", "exchange"):
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_TRADE,
+            TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=row_dict["Received Amount"],
+            buy_quantity=Decimal(row_dict["Received Amount"]),
             buy_asset=row_dict["Received Currency"],
-            buy_value=row_dict["Net Value (GBP)"],
-            sell_quantity=row_dict["Sent Amount"],
+            buy_value=Decimal(row_dict["Net Value (GBP)"]),
+            sell_quantity=Decimal(row_dict["Sent Amount"]),
             sell_asset=row_dict["Sent Currency"],
-            sell_value=row_dict["Net Value (GBP)"],
+            sell_value=Decimal(row_dict["Net Value (GBP)"]),
             fee_quantity=fee_quantity,
             fee_asset=row_dict["Fee Currency"],
             fee_value=fee_value,
@@ -91,9 +101,9 @@ def _parse_koinly_row(data_rows, parser, data_row, row_index):
         )
     elif row_dict["Type"] == "transfer":
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=row_dict["Sent Amount"],
+            sell_quantity=Decimal(row_dict["Sent Amount"]),
             sell_asset=row_dict["Sent Currency"],
             fee_quantity=fee_quantity,
             fee_asset=row_dict["Fee Currency"],
@@ -103,52 +113,56 @@ def _parse_koinly_row(data_rows, parser, data_row, row_index):
         dup_data_row = copy.copy(data_row)
         dup_data_row.row = []
         dup_data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Received Amount"],
+            buy_quantity=Decimal(row_dict["Received Amount"]),
             buy_asset=row_dict["Received Currency"],
             wallet=row_dict["Receiving Wallet"],
             note=row_dict["Description"],
         )
         data_rows.insert(row_index + 1, dup_data_row)
     elif row_dict["Type"] in ("fiat_deposit", "crypto_deposit"):
-        if row_dict["Label"] in KOINLY_D_MAPPING and KOINLY_D_MAPPING[row_dict["Label"]]:
-            data_row.t_record = TransactionOutRecord(
-                KOINLY_D_MAPPING[row_dict["Label"]],
-                data_row.timestamp,
-                buy_quantity=row_dict["Received Amount"],
-                buy_asset=row_dict["Received Currency"],
-                buy_value=row_dict["Net Value (GBP)"],
-                fee_quantity=fee_quantity,
-                fee_asset=row_dict["Fee Currency"],
-                fee_value=fee_value,
-                wallet=row_dict["Receiving Wallet"],
-                note=row_dict["Description"],
-            )
+        if row_dict["Label"] in KOINLY_D_MAPPING:
+            t_type: Union[TrType, UnmappedType] = KOINLY_D_MAPPING[row_dict["Label"]]
         else:
-            raise UnexpectedTypeError(parser.in_header.index("Label"), "Label", row_dict["Label"])
+            t_type = UnmappedType(f'_{row_dict["Label"]}')
+
+        data_row.t_record = TransactionOutRecord(
+            t_type,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Received Amount"]),
+            buy_asset=row_dict["Received Currency"],
+            buy_value=Decimal(row_dict["Net Value (GBP)"]),
+            fee_quantity=fee_quantity,
+            fee_asset=row_dict["Fee Currency"],
+            fee_value=fee_value,
+            wallet=row_dict["Receiving Wallet"],
+            note=row_dict["Description"],
+        )
     elif row_dict["Type"] in ("fiat_withdrawal", "crypto_withdrawal"):
-        if row_dict["Label"] in KOINLY_W_MAPPING and KOINLY_W_MAPPING[row_dict["Label"]]:
-            data_row.t_record = TransactionOutRecord(
-                KOINLY_W_MAPPING[row_dict["Label"]],
-                data_row.timestamp,
-                sell_quantity=row_dict["Sent Amount"],
-                sell_asset=row_dict["Sent Currency"],
-                sell_value=row_dict["Net Value (GBP)"],
-                fee_quantity=fee_quantity,
-                fee_asset=row_dict["Fee Currency"],
-                fee_value=fee_value,
-                wallet=row_dict["Sending Wallet"],
-                note=row_dict["Description"],
-            )
+        if row_dict["Label"] in KOINLY_W_MAPPING:
+            t_type = KOINLY_W_MAPPING[row_dict["Label"]]
         else:
-            raise UnexpectedTypeError(parser.in_header.index("Label"), "Label", row_dict["Label"])
+            t_type = UnmappedType(f'_{row_dict["Label"]}')
+
+        data_row.t_record = TransactionOutRecord(
+            t_type,
+            data_row.timestamp,
+            sell_quantity=Decimal(row_dict["Sent Amount"]),
+            sell_asset=row_dict["Sent Currency"],
+            sell_value=Decimal(row_dict["Net Value (GBP)"]),
+            fee_quantity=fee_quantity,
+            fee_asset=row_dict["Fee Currency"],
+            fee_value=fee_value,
+            wallet=row_dict["Sending Wallet"],
+            note=row_dict["Description"],
+        )
     else:
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
 
 DataParser(
-    DataParser.TYPE_ACCOUNTING,
+    ParserType.ACCOUNTING,
     "Koinly",
     [
         "Date",

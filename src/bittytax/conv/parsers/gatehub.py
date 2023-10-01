@@ -3,19 +3,27 @@
 
 import sys
 from decimal import Decimal
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 from colorama import Fore
+from typing_extensions import Unpack
 
 from ...config import config
-from ..dataparser import DataParser
+from ...types import TrType, UnmappedType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import DataRowError, MissingComponentError, MissingValueError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "GateHub"
 
 
-def parse_gatehub(data_rows, parser, **_kwargs):
-    tx_ids = {}
+def parse_gatehub(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    tx_ids: Dict[str, List["DataRow"]] = {}
     for dr in data_rows:
         if dr.row_dict["TX hash"] in tx_ids:
             tx_ids[dr.row_dict["TX hash"]].append(dr)
@@ -24,6 +32,9 @@ def parse_gatehub(data_rows, parser, **_kwargs):
 
     for data_row in data_rows:
         if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
             sys.stderr.write(
                 f"{Fore.YELLOW}conv: "
                 f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
@@ -43,12 +54,14 @@ def parse_gatehub(data_rows, parser, **_kwargs):
             data_row.failure = e
 
 
-def _parse_gatehub_row(tx_ids, parser, data_row):
+def _parse_gatehub_row(
+    tx_ids: Dict[str, List["DataRow"]], parser: DataParser, data_row: "DataRow"
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
     data_row.parsed = True
 
-    t_type = ""
+    t_type: Union[TrType, UnmappedType] = UnmappedType("")
     buy_quantity = None
     buy_asset = ""
     sell_quantity = None
@@ -61,24 +74,24 @@ def _parse_gatehub_row(tx_ids, parser, data_row):
 
     if row_dict["Type"] == "payment":
         if Decimal(row_dict["Amount"]) < 0:
-            t_type = TransactionOutRecord.TYPE_WITHDRAWAL
+            t_type = TrType.WITHDRAWAL
             sell_quantity = abs(Decimal(row_dict["Amount"]))
             sell_asset = row_dict["Currency"]
         else:
-            t_type = TransactionOutRecord.TYPE_DEPOSIT
-            buy_quantity = row_dict["Amount"]
+            t_type = TrType.DEPOSIT
+            buy_quantity = Decimal(row_dict["Amount"])
             buy_asset = row_dict["Currency"]
 
         fee_quantity, fee_asset = _get_tx(tx_ids[row_dict["TX hash"]], "network_fee")
     elif row_dict["Type"] == "exchange":
-        t_type = TransactionOutRecord.TYPE_TRADE
+        t_type = TrType.TRADE
         if Decimal(row_dict["Amount"]) < 0:
             sell_quantity = abs(Decimal(row_dict["Amount"]))
             sell_asset = row_dict["Currency"]
 
             buy_quantity, buy_asset = _get_tx(tx_ids[row_dict["TX hash"]], "exchange")
         else:
-            buy_quantity = row_dict["Amount"]
+            buy_quantity = Decimal(row_dict["Amount"])
             buy_asset = row_dict["Currency"]
 
             sell_quantity, sell_asset = _get_tx(tx_ids[row_dict["TX hash"]], "exchange")
@@ -92,7 +105,7 @@ def _parse_gatehub_row(tx_ids, parser, data_row):
     elif "network_fee" in row_dict["Type"]:
         # Fees which are not associated with a payment or exchange are added
         # as a Spend
-        t_type = TransactionOutRecord.TYPE_SPEND
+        t_type = TrType.SPEND
         sell_quantity = abs(Decimal(row_dict["Amount"]))
         sell_asset = row_dict["Currency"]
     else:
@@ -111,7 +124,7 @@ def _parse_gatehub_row(tx_ids, parser, data_row):
     )
 
 
-def _get_tx(tx_id_rows, tx_type):
+def _get_tx(tx_id_rows: List["DataRow"], tx_type: str) -> Tuple[Optional[Decimal], str]:
     quantity = None
     asset = ""
 
@@ -127,7 +140,7 @@ def _get_tx(tx_id_rows, tx_type):
 
 
 DataParser(
-    DataParser.TYPE_EXCHANGE,
+    ParserType.EXCHANGE,
     "GateHub (XRP)",
     [
         "Time",

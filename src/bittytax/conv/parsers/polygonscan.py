@@ -2,62 +2,73 @@
 # (c) Nano Nano Ltd 2021
 
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
-from ..dataparser import DataParser
+from typing_extensions import Unpack
+
+from ...types import TrType
+from ..dataparser import DataParser, ParserArgs, ParserType
 from ..out_record import TransactionOutRecord
 from .etherscan import _get_note
+
+if TYPE_CHECKING:
+    from ..datarow import DataRow
 
 WALLET = "Polygon chain"
 WORKSHEET_NAME = "PolygonScan"
 
 
-def parse_polygonscan(data_row, _parser, **_kwargs):
+def parse_polygonscan(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
 
     if row_dict["Status"] != "":
         # Failed transactions should not have a Value_OUT
-        row_dict["Value_OUT(MATIC)"] = 0
+        row_dict["Value_OUT(MATIC)"] = "0"
 
     if Decimal(row_dict["Value_IN(MATIC)"]) > 0:
         if row_dict["Status"] == "":
             data_row.t_record = TransactionOutRecord(
-                TransactionOutRecord.TYPE_DEPOSIT,
+                TrType.DEPOSIT,
                 data_row.timestamp,
-                buy_quantity=row_dict["Value_IN(MATIC)"],
+                buy_quantity=Decimal(row_dict["Value_IN(MATIC)"]),
                 buy_asset="MATIC",
                 wallet=_get_wallet(row_dict["To"]),
                 note=_get_note(row_dict),
             )
     elif Decimal(row_dict["Value_OUT(MATIC)"]) > 0:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=row_dict["Value_OUT(MATIC)"],
+            sell_quantity=Decimal(row_dict["Value_OUT(MATIC)"]),
             sell_asset="MATIC",
-            fee_quantity=row_dict["TxnFee(MATIC)"],
+            fee_quantity=Decimal(row_dict["TxnFee(MATIC)"]),
             fee_asset="MATIC",
             wallet=_get_wallet(row_dict["From"]),
             note=_get_note(row_dict),
         )
     else:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_SPEND,
+            TrType.SPEND,
             data_row.timestamp,
-            sell_quantity=row_dict["Value_OUT(MATIC)"],
+            sell_quantity=Decimal(row_dict["Value_OUT(MATIC)"]),
             sell_asset="MATIC",
-            fee_quantity=row_dict["TxnFee(MATIC)"],
+            fee_quantity=Decimal(row_dict["TxnFee(MATIC)"]),
             fee_asset="MATIC",
             wallet=_get_wallet(row_dict["From"]),
             note=_get_note(row_dict),
         )
 
 
-def _get_wallet(address):
+def _get_wallet(address: str) -> str:
     return f"{WALLET}-{address.lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN]}"
 
 
-def parse_polygonscan_internal(data_row, _parser, **_kwargs):
+def parse_polygonscan_internal(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
 
@@ -67,25 +78,25 @@ def parse_polygonscan_internal(data_row, _parser, **_kwargs):
 
     if Decimal(row_dict["Value_IN(MATIC)"]) > 0:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_DEPOSIT,
+            TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=row_dict["Value_IN(MATIC)"],
+            buy_quantity=Decimal(row_dict["Value_IN(MATIC)"]),
             buy_asset="MATIC",
             wallet=_get_wallet(row_dict["TxTo"]),
         )
     elif Decimal(row_dict["Value_OUT(MATIC)"]) > 0:
         data_row.t_record = TransactionOutRecord(
-            TransactionOutRecord.TYPE_WITHDRAWAL,
+            TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=row_dict["Value_OUT(MATIC)"],
+            sell_quantity=Decimal(row_dict["Value_OUT(MATIC)"]),
             sell_asset="MATIC",
             wallet=_get_wallet(row_dict["From"]),
         )
 
 
 # Tokens and internal transactions have the same header as Etherscan
-MATIC_TXNS = DataParser(
-    DataParser.TYPE_EXPLORER,
+matic_txns = DataParser(
+    ParserType.EXPLORER,
     "PolygonScan (MATIC Transactions)",
     [
         "Txhash",
@@ -110,7 +121,7 @@ MATIC_TXNS = DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXPLORER,
+    ParserType.EXPLORER,
     "PolygonScan (MATIC Transactions)",
     [
         "Txhash",
@@ -135,8 +146,8 @@ DataParser(
     row_handler=parse_polygonscan,
 )
 
-MATIC_INT = DataParser(
-    DataParser.TYPE_EXPLORER,
+matic_int = DataParser(
+    ParserType.EXPLORER,
     "PolygonScan (MATIC Internal Transactions)",
     [
         "Txhash",
@@ -162,7 +173,7 @@ MATIC_INT = DataParser(
 )
 
 DataParser(
-    DataParser.TYPE_EXPLORER,
+    ParserType.EXPLORER,
     "PolygonScan (MATIC Internal Transactions)",
     [
         "Txhash",

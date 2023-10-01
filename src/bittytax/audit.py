@@ -3,19 +3,30 @@
 
 import sys
 from decimal import Decimal
+from typing import Dict, List, Optional
 
 from colorama import Fore, Style
 from tqdm import tqdm
+from typing_extensions import TypedDict
 
 from .config import config
 from .constants import WARNING
+from .holdings import Holdings
+from .record import TransactionRecord
+from .types import AssetSymbol, Wallet
+
+
+class ComparePoolFail(TypedDict):
+    asset: AssetSymbol
+    audit_tot: Decimal
+    s104_tot: Optional[Decimal]
 
 
 class AuditRecords:
-    def __init__(self, transaction_records):
-        self.wallets = {}
-        self.totals = {}
-        self.failures = []
+    def __init__(self, transaction_records: List[TransactionRecord]) -> None:
+        self.wallets: Dict[Wallet, Dict[AssetSymbol, Decimal]] = {}
+        self.totals: Dict[AssetSymbol, Decimal] = {}
+        self.failures: List[ComparePoolFail]
 
         if config.debug:
             print(f"{Fore.CYAN}audit transaction records")
@@ -54,18 +65,9 @@ class AuditRecords:
                 )
 
         if config.audit_hide_empty:
-            self.prune_empty(self.wallets)
+            self._prune_empty()
 
-    @staticmethod
-    def prune_empty(wallets):
-        for wallet in list(wallets):
-            for asset in list(wallets[wallet]):
-                if wallets[wallet][asset] == Decimal(0):
-                    wallets[wallet].pop(asset)
-            if not wallets[wallet]:
-                wallets.pop(wallet)
-
-    def _add_tokens(self, wallet, asset, quantity):
+    def _add_tokens(self, wallet: Wallet, asset: AssetSymbol, quantity: Decimal) -> None:
         if wallet not in self.wallets:
             self.wallets[wallet] = {}
 
@@ -85,7 +87,7 @@ class AuditRecords:
                 f"{self.wallets[wallet][asset].normalize():0,f} (+{quantity.normalize():0,f})"
             )
 
-    def _subtract_tokens(self, wallet, asset, quantity):
+    def _subtract_tokens(self, wallet: Wallet, asset: AssetSymbol, quantity: Decimal) -> None:
         if wallet not in self.wallets:
             self.wallets[wallet] = {}
 
@@ -111,7 +113,15 @@ class AuditRecords:
                 f"is negative {self.wallets[wallet][asset].normalize():0,f}"
             )
 
-    def compare_pools(self, holdings):
+    def _prune_empty(self) -> None:
+        for wallet in list(self.wallets):
+            for asset in list(self.wallets[wallet]):
+                if self.wallets[wallet][asset] == Decimal(0):
+                    self.wallets[wallet].pop(asset)
+            if not self.wallets[wallet]:
+                self.wallets.pop(wallet)
+
+    def compare_pools(self, holdings: Dict[AssetSymbol, Holdings]) -> bool:
         passed = True
         for asset in sorted(self.totals):
             if asset in config.fiat_list:
@@ -140,29 +150,27 @@ class AuditRecords:
 
         return passed
 
-    def _log_failure(self, asset, audit, s104):
-        failure = {}
-        failure["asset"] = asset
-        failure["audit"] = audit
-        failure["s104"] = s104
-
+    def _log_failure(
+        self, asset: AssetSymbol, audit_tot: Decimal, s104_tot: Optional[Decimal]
+    ) -> None:
+        failure: ComparePoolFail = {"asset": asset, "audit_tot": audit_tot, "s104_tot": s104_tot}
         self.failures.append(failure)
 
-    def report_failures(self):
+    def report_failures(self) -> None:
         print(
             f"\n{Fore.YELLOW}"
             f'{"Asset":<8} {"Audit Balance":>25} {"Section 104 Pool":>25} {"Difference":>25}'
         )
 
         for failure in self.failures:
-            if failure["s104"] is not None:
+            if failure["s104_tot"] is not None:
                 print(
-                    f'{Fore.WHITE}{failure["asset"]:<8} {failure["audit"].normalize():25,f} '
-                    f'{failure["s104"].normalize():25,f} '
-                    f'{Fore.RED}{(failure["s104"] - failure["audit"]).normalize():+25,f}'
+                    f'{Fore.WHITE}{failure["asset"]:<8} {failure["audit_tot"].normalize():25,f} '
+                    f'{failure["s104_tot"].normalize():25,f}'
+                    f'{Fore.RED}{(failure["s104_tot"] - failure["audit_tot"]).normalize():+25,f}'
                 )
             else:
                 print(
-                    f'{Fore.WHITE}{failure["asset"]<8} {failure["audit"].normalize():25,f} '
+                    f'{Fore.WHITE}{failure["asset"]:<8} {failure["audit_tot"].normalize():25,f} '
                     f'{Fore.RED}{"<missing>":>25}'
                 )
