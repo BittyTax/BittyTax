@@ -31,17 +31,17 @@ from ..version import __version__
 from .exceptions import UnexpectedDataSourceAssetIdError
 
 
-class DsSymbolToAssetData(TypedDict):
+class DsSymbolToAssetData(TypedDict):  # pylint: disable=too-few-public-methods
     asset_id: AssetId
     name: AssetName
 
 
-class DsIdToAssetData(TypedDict):
+class DsIdToAssetData(TypedDict):  # pylint: disable=too-few-public-methods
     symbol: AssetSymbol
     name: AssetName
 
 
-class DsPriceData(TypedDict):
+class DsPriceData(TypedDict):  # pylint: disable=too-few-public-methods
     price: Optional[Decimal]
     url: SourceUrl
 
