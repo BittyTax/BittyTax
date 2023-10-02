@@ -24,7 +24,7 @@ class ParserRequired(Enum):
     MANDATORY = "Mandatory"
 
 
-class Parser(TypedDict):
+class Parser(TypedDict):  # pylint: disable=too-few-public-methods
     req: ParserRequired
     obj: DataParser
 

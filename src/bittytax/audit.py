@@ -16,7 +16,7 @@ from .record import TransactionRecord
 from .types import AssetSymbol, Wallet
 
 
-class ComparePoolFail(TypedDict):
+class ComparePoolFail(TypedDict):  # pylint: disable=too-few-public-methods
     asset: AssetSymbol
     audit_tot: Decimal
     s104_tot: Optional[Decimal]

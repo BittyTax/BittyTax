@@ -25,7 +25,7 @@ from ..types import (
 from .pricedata import PriceData
 
 
-class VaPriceReport(TypedDict):
+class VaPriceReport(TypedDict):  # pylint: disable=too-few-public-methods
     name: AssetName
     data_source: DataSourceName
     url: SourceUrl

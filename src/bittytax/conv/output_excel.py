@@ -31,7 +31,7 @@ else:
     FONT_SIZE = 11
 
 
-class Column(TypedDict):
+class Column(TypedDict):  # pylint: disable=too-few-public-methods
     header: str
     header_format: xlsxwriter.worksheet.Format
 

@@ -23,7 +23,7 @@ from .datasource import BittyTaxAPI, DataSourceBase, Frankfurter
 from .exceptions import UnexpectedDataSourceError
 
 
-class AsRecord(TypedDict):
+class AsRecord(TypedDict):  # pylint: disable=too-few-public-methods
     symbol: AssetSymbol
     name: Optional[AssetName]
     data_source: Optional[DataSourceName]
@@ -31,7 +31,7 @@ class AsRecord(TypedDict):
     priority: NotRequired[bool]
 
 
-class AsPriceRecord(AsRecord):
+class AsPriceRecord(AsRecord):  # pylint: disable=too-few-public-methods
     price: Optional[Decimal]
     quote: QuoteSymbol
 

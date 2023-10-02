@@ -22,12 +22,12 @@ from .types import AssetName, AssetSymbol, Date, FixedValue, TrType, Year
 PRECISION = Decimal("0.00")
 
 
-class TaxReportRecord(TypedDict):
+class TaxReportRecord(TypedDict):  # pylint: disable=too-few-public-methods
     CapitalGains: "CalculateCapitalGains"
     Income: "CalculateIncome"
 
 
-class HoldingsReportAsset(TypedDict):
+class HoldingsReportAsset(TypedDict):  # pylint: disable=too-few-public-methods
     name: AssetName
     quantity: Decimal
     cost: Decimal
@@ -35,43 +35,43 @@ class HoldingsReportAsset(TypedDict):
     gain: NotRequired[Decimal]
 
 
-class HoldingsReportTotal(TypedDict):
+class HoldingsReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
     cost: Decimal
     value: Decimal
     gain: Decimal
 
 
-class HoldingsReportRecord(TypedDict):
+class HoldingsReportRecord(TypedDict):  # pylint: disable=too-few-public-methods
     holdings: Dict[AssetSymbol, HoldingsReportAsset]
     totals: HoldingsReportTotal
 
 
-class CapitalGainsIndividual(TypedDict):
+class CapitalGainsIndividual(TypedDict):  # pylint: disable=too-few-public-methods
     allowance: Decimal
     basic_rate: Decimal
     higher_rate: Decimal
     proceeds_limit: NotRequired[Decimal]
 
 
-class ChargableGainsCompany(TypedDict):
+class ChargableGainsCompany(TypedDict):  # pylint: disable=too-few-public-methods
     small_rate: Optional[Decimal]
     main_rate: Decimal
 
 
-class CapitalGainsReportTotal(TypedDict):
+class CapitalGainsReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
     cost: Decimal
     fees: Decimal
     proceeds: Decimal
     gain: Decimal
 
 
-class CapitalGainsReportSummary(TypedDict):
+class CapitalGainsReportSummary(TypedDict):  # pylint: disable=too-few-public-methods
     disposals: Decimal
     total_gain: Decimal
     total_loss: Decimal
 
 
-class CapitalGainsReportEstimate(TypedDict):
+class CapitalGainsReportEstimate(TypedDict):  # pylint: disable=too-few-public-methods
     allowance: Decimal
     cgt_basic_rate: Decimal
     cgt_higher_rate: Decimal
@@ -83,7 +83,7 @@ class CapitalGainsReportEstimate(TypedDict):
     proceeds_warning: bool
 
 
-class ChargableGainsReportEstimate(TypedDict):
+class ChargableGainsReportEstimate(TypedDict):  # pylint: disable=too-few-public-methods
     ct_small_rates: List[Optional[Decimal]]
     ct_main_rates: List[Decimal]
     taxable_gain: Decimal
@@ -91,7 +91,7 @@ class ChargableGainsReportEstimate(TypedDict):
     ct_main: Decimal
 
 
-class IncomeReportTotal(TypedDict):
+class IncomeReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
     amount: Decimal
     fees: Decimal
 
