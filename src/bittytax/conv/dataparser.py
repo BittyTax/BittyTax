@@ -68,7 +68,7 @@ class AllHandler2(Protocol):  # pylint: disable=too-few-public-methods
         ...
 
 
-class ParserArgs(TypedDict):  # pylint: disable=too-few-public-methods
+class ParserArgs(TypedDict):  # pylint: disable=too-few-public-methods, too-many-ancestors
     filename: str
     worksheet: NotRequired[str]
     unconfirmed: bool
