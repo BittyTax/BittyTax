@@ -2,7 +2,6 @@
 # (c) Nano Nano Ltd 2019
 
 import argparse
-import codecs
 import errno
 import glob
 import hashlib
@@ -30,10 +29,7 @@ from .output_csv import OutputCsv
 from .output_excel import OutputExcel
 
 if sys.stderr.encoding != "UTF-8":
-    if sys.version_info[:2] >= (3, 7):
-        sys.stderr.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
-    else:
-        sys.stderr = codecs.getwriter("utf-8")(sys.stderr.detach())
+    sys.stderr.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
 
 
 def main() -> None:

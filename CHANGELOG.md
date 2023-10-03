@@ -19,6 +19,7 @@
 
 ### Removed
 - Removed support for Python 2.7 as it is end of life.
+- Removed support for Python 3.6 as it is end of life.
 
 ## Version [0.5.1] (2023-04-04)
 Important:-
