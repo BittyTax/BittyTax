@@ -3,7 +3,6 @@
 # (c) Nano Nano Ltd 2019
 
 import argparse
-import codecs
 import io
 import os
 import platform
@@ -31,10 +30,7 @@ from .types import AssetSymbol, Year
 from .version import __version__
 
 if sys.stdout.encoding != "UTF-8":
-    if sys.version_info[:2] >= (3, 7):
-        sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
-    else:
-        sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
+    sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
 
 
 def main() -> None:

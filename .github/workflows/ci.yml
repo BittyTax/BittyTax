@@ -5,14 +5,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
         os: [ubuntu-latest, windows-latest, macos-latest]
-        exclude:
-          - python-version: "3.6"
-            os: ubuntu-latest
-        include:
-          - python-version: "3.6"
-            os: ubuntu-20.04
     runs-on: ${{matrix.os}} 
     steps:
       - uses: actions/checkout@v3
@@ -31,11 +25,19 @@ jobs:
       - name: Pylint
         run: |
           pip install pylint
-          pylint ${{matrix.pylint-rcfile}} $(git ls-files '*.py')
+          pylint $(git ls-files '*.py')
       - name: Flake8
         run: |
           pip install flake8
           flake8 .
+      - name: isort
+        run: |
+          pip install isort
+          isort --check $(git ls-files '*.py')
+      - name: Black
+        run: |
+          pip install black
+          black --check $(git ls-files '*.py')
   spell:
     runs-on: ubuntu-latest
     steps:
@@ -55,20 +57,3 @@ jobs:
         run: |
           pip install pylint pyenchant
           pylint --spelling-dict=en_GB $(git ls-files '*.py')
-  black:
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{matrix.python-version}}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{matrix.python-version}}
-      - name: isort/Black
-        run: |
-          pip install isort black
-          isort --check $(git ls-files '*.py')
-          black --check $(git ls-files '*.py')
