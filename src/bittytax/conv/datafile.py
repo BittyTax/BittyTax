@@ -7,12 +7,11 @@ import io
 import os
 import sys
 import warnings
-from typing import Dict, Generator, Iterator, List, Optional
+from typing import Dict, Iterator, List, Optional, Tuple
 
 import openpyxl
 import xlrd
 from colorama import Fore
-from openpyxl import load_workbook
 from typing_extensions import Unpack
 
 from ..config import config
@@ -29,7 +28,7 @@ class DataFile:
     data_files: Dict["DataFile", "DataFile"] = {}
     data_files_ordered: List["DataFile"] = []
 
-    def __init__(self, parser: DataParser, reader: Iterator) -> None:
+    def __init__(self, parser: DataParser, reader: Iterator[List[str]]) -> None:
         self.parser = parser
         self.data_rows = [
             DataRow(line_num + 1, row, parser.in_header) for line_num, row in enumerate(reader)
@@ -100,11 +99,11 @@ class DataFile:
                     sys.stderr.write(f'{ERROR} Unexpected error: "{data_row.failure}"\n')
 
     @classmethod
-    def read_excel_xlsx(cls, filename: str) -> Generator:
+    def read_excel_xlsx(cls, filename: str) -> Iterator[xlrd.sheet.Sheet]:
         warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
         with open(filename, "rb") as df:
             try:
-                workbook = load_workbook(df, read_only=False, data_only=True)
+                workbook = openpyxl.load_workbook(df, read_only=False, data_only=True)
 
                 if config.debug:
                     sys.stderr.write(f"{Fore.CYAN}conv: EXCEL\n")
@@ -151,7 +150,7 @@ class DataFile:
         cls.consolidate_datafiles(data_file)
 
     @classmethod
-    def read_excel_xls(cls, filename: str) -> Generator:
+    def read_excel_xls(cls, filename: str) -> Iterator[Tuple[xlrd.sheet.Sheet, int]]:
         try:
             with xlrd.open_workbook(
                 filename, logfile=open(os.devnull, "w", encoding="utf-8")
@@ -195,7 +194,7 @@ class DataFile:
         cls.consolidate_datafiles(data_file)
 
     @staticmethod
-    def get_cell_values_xlsx(rows: Generator) -> Generator:
+    def get_cell_values_xlsx(rows: Iterator[List[openpyxl.cell.cell.Cell]]) -> Iterator[List[str]]:
         for row in rows:
             yield [DataFile.convert_cell_xlsx(cell) for cell in row]
 
@@ -206,7 +205,9 @@ class DataFile:
         return str(cell.value)
 
     @staticmethod
-    def get_cell_values_xls(rows: Generator, datemode: int) -> Generator:
+    def get_cell_values_xls(
+        rows: Iterator[List[xlrd.sheet.Cell]], datemode: int
+    ) -> Iterator[List[str]]:
         for row in rows:
             yield [DataFile.convert_cell_xls(cell, datemode) for cell in row]
 
@@ -259,7 +260,7 @@ class DataFile:
             raise DataFormatUnrecognised(filename)
 
     @classmethod
-    def read_csv_with_delimiter(cls, filename: str) -> Generator:
+    def read_csv_with_delimiter(cls, filename: str) -> Iterator[Iterator[List[str]]]:
         with io.open(filename, newline="", encoding="utf-8-sig") as csv_file:
             for delimiter in cls.CSV_DELIMITERS:
                 if config.debug:
@@ -277,7 +278,7 @@ class DataFile:
             cls.data_files_ordered.append(data_file)
 
     @staticmethod
-    def get_parser(reader: Iterator) -> Optional[DataParser]:
+    def get_parser(reader: Iterator[List[str]]) -> Optional[DataParser]:
         parser = None
         # Header might not be on first line
         for row in range(8):
