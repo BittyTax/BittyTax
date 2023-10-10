@@ -7,6 +7,7 @@
 - Conversion tool: identify duplicate data files using hashes.
 - Binance parser: warning if BNB amount is not available.
 - Added static typing. ([#230](https://github.com/BittyTax/BittyTax/issues/230))
+- Added support for Python 3.12.
 ### Changed
 - Accounting tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
 - Conversion tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
@@ -16,7 +17,6 @@
 - Make code Python 3 compliant.
 - Conversion tool: check if file is a directory before opening.
 - Coinbase parser: check for Advanced Trades that trading pair matches the currency. ([#304](https://github.com/BittyTax/BittyTax/issues/304))
-
 ### Removed
 - Removed support for Python 2.7 as it is end of life.
 - Removed support for Python 3.6 as it is end of life.
