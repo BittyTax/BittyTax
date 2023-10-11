@@ -21,7 +21,7 @@ jobs:
       - name: Mypy
         run: |
           pip install mypy
-          mypy . --install-types --non-interactive --enable-incomplete-feature=Unpack
+          mypy . --install-types --non-interactive
       - name: Pylint
         run: |
           pip install pylint
