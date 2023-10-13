@@ -2,6 +2,7 @@
 # (c) Nano Nano Ltd 2019
 
 import copy
+import re
 import sys
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple, Union
@@ -238,6 +239,10 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
 
     def is_crypto(self) -> bool:
         return bool(self.asset not in config.fiat_list)
+
+    def is_nft(self) -> bool:
+        match = re.match(r".+ #(\d+)$", self.asset)
+        return bool(match)
 
     def date(self) -> Date:
         return Date(self.timestamp.date())

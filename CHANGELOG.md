@@ -1,7 +1,12 @@
 # Change Log
 ## [Unreleased]
+Important:-
+
+The tax calculations for NFTs have been corrected, they are no longer "same day" pooled, or "same day"/"bed & breakfast" matched. NFT disposals will appear as "Unpooled" in the report. If you have made any NFT disposals, we recommend you re-generate your tax reports to ensure your capital gains tax is correct.
+
 ### Fixed
 - Conversion tool: prevent xlrd from outputting logging in some situations.
+- Accounting tool: NFTs should be not be pooled, and no matching rules applied. ([#316](https://github.com/BittyTax/BittyTax/issues/316))
 ### Added
 - Conversion tool: identify data file types (.xls, .zip/.xlsx) using magic numbers.
 - Conversion tool: identify duplicate data files using hashes.

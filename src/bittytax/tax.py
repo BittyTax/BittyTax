@@ -101,6 +101,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
     DISPOSAL_TEN_DAY = "Ten Day"
     DISPOSAL_BED_AND_BREAKFAST = "Bed & Breakfast"
     DISPOSAL_SECTION_104 = "Section 104"
+    DISPOSAL_UNPOOLED = "Unpooled"
     DISPOSAL_NO_GAIN_NO_LOSS = "No Gain/No Loss"
 
     TRANSFER_TYPES = (TrType.DEPOSIT, TrType.WITHDRAWAL)
@@ -148,6 +149,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             if (
                 isinstance(t, Buy)
                 and t.is_crypto()
+                and not t.is_nft()
                 and t.acquisition
                 and t.t_type not in self.NO_MATCH_TYPES
             ):
@@ -158,6 +160,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             elif (
                 isinstance(t, Sell)
                 and t.is_crypto()
+                and not t.is_nft()
                 and t.disposal
                 and t.t_type not in self.NO_MATCH_TYPES
             ):
@@ -429,21 +432,19 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     fees + (t.fee_value or Decimal(0))
                 ).quantize(PRECISION)
                 t.proceeds_fixed = FixedValue(True)
-                tax_event = TaxEventCapitalGains(
-                    self.DISPOSAL_NO_GAIN_NO_LOSS,
-                    None,
-                    t,
-                    cost,
-                    fees + (t.fee_value or Decimal(0)),
-                )
+                disposal_type = self.DISPOSAL_NO_GAIN_NO_LOSS
+            elif t.is_nft():
+                disposal_type = self.DISPOSAL_UNPOOLED
             else:
-                tax_event = TaxEventCapitalGains(
-                    self.DISPOSAL_SECTION_104,
-                    None,
-                    t,
-                    cost,
-                    fees + (t.fee_value or Decimal(0)),
-                )
+                disposal_type = self.DISPOSAL_SECTION_104
+
+            tax_event = TaxEventCapitalGains(
+                disposal_type,
+                None,
+                t,
+                cost,
+                fees + (t.fee_value or Decimal(0)),
+            )
 
             self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
             if config.debug:
