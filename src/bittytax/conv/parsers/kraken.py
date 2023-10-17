@@ -236,6 +236,7 @@ def _parse_kraken_ledgers_row(
             "stakingtospot",
             "spotfromstaking",
             "stakingfromspot",
+            "spotfromfutures",
         ):
             # Skip internal transfers
             return
