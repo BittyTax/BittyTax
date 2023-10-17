@@ -147,12 +147,15 @@ def parse_etherscan_nfts(
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
 
+    if "TokenId" in row_dict:
+        row_dict["Token ID"] = row_dict["TokenId"]
+
     if row_dict["To"].lower() in kwargs["filename"].lower():
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
             buy_quantity=Decimal(1),
-            buy_asset=f'{row_dict["TokenName"]} #{row_dict["TokenId"]}',
+            buy_asset=f'{row_dict["TokenName"]} #{row_dict["Token ID"]}',
             wallet=_get_wallet(row_dict["To"]),
         )
     elif row_dict["From"].lower() in kwargs["filename"].lower():
@@ -160,7 +163,7 @@ def parse_etherscan_nfts(
             TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=Decimal(1),
-            sell_asset=f'{row_dict["TokenName"]} #{row_dict["TokenId"]}',
+            sell_asset=f'{row_dict["TokenName"]} #{row_dict["Token ID"]}',
             wallet=_get_wallet(row_dict["From"]),
         )
     else:
@@ -174,7 +177,7 @@ etherscan_txns = DataParser(
         "Txhash",
         "Blockno",
         "UnixTimestamp",
-        "DateTime",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),
         "From",
         "To",
         "ContractAddress",
@@ -186,6 +189,7 @@ etherscan_txns = DataParser(
         "Historical $Price/Eth",
         "Status",
         "ErrCode",
+        "Method",
     ],
     worksheet_name="Etherscan",
     row_handler=parse_etherscan,
@@ -198,7 +202,7 @@ DataParser(
         "Txhash",
         "Blockno",
         "UnixTimestamp",
-        "DateTime",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),
         "From",
         "To",
         "ContractAddress",
@@ -210,6 +214,7 @@ DataParser(
         "Historical $Price/Eth",
         "Status",
         "ErrCode",
+        "Method",
         "PrivateNote",
     ],
     worksheet_name="Etherscan",
@@ -235,7 +240,6 @@ DataParser(
         "Historical $Price/Eth",
         "Status",
         "ErrCode",
-        "Method",
     ],
     worksheet_name="Etherscan",
     row_handler=parse_etherscan,
@@ -260,7 +264,6 @@ DataParser(
         "Historical $Price/Eth",
         "Status",
         "ErrCode",
-        "Method",
         "PrivateNote",
     ],
     worksheet_name="Etherscan",
@@ -274,7 +277,7 @@ etherscan_int = DataParser(
         "Txhash",
         "Blockno",
         "UnixTimestamp",
-        "DateTime",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),
         "ParentTxFrom",
         "ParentTxTo",
         "ParentTxETH_Value",
@@ -300,7 +303,7 @@ DataParser(
         "Txhash",
         "Blockno",
         "UnixTimestamp",
-        "DateTime",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),
         "ParentTxFrom",
         "ParentTxTo",
         "ParentTxETH_Value",
@@ -327,7 +330,7 @@ etherscan_tokens = DataParser(
         "Txhash",
         "Blockno",  # New field
         "UnixTimestamp",
-        "DateTime",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),
         "From",
         "To",
         "TokenValue",  # Renamed
@@ -359,6 +362,28 @@ DataParser(
 )
 
 etherscan_nfts = DataParser(
+    ParserType.EXPLORER,
+    "Etherscan (ERC-721 NFTs)",
+    [
+        "Txhash",
+        "Blockno",
+        "UnixTimestamp",
+        "DateTime (UTC)",  # Renamed
+        "From",
+        "To",
+        "ContractAddress",
+        # "TokenId",
+        "TokenName",
+        "TokenSymbol",
+        "Token ID",  # Moved/Renamed
+        "Type",  # New field
+        "Quantity",  # New field
+    ],
+    worksheet_name="Etherscan",
+    row_handler=parse_etherscan_nfts,
+)
+
+DataParser(
     ParserType.EXPLORER,
     "Etherscan (ERC-721 NFTs)",
     [
