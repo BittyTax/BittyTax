@@ -325,7 +325,7 @@ DataParser(
 
 etherscan_tokens = DataParser(
     ParserType.EXPLORER,
-    "Etherscan (ERC-20 Tokens)",
+    "Etherscan (Token Transfers ERC-20)",
     [
         "Txhash",
         "Blockno",  # New field
@@ -345,7 +345,7 @@ etherscan_tokens = DataParser(
 
 DataParser(
     ParserType.EXPLORER,
-    "Etherscan (ERC-20 Tokens)",
+    "Etherscan (Token Transfers ERC-20)",
     [
         "Txhash",
         "UnixTimestamp",
@@ -363,7 +363,7 @@ DataParser(
 
 etherscan_nfts = DataParser(
     ParserType.EXPLORER,
-    "Etherscan (ERC-721 NFTs)",
+    "Etherscan (NFT Transfers ERC-721 & ERC-1155)",
     [
         "Txhash",
         "Blockno",
@@ -385,7 +385,7 @@ etherscan_nfts = DataParser(
 
 DataParser(
     ParserType.EXPLORER,
-    "Etherscan (ERC-721 NFTs)",
+    "Etherscan (NFT Transfers ERC-721 & ERC-1155)",
     [
         "Txhash",
         "Blockno",  # New field
@@ -404,7 +404,7 @@ DataParser(
 
 DataParser(
     ParserType.EXPLORER,
-    "Etherscan (ERC-721 NFTs)",
+    "Etherscan (NFT Transfers ERC-721 & ERC-1155)",
     [
         "Txhash",
         "UnixTimestamp",
