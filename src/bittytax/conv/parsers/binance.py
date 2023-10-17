@@ -402,6 +402,7 @@ def _parse_binance_statements_row(
         "Sell",
         "Fee",
         "Transaction Buy",
+        "Transaction Fee",
         "Transaction Spend",
         "Transaction Sold",
         "Transaction Revenue",

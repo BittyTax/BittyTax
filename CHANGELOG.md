@@ -13,6 +13,7 @@ The tax calculations for NFTs have been corrected, they are no longer "same day"
 - Binance parser: warning if BNB amount is not available.
 - Added static typing. ([#230](https://github.com/BittyTax/BittyTax/issues/230))
 - Added support for Python 3.12.
+- Binance parser: added "Transaction Fee" operation for statements. ([#314](https://github.com/BittyTax/BittyTax/issues/314))
 ### Changed
 - Accounting tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
 - Conversion tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
