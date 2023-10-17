@@ -71,7 +71,7 @@ ALT_ASSETS = {
     "ZUSD": "USD",
 }
 
-ASSETS_SHORT = ["MC", "MV", "SC", "T"]
+ASSETS_SHORT = ["MC", "MV", "OP", "SC", "T"]
 
 
 def parse_kraken_ledgers(
