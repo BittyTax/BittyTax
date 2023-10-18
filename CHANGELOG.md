@@ -29,6 +29,7 @@ The tax calculations for NFTs have been corrected, they are no longer "same day"
 ### Removed
 - Removed support for Python 2.7 as it is end of life.
 - Removed support for Python 3.6 as it is end of life.
+- Conversion tool: removed 15-digit precision warning for CSV output. ([#308](https://github.com/BittyTax/BittyTax/issues/308))
 
 ## Version [0.5.1] (2023-04-04)
 Important:-

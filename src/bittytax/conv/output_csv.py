@@ -13,7 +13,7 @@ import _csv
 from colorama import Fore
 
 from ..config import config
-from ..constants import FORMAT_RECAP, WARNING
+from ..constants import FORMAT_RECAP
 from ..types import TrType, UnmappedType
 from .out_record import TransactionOutRecord
 
@@ -23,7 +23,6 @@ if TYPE_CHECKING:
 
 class OutputBase:  # pylint: disable=too-few-public-methods
     DEFAULT_FILENAME = "BittyTax_Records"
-    EXCEL_PRECISION = 15
     BITTYTAX_OUT_HEADER = [
         "Type",
         "Buy Quantity",
@@ -183,32 +182,6 @@ class OutputCsv(OutputBase):
 
     @staticmethod
     def _to_bittytax_csv(tr: TransactionOutRecord) -> List[str]:
-        if (
-            tr.buy_quantity is not None
-            and len(tr.buy_quantity.normalize().as_tuple().digits) > OutputBase.EXCEL_PRECISION
-        ):
-            sys.stderr.write(
-                f"{WARNING} {OutputBase.EXCEL_PRECISION}-digit precision exceeded for "
-                f"Buy Quantity: {tr.format_quantity(tr.buy_quantity)}{Fore.RESET}\n"
-            )
-
-        if (
-            tr.sell_quantity is not None
-            and len(tr.sell_quantity.normalize().as_tuple().digits) > OutputBase.EXCEL_PRECISION
-        ):
-            sys.stderr.write(
-                f"{WARNING} {OutputBase.EXCEL_PRECISION}-digit precision exceeded for "
-                f"Sell Quantity: {tr.format_quantity(tr.sell_quantity)}{Fore.RESET}\n"
-            )
-
-        if (
-            tr.fee_quantity is not None
-            and len(tr.fee_quantity.normalize().as_tuple().digits) > OutputBase.EXCEL_PRECISION
-        ):
-            sys.stderr.write(
-                f"{WARNING} {OutputBase.EXCEL_PRECISION}-digit precision exceeded for"
-                f"Fee Quantity: {tr.format_quantity(tr.fee_quantity)}{Fore.RESET}\n"
-            )
         return [
             OutputCsv._format_type(tr.t_type),
             OutputCsv._format_decimal(tr.buy_quantity),
