@@ -26,7 +26,7 @@ class AuditRecords:
     def __init__(self, transaction_records: List[TransactionRecord]) -> None:
         self.wallets: Dict[Wallet, Dict[AssetSymbol, Decimal]] = {}
         self.totals: Dict[AssetSymbol, Decimal] = {}
-        self.failures: List[ComparePoolFail]
+        self.failures: List[ComparePoolFail] = []
 
         if config.debug:
             print(f"{Fore.CYAN}audit transaction records")
