@@ -17,6 +17,7 @@ The tax calculations for NFTs have been corrected, they are no longer "same day"
 - Etherscan parser: added new export formats. ([#313](https://github.com/BittyTax/BittyTax/issues/313))
 - Kraken parser: updated the assets list used for splitting the trading pair.
 - Kraken parser: added "spotfromfutures" subtype. ([#310](https://github.com/BittyTax/BittyTax/issues/310))
+- Conversion tool: added merge parser for Coinbase/Coinbase Pro.
 ### Changed
 - Accounting tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
 - Conversion tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))

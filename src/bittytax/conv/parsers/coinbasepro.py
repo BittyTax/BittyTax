@@ -198,7 +198,7 @@ def parse_coinbase_pro_fills_v1(
         raise UnexpectedTypeError(parser.in_header.index("side"), "side", row_dict["side"])
 
 
-ACCOUNT = DataParser(
+coinbase_pro_account_v2 = DataParser(
     ParserType.EXCHANGE,
     "Coinbase Pro Account",
     [
@@ -233,7 +233,7 @@ DataParser(
         "price/fee/total unit",
     ],
     worksheet_name="Coinbase Pro T",
-    deprecated=ACCOUNT,
+    deprecated=coinbase_pro_account_v2,
     # Different handler name used to prevent data file consolidation
     row_handler=parse_coinbase_pro_fills_v2,
 )
