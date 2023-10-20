@@ -386,7 +386,7 @@ def _normalise_asset(asset: str) -> str:
     return asset
 
 
-LEDGERS = DataParser(
+kraken_ledgers = DataParser(
     ParserType.EXCHANGE,
     "Kraken Ledgers",
     [
@@ -453,7 +453,7 @@ DataParser(
         "trades",
     ],
     worksheet_name="Kraken T",
-    deprecated=LEDGERS,
+    deprecated=kraken_ledgers,
     row_handler=parse_kraken_trades,
 )
 
@@ -476,6 +476,6 @@ DataParser(
         "ledgers",
     ],
     worksheet_name="Kraken T",
-    deprecated=LEDGERS,
+    deprecated=kraken_ledgers,
     row_handler=parse_kraken_trades,
 )
