@@ -2,10 +2,12 @@
 # (c) Nano Nano Ltd 2023
 
 import copy
+import datetime
 from typing import TYPE_CHECKING, Dict
 
 from ...bt_types import FileId, TrType
 from ...config import config
+from ...constants import TZ_UTC
 from ..datamerge import DataMerge, ParserRequired
 from ..out_record import TransactionOutRecord
 from ..parsers.coinbase import WALLET, coinbase_v2
@@ -17,6 +19,9 @@ if TYPE_CHECKING:
 
 CB = FileId("coinbase")
 CB_PRO = FileId("coinbasepro")
+
+# This is a guestimate of when Coinbase Pro crypto transfer relays stopped 
+RELAY_TIMESTAMP = datetime.datetime(2022, 1, 1, tzinfo=TZ_UTC)
 
 
 def merge_coinbase(data_files: Dict[FileId, "DataFile"]) -> bool:
@@ -30,9 +35,9 @@ def merge_coinbase(data_files: Dict[FileId, "DataFile"]) -> bool:
             continue
 
         if dr.t_record.t_type is TrType.DEPOSIT:
-            dr.t_record.note = "Coinbase"
-
             if dr.t_record.buy_asset in config.fiat_list:
+                dr.t_record.note = "from Coinbase"
+
                 # We need to add both a Coinbase Deposit, and a Withdrawal to Coinbase Pro
                 dup_data_row = copy.copy(dr)
                 dup_data_row.row = []
@@ -53,28 +58,32 @@ def merge_coinbase(data_files: Dict[FileId, "DataFile"]) -> bool:
                     sell_quantity=dr.t_record.buy_quantity,
                     sell_asset=dr.t_record.buy_asset,
                     wallet=WALLET,
-                    note=f'Coinbase Pro ({dr.row_dict["transfer id"]})',
+                    note=f'to Coinbase Pro ({dr.row_dict["transfer id"]})',
                 )
                 data_files[CB].data_rows.append(dup_data_row)
+                merge = True
             else:
-                # We just need to add a Withdrawal to Coinbase Pro
-                dup_data_row = copy.copy(dr)
-                dup_data_row.row = []
-                dup_data_row.t_record = TransactionOutRecord(
-                    TrType.WITHDRAWAL,
-                    dr.timestamp,
-                    sell_quantity=dr.t_record.buy_quantity,
-                    sell_asset=dr.t_record.buy_asset,
-                    wallet=WALLET,
-                    note=f'Coinbase Pro ({dr.row_dict["transfer id"]})',
-                )
-                data_files[CB].data_rows.append(dup_data_row)
+                # Crypto deposits stopped being relayed after a specific date
+                if dr.t_record.timestamp < RELAY_TIMESTAMP:
+                    dr.t_record.note = "from Coinbase"
 
-            merge = True
+                    # We just need to add a Withdrawal to Coinbase Pro
+                    dup_data_row = copy.copy(dr)
+                    dup_data_row.row = []
+                    dup_data_row.t_record = TransactionOutRecord(
+                        TrType.WITHDRAWAL,
+                        dr.timestamp,
+                        sell_quantity=dr.t_record.buy_quantity,
+                        sell_asset=dr.t_record.buy_asset,
+                        wallet=WALLET,
+                        note=f'to Coinbase Pro ({dr.row_dict["transfer id"]})',
+                    )
+                    data_files[CB].data_rows.append(dup_data_row)
+                    merge = True
         elif dr.t_record.t_type is TrType.WITHDRAWAL:
-            dr.t_record.note = "Coinbase"
-
             if dr.t_record.sell_asset in config.fiat_list:
+                dr.t_record.note = "to Coinbase"
+
                 # We need to add both a Coinbase Withdrawal, and a Deposit from Coinbase Pro
                 dup_data_row = copy.copy(dr)
                 dup_data_row.row = []
@@ -95,24 +104,28 @@ def merge_coinbase(data_files: Dict[FileId, "DataFile"]) -> bool:
                     buy_quantity=dr.t_record.sell_quantity,
                     buy_asset=dr.t_record.sell_asset,
                     wallet=WALLET,
-                    note=f'Coinbase Pro ({dr.row_dict["transfer id"]})',
+                    note=f'from Coinbase Pro ({dr.row_dict["transfer id"]})',
                 )
                 data_files[CB].data_rows.append(dup_data_row)
+                merge = True
             else:
-                # We just need to add a Deposit to Coinbase Pro
-                dup_data_row = copy.copy(dr)
-                dup_data_row.row = []
-                dup_data_row.t_record = TransactionOutRecord(
-                    TrType.DEPOSIT,
-                    dr.timestamp,
-                    buy_quantity=dr.t_record.sell_quantity,
-                    buy_asset=dr.t_record.sell_asset,
-                    wallet=WALLET,
-                    note=f'Coinbase Pro ({dr.row_dict["transfer id"]})',
-                )
-                data_files[CB].data_rows.append(dup_data_row)
+                # Crypto withdrawals stopped being relayed after a specific date
+                if dr.t_record.timestamp < RELAY_TIMESTAMP:
+                    dr.t_record.note = "to Coinbase"
 
-            merge = True
+                    # We just need to add a Deposit to Coinbase Pro
+                    dup_data_row = copy.copy(dr)
+                    dup_data_row.row = []
+                    dup_data_row.t_record = TransactionOutRecord(
+                        TrType.DEPOSIT,
+                        dr.timestamp,
+                        buy_quantity=dr.t_record.sell_quantity,
+                        buy_asset=dr.t_record.sell_asset,
+                        wallet=WALLET,
+                        note=f'from Coinbase Pro ({dr.row_dict["transfer id"]})',
+                    )
+                    data_files[CB].data_rows.append(dup_data_row)
+                    merge = True
 
     return merge
 
