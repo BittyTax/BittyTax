@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 CB = FileId("coinbase")
 CB_PRO = FileId("coinbasepro")
 
-# This is a guestimate of when Coinbase Pro crypto transfer relays stopped 
+# This is a guestimate of when Coinbase Pro crypto transfer relays stopped
 RELAY_TIMESTAMP = datetime.datetime(2022, 1, 1, tzinfo=TZ_UTC)
 
 
