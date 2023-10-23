@@ -10,10 +10,10 @@ from typing import Dict, List, Optional, Tuple, Union
 from colorama import Fore, Style
 from tqdm import tqdm
 
+from .bt_types import AssetSymbol, Date, FixedValue, Note, Timestamp, TrType, Wallet
 from .config import config
 from .price.valueasset import ValueAsset
 from .record import TransactionRecord
-from .types import AssetSymbol, Date, FixedValue, Note, Timestamp, TrType, Wallet
 
 
 class TransactionHistory:

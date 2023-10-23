@@ -12,10 +12,10 @@ import dateutil.tz
 from colorama import Fore, Style
 from typing_extensions import NotRequired, Protocol, TypedDict, Unpack
 
+from ..bt_types import AssetSymbol, Timestamp
 from ..config import config
 from ..constants import TZ_UTC
 from ..price.pricedata import PriceData
-from ..types import AssetSymbol, Timestamp
 from .exceptions import CurrencyConversionError
 
 if TYPE_CHECKING:

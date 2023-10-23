@@ -7,9 +7,7 @@ from typing import List, Optional, cast
 
 from typing_extensions import NotRequired, TypedDict
 
-from ..config import config
-from ..constants import CACHE_DIR
-from ..types import (
+from ..bt_types import (
     AssetId,
     AssetName,
     AssetSymbol,
@@ -19,6 +17,8 @@ from ..types import (
     Timestamp,
     TradingPair,
 )
+from ..config import config
+from ..constants import CACHE_DIR
 from .datasource import BittyTaxAPI, DataSourceBase, Frankfurter
 from .exceptions import UnexpectedDataSourceError
 

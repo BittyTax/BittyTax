@@ -3,7 +3,7 @@
 
 from typing import TYPE_CHECKING, Dict
 
-from ...types import FileId
+from ...bt_types import FileId
 from ..datamerge import DataMerge, ParserRequired
 from ..out_record import TransactionOutRecord
 from ..parsers.etherscan import etherscan_nfts, etherscan_tokens

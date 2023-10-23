@@ -4,8 +4,8 @@
 from decimal import Decimal
 from typing import TYPE_CHECKING, List, Optional
 
+from .bt_types import Note, Timestamp, TrType, Wallet
 from .config import config
-from .types import Note, Timestamp, TrType, Wallet
 
 if TYPE_CHECKING:
     from .transactions import Buy, Sell

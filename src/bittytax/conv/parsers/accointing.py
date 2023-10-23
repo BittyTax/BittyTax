@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Union
 
 from typing_extensions import Unpack
 
-from ...types import TrType, UnmappedType
+from ...bt_types import TrType, UnmappedType
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..out_record import TransactionOutRecord
 

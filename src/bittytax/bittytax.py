@@ -13,6 +13,7 @@ import colorama
 from colorama import Fore
 
 from .audit import AuditRecords
+from .bt_types import AssetSymbol, Year
 from .config import config
 from .constants import ERROR, TAX_RULES_UK_COMPANY, TAX_RULES_UK_INDIVIDUAL, WARNING
 from .exceptions import ImportFailureError
@@ -26,7 +27,6 @@ from .report import ReportLog, ReportPdf
 from .tax import CalculateCapitalGains as CCG
 from .tax import TaxCalculator
 from .transactions import TransactionHistory
-from .types import AssetSymbol, Year
 from .version import __version__
 
 if sys.stdout.encoding != "UTF-8":

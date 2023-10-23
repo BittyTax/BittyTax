@@ -12,9 +12,9 @@ import colorama
 import dateutil.parser
 from colorama import Fore
 
+from ..bt_types import AssetSymbol, Timestamp
 from ..config import config
 from ..constants import ERROR, WARNING
-from ..types import AssetSymbol, Timestamp
 from ..version import __version__
 from .assetdata import AsPriceRecord, AsRecord, AssetData
 from .datasource import DataSourceBase

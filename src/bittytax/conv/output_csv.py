@@ -12,9 +12,9 @@ from typing import TYPE_CHECKING, List, Optional, Union
 import _csv
 from colorama import Fore
 
+from ..bt_types import TrType, UnmappedType
 from ..config import config
 from ..constants import FORMAT_RECAP
-from ..types import TrType, UnmappedType
 from .out_record import TransactionOutRecord
 
 if TYPE_CHECKING:

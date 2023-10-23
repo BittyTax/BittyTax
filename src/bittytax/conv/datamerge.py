@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from colorama import Fore
 from typing_extensions import Protocol, TypedDict
 
+from ..bt_types import FileId
 from ..config import config
 from ..constants import ERROR
-from ..types import FileId
 from .dataparser import DataParser
 
 if TYPE_CHECKING:

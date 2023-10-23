@@ -3,7 +3,7 @@
 
 from typing import Any
 
-from .types import TrType
+from .bt_types import TrType
 
 
 class TransactionParserError(Exception):

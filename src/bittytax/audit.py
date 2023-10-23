@@ -9,11 +9,11 @@ from colorama import Fore, Style
 from tqdm import tqdm
 from typing_extensions import TypedDict
 
+from .bt_types import AssetSymbol, Wallet
 from .config import config
 from .constants import WARNING
 from .holdings import Holdings
 from .record import TransactionRecord
-from .types import AssetSymbol, Wallet
 
 
 class ComparePoolFail(TypedDict):  # pylint: disable=too-few-public-methods

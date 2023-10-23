@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import yaml
 from typing_extensions import Unpack
 
-from ...types import TrType
+from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord

@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from colorama import Fore
 
+from ...bt_types import FileId, TrType
 from ...config import config
 from ...constants import WARNING
-from ...types import FileId, TrType
 from ..datamerge import DataMerge, MergeDataRow, ParserRequired
 from ..exceptions import UnexpectedContentError
 from ..out_record import TransactionOutRecord

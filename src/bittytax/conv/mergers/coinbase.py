@@ -4,8 +4,8 @@
 import copy
 from typing import TYPE_CHECKING, Dict
 
+from ...bt_types import FileId, TrType
 from ...config import config
-from ...types import FileId, TrType
 from ..datamerge import DataMerge, ParserRequired
 from ..out_record import TransactionOutRecord
 from ..parsers.coinbase import WALLET, coinbase_v2

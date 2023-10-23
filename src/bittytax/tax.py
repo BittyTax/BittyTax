@@ -12,12 +12,12 @@ from colorama import Fore
 from tqdm import tqdm
 from typing_extensions import NotRequired, TypedDict
 
+from .bt_types import AssetName, AssetSymbol, Date, FixedValue, TrType, Year
 from .config import config
 from .constants import TAX_RULES_UK_COMPANY
 from .holdings import Holdings
 from .price.valueasset import ValueAsset
 from .transactions import Buy, Sell
-from .types import AssetName, AssetSymbol, Date, FixedValue, TrType, Year
 
 PRECISION = Decimal("0.00")
 

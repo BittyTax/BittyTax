@@ -14,9 +14,9 @@ from colorama import Fore
 from typing_extensions import TypedDict
 from xlsxwriter.utility import xl_rowcol_to_cell
 
+from ..bt_types import BUY_TYPES, SELL_TYPES, TrType, UnmappedType
 from ..config import config
 from ..constants import TZ_UTC
-from ..types import BUY_TYPES, SELL_TYPES, TrType, UnmappedType
 from ..version import __version__
 from .datafile import DataFile
 from .datarow import DataRow

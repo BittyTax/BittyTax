@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING, List, Optional, Tuple
 from colorama import Fore
 from typing_extensions import Unpack
 
+from ...bt_types import TrType
 from ...config import config
-from ...types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import DataRowError, UnexpectedTradingPairError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord

@@ -17,11 +17,11 @@ from colorama import Fore, Style
 from xhtml2pdf import pisa
 
 from .audit import AuditRecords
+from .bt_types import AssetName, AssetSymbol, Date, Note, Year
 from .config import config
 from .constants import _H1, ERROR, H1, TAX_RULES_UK_COMPANY
 from .price.valueasset import VaPriceReport
 from .tax import HoldingsReportRecord, TaxReportRecord
-from .types import AssetName, AssetSymbol, Date, Note, Year
 from .version import __version__
 
 

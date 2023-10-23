@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING, Tuple
 from colorama import Fore
 from typing_extensions import Unpack
 
+from ...bt_types import TrType
 from ...constants import WARNING
-from ...types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord

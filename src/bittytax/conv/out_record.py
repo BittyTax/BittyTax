@@ -5,8 +5,8 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional, Union
 
+from ..bt_types import BUY_TYPES, SELL_TYPES, TrType, UnmappedType
 from ..config import config
-from ..types import BUY_TYPES, SELL_TYPES, TrType, UnmappedType
 
 
 class TransactionOutRecord:  # pylint: disable=too-many-instance-attributes

@@ -15,6 +15,7 @@ from openpyxl import load_workbook
 from openpyxl.cell.cell import Cell
 from tqdm import tqdm, trange
 
+from .bt_types import AssetSymbol, Note, Timestamp, TrType, Wallet
 from .config import config
 from .constants import ERROR, TZ_UTC
 from .exceptions import (
@@ -27,7 +28,6 @@ from .exceptions import (
 )
 from .record import TransactionRecord
 from .transactions import Buy, Sell
-from .types import AssetSymbol, Note, Timestamp, TrType, Wallet
 
 
 class ImportRecords:

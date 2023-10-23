@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 from colorama import Fore
 from typing_extensions import Unpack
 
+from ...bt_types import TrType
 from ...config import config
-from ...types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import DataRowError, MissingComponentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord

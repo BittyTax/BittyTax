@@ -14,9 +14,7 @@ import requests
 from colorama import Fore
 from typing_extensions import TypedDict
 
-from ..config import config
-from ..constants import CACHE_DIR, TZ_UTC, WARNING
-from ..types import (
+from ..bt_types import (
     AssetId,
     AssetName,
     AssetSymbol,
@@ -27,6 +25,8 @@ from ..types import (
     Timestamp,
     TradingPair,
 )
+from ..config import config
+from ..constants import CACHE_DIR, TZ_UTC, WARNING
 from ..version import __version__
 from .exceptions import UnexpectedDataSourceAssetIdError
 

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Dict
 
 from typing_extensions import Unpack
 
-from ...types import TrType
+from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import DataFilenameError
 from ..out_record import TransactionOutRecord

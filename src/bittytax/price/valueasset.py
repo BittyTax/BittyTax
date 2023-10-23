@@ -9,9 +9,7 @@ from colorama import Fore, Style
 from tqdm import tqdm
 from typing_extensions import TypedDict
 
-from ..config import config
-from ..constants import WARNING
-from ..types import (
+from ..bt_types import (
     AssetName,
     AssetSymbol,
     DataSourceName,
@@ -22,6 +20,8 @@ from ..types import (
     Timestamp,
     Year,
 )
+from ..config import config
+from ..constants import WARNING
 from .pricedata import PriceData
 
 

@@ -6,9 +6,9 @@ from decimal import Decimal
 from colorama import Fore
 from tqdm import tqdm
 
+from .bt_types import AssetSymbol
 from .config import config
 from .constants import WARNING
-from .types import AssetSymbol
 
 
 class Holdings:

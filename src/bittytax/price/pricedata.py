@@ -7,9 +7,7 @@ from typing import List, Optional, Tuple
 
 from colorama import Fore
 
-from ..config import config
-from ..constants import CACHE_DIR
-from ..types import (
+from ..bt_types import (
     AssetName,
     AssetSymbol,
     DataSourceName,
@@ -19,6 +17,8 @@ from ..types import (
     Timestamp,
     TradingPair,
 )
+from ..config import config
+from ..constants import CACHE_DIR
 from .datasource import DataSourceBase
 from .exceptions import UnexpectedDataSourceError
 

@@ -10,9 +10,9 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 from colorama import Fore
 from typing_extensions import Unpack
 
+from ...bt_types import TrType, UnmappedType
 from ...config import config
 from ...constants import WARNING
-from ...types import TrType, UnmappedType
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
