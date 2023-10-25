@@ -22,6 +22,7 @@ from . import (
     coinlist,
     coinmetro,
     coinomi,
+    cointracker,
     cointracking,
     cryptocom,
     cryptopia,
