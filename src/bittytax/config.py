@@ -46,6 +46,7 @@ class Config:
         "transfer_fee_allowable_cost": False,
         "fiat_income": False,
         "lost_buyback": True,
+        "large_data": False,
         "data_source_select": {},
         "data_source_fiat": DATA_SOURCE_FIAT,
         "data_source_crypto": DATA_SOURCE_CRYPTO,

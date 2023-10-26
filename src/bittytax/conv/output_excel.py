@@ -43,6 +43,7 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
     DATE_FORMAT_MS = "yyyy-mm-dd hh:mm:ss.000"  # Excel can only display milliseconds
     STR_FORMAT_MS = "%Y-%m-%dT%H:%M:%S.%f"
     FONT_COLOR_IN_DATA = "#808080"
+
     TITLE = "BittyTax Records"
     PROJECT_URL = "https://github.com/BittyTax/BittyTax"
 
@@ -66,6 +67,8 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
                 "font_color": "white",
                 "bold": True,
                 "bg_color": "black",
+                "border": 1,
+                "border_color": "white",
             }
         )
         self.format_in_header = self.workbook.add_format(
@@ -74,6 +77,8 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
                 "font_color": "white",
                 "bold": True,
                 "bg_color": self.FONT_COLOR_IN_DATA,
+                "border": 1,
+                "border_color": "white",
             }
         )
         self.format_out_data = self.workbook.add_format(
@@ -351,17 +356,21 @@ class Worksheet:
                     row_num, col_num, quantity.normalize(), self.output.format_num_float
                 )
                 cell = xl_rowcol_to_cell(row_num, col_num)
-                self.worksheet.conditional_format(
-                    row_num,
-                    col_num,
-                    row_num,
-                    col_num,
-                    {
-                        "type": "formula",
-                        "criteria": f"=INT({cell})={cell}",
-                        "format": self.output.format_num_int,
-                    },
-                )
+
+                if not config.large_data:
+                    # Lots of conditional formatting can slow down Excel
+                    self.worksheet.conditional_format(
+                        row_num,
+                        col_num,
+                        row_num,
+                        col_num,
+                        {
+                            "type": "formula",
+                            "criteria": f"=INT({cell})={cell}",
+                            "format": self.output.format_num_int,
+                        },
+                    )
+
             self._autofit_calc(col_num, len(f"{quantity.normalize():0,f}"))
 
     def _xl_asset(self, asset: str, row_num: int, col_num: int) -> None:

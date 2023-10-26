@@ -54,7 +54,8 @@ class DataFile:
         if self.remove_duplicates:
             self.data_rows += [dr for dr in other.data_rows if dr not in self.data_rows]
         else:
-            if [dr for dr in other.data_rows if dr in self.data_rows]:
+            # Checking for duplicates can be very slow for large files
+            if not config.large_data and [dr for dr in other.data_rows if dr in self.data_rows]:
                 sys.stderr.write(
                     f'{WARNING} Duplicate rows detected for "{self.parser.name}", '
                     f"use the [--duplicates] option to remove them (use with care)\n"
