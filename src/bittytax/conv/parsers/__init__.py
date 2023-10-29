@@ -31,6 +31,7 @@ from . import (
     energyweb,
     etherscan,
     exodus,
+    ftx,
     gatehub,
     generic,
     gravity,

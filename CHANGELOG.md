@@ -20,6 +20,7 @@ The tax calculations for NFTs have been corrected, they are no longer "same day"
 - Conversion tool: added merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: added parser for CoinTracker accounting data.
 - Conversion tool: new config "large_data" addded.
+- Conversion tool: addded parser for FTX exchange.
 ### Changed
 - Accounting tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
 - Conversion tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
