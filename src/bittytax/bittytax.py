@@ -52,7 +52,8 @@ def main() -> None:
     parser.add_argument(
         "-ty",
         "--taxyear",
-        type=validate_year,
+        type=_validate_year,
+        dest="tax_year",
         help=(
             f"tax year must be in the range "
             f"({min(CCG.CG_DATA_INDIVIDUAL)}-{max(CCG.CG_DATA_INDIVIDUAL)})"
@@ -69,6 +70,12 @@ def main() -> None:
         help="specify tax rules to use, default: UK_INDIVIDUAL",
     )
     parser.add_argument(
+        "--audit",
+        dest="audit_only",
+        action="store_true",
+        help="audit only",
+    )
+    parser.add_argument(
         "--skipint",
         dest="skip_integrity",
         action="store_true",
@@ -76,6 +83,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--summary",
+        dest="summary_only",
         action="store_true",
         help="only output the capital gains summary in the tax report",
     )
@@ -110,47 +118,53 @@ def main() -> None:
         config.start_of_year_day = 1
 
     try:
-        transaction_records = do_import(args.filename)
+        transaction_records = _do_import(args.filename)
     except IOError:
         parser.exit(message=f"{ERROR} File could not be read: {args.filename}\n")
     except ImportFailureError:
         parser.exit()
 
     if args.export:
-        do_export(transaction_records)
+        _do_export(transaction_records)
         parser.exit()
 
     audit = AuditRecords(transaction_records)
 
-    try:
-        tax, value_asset = do_tax(transaction_records, args.tax_rules, args.skip_integrity)
-        if not args.skip_integrity:
-            int_passed = do_integrity_check(audit, tax.holdings)
-            if not int_passed:
-                parser.exit()
-
-        if not args.summary:
-            tax.process_income()
-
-        do_each_tax_year(tax, args.taxyear, args.summary, value_asset)
-
-    except DataSourceError as e:
-        parser.exit(message=f"{ERROR} {e}\n")
-
-    if args.nopdf:
-        ReportLog(audit, tax.tax_report, value_asset.price_report, tax.holdings_report, args)
+    if args.audit_only:
+        if args.nopdf:
+            ReportLog(args, audit)
+        else:
+            ReportPdf(parser.prog, args, audit)
     else:
-        ReportPdf(
-            parser.prog,
-            audit,
-            tax.tax_report,
-            value_asset.price_report,
-            tax.holdings_report,
-            args,
-        )
+        try:
+            tax, value_asset = _do_tax(transaction_records, args.tax_rules, args.skip_integrity)
+            if not args.skip_integrity:
+                int_passed = _do_integrity_check(audit, tax.holdings)
+                if not int_passed:
+                    parser.exit()
+
+            if not args.summary_only:
+                tax.process_income()
+
+            _do_each_tax_year(tax, args.tax_year, args.summary_only, value_asset)
+
+        except DataSourceError as e:
+            parser.exit(message=f"{ERROR} {e}\n")
+
+        if args.nopdf:
+            ReportLog(args, audit, tax.tax_report, value_asset.price_report, tax.holdings_report)
+        else:
+            ReportPdf(
+                parser.prog,
+                args,
+                audit,
+                tax.tax_report,
+                value_asset.price_report,
+                tax.holdings_report,
+            )
 
 
-def validate_year(value: str) -> int:
+def _validate_year(value: str) -> int:
     year = int(value)
     if year not in CCG.CG_DATA_INDIVIDUAL:
         raise argparse.ArgumentTypeError(
@@ -161,7 +175,7 @@ def validate_year(value: str) -> int:
     return year
 
 
-def do_import(filename: str) -> List[TransactionRecord]:
+def _do_import(filename: str) -> List[TransactionRecord]:
     import_records = ImportRecords()
 
     if filename:
@@ -187,7 +201,7 @@ def do_import(filename: str) -> List[TransactionRecord]:
     return import_records.get_records()
 
 
-def do_tax(
+def _do_tax(
     transaction_records: List[TransactionRecord], tax_rules: str, skip_integrity_check: bool
 ) -> Tuple[TaxCalculator, ValueAsset]:
     value_asset = ValueAsset()
@@ -206,11 +220,11 @@ def do_tax(
     return tax, value_asset
 
 
-def do_integrity_check(audit: AuditRecords, holdings: Dict[AssetSymbol, Holdings]) -> bool:
+def _do_integrity_check(audit: AuditRecords, holdings: Dict[AssetSymbol, Holdings]) -> bool:
     int_passed = True
 
     if config.transfers_include:
-        transfer_mismatch = transfer_mismatches(holdings)
+        transfer_mismatch = _transfer_mismatches(holdings)
     else:
         transfer_mismatch = False
 
@@ -238,21 +252,22 @@ def do_integrity_check(audit: AuditRecords, holdings: Dict[AssetSymbol, Holdings
     return int_passed
 
 
-def transfer_mismatches(holdings: Dict[AssetSymbol, Holdings]) -> bool:
+def _transfer_mismatches(holdings: Dict[AssetSymbol, Holdings]) -> bool:
     return bool([asset for asset in holdings if holdings[asset].mismatches])
 
 
-def do_each_tax_year(
-    tax: TaxCalculator, tax_year: Year, summary: bool, value_asset: ValueAsset
+def _do_each_tax_year(
+    tax: TaxCalculator, tax_year: Year, summary_only: bool, value_asset: ValueAsset
 ) -> None:
     if tax_year:
         print(f"{Fore.CYAN}calculating tax year {config.format_tax_year(tax_year)}")
 
         calc_cgt = tax.calculate_capital_gains(tax_year)
-        if not summary:
+        if summary_only:
+            tax.tax_report[tax_year] = {"CapitalGains": calc_cgt}
+        else:
             calc_income = tax.calculate_income(tax_year)
-
-        tax.tax_report[tax_year] = {"CapitalGains": calc_cgt, "Income": calc_income}
+            tax.tax_report[tax_year] = {"CapitalGains": calc_cgt, "Income": calc_income}
     else:
         # Calculate for all years
         for year in sorted(tax.tax_events):
@@ -260,18 +275,19 @@ def do_each_tax_year(
 
             if year in CCG.CG_DATA_INDIVIDUAL:
                 calc_cgt = tax.calculate_capital_gains(year)
-                if not summary:
+                if summary_only:
+                    tax.tax_report[year] = {"CapitalGains": calc_cgt}
+                else:
                     calc_income = tax.calculate_income(year)
+                    tax.tax_report[year] = {"CapitalGains": calc_cgt, "Income": calc_income}
             else:
                 print(f"{WARNING} Tax year {year} is not supported")
 
-            tax.tax_report[year] = {"CapitalGains": calc_cgt, "Income": calc_income}
-
-        if not summary:
+        if not summary_only:
             tax.calculate_holdings(value_asset)
 
 
-def do_export(transaction_records: List[TransactionRecord]) -> None:
+def _do_export(transaction_records: List[TransactionRecord]) -> None:
     value_asset = ValueAsset()
     TransactionHistory(transaction_records, value_asset)
     ExportRecords(transaction_records).write_csv()

@@ -21,23 +21,25 @@ from .bt_types import AssetName, AssetSymbol, Date, Note, Year
 from .config import config
 from .constants import _H1, ERROR, H1, TAX_RULES_UK_COMPANY
 from .price.valueasset import VaPriceReport
-from .tax import HoldingsReportRecord, TaxReportRecord
+from .tax import CalculateCapitalGains, CalculateIncome, HoldingsReportRecord, TaxReportRecord
 from .version import __version__
 
 
 class ReportPdf:
     DEFAULT_FILENAME = "BittyTax_Report"
     FILE_EXTENSION = "pdf"
-    TEMPLATE_FILE = "tax_report.html"
+    AUDIT_TEMPLATE = "audit_report.html"
+    TAX_SUMMARY_TEMPLATE = "tax_summary_report.html"
+    TAX_FULL_TEMPLATE = "tax_full_report.html"
 
     def __init__(
         self,
         progname: str,
-        audit: AuditRecords,
-        tax_report: Dict[Year, TaxReportRecord],
-        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]],
-        holdings_report: HoldingsReportRecord,
         args: argparse.Namespace,
+        audit: AuditRecords,
+        tax_report: Optional[Dict[Year, TaxReportRecord]] = None,
+        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
+        holdings_report: Optional[HoldingsReportRecord] = None,
     ) -> None:
         self.env = jinja2.Environment(loader=jinja2.PackageLoader("bittytax", "templates"))
         self.filename = self.get_output_filename(args.output_filename, self.FILE_EXTENSION)
@@ -52,19 +54,42 @@ class ReportPdf:
         self.env.filters["lenfilter"] = self.lenfilter
         self.env.globals["TAX_RULES_UK_COMPANY"] = TAX_RULES_UK_COMPANY
 
-        template = self.env.get_template(self.TEMPLATE_FILE)
-        html = template.render(
-            {
-                "date": datetime.datetime.now(),
-                "author": f"{progname} v{__version__}",
-                "config": config,
-                "audit": audit,
-                "tax_report": tax_report,
-                "price_report": price_report,
-                "holdings_report": holdings_report,
-                "args": args,
-            }
-        )
+        if args.audit_only:
+            template = self.env.get_template(self.AUDIT_TEMPLATE)
+            html = template.render(
+                {
+                    "date": datetime.datetime.now(),
+                    "author": f"{progname} v{__version__}",
+                    "config": config,
+                    "args": args,
+                    "audit": audit,
+                }
+            )
+        elif args.summary_only:
+            template = self.env.get_template(self.TAX_SUMMARY_TEMPLATE)
+            html = template.render(
+                {
+                    "date": datetime.datetime.now(),
+                    "author": f"{progname} v{__version__}",
+                    "config": config,
+                    "args": args,
+                    "tax_report": tax_report,
+                }
+            )
+        else:
+            template = self.env.get_template(self.TAX_FULL_TEMPLATE)
+            html = template.render(
+                {
+                    "date": datetime.datetime.now(),
+                    "author": f"{progname} v{__version__}",
+                    "config": config,
+                    "args": args,
+                    "audit": audit,
+                    "tax_report": tax_report,
+                    "price_report": price_report,
+                    "holdings_report": holdings_report,
+                }
+            )
 
         with ProgressSpinner():
             with open(self.filename, "w+b") as pdf_file:
@@ -147,73 +172,100 @@ class ReportLog:
 
     def __init__(
         self,
+        args: argparse.Namespace,
         audit: AuditRecords,
+        tax_report: Optional[Dict[Year, TaxReportRecord]] = None,
+        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
+        holdings_report: Optional[HoldingsReportRecord] = None,
+    ) -> None:
+        if args.audit_only:
+            self._audit(audit)
+        elif args.summary_only:
+            if not tax_report:
+                raise RuntimeError("Missing tax_report")
+
+            self._tax_summary(args.tax_rules, tax_report)
+        else:
+            if not tax_report:
+                raise RuntimeError("Missing tax_report")
+
+            if not price_report:
+                raise RuntimeError("Missing price_report")
+
+            self._tax_full(args.tax_rules, audit, tax_report, price_report, holdings_report)
+
+    def _tax_summary(self, tax_rules: str, tax_report: Dict[Year, TaxReportRecord]) -> None:
+        print(f"{Fore.WHITE}tax report output:")
+        for tax_year in sorted(tax_report):
+            print(
+                f"{H1}Tax Year - {config.format_tax_year(tax_year)} "
+                f"({self.format_date2(Date(config.get_tax_year_start(tax_year)))} to "
+                f"{self.format_date2(Date(config.get_tax_year_end(tax_year)))}){_H1}"
+            )
+            if tax_rules in TAX_RULES_UK_COMPANY:
+                print(f"{Fore.CYAN}Chargeable Gains")
+                self._capital_gains(tax_report[tax_year]["CapitalGains"])
+            else:
+                print(f"{Fore.CYAN}Capital Gains")
+                self._capital_gains(tax_report[tax_year]["CapitalGains"])
+
+    def _tax_full(
+        self,
+        tax_rules: str,
+        audit_report: AuditRecords,
         tax_report: Dict[Year, TaxReportRecord],
         price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]],
-        holdings_report: HoldingsReportRecord,
-        args: argparse.Namespace,
+        holdings_report: Optional[HoldingsReportRecord],
     ) -> None:
-        self.audit_report = audit
-        self.tax_report = tax_report
-        self.price_report = price_report
-        self.holdings_report = holdings_report
-
         print(f"{Fore.WHITE}tax report output:")
-        if args.taxyear:
-            if not args.summary:
-                self.audit()
+        self._audit(audit_report)
 
+        for tax_year in sorted(tax_report):
             print(
-                f"{H1}Tax Year - {config.format_tax_year(args.taxyear)} "
-                f"({self.format_date2(Date(config.get_tax_year_start(args.taxyear)))} to "
-                f"{self.format_date2(Date(config.get_tax_year_end(args.taxyear)))}){_H1}"
+                f"{H1}Tax Year - {config.format_tax_year(tax_year)} "
+                f"({self.format_date2(Date(config.get_tax_year_start(tax_year)))} to "
+                f"{self.format_date2(Date(config.get_tax_year_end(tax_year)))}){_H1}"
             )
-            self.capital_gains(args.taxyear, args.tax_rules, args.summary)
-            if not args.summary:
-                self.income(args.taxyear)
-                print("{H1}Appendix{_H1}")
-                self.price_data(args.taxyear)
-        else:
-            if not args.summary:
-                self.audit()
+            if tax_rules in TAX_RULES_UK_COMPANY:
+                print(f"{Fore.CYAN}Chargeable Gains")
+                self._capital_gains(tax_report[tax_year]["CapitalGains"])
+                self._ct_estimate(tax_report[tax_year]["CapitalGains"])
+            else:
+                print(f"{Fore.CYAN}Capital Gains")
+                self._capital_gains(tax_report[tax_year]["CapitalGains"])
+                self._cgt_estimate(tax_report[tax_year]["CapitalGains"])
 
-            for tax_year in sorted(tax_report):
-                print(
-                    f"{H1}Tax Year - {config.format_tax_year(tax_year)} "
-                    f"({self.format_date2(Date(config.get_tax_year_start(tax_year)))} to "
-                    f"{self.format_date2(Date(config.get_tax_year_end(tax_year)))}){_H1}"
-                )
-                self.capital_gains(tax_year, args.tax_rules, args.summary)
-                if not args.summary:
-                    self.income(tax_year)
+            self._income(tax_report[tax_year]["Income"])
 
-            if not args.summary:
-                print(f"{H1}Appendix{_H1}")
-                for tax_year in sorted(tax_report):
-                    self.price_data(tax_year)
-                    print("")
-                self.holdings()
+        print(f"{H1}Appendix{_H1}")
+        for tax_year in sorted(tax_report):
+            print(f"{Fore.CYAN}Price Data - {config.format_tax_year(tax_year)}\n")
+            print(
+                f'{Fore.YELLOW}{"Asset":<{self.ASSET_WIDTH + 2}} {"Data Source":<16} '
+                f'{"Date":<10}  {"Price (" + config.ccy + ")":>13} {"Price (BTC)":>25}'
+            )
 
-    def audit(self) -> None:
+            if tax_year in price_report:
+                self._price_data(price_report[tax_year])
+
+            print("")
+
+        if holdings_report:
+            self._holdings(holdings_report)
+
+    def _audit(self, audit_report: AuditRecords) -> None:
         print(f"{H1}Audit{_H1}")
         print(f"{Fore.CYAN}Final Balances")
-        for wallet in sorted(self.audit_report.wallets, key=str.lower):
+        for wallet in sorted(audit_report.wallets, key=str.lower):
             print(f'\n{Fore.YELLOW}{"Wallet":<30} {"Asset":<{self.MAX_SYMBOL_LEN}} {"Balance":>25}')
 
-            for asset in sorted(self.audit_report.wallets[wallet]):
+            for asset in sorted(audit_report.wallets[wallet]):
                 print(
                     f"{Fore.WHITE}{wallet:<30} {asset:<{self.MAX_SYMBOL_LEN}} "
-                    f"{self.format_quantity(self.audit_report.wallets[wallet][asset]):>25}"
+                    f"{self.format_quantity(audit_report.wallets[wallet][asset]):>25}"
                 )
 
-    def capital_gains(self, tax_year: Year, tax_rules: str, summary: bool) -> None:
-        cgains = self.tax_report[tax_year]["CapitalGains"]
-
-        if tax_rules in TAX_RULES_UK_COMPANY:
-            print(f"{Fore.CYAN}Chargeable Gains")
-        else:
-            print(f"{Fore.CYAN}Capital Gains")
-
+    def _capital_gains(self, cgains: CalculateCapitalGains) -> None:
         header = (
             f'{"Asset":<{self.MAX_SYMBOL_LEN}} {"Date":<10} {"Disposal Type":<28} '
             f'{"Quantity":>25} {"Cost":>13} {"Fees":>13} {"Proceeds":>13} {"Gain":>13}'
@@ -294,14 +346,7 @@ class ReportLog:
                 "this needs to be reported to HMRC if you already complete a Self Assessment"
             )
 
-        if not summary:
-            if tax_rules in TAX_RULES_UK_COMPANY:
-                self.ct_estimate(tax_year)
-            else:
-                self.cgt_estimate(tax_year)
-
-    def cgt_estimate(self, tax_year: Year) -> None:
-        cgains = self.tax_report[tax_year]["CapitalGains"]
+    def _cgt_estimate(self, cgains: CalculateCapitalGains) -> None:
         print(f"\n{Fore.CYAN}Tax Estimate\n")
         print(
             f"{Fore.CYAN}The figures below are only an estimate, "
@@ -339,8 +384,7 @@ class ReportLog:
                 f'tax-free allowance ({self.format_value(cgains.cgt_estimate["allowance"])}) used'
             )
 
-    def ct_estimate(self, tax_year: Year) -> None:
-        cgains = self.tax_report[tax_year]["CapitalGains"]
+    def _ct_estimate(self, cgains: CalculateCapitalGains) -> None:
         print(f"\n{Fore.CYAN}Tax Estimate\n")
         print(
             f"{Fore.CYAN}The figures below are only an estimate, they do not take into "
@@ -368,9 +412,7 @@ class ReportLog:
         if None in cgains.ct_estimate["ct_small_rates"]:
             print(f"{Fore.YELLOW}* Main rate used")
 
-    def income(self, tax_year: Year) -> None:
-        income = self.tax_report[tax_year]["Income"]
-
+    def _income(self, income: CalculateIncome) -> None:
         print(f"\n{Fore.CYAN}Income\n")
         header = (
             f'{"Asset":<{self.MAX_SYMBOL_LEN}} {"Date":<10} {"Type":<10} {"Description":<40} '
@@ -418,20 +460,11 @@ class ReportLog:
             f'{self.format_value(income.totals["fees"]):>13}{Style.NORMAL}'
         )
 
-    def price_data(self, tax_year: Year) -> None:
-        print(f"{Fore.CYAN}Price Data - {config.format_tax_year(tax_year)}\n")
-        print(
-            f'{Fore.YELLOW}{"Asset":<{self.ASSET_WIDTH + 2}} {"Data Source":<16} '
-            f'{"Date":<10}  {"Price (" + config.ccy + ")":>13} {"Price (BTC)":>25}'
-        )
-
-        if tax_year not in self.price_report:
-            return
-
+    def _price_data(self, price_report: Dict[AssetSymbol, Dict[Date, VaPriceReport]]) -> None:
         price_missing_flag = False
-        for asset in sorted(self.price_report[tax_year]):
-            for date in sorted(self.price_report[tax_year][asset]):
-                price_data = self.price_report[tax_year][asset][date]
+        for asset in sorted(price_report):
+            for date in sorted(price_report[asset]):
+                price_data = price_report[asset][date]
                 if price_data["price_ccy"] is not None:
                     print(
                         f"{Fore.WHITE}"
@@ -453,7 +486,7 @@ class ReportLog:
         if price_missing_flag:
             print(f"{Fore.BLUE}*Price of {self.format_value(Decimal(0))} used")
 
-    def holdings(self) -> None:
+    def _holdings(self, holdings_report: HoldingsReportRecord) -> None:
         print(f"{Fore.CYAN}Current Holdings\n")
 
         header = (
@@ -462,8 +495,8 @@ class ReportLog:
         )
 
         print(f"{Fore.YELLOW}{header}")
-        for h in sorted(self.holdings_report["holdings"]):
-            holding = self.holdings_report["holdings"][h]
+        for h in sorted(holdings_report["holdings"]):
+            holding = holdings_report["holdings"][h]
             if holding["value"] is not None:
                 print(
                     f"{Fore.WHITE}"
@@ -488,10 +521,10 @@ class ReportLog:
         print(
             f"{Fore.YELLOW}{Style.BRIGHT}"
             f'{"Total":<{self.ASSET_WIDTH}} {"":>25} '
-            f'{self.format_value(self.holdings_report["totals"]["cost"]):>16} '
-            f'{self.format_value(self.holdings_report["totals"]["value"]):>16} '
-            f'{Fore.RED if self.holdings_report["totals"]["gain"] < 0 else Fore.YELLOW}'
-            f'{self.format_value(self.holdings_report["totals"]["gain"]):>16}'
+            f'{self.format_value(holdings_report["totals"]["cost"]):>16} '
+            f'{self.format_value(holdings_report["totals"]["value"]):>16} '
+            f'{Fore.RED if holdings_report["totals"]["gain"] < 0 else Fore.YELLOW}'
+            f'{self.format_value(holdings_report["totals"]["gain"]):>16}'
         )
 
     @staticmethod

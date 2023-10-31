@@ -24,7 +24,7 @@ PRECISION = Decimal("0.00")
 
 class TaxReportRecord(TypedDict):  # pylint: disable=too-few-public-methods
     CapitalGains: "CalculateCapitalGains"
-    Income: "CalculateIncome"
+    Income: NotRequired["CalculateIncome"]
 
 
 class HoldingsReportAsset(TypedDict):  # pylint: disable=too-few-public-methods
@@ -130,7 +130,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         self.holdings: Dict[AssetSymbol, Holdings] = {}
 
         self.tax_report: Dict[Year, TaxReportRecord] = {}
-        self.holdings_report: HoldingsReportRecord
+        self.holdings_report: Optional[HoldingsReportRecord] = None
 
     def pool_same_day(self) -> None:
         transactions = copy.deepcopy(self.transactions)

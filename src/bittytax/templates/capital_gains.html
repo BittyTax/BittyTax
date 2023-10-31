@@ -1,8 +1,3 @@
-{% if args.tax_rules in TAX_RULES_UK_COMPANY %}
-   <h2>Chargeable Gains</h2>
-{% else %}
-   <h2>Capital Gains</h2>
-{% endif %}
 {% set cgains = tax_report[tax_year]['CapitalGains'] %}
 {% for asset in cgains.assets|sort %}
     {% set asset_totals = namespace(disposals=0, quantity=0, cost=0, fees=0, proceeds=0, gain=0) %}
@@ -107,11 +102,4 @@
 </table>
 {% if cgains.cgt_estimate.proceeds_warning %}
     <p>*Assets sold are more than {{(cgains.cgt_estimate['proceeds_limit'])|valuefilter}}, this needs to be reported to HMRC if you already complete a Self Assessment</p>
-{% endif %}
-{% if not args.summary %}
-    {% if args.tax_rules in TAX_RULES_UK_COMPANY %}
-        {% include "ct_estimate.html" %}
-    {% else %}
-        {% include "cgt_estimate.html" %}
-    {% endif %}
 {% endif %}

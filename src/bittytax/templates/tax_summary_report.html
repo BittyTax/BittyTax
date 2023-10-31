@@ -52,52 +52,21 @@
             Always consult with a professional accountant before filing.
         </div>
 
-        {% if args.taxyear %}
-            {% if not args.summary %}
-                <h1>Audit</h1>
-                {% include "audit.html" %}
-                <div><pdf:nextpage /></div>
-            {% endif %}
-            {% set tax_year = args.taxyear %}
-            <h1> Tax Year -
+        {% for tax_year in tax_report|sort %}
+            <h1>Tax Year -
             {{config.format_tax_year(tax_year)}}
             ({{config.get_tax_year_start(tax_year)|datefilter2}} to {{config.get_tax_year_end(tax_year)|datefilter2}})
             </h1>
-            {% include "capital_gains.html" %}
-            {% if not args.summary %}
-                {% include "income.html" %}
-                <div><pdf:nextpage /></div>
-                <h1>Appendix</h1>
-                {% include "price_data.html" %}
-            {% endif %}
-        {% else %}
-            {% if not args.summary %}
-                <h1>Audit</h1>
-                {% include "audit.html" %}
-                <div><pdf:nextpage /></div>
-            {% endif %}
-            {% for tax_year in tax_report|sort %}
-                <h1>Tax Year -
-                {{config.format_tax_year(tax_year)}}
-                ({{config.get_tax_year_start(tax_year)|datefilter2}} to {{config.get_tax_year_end(tax_year)|datefilter2}})
-                </h1>
+            {% if args.tax_rules in TAX_RULES_UK_COMPANY %}
+                <h2>Chargeable Gains</h2>
                 {% include "capital_gains.html" %}
-                {% if not args.summary %}
-                    {% include "income.html" %}
-                {% endif %}
-                {% if not loop.last %}
-                    <div><pdf:nextpage /></div>
-                {% endif %}
-            {% endfor %}
-            {% if not args.summary %}
-                <div><pdf:nextpage /></div>
-                <h1>Appendix</h1>
-                {% for tax_year in price_report|sort %}
-                    {% include "price_data.html" %}
-                    <div><pdf:nextpage /></div>
-                {% endfor %}
-                {% include "holdings.html" %}
+            {% else %}
+                <h2>Capital Gains</h2>
+                {% include "capital_gains.html" %}
             {% endif %}
-        {% endif %}
+            {% if not loop.last %}
+                <div><pdf:nextpage /></div>
+            {% endif %}
+        {% endfor %}
     </body>
 </html>
