@@ -574,8 +574,8 @@ class CoinPaprika(DataSourceBase):
             asset_id = self.assets[asset]["asset_id"]
 
         url = (
-            "https://api.coinpaprika.com/v1/tickers/{asset_id}/historical"
-            "?start={timestamp:%Y-%m-%d}&limit={self.MAX_DAYS}&quote={quote}&interval=1d"
+            f"https://api.coinpaprika.com/v1/tickers/{asset_id}/historical"
+            f"?start={timestamp:%Y-%m-%d}&limit={self.MAX_DAYS}&quote={quote}&interval=1d"
         )
 
         json_resp = self.get_json(url)
