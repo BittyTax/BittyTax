@@ -39,10 +39,7 @@ def main() -> None:
         version=f"{parser.prog} v{__version__}",
     )
 
-    if sys.version_info[:2] >= (3, 7):
-        subparsers = parser.add_subparsers(dest="command", required=True)
-    else:
-        subparsers = parser.add_subparsers(dest="command")
+    subparsers = parser.add_subparsers(dest="command", required=True)
 
     parser_latest = subparsers.add_parser(
         CMD_LATEST,
