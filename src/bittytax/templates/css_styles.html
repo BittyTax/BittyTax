@@ -1,0 +1,140 @@
+<style>
+  @page {
+    size: a4 portrait;
+    @frame header {
+      -pdf-frame-content: header-content;
+      left: 50pt; width: 495pt; top: 50pt; height: 25pt;
+    }
+    @frame content {
+        left: 50pt; width: 495pt; top: 325pt; height: 500pt;
+    }
+    @frame footer {
+      -pdf-frame-content: footer-content;
+      left: 50pt; width: 495pt; top: 762pt; height: 35pt;
+  }
+  }
+  @page default{
+      size: a4 portrait;
+      @frame header {
+          -pdf-frame-content: header-content;
+          left: 50pt; width: 495pt; top: 50pt; height: 25pt;
+      }
+      @frame content {
+          left: 50pt; width: 495pt; top: 100pt; height: 662pt;
+      }
+      @frame footer {
+          -pdf-frame-content: footer-content;
+          left: 50pt; width: 495pt; top: 772pt; height: 35pt;
+      }
+  }
+  .red_font {
+    color: #d4351c;
+  }
+  h1 {
+    font-size: 3rem;
+    color: #0b0c0c;
+    line-height: 1.05;
+  }
+  h2{
+    font-size: 2.25em;
+    margin-top: 1.25em;
+    margin-bottom: .5em;
+    color: #0b0c0c;
+    line-height: 1.11;
+  }
+  h3{
+    font-size: 1.687em;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    line-height: 1.25;
+  }
+  body{
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1.1rem;
+    color: #0b0c0c;
+  }
+  table{
+    border-spacing: 0px;
+    margin: 0;
+    padding: 0;
+  }
+  #header-content,
+  #footer-content{
+    color: #505a5f;
+  }
+  #footer-content {
+    text-align: center;
+  }
+
+  .total_table{
+    margin-bottom: 10px;
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  .total_table tr {
+      font-weight: bold;
+      border-top: .5px solid #505a5f;
+      border-bottom: .5px solid #505a5f;
+  }
+  .total_table td{
+
+  }
+
+  .asset_table{
+    border-collapse: collapse;
+  }
+
+  .mt{
+    margin-top: 10px;
+  }
+  .mb{
+    margin-bottom: 20px;
+  }
+
+  .asset_table tr{
+    border-bottom: 0.5px solid #f3f2f1;
+  }
+
+  .asset_table th{
+  }
+
+  .asset_table td,
+  .asset_table th,
+  .total_table td {
+    padding-top: 4px;
+    padding-bottom: 1px;
+    padding-left: 0px;
+    padding-right: 0px;
+  }
+  #cover_page{
+    display: block;
+  }
+  #cover_page h1{
+    font-size: 6rem;
+    color: #1d70b8;
+    font-weight: bold;
+    margin: 0;
+    line-height: 100%;
+    padding: 0;
+  }
+  #cover_page h2{
+    font-size: 2.75rem;
+    color: #505a5f;
+    margin-top: 1.25rem;
+    line-height: 100%;
+    padding: 0;
+  }
+  a{
+    color: #1d70b8;
+    text-decoration: none;
+  }
+  .date_range{
+    margin-top: 0px;
+    color: #505a5f;
+    font-size: 1.687em;
+  }
+  .tax_year{
+    margin-bottom: 5px;
+  }
+</style>

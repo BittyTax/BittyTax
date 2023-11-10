@@ -1,5 +1,5 @@
 <h2>Current Holdings</h2>
-<table repeat="1" width="100%">
+<table repeat="1" width="100%" class="asset_table">
     <tr>
         <th align="left">Asset</th>
         <th align="right">Quantity</th>
@@ -30,8 +30,8 @@
         </tr>
     {% endfor %}
 </table>
-<table>
-    <tr class="total_row">
+<table class="total_table">
+    <tr>
         <td align="left">Total</td>
         <td align="right"></td>
         <td align="right">{{holdings_report['totals']['cost']|valuefilter}}</td>

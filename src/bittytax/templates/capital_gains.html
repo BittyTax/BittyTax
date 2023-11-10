@@ -1,7 +1,7 @@
 {% set cgains = tax_report[tax_year]['CapitalGains'] %}
 {% for asset in cgains.assets|sort %}
     {% set asset_totals = namespace(disposals=0, quantity=0, cost=0, fees=0, proceeds=0, gain=0) %}
-    <table repeat="1" width="100%">
+    <table repeat="1" width="100%" class="asset_table mt mb">
         <tr>
             <th align="left">Asset</th>
             <th align="left">Date</th>
@@ -51,10 +51,9 @@
             </tr>
         {% endif %}
     </table>
-    <br>
 {% endfor %}
-<table>
-    <tr class="total_row">
+<table class="total_table mt">
+    <tr>
         <td align="left">Total</td>
         <td align="left"></td>
         <td align="left" width="25%"></td>
@@ -69,11 +68,13 @@
         {% endif %}
     </tr>
 </table>
+
 <h3>Summary</h3>
-<table width="75%">
+<table width="100%">
     <tr>
-        <td>Number of disposals:</td>
+        <td width="50%">Number of disposals:</td>
         <td align="right">{{cgains.summary['disposals']}}</td>
+        <td></td>
     </tr>
     <tr>
         <td>Disposal proceeds:</td>

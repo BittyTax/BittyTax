@@ -1,8 +1,8 @@
 {% set price_missing = namespace(flag=false) %}
 <h2>Price Data - {{config.format_tax_year(tax_year)}}</h2>
-<table repeat="1" width="100%">
+<table repeat="1" width="100%" class="asset_table">
     <tr>
-        <th align="left">Asset</th>
+        <th align="left" width="30%">Asset</th>
         <th align="left">Data Source</th>
         <th align="left">Date</th>
         <th align="right">Price ({{config.ccy}})</th>
@@ -38,5 +38,5 @@
     {% endif %}
 </table>
 {% if price_missing.flag %}
-    <p>*Price of £0.00 used</p>        
+    <p>*Price of £0.00 used</p>
 {% endif %}
