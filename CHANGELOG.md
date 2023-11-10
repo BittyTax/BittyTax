@@ -22,6 +22,7 @@ The tax calculations for NFTs have been corrected, they are no longer "same day"
 - Conversion tool: new config "large_data" addded.
 - Conversion tool: addded parser for FTX exchange. ([#80](https://github.com/BittyTax/BittyTax/issues/80))
 - Accounting tool: added audit only (--audit) option. ([#97](https://github.com/BittyTax/BittyTax/issues/97))
+- Volt parser: new data file format added.
 ### Changed
 - Accounting tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
 - Conversion tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
