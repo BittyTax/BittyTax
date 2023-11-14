@@ -50,6 +50,7 @@ from . import (
     nault,
     nexo,
     okx,
+    paxful,
     poloniex,
     polygonscan,
     qtrade,
