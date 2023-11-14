@@ -39,7 +39,8 @@
             {% endif %}
         {% endfor %}
         {% if holdings_report %}
-           {% include "holdings.html" %}
+            <div><pdf:nextpage /></div>
+            {% include "holdings.html" %}
         {% endif %}
     </body>
 </html>
