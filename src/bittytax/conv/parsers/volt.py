@@ -28,12 +28,21 @@ def parse_volt(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
     if amount is None or symbol is None:
         raise UnexpectedContentError(parser.in_header.index("amount"), "amount", row_dict["amount"])
 
+    if "fee" in row_dict:
+        fee_quantity = Decimal(row_dict["fee"])
+        fee_asset = symbol
+    else:
+        fee_quantity = None
+        fee_asset = ""
+
     if row_dict["status"] == "Received":
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
             buy_quantity=amount,
             buy_asset=symbol,
+            fee_quantity=fee_quantity,
+            fee_asset=fee_asset,
             wallet=WALLET,
         )
     elif row_dict["status"] == "OUT":
@@ -42,6 +51,8 @@ def parse_volt(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             data_row.timestamp,
             sell_quantity=amount,
             sell_asset=symbol,
+            fee_quantity=fee_quantity,
+            fee_asset=fee_asset,
             wallet=WALLET,
         )
     else:
@@ -57,6 +68,22 @@ def _get_amount(amount_str: str) -> Tuple[Optional[Decimal], str]:
         return Decimal(amount), symbol
     return None, ""
 
+
+DataParser(
+    ParserType.WALLET,
+    "Volt",
+    ["time", "status", "address", "amount", "fee", "txid"],
+    worksheet_name="Volt",
+    row_handler=parse_volt,
+)
+
+DataParser(
+    ParserType.WALLET,
+    "Volt",
+    ["time", "status", "address", "amount", "fee", "txid", ""],
+    worksheet_name="Volt",
+    row_handler=parse_volt,
+)
 
 DataParser(
     ParserType.WALLET,

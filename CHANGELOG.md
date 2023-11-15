@@ -22,6 +22,9 @@ The tax calculations for NFTs have been corrected, they are no longer "same day"
 - Conversion tool: new config "large_data" addded.
 - Conversion tool: addded parser for FTX exchange. ([#80](https://github.com/BittyTax/BittyTax/issues/80))
 - Accounting tool: added audit only (--audit) option. ([#97](https://github.com/BittyTax/BittyTax/issues/97))
+- Volt parser: new data file format added.
+- Conversion tool: added parser for Blockscout explorer.
+- Conversion tool: added parser for Paxful exchange.
 ### Changed
 - Accounting tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
 - Conversion tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
@@ -37,6 +40,7 @@ The tax calculations for NFTs have been corrected, they are no longer "same day"
 - Removed support for Python 3.6 as it is end of life.
 - Conversion tool: removed 15-digit precision warning for CSV output. ([#308](https://github.com/BittyTax/BittyTax/issues/308))
 - Config: removed CoinDesk as BTC price data source. ([#318](https://github.com/BittyTax/BittyTax/issues/318))
+- Energy Web parser: removed, replaced by generic Blockscout parser.
 
 ## Version [0.5.1] (2023-04-04)
 Important:-
