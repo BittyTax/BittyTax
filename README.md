@@ -4,6 +4,7 @@
 [![Python badge][python-badge]][python]
 [![Downloads badge][downloads-badge]][downloads]
 [![Stars badge][github-stars-badge]][github-stars]
+[![Sponsor badge][sponsor-badge]][sponsor]
 [![Twitter badge][twitter-badge]][twitter]
 [![Discord badge][discord-badge]][discord]
 [![PayPal badge][paypal-badge]][PayPal]
@@ -1115,6 +1116,7 @@ Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of thi
 [python-badge]: https://img.shields.io/pypi/pyversions/BittyTax.svg
 [downloads-badge]: https://img.shields.io/pypi/dm/bittytax
 [github-stars-badge]: https://img.shields.io/github/stars/BittyTax/BittyTax?logo=github&color=yellow
+[sponsor-badge]: https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86
 [twitter-badge]: https://img.shields.io/twitter/follow/bitty_tax
 [discord-badge]: https://img.shields.io/discord/581493570112847872?logo=discord&label=&logoColor=white&color=7389D8&labelColor=6A7EC2
 [paypal-badge]: https://img.shields.io/badge/donate-grey.svg?logo=PayPal
@@ -1124,6 +1126,7 @@ Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of thi
 [python]: https://wiki.python.org/moin/BeginnersGuide/Download
 [downloads]: https://pypistats.org/packages/bittytax
 [github-stars]: https://github.com/BittyTax/BittyTax/stargazers
+[sponsor]: https://github.com/sponsors/BittyTax
 [twitter]: https://twitter.com/intent/follow?screen_name=bitty_tax
 [discord]: https://discord.gg/NHE3QFt
 [PayPal]: https://www.paypal.com/donate?hosted_button_id=HVBQW8TBEHXLC
