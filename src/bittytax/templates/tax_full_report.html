@@ -10,10 +10,10 @@
         {% include "audit.html" %}
         <div><pdf:nextpage /></div>
         {% for tax_year in tax_report|sort %}
-            <h1 class="tax_year">Tax Year -
+            <h1 class="tax-year">Tax Year -
             {{config.format_tax_year(tax_year)}}
             </h1>
-            <h2 class="date_range">
+            <h2 class="date-range">
             {{config.get_tax_year_start(tax_year)|datefilter2}} to {{config.get_tax_year_end(tax_year)|datefilter2}}
             </h2>
             {% if args.tax_rules in TAX_RULES_UK_COMPANY %}
