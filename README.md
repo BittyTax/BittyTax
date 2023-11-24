@@ -1,4 +1,4 @@
-![BittyTax logo](https://github.com/BittyTax/BittyTax/raw/master/img/BittyTax.png)
+![BittyTax logo](https://github.com/BittyTax/BittyTax/raw/aster/img/BittyTax.svg)
 [![Version badge][version-badge]][version]
 [![License badge][license-badge]][license]
 [![Python badge][python-badge]][python]
@@ -12,7 +12,6 @@
 # BittyTax
 
 ## Overview
-
 BittyTax is a collection of command-line tools to help you calculate your cryptoasset taxes in the UK.
 
 This tool is designed to be used by someone who is already familiar with cryptoasset taxation rules in the UK. HMRC has published guidance on this. We've collected some useful links in the [Resources](#resources) section at the end.
@@ -28,7 +27,6 @@ BittyTax comprises of the following tools.
 Although UK focused, many of the tools can be used for other countries and currencies, see [International support](https://github.com/BittyTax/BittyTax/wiki/International-Support).
 
 ## Why use BittyTax?
-
 * Open-source: growing community of users
 * Free to use: no subscriptions, no transaction limits
 * Protects your privacy: no need to share your data with a 3rd party
@@ -36,8 +34,8 @@ Although UK focused, many of the tools can be used for other countries and curre
 * Accuracy: built in integrity check, passes all the [HMRC example test cases](https://github.com/BittyTax/BittyTax/wiki/HMRC-Example-Test-Cases)
 * Auditability: compliant with HMRC auditing requirements
 
-## Disclaimer
-This software is copyright (c) Nano Nano Ltd, and licensed for use under the AGPLv3 License, see [LICENSE](https://github.com/BittyTax/BittyTax/blob/master/LICENSE) file for details.
+## License/Disclaimer
+This software is copyright (c) Nano Nano Ltd, and licensed for use under the AGPLv3 License, see [LICENSE](https://github.com/BittyTax/BittyTax/blob/master/LICENSE) file for details. The [BittyTaxAPI](https://github.com/BittyTax/BittyTax/wiki/BittyTaxAPI) server is licensed for personal use only. If you would like a license to use this software commercially, please [get in touch](mailto:hello@bitty.tax).
 
 Nano Nano Ltd does not provide tax, legal, accounting or financial advice. This software and its content are provided for information only, and as such should not be relied upon for tax, legal, accounting or financial advice.
 
@@ -46,7 +44,6 @@ You should obtain specific professional advice from a [professional accountant](
 This software is provided 'as is', Nano Nano Ltd does not give any warranties of any kind, express or implied, as to the suitability or usability of this software, or any of its content.
 
 ## Getting Started
-
 You will need Python installed on your machine before you can install BittyTax, see the [installation](https://github.com/BittyTax/BittyTax/wiki/Installation) guide which covers Windows, macOS and Linux for full details.
 
 If you are upgrading from BittyTax v0.4.x, please follow the [upgrade](https://github.com/BittyTax/BittyTax/wiki/Upgrade) instructions.
@@ -300,6 +297,8 @@ Income events are listed in date order and by asset, with totals per asset (if m
 
 Totals are also given per Income Type (`Mining`, `Staking`, `Interest`, `Dividend` and `Income`), as well as the totals for that tax year.
 
+By default, fiat currency transactions are excluded, this setting can be changed in the config file, see [Config](#config).
+
 You should check with an [accountant](https://github.com/BittyTax/BittyTax/wiki/Crypto-Tax-Accountants-in-the-UK) for how this should be reported according to your personal situation.
 
 #### Price Data
@@ -337,8 +336,6 @@ First the transaction records are imported and validated according to their tran
 In the log, the worksheet name (Excel only) and row number are shown against the raw record data being imported.
 
 Empty rows are allowed, and filtered out during the import. Worksheets with a name prefixed by '--' are also filtered, these can be used for doing your own calculations.
-
-
 
 Each record is given a unique Transaction ID (TID), these are allocated in chronological order (using the timestamp) regardless of the file ordering.
 
@@ -490,7 +487,6 @@ match:   Disposal(same day) gain=£-0.03 (proceeds=£22.50 - cost=£22.50 - fees
 ```
 
 ### Match "bed and breakfast" Rule
-
 See ["*The “bed and breakfast” rule TCGA92/S106A(5) and (5A)*"](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560#IDATR33F).
  
 This tax functions matches sells to buybacks of the same cryptoasset which occur within 30 days.
@@ -559,7 +555,7 @@ You can bypass this check by using the `--skipint` option.
 Possible reasons for failure:
 
 1. Withdrawal has a missing Deposit.
-1. A Withdrawal and it's corresponding Deposit have mismatching quantities.
+1. A Withdrawal and its corresponding Deposit have mismatching quantities.
 1. The Withdrawal quantity is not the net amount (after fee deduction), with the fee specified.
 1. The Deposit quantity is not the gross amount (before fee deduction), with the fee specified.
 1. Withdrawal/Deposit transactions have been used incorrectly (they should only be used to move existing tokens between your own wallets).
@@ -613,8 +609,6 @@ For Windows use this command instead:
 ### Process Income
 This function searches through all the original transactions, and records any that are applicable for income tax. Currently this is `Mining`, `Staking`, `Interest`, `Dividend` and `Income` transaction types.
 
-Note, only cryptoasset income is recorded not fiat.
-
 ## Conversion Tool
 The bittytax conversion tool `bittytax_conv` takes all of the data files exported from your wallets and exchanges, normalises them into the transaction record format required by bittytax, and consolidates them into a single Excel spreadsheet for you to review, make edits, and add any missing records.
 
@@ -634,19 +628,28 @@ For most wallet files, transactions can only be categorised as deposits or withd
 - HandCash
 - Helium
 - Ledger Live
+- Nault
 - Qt Wallet (i.e. Bitcoin Core)
 - Trezor
+- Volt
+- Yoroi
+- Zelcore
 
 **Exchanges:**
 - [Binance](https://github.com/BittyTax/BittyTax/wiki/Exchange:-Binance)
 - Bitfinex
+- Bitpanda
 - Bitstamp
 - Bittrex
+- Bittylicious
+- CEX.IO
 - ChangeTip 
 - Circle
 - Coinbase
 - Coinbase Pro
 - Coinfloor
+- CoinList
+- Coinmetro
 - Crypto.com
 - Cryptopia
 - Cryptsy
@@ -657,14 +660,17 @@ For most wallet files, transactions can only be categorised as deposits or withd
 - Kraken
 - KuCoin
 - Liquid
-- OKEx
+- Mercatox
+- OKX
 - Poloniex
+- qTrade
 - TradeSatoshi
 - Uphold
 - Wirex
 
 **Savings & Loans**
 - BlockFi
+- BnkToTheFuture
 - Celsius
 - Nexo
 
@@ -673,11 +679,16 @@ For most wallet files, transactions can only be categorised as deposits or withd
 - Energy Web
 - Etherscan
 - HecoInfo
+- Helium Explorer
+- PolygonScan
+- SnowTrace
 - Zerion
 
 **Accounting:**
 - Accointing
 - CoinTracking
+- Koinly
+- StakeTax
 
 ### Usage
 The help option displays a full list of recognised data file formats, as well as details of all command line arguments.
@@ -699,7 +710,6 @@ If you want to change the default filename you can use the `-o` argument followe
 Note, it is important that you always pass the original raw files into the conversion tool. If you open your CSV files in Excel first and make edits, it can mess with the date formats, etc and cause issues with the conversion. 
 
 ### Duplicate Records
-
 For some exchanges you have to repeatedly download your transaction history, this can happen if the exchange only lets you run a report for the previous 3 months.
 
 If you have multiple export files for the same exchange, these can all be passed into the conversion tool which by default will group them together into the same worksheet and sort them by timestamp.
@@ -709,7 +719,6 @@ If there is any overlap in the reporting period this can result in duplicate ent
 This option should be used with care, since some exchange files can appear to have exact duplicates but can be due to partially filled orders within the exact same time period, with same order id and even the same amount!
 
 ### Unidentified Cryptoassets
-
 Some wallet exports do not specify the actual cryptoasset being used. This will result in an error when the file is processed.
 
 The `-ca` or `--cryptoasset` argument can be used to manually specify the asset.
@@ -719,7 +728,6 @@ The `-ca` or `--cryptoasset` argument can be used to manually specify the asset.
 If you have multiple wallet files with this issue, you can either process each one individually, and then consolidate them into a single spreadsheet. Or you could edit the asset name in the spreadsheet for any which are incorrect.
 
 ### Output Formats
-
 The default output format is Excel, but you can also choose CSV or RECAP by using the `--format` argument.
 
 **CSV**
@@ -779,7 +787,6 @@ The priority (primary, secondary, etc) to which data source is used and for whic
 All historic price data is cached within the .bittytax/cache folder in your home directory. This is to prevent repeated lookups and reduce load on the APIs which could fail due to throttling.
 
 ### Usage
-
 To get the latest price of an asset, use the `latest` command, followed by the asset symbol name. This can be a cryptoasset (i.e. BTC) or a foreign currency (i.e. USD). An optional quantity can also be specified.
 
     bittytax_price latest asset [quantity]
@@ -943,8 +950,11 @@ Controls the method used to attribute the trade fee (an allowable cost) to the a
 
 The guidance from [HMRC on allowable expenses](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto22150#exchange-fees), indicates that "*the fee is attributable to both assets*" when swapping one token for another.
 
+### audit_hide_empty
+Hide empty balances, and the entire wallet (if all balances are empty) from the audit. Can be set to `True` or `False`. Default is `False`.
+
 ### show_empty_wallets
-Include empty wallets in the current holdings report. Can be set to `True` or `False`.
+Include empty wallets in the current holdings report. Can be set to `True` or `False`. Default is `False`.
 
 ### transfers_include
 Controls the method used to handle transfer transactions types (`Deposit` and `Withdrawal`) in the tax calculations. 
@@ -987,6 +997,10 @@ This parameter is only relevant if transfer fees are disposals.
 - `False` = Transfer fee is NOT an allowable cost (default) 
 
 The [HMRC guidance on allowable expenses](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto22150#exchange-fees) does not specifically cover transfer fees, "*transaction fees paid for having the transaction included on the distributed ledger*" is an allowable cost, but only for a disposal, transfers between your own wallets are not disposals, but paying the fee is? The guidance could be interpreted either way, our default and recommendation is that they are NOT an allowable cost.   
+
+### fiat_income
+This parameter controls whether fiat income transactions are included in the income report. Can be set to `True` or `False`. Default is `False`.
+
 ### lost_buyback
 This controls whether a `Lost` transaction type results in a reacquisition, as per the [HMRC guidance on losing private keys](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto22400).
 
@@ -1056,14 +1070,6 @@ Supported data sources for cryptoassets are:
 - `CoinGecko`
 - `CoinPaprika`
 
-### coinbase_zero_fees_are_gifts
-This parameter is only used by the conversion tool. It controls how the Coinbase parser will handle a zero fee "Buy" trade.
-
-- `True` = Zero fee "Buy" is a `Gift-Received`
-- `False` = Zero fee "Buy" is a `Trade` (default) 
-
-Some old Coinbase transactions show referrals/airdrops as trades, the only way to differentiate these is they have zero fees. This is not fool proof since it's possible (but not common) for a trade to also have zero fees.
-
 ### usernames
 This parameter is only used by the conversion tool.
 
@@ -1074,6 +1080,23 @@ An example is shown below.
 usernames:
     ['Bitty_Bot', 'BittyBot']
 ```
+
+### coinbase_zero_fees_are_gifts
+This parameter is only used by the conversion tool. It controls how the Coinbase parser will handle a zero fee "Buy" trade.
+
+- `True` = Zero fee "Buy" is a `Gift-Received`
+- `False` = Zero fee "Buy" is a `Trade` (default) 
+
+Some old Coinbase transactions show referrals/airdrops as trades, the only way to differentiate these is they have zero fees. This is not fool proof since it's possible (but not common) for a trade to also have zero fees.
+
+### binance_multi_bnb_split_even
+This parameter is only used by the conversion tool.
+
+For Binance statements data files, this parameter allows you to split the BNB amount evenly across multiple tokens converted at the same time.
+
+By default, the BNB Buy Quantities will be left blank, which you then have to manually populate using data from the Binance website. If the website data is not available (3 months max), this parameter might be your only option.
+
+Can be set to `True` or `False`. Default is `False`.
 
 ## Future
 Here are some ideas for the project roadmap. 
@@ -1107,7 +1130,7 @@ Here are some ideas for the project roadmap.
 - https://www.youtube.com/watch?v=EzNebqkw13w
 
 ## Donations
-If you would like to support this project, you can donate via [PayPal] or in [bitcoin]. All donations are gratefully received.
+If you would like to support this project, please consider [sponsoring](https://github.com/sponsors/BittyTax) us. You can also donate via [PayPal] or in [bitcoin]. All donations are gratefully received.
 
 Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of this project. Nano Nano Ltd is not a charity, or non-profit organisation.
 
@@ -1116,7 +1139,7 @@ Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of thi
 [python-badge]: https://img.shields.io/pypi/pyversions/BittyTax.svg
 [downloads-badge]: https://img.shields.io/pypi/dm/bittytax
 [github-stars-badge]: https://img.shields.io/github/stars/BittyTax/BittyTax?logo=github&color=yellow
-[sponsor-badge]: https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86
+[sponsor-badge]: https://img.shields.io/static/v1?label=sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86
 [twitter-badge]: https://img.shields.io/twitter/follow/bitty_tax
 [discord-badge]: https://img.shields.io/discord/581493570112847872?logo=discord&label=&logoColor=white&color=7389D8&labelColor=6A7EC2
 [paypal-badge]: https://img.shields.io/badge/donate-grey.svg?logo=PayPal
