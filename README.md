@@ -1,4 +1,4 @@
-![BittyTax logo](https://github.com/BittyTax/BittyTax/raw/aster/img/BittyTax.svg)
+![BittyTax logo](https://github.com/BittyTax/BittyTax/raw/master/img/BittyTax.svg)
 [![Version badge][version-badge]][version]
 [![License badge][license-badge]][license]
 [![Python badge][python-badge]][python]
