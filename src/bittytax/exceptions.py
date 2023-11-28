@@ -29,7 +29,7 @@ class TimestampParserError(TransactionParserError):
 
 class DataValueError(TransactionParserError):
     def __str__(self) -> str:
-        return f"Invalid data for {self.col_name}: '{repr(self.value)}'"
+        return f"Invalid data for {self.col_name}: '{self.value}'"
 
 
 class UnexpectedDataError(TransactionParserError):
