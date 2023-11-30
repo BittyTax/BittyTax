@@ -2,20 +2,14 @@
 <html>
     {% include "html_head.html" %}
     <body>
-
         {% include "header_footer.html" %}
         {% include "cover_page.html" %}
-
         <h1>Audit</h1>
         {% include "audit.html" %}
-        <div><pdf:nextpage /></div>
+        <pdf:nextpage />
         {% for tax_year in tax_report|sort %}
-            <h1 class="tax-year">Tax Year -
-            {{config.format_tax_year(tax_year)}}
-            </h1>
-            <h2 class="date-range">
-            {{config.get_tax_year_start(tax_year)|datefilter2}} to {{config.get_tax_year_end(tax_year)|datefilter2}}
-            </h2>
+            <h1 class="tax-year">Tax Year - {{config.format_tax_year(tax_year)}}</h1>
+            <h2 class="date-range">{{config.get_tax_year_start(tax_year)|datefilter2}} to {{config.get_tax_year_end(tax_year)|datefilter2}}</h2>
             {% if args.tax_rules in TAX_RULES_UK_COMPANY %}
                 <h2>Chargeable Gains</h2>
                 {% include "capital_gains.html" %}
@@ -27,19 +21,19 @@
             {% endif %}
             {% include "income.html" %}
             {% if not loop.last %}
-                <div><pdf:nextpage /></div>
+                <pdf:nextpage />
             {% endif %}
         {% endfor %}
-        <div><pdf:nextpage /></div>
+        <pdf:nextpage />
         <h1>Appendix</h1>
         {% for tax_year in tax_report|sort %}
             {% include "price_data.html" %}
             {% if not loop.last %}
-                <div><pdf:nextpage /></div>
+                <pdf:nextpage />
             {% endif %}
         {% endfor %}
         {% if holdings_report %}
-           <div><pdf:nextpage /></div>
+           <pdf:nextpage />
            {% include "holdings.html" %}
         {% endif %}
     </body>
