@@ -13,6 +13,7 @@ from types import TracebackType
 from typing import Dict, List, Optional, Type
 
 import jinja2
+import pkg_resources
 from colorama import Fore, Style
 from xhtml2pdf import pisa
 
@@ -53,6 +54,7 @@ class ReportPdf:
         self.env.filters["nowrapfilter"] = self.nowrapfilter
         self.env.filters["lenfilter"] = self.lenfilter
         self.env.globals["TAX_RULES_UK_COMPANY"] = TAX_RULES_UK_COMPANY
+        self.env.globals["TEMPLATE_PATH"] = pkg_resources.resource_filename(__name__, "templates")
 
         if args.audit_only:
             template = self.env.get_template(self.AUDIT_TEMPLATE)
