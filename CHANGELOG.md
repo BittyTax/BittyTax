@@ -25,6 +25,7 @@ The tax calculations for NFTs have been corrected, they are no longer "same day"
 - Volt parser: new data file format added.
 - Conversion tool: added parser for Blockscout explorer.
 - Conversion tool: added parser for Paxful exchange.
+- Koinly parser: added renamed types.
 ### Changed
 - Accounting tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))
 - Conversion tool: use openpyxl instead of xlrd for reading .xlsx files. ([#260](https://github.com/BittyTax/BittyTax/issues/260))

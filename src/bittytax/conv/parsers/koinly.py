@@ -20,21 +20,33 @@ if TYPE_CHECKING:
 
 KOINLY_D_MAPPING = {
     "": TrType.GIFT_RECEIVED,
+    "Airdrop": TrType.AIRDROP,
     "airdrop": TrType.AIRDROP,
+    "Fork": TrType.GIFT_RECEIVED,
     "fork": TrType.GIFT_RECEIVED,
+    "Mining": TrType.MINING,
     "mining": TrType.MINING,
+    "Reward": TrType.GIFT_RECEIVED,
     "reward": TrType.GIFT_RECEIVED,
+    "Income": TrType.INCOME,
     "income": TrType.INCOME,
+    "Loan interest": TrType.INTEREST,
     "loan_interest": TrType.INTEREST,
+    "Staking": TrType.STAKING,
     "staking": TrType.STAKING,
 }
 
 KOINLY_W_MAPPING = {
     "": TrType.GIFT_SENT,
+    "Gift": TrType.GIFT_SENT,
     "gift": TrType.GIFT_SENT,
+    "Lost": TrType.LOST,
     "lost": TrType.LOST,
+    "Cost": TrType.SPEND,
     "cost": TrType.SPEND,
+    "Donation": TrType.CHARITY_SENT,
     "donation": TrType.CHARITY_SENT,
+    "Interest payment": TrType.SPEND,
     "interest_payment": TrType.SPEND,
 }
 
