@@ -181,15 +181,15 @@ class ReportLog:
         if args.audit_only:
             self._audit(audit)
         elif args.summary_only:
-            if not tax_report:
+            if tax_report is None:
                 raise RuntimeError("Missing tax_report")
 
             self._tax_summary(args.tax_rules, tax_report)
         else:
-            if not tax_report:
+            if tax_report is None:
                 raise RuntimeError("Missing tax_report")
 
-            if not price_report:
+            if price_report is None:
                 raise RuntimeError("Missing price_report")
 
             self._tax_full(args.tax_rules, audit, tax_report, price_report, holdings_report)
