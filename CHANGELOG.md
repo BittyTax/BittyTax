@@ -37,6 +37,7 @@ The tax calculations for NFTs have been corrected, they are no longer "same day"
 - Coinbase parser: check for Advanced Trades that trading pair matches the currency. ([#304](https://github.com/BittyTax/BittyTax/issues/304))
 - Conversion tool: sort data parsers case insensitive.
 - Config: added missing defaults.
+- Conversion tool: binance_multi_bnb_split_even flag now supports multiple bnb converts happening at the same time.
 ### Removed
 - Removed support for Python 2.7 as it is end of life.
 - Removed support for Python 3.6 as it is end of life.
