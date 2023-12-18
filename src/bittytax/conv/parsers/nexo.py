@@ -121,6 +121,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         "Bonus",
         "Cashback",
         "Exchange Cashback",
+        "ReferralBonus",
         "Referral Bonus",
     ):
         data_row.t_record = TransactionOutRecord(
