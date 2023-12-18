@@ -19,12 +19,15 @@ if TYPE_CHECKING:
 WALLET = "Nexo"
 
 ASSET_NORMALISE = {
+    "BNBN": "BNB",
+    "NEXOBNB": "BNB",
+    "LUNA2": "LUNA",
     "NEXONEXO": "NEXO",
-    "NEXOBNB": "NEXO",
+    #"NEXOBNB": "NEXO",
     "NEXOBEP2": "NEXO",
     "USDTERC": "USDT",
+    "UST": "USTC",
 }
-
 
 def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
@@ -73,7 +76,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
     else:
         value = None
 
-    if row_dict["Type"] in ("Deposit", "ExchangeDepositedOn"):
+    if row_dict["Type"] in ("Deposit", "Top up Crypto", "ExchangeDepositedOn"):
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -82,7 +85,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             buy_value=value,
             wallet=WALLET,
         )
-    elif row_dict["Type"] in ("Interest", "FixedTermInterest", "InterestAdditional"):
+    elif row_dict["Type"] in ("Interest", "FixedTermInterest", "Fixed Term Interest"):
         if ("Amount" in row_dict and Decimal(row_dict["Amount"]) > 0) or (
             "Input Amount" in row_dict and Decimal(row_dict["Input Amount"]) > 0
         ):
@@ -110,7 +113,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         "Bonus",
         "Cashback",
         "Exchange Cashback",
-        "ReferralBonus",
+        "Referral Bonus",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.GIFT_RECEIVED,
@@ -120,7 +123,6 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             buy_value=value,
             wallet=WALLET,
         )
-
     elif row_dict["Type"] in ("Exchange", "CreditCardStatus"):
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
@@ -144,6 +146,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         )
     elif row_dict["Type"] == "Liquidation":
         # Repayment of loan
+    elif row_dict["Type"] in ("Liquidation", "Repayment", "Manual Repayment"):
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
             data_row.timestamp,
@@ -152,21 +155,25 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             sell_value=value,
             wallet=WALLET,
         )
+    # Skip loan operations which are not disposals or are just informational
     elif row_dict["Type"] in (
         "WithdrawalCredit",
         "UnlockingTermDeposit",
+        "Unlocking Term Deposit",
         "LockingTermDeposit",
         "Repayment",
     ):
-        # Skip loan operations which are not disposals or are just informational
         return
+    # Skip internal operations
     elif row_dict["Type"] in (
+        "Administrator",
         "DepositToExchange",
         "ExchangeToWithdraw",
         "TransferIn",
+        "Transfer In",
         "TransferOut",
+        "Transfer Out",
     ):
-        # Skip internal operations
         return
     else:
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
