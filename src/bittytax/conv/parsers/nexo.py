@@ -23,11 +23,12 @@ ASSET_NORMALISE = {
     "NEXOBNB": "BNB",
     "LUNA2": "LUNA",
     "NEXONEXO": "NEXO",
-    #"NEXOBNB": "NEXO",
+    # "NEXOBNB": "NEXO",
     "NEXOBEP2": "NEXO",
     "USDTERC": "USDT",
     "UST": "USTC",
 }
+
 
 def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
@@ -80,7 +81,8 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         # Skip credit deposits (already handled with "Loan Withdrawal").
         if row_dict["Details"].find("Credit") > -1:
             return
-        elif row_dict["Details"].find("Airdrop") > -1:
+
+        if row_dict["Details"].find("Airdrop") > -1:
             t_type = TrType.AIRDROP
         else:
             t_type = TrType.DEPOSIT
@@ -106,7 +108,6 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
                 wallet=WALLET,
             )
         else:
-            # Interest on loan is just informational
             return
     elif row_dict["Type"] == "Dividend":
         data_row.t_record = TransactionOutRecord(
@@ -153,7 +154,6 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             sell_value=value,
             wallet=WALLET,
         )
-    # For loans, Nexo records the received amount and asset in the output columns.
     elif row_dict["Type"] in ("WithdrawalCredit", "Loan Withdrawal"):
         data_row.t_record = TransactionOutRecord(
             TrType.RECEIVE_LOAN,
@@ -163,13 +163,14 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             buy_value=value,
             wallet=WALLET,
         )
-    # These sell orders are used for repayments, but the USD value isn't recorded in the output columns.
+    # These sell orders are used for repayments,
+    # but the fiat value isn't recorded in the output columns.
     elif row_dict["Type"] == "Manual Sell Order":
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
             buy_quantity=value,
-            buy_asset="USD",
+            buy_asset=config.ccy,
             buy_value=value,
             sell_quantity=buy_quantity,
             sell_asset=buy_asset,
