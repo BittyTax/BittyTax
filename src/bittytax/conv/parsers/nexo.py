@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2020
 
+# pylint: disable=too-many-branches
+
 import re
 from decimal import Decimal
 from typing import TYPE_CHECKING
@@ -77,8 +79,9 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
     else:
         value = None
 
-    # Do no handle credit deposits here.
-    if (row_dict["Type"] in ("Deposit", "Top up Crypto", "ExchangeDepositedOn")
+    # Do not handle credit deposits here.
+    if (
+        row_dict["Type"] in ("Deposit", "Top up Crypto", "ExchangeDepositedOn")
         and row_dict["Details"].find("Credit") == -1
     ):
         if row_dict["Details"].find("Airdrop") > -1:
@@ -95,13 +98,17 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             wallet=WALLET,
         )
     # Do not handle overdraft interest here.
-    elif (row_dict["Type"] in ("FixedTermInterest", "Fixed Term Interest") 
-        or (row_dict["Type"] == "Interest"
-        and row_dict["Details"].find("Overdraft") == -1)
+    elif row_dict["Type"] in ("Dividend", "FixedTermInterest", "Fixed Term Interest") or (
+        row_dict["Type"] == "Interest" and row_dict["Details"].find("Overdraft") == -1
     ):
-        if buy_quantity > 0:
+        if buy_quantity is not None and buy_quantity > 0:
+            if row_dict["Type"] == "Dividend":
+                t_type = TrType.DIVIDEND
+            else:
+                t_type = TrType.INTEREST
+
             data_row.t_record = TransactionOutRecord(
-                TrType.INTEREST,
+                t_type,
                 data_row.timestamp,
                 buy_quantity=buy_quantity,
                 buy_asset=buy_asset,
@@ -111,15 +118,6 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         # Skip interest with zero amounts.
         else:
             return
-    elif row_dict["Type"] == "Dividend":
-        data_row.t_record = TransactionOutRecord(
-            TrType.DIVIDEND,
-            data_row.timestamp,
-            buy_quantity=buy_quantity,
-            buy_asset=buy_asset,
-            buy_value=value,
-            wallet=WALLET,
-        )
     elif row_dict["Type"] in (
         "Bonus",
         "Cashback",
@@ -167,8 +165,8 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             wallet=WALLET,
         )
     # Treat credit deposits like a buy order with fiat.
-    elif (row_dict["Type"] in ("Deposit", "Top up Crypto")
-        and row_dict["Details"].find("Credit") > -1
+    elif (
+        row_dict["Type"] in ("Deposit", "Top up Crypto") and row_dict["Details"].find("Credit") > -1
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
@@ -205,10 +203,10 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             wallet=WALLET,
         )
     # Handle loan interest here. "Interest Additional" is accrued for paying back a loan early.
-    elif (row_dict["Type"] in ("InterestAdditional", "Interest Additional")
-        or (row_dict["Type"] == "Interest" and row_dict["Details"].find("Overdraft") > -1)
+    elif row_dict["Type"] in ("InterestAdditional", "Interest Additional") or (
+        row_dict["Type"] == "Interest" and row_dict["Details"].find("Overdraft") > -1
     ):
-        if sell_quantity > 0:
+        if sell_quantity is not None and sell_quantity > 0:
             data_row.t_record = TransactionOutRecord(
                 TrType.LOAN_INTEREST,
                 data_row.timestamp,
@@ -220,24 +218,20 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         # Skip interest with zero amounts.
         else:
             return
-    # Skip loan operations which are not disposals or are just informational
-    elif row_dict["Type"] in (
-        "Assimilation",
-        "UnlockingTermDeposit",
-        "Unlocking Term Deposit",
-        "LockingTermDeposit",
-        "Locking Term Deposit",
-    ):
-        return
-    # Skip internal operations
+    # Skip internal and loan operations which are not disposals or are just informational
     elif row_dict["Type"] in (
         "Administrator",
+        "Assimilation",
         "DepositToExchange",
         "ExchangeToWithdraw",
         "TransferIn",
         "Transfer In",
         "TransferOut",
         "Transfer Out",
+        "UnlockingTermDeposit",
+        "Unlocking Term Deposit",
+        "LockingTermDeposit",
+        "Locking Term Deposit",
     ):
         return
     else:
