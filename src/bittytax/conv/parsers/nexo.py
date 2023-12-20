@@ -77,11 +77,10 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
     else:
         value = None
 
-    if row_dict["Type"] in ("Deposit", "Top up Crypto", "ExchangeDepositedOn"):
-        # Skip credit deposits (already handled with "Loan Withdrawal").
-        if row_dict["Details"].find("Credit") > -1:
-            return
-
+    # Do no handle credit deposits here.
+    if (row_dict["Type"] in ("Deposit", "Top up Crypto", "ExchangeDepositedOn")
+        and row_dict["Details"].find("Credit") == -1
+    ):
         if row_dict["Details"].find("Airdrop") > -1:
             t_type = TrType.AIRDROP
         else:
@@ -95,10 +94,12 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             buy_value=value,
             wallet=WALLET,
         )
-    elif row_dict["Type"] in ("Interest", "FixedTermInterest", "Fixed Term Interest"):
-        if ("Amount" in row_dict and Decimal(row_dict["Amount"]) > 0) or (
-            "Input Amount" in row_dict and Decimal(row_dict["Input Amount"]) > 0
-        ):
+    # Do not handle overdraft interest here.
+    elif (row_dict["Type"] in ("FixedTermInterest", "Fixed Term Interest") 
+        or (row_dict["Type"] == "Interest"
+        and row_dict["Details"].find("Overdraft") == -1)
+    ):
+        if buy_quantity > 0:
             data_row.t_record = TransactionOutRecord(
                 TrType.INTEREST,
                 data_row.timestamp,
@@ -107,6 +108,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
                 buy_value=value,
                 wallet=WALLET,
             )
+        # Skip interest with zero amounts.
         else:
             return
     elif row_dict["Type"] == "Dividend":
@@ -154,13 +156,29 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             sell_value=value,
             wallet=WALLET,
         )
+    # Handle loans like a fiat deposit.
     elif row_dict["Type"] in ("WithdrawalCredit", "Loan Withdrawal"):
         data_row.t_record = TransactionOutRecord(
-            TrType.RECEIVE_LOAN,
+            TrType.LOAN_RECEIVED,
+            data_row.timestamp,
+            buy_quantity=sell_quantity,
+            buy_asset=sell_asset,
+            buy_value=sell_quantity,
+            wallet=WALLET,
+        )
+    # Treat credit deposits like a buy order with fiat.
+    elif (row_dict["Type"] in ("Deposit", "Top up Crypto")
+        and row_dict["Details"].find("Credit") > -1
+    ):
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
             data_row.timestamp,
             buy_quantity=buy_quantity,
             buy_asset=buy_asset,
             buy_value=value,
+            sell_quantity=value,
+            sell_asset=config.ccy,
+            sell_value=value,
             wallet=WALLET,
         )
     # These sell orders are used for repayments,
@@ -179,23 +197,29 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         )
     elif row_dict["Type"] in ("Liquidation", "Repayment", "Manual Repayment"):
         data_row.t_record = TransactionOutRecord(
-            TrType.REPAY_LOAN,
+            TrType.LOAN_REPAID,
             data_row.timestamp,
             sell_quantity=sell_quantity,
             sell_asset=sell_asset,
             sell_value=sell_quantity,
             wallet=WALLET,
         )
-    # "Interest Additional" is a borrowing fee for paying back a loan early. Treat as an expense.
-    elif row_dict["Type"] == "Interest Additional":
-        data_row.t_record = TransactionOutRecord(
-            TrType.BORROWING_FEE,
-            data_row.timestamp,
-            fee_quantity=sell_quantity,
-            fee_asset=sell_asset,
-            fee_value=value,
-            wallet=WALLET,
-        )
+    # Handle loan interest here. "Interest Additional" is accrued for paying back a loan early.
+    elif (row_dict["Type"] in ("InterestAdditional", "Interest Additional")
+        or (row_dict["Type"] == "Interest" and row_dict["Details"].find("Overdraft") > -1)
+    ):
+        if sell_quantity > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.LOAN_INTEREST,
+                data_row.timestamp,
+                buy_quantity=sell_quantity,
+                buy_asset=sell_asset,
+                buy_value=value,
+                wallet=WALLET,
+            )
+        # Skip interest with zero amounts.
+        else:
+            return
     # Skip loan operations which are not disposals or are just informational
     elif row_dict["Type"] in (
         "Assimilation",
