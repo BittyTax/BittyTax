@@ -116,13 +116,13 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, DataParser):
             return NotImplemented
-        return self.name == other.name
+        return self.name.lower() == other.name.lower()
 
     def __ne__(self, other: object) -> bool:
         return not self == other
 
     def __lt__(self, other: "DataParser") -> bool:
-        return self.name < other.name
+        return self.name.lower() < other.name.lower()
 
     def format_header(self) -> str:
         header = []
