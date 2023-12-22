@@ -48,11 +48,7 @@ def parse_paxful(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Pars
             wallet=WALLET,
         )
     else:
-        raise UnexpectedTypeError(
-            parser.in_header.index("type"),
-            "type",
-            row_dict["type"],
-        )
+        raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
 
 DataParser(

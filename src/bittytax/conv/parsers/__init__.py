@@ -57,6 +57,7 @@ from . import (
     qtwallet,
     snowtrace,
     staketax,
+    swissborg,
     tradesatoshi,
     trezor,
     trezorsuite,

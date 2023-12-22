@@ -282,7 +282,7 @@ class DataFile:
     def get_parser(reader: Iterator[List[str]]) -> Optional[DataParser]:
         parser = None
         # Header might not be on first line
-        for row in range(8):
+        for row in range(14):
             try:
                 parser = DataParser.match_header(next(reader), row)
             except KeyError:
