@@ -1,5 +1,5 @@
 <h2>Current Holdings</h2>
-<table repeat="1" width="100%">
+<table repeat="1" width="100%" class="asset-table">
     <tr>
         <th align="left">Asset</th>
         <th align="right">Quantity</th>
@@ -21,7 +21,7 @@
                 {% if holdings_report['holdings'][h]['gain'] >= 0 %}
                     <td align="right">{{holdings_report['holdings'][h]['gain']|valuefilter}}</td>
                 {% else %}
-                    <td align="right" class="red_font">{{holdings_report['holdings'][h]['gain']|valuefilter}}</td>
+                    <td align="right" class="red-font">{{holdings_report['holdings'][h]['gain']|valuefilter}}</td>
                 {% endif %}
             {% else %}
                 <td align="right"><i>Not available</i></td>
@@ -30,8 +30,8 @@
         </tr>
     {% endfor %}
 </table>
-<table>
-    <tr class="total_row">
+<table class="total-table">
+    <tr>
         <td align="left">Total</td>
         <td align="right"></td>
         <td align="right">{{holdings_report['totals']['cost']|valuefilter}}</td>
@@ -39,7 +39,7 @@
         {% if holdings_report['totals']['gain'] >= 0 %}
             <td align="right">{{holdings_report['totals']['gain']|valuefilter}}</td>
         {% else %}
-            <td align="right" class="red_font">{{holdings_report['totals']['gain']|valuefilter}}</td>
+            <td align="right" class="red-font">{{holdings_report['totals']['gain']|valuefilter}}</td>
         {% endif %}
     </tr>
 </table>

@@ -1,43 +1,6 @@
 <!DOCTYPE html>
 <html>
-    <head lang="en">
-        <meta charset="UTF-8">
-        <meta name="author" content="{{author}}">
-        <title>BittyTax Report</title>
-        <style>
-            @page {
-                size: a4 portrait;
-                @frame header {
-                    -pdf-frame-content: header-content;
-                    left: 50pt; width: 495pt; top: 50pt; height: 25pt;
-                }
-                @frame content {
-                    left: 50pt; width: 495pt; top: 75pt; height: 687pt;
-                }
-                @frame footer {
-                    -pdf-frame-content: footer-content;
-                    left: 50pt; width: 495pt; top: 762pt; height: 35pt;
-                }
-            }
-            #footer-content {
-                padding-top: 10pt;
-                text-align: center;
-            }
-            .total_row {
-                font-weight: bold;
-                padding-top: 2px;
-                border-top-color: black;
-                border-top-style: solid;
-                border-top-width: 0.1px;
-            }
-            .red_font {
-                color: red;
-            }
-            h1 {
-                text-decoration: underline;
-            }
-        </style>
-    </head>
+    {% include "html_head.html" %}
     <body>
         <div id="header-content">
             <table>
@@ -50,7 +13,13 @@
         <div id="footer-content">
             Page <pdf:pagenumber> of <pdf:pagecount>
         </div>
-
+        <div id="cover-page">
+            <img src="{{TEMPLATE_PATH}}/img/BittyTax300dpi.png" class="logo">
+            <h1>Cryptoasset Accounting Report</h1>
+            <h2>Audit Report: {{date|datefilter}}</h2>
+        </div>
+        <pdf:nexttemplate name="default" />
+        <pdf:nextpage />
         <h1>Audit</h1>
         {% include "audit.html" %}
     </body>

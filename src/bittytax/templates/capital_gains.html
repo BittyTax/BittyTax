@@ -1,7 +1,7 @@
 {% set cgains = tax_report[tax_year]['CapitalGains'] %}
 {% for asset in cgains.assets|sort %}
     {% set asset_totals = namespace(disposals=0, quantity=0, cost=0, fees=0, proceeds=0, gain=0) %}
-    <table repeat="1" width="100%">
+    <table repeat="1" width="100%" class="asset-table mt mb">
         <tr>
             <th align="left">Asset</th>
             <th align="left">Date</th>
@@ -29,7 +29,7 @@
                 {% if te.gain >= 0 %}
                    <td align="right">{{te.gain|valuefilter}}</td>
                 {% else %}
-                   <td align="right" class="red_font">{{te.gain|valuefilter}}</td>
+                   <td align="right" class="red-font">{{te.gain|valuefilter}}</td>
                 {% endif %}
                 {% set asset_totals.gain = asset_totals.gain + te.gain %}
             </tr>
@@ -46,15 +46,14 @@
                 {% if asset_totals.gain >= 0 %}
                     <td align="right">{{asset_totals.gain|valuefilter}}</td>
                 {% else %}
-                    <td align="right" class="red_font">{{asset_totals.gain|valuefilter}}</td>
+                    <td align="right" class="red-font">{{asset_totals.gain|valuefilter}}</td>
                 {% endif %}
             </tr>
         {% endif %}
     </table>
-    <br>
 {% endfor %}
-<table>
-    <tr class="total_row">
+<table class="total-table mt">
+    <tr>
         <td align="left">Total</td>
         <td align="left"></td>
         <td align="left" width="25%"></td>
@@ -65,15 +64,17 @@
         {% if cgains.totals['gain'] >= 0 %}
             <td align="right">{{cgains.totals['gain']|valuefilter}}</td>
         {% else %}
-            <td align="right" class="red_font">{{cgains.totals['gain']|valuefilter}}</td>
+            <td align="right" class="red-font">{{cgains.totals['gain']|valuefilter}}</td>
         {% endif %}
     </tr>
 </table>
+
 <h3>Summary</h3>
 <table width="75%">
     <tr>
         <td>Number of disposals:</td>
         <td align="right">{{cgains.summary['disposals']}}</td>
+        <td></td>
     </tr>
     <tr>
         <td>Disposal proceeds:</td>

@@ -1,65 +1,15 @@
 <!DOCTYPE html>
 <html>
-    <head lang="en">
-        <meta charset="UTF-8">
-        <meta name="author" content="{{author}}">
-        <title>BittyTax Report</title>
-        <style>
-            @page {
-                size: a4 portrait;
-                @frame header {
-                    -pdf-frame-content: header-content;
-                    left: 50pt; width: 495pt; top: 50pt; height: 25pt;
-                }
-                @frame content {
-                    left: 50pt; width: 495pt; top: 75pt; height: 687pt;
-                }
-                @frame footer {
-                    -pdf-frame-content: footer-content;
-                    left: 50pt; width: 495pt; top: 762pt; height: 35pt;
-                }
-            }
-            #footer-content {
-                padding-top: 10pt;
-                text-align: center;
-            }
-            .total_row {
-                font-weight: bold;
-                padding-top: 2px;
-                border-top-color: black;
-                border-top-style: solid;
-                border-top-width: 0.1px;
-            }
-            .red_font {
-                color: red;
-            }
-            h1 {
-                text-decoration: underline;
-            }
-        </style>
-    </head>
+    {% include "html_head.html" %}
     <body>
-        <div id="header-content">
-            <table>
-                <tr>
-                    <td align="left">BittyTax Report</td>
-                    <td align="right">{{date|datefilter}}</td>
-                </tr>
-            </table>
-        </div>
-        <div id="footer-content">
-            Page <pdf:pagenumber> of <pdf:pagecount><br>
-            Always consult with a professional accountant before filing.
-        </div>
-
+        {% include "header_footer.html" %}
+        {% include "cover_page.html" %}
         <h1>Audit</h1>
         {% include "audit.html" %}
-        <div><pdf:nextpage /></div>
+        <pdf:nextpage />
         {% for tax_year in tax_report|sort %}
-            <h1>Tax Year -
-            {{config.format_tax_year(tax_year)}}
-            ({{config.get_tax_year_start(tax_year)|datefilter2}} to {{config.get_tax_year_end(tax_year)|datefilter2}})
-            </h1>
+            <h1 class="tax-year">Tax Year - {{config.format_tax_year(tax_year)}}</h1>
+            <h2 class="date-range">{{config.get_tax_year_start(tax_year)|datefilter2}} to {{config.get_tax_year_end(tax_year)|datefilter2}}</h2>
             {% if args.tax_rules in TAX_RULES_UK_COMPANY %}
                 <h2>Chargeable Gains</h2>
                 {% include "capital_gains.html" %}
@@ -71,19 +21,19 @@
             {% endif %}
             {% include "income.html" %}
             {% if not loop.last %}
-                <div><pdf:nextpage /></div>
+                <pdf:nextpage />
             {% endif %}
         {% endfor %}
-        <div><pdf:nextpage /></div>
+        <pdf:nextpage />
         <h1>Appendix</h1>
         {% for tax_year in tax_report|sort %}
             {% include "price_data.html" %}
             {% if not loop.last %}
-                <div><pdf:nextpage /></div>
+                <pdf:nextpage />
             {% endif %}
         {% endfor %}
         {% if holdings_report %}
-           <div><pdf:nextpage /></div>
+           <pdf:nextpage />
            {% include "holdings.html" %}
         {% endif %}
     </body>

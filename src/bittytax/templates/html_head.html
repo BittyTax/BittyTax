@@ -1,0 +1,10 @@
+<head lang="en">
+    <meta charset="UTF-8">
+    <meta name="author" content="{{author}}">
+    <title>BittyTax Report</title>
+    {% if config.classic_report %}
+        {% include "css/css_classic.html" %}
+    {% else %}
+        {% include "css/css_styles.html" %}
+    {% endif %}
+</head>
