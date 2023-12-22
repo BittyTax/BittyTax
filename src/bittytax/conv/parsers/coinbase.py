@@ -155,7 +155,9 @@ def _do_parse_coinbase(
             )
     elif row_dict["Transaction Type"] in (
         "Coinbase Earn",
+        "Inflation Reward",
         "Rewards Income",
+        "Reward Income",
         "Learning Reward",
     ):
         data_row.t_record = TransactionOutRecord(
