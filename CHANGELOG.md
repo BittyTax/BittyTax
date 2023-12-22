@@ -1,5 +1,7 @@
 # Change Log
 ## [Unreleased]
+
+## Version [0.5.2] (2023-12-22)
 Important:-
 
 The tax calculations for NFTs have been corrected, they are no longer "same day" pooled, or "same day"/"bed & breakfast" matched. NFT disposals will appear as "Unpooled" in the report. If you have made any NFT disposals, we recommend you re-generate your tax reports to ensure your capital gains tax is correct.
@@ -19,8 +21,8 @@ The tax calculations for NFTs have been corrected, they are no longer "same day"
 - Kraken parser: added "spotfromfutures" subtype. ([#310](https://github.com/BittyTax/BittyTax/issues/310))
 - Conversion tool: added merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: added parser for CoinTracker accounting data.
-- Conversion tool: new config "large_data" addded.
-- Conversion tool: addded parser for FTX exchange. ([#80](https://github.com/BittyTax/BittyTax/issues/80))
+- Conversion tool: new config "large_data" added.
+- Conversion tool: added parser for FTX exchange. ([#80](https://github.com/BittyTax/BittyTax/issues/80))
 - Accounting tool: added audit only (--audit) option. ([#97](https://github.com/BittyTax/BittyTax/issues/97))
 - Volt parser: new data file format added.
 - Conversion tool: added parser for Blockscout explorer.
@@ -116,7 +118,7 @@ The `Lost` transaction type was incorrectly performing the buy-back before the s
 - Conversion tool: added parser for the BnkToTheFuture platform.
 - Binance parser: added new/re-named operations for Statements. ([#274](https://github.com/BittyTax/BittyTax/issues/274))
 - Binance parser: added config to split BNB quantity across multiple tokens.
-- Conversion tool: added paser for StakeTax.
+- Conversion tool: added parser for StakeTax.
 - Nexo parser: added new export format. ([#286](https://github.com/BittyTax/BittyTax/issues/286))
 - Etherscan parser: added new export formats. ([#290](https://github.com/BittyTax/BittyTax/issues/290))
 - Trezor Suite parser: added new export format. ([#282](https://github.com/BittyTax/BittyTax/issues/282))
@@ -527,7 +529,8 @@ This is the initial beta release. Although it has been throughly tested, it's po
 - Exchange data files supported: Bitstamp, Bittrex, ChangeTip, Circle, Coinbase, Coinbase Pro, Coinfloor, Cryptopia, Cryptsy, Gatehub, OKEx, Poloniex, TradeSatoshi, Uphold.
 - Explorer data files supported: Etherscan.
 
-[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/BittyTax/BittyTax/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/BittyTax/BittyTax/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/BittyTax/BittyTax/compare/v0.4.3...v0.5.0
 [0.4.3]: https://github.com/BittyTax/BittyTax/compare/v0.4.2...v0.4.3
