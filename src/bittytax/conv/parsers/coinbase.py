@@ -132,7 +132,7 @@ def _do_parse_coinbase(
     (spot_price_ccy, subtotal, total_ccy, fees) = fiat_values
     row_dict = data_row.row_dict
 
-    if row_dict["Transaction Type"] == "Receive":
+    if row_dict["Transaction Type"] in ("Deposit", "Receive"):
         if "Coinbase Referral" in row_dict["Notes"]:
             # We can calculate the exact buy_value from the spot price
             data_row.t_record = TransactionOutRecord(
@@ -151,6 +151,7 @@ def _do_parse_coinbase(
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Quantity Transacted"]),
                 buy_asset=row_dict["Asset"],
+                buy_value=spot_price_ccy * Decimal(row_dict["Quantity Transacted"]),
                 wallet=WALLET,
             )
     elif row_dict["Transaction Type"] in (
@@ -168,15 +169,31 @@ def _do_parse_coinbase(
             buy_value=total_ccy,
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] == "Send":
+    elif row_dict["Transaction Type"] in ("Send", "Withdrawal"):
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=Decimal(row_dict["Quantity Transacted"]),
             sell_asset=row_dict["Asset"],
+            sell_value=total_ccy,
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] in ("Buy", "Advanced Trade Buy"):
+    elif row_dict["Transaction Type"] == "Buy":
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Quantity Transacted"]),
+            buy_asset=row_dict["Asset"],
+            buy_value=spot_price_ccy * Decimal(row_dict["Quantity Transacted"]),
+            sell_quantity=Decimal(row_dict["Subtotal"]),
+            sell_asset=row_dict["Spot Price Currency"],
+            sell_value=Decimal(row_dict["Subtotal"]),
+            fee_quantity=fees,
+            fee_asset=row_dict["Spot Price Currency"],
+            fee_value=fees,
+            wallet=WALLET,
+        )
+    elif row_dict["Transaction Type"] == "Advanced Trade Buy":
         currency, quote = _get_currency(row_dict["Notes"])
         if currency is None:
             raise UnexpectedContentError(
@@ -220,7 +237,27 @@ def _do_parse_coinbase(
                 fee_asset=currency,
                 wallet=WALLET,
             )
-    elif row_dict["Transaction Type"] in ("Sell", "Advanced Trade Sell"):
+    elif row_dict["Transaction Type"] == "Sell":
+        # Saw a sell order for USD to USD? Looks like a bug, so check for these and skip.
+        buy_asset = row_dict["Spot Price Currency"]
+        sell_asset = row_dict["Asset"]
+        if buy_asset == sell_asset:
+            return
+
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=total_ccy,
+            buy_asset=buy_asset,
+            buy_value=total_ccy,
+            sell_quantity=Decimal(row_dict["Quantity Transacted"]),
+            sell_asset=sell_asset,
+            sell_value=spot_price_ccy * Decimal(row_dict["Quantity Transacted"]),
+            fee_quantity=fees,
+            fee_asset=row_dict["Spot Price Currency"],
+            wallet=WALLET,
+        )
+    elif row_dict["Transaction Type"] == "Advanced Trade Sell":
         currency, quote = _get_currency(row_dict["Notes"])
         if currency is None:
             raise UnexpectedContentError(
@@ -273,6 +310,8 @@ def _do_parse_coinbase(
             sell_value=total_ccy,
             wallet=WALLET,
         )
+    elif row_dict["Transaction Type"] == "Exchange Deposit":
+        return
     else:
         raise UnexpectedTypeError(
             parser.in_header.index("Transaction Type"),
