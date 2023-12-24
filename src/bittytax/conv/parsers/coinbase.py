@@ -140,9 +140,7 @@ def _do_parse_coinbase(
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Quantity Transacted"]),
                 buy_asset=row_dict["Asset"],
-                buy_value=spot_price_ccy * Decimal(row_dict["Quantity Transacted"])
-                if spot_price_ccy
-                else None,
+                buy_value=total_ccy if spot_price_ccy else None,
                 wallet=WALLET,
             )
         else:
@@ -151,7 +149,7 @@ def _do_parse_coinbase(
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Quantity Transacted"]),
                 buy_asset=row_dict["Asset"],
-                buy_value=spot_price_ccy * Decimal(row_dict["Quantity Transacted"]),
+                buy_value=total_ccy,
                 wallet=WALLET,
             )
     elif row_dict["Transaction Type"] in (
@@ -184,10 +182,10 @@ def _do_parse_coinbase(
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Quantity Transacted"]),
             buy_asset=row_dict["Asset"],
-            buy_value=spot_price_ccy * Decimal(row_dict["Quantity Transacted"]),
-            sell_quantity=Decimal(row_dict["Subtotal"]),
+            buy_value=subtotal,
+            sell_quantity=total_ccy,
             sell_asset=row_dict["Spot Price Currency"],
-            sell_value=Decimal(row_dict["Subtotal"]),
+            sell_value=total_ccy,
             fee_quantity=fees,
             fee_asset=row_dict["Spot Price Currency"],
             fee_value=fees,
@@ -252,7 +250,7 @@ def _do_parse_coinbase(
             buy_value=total_ccy,
             sell_quantity=Decimal(row_dict["Quantity Transacted"]),
             sell_asset=sell_asset,
-            sell_value=spot_price_ccy * Decimal(row_dict["Quantity Transacted"]),
+            sell_value=subtotal,
             fee_quantity=fees,
             fee_asset=row_dict["Spot Price Currency"],
             wallet=WALLET,
