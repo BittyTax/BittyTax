@@ -5,6 +5,7 @@
 - Config: added classic_report parameter to switch to legacy PDF report format.
 - Conversion tool: added parser for SwissBorg exchange.
 - Coinbase parser: added new transaction types for transfers.
+- Exodus parser: added fees for deposits.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 

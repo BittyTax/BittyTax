@@ -41,6 +41,8 @@ def parse_exodus_v2(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["DATE"], fuzzy=True)
 
+    fee_quantity, fee_asset = _split_asset(row_dict["FEE"])
+
     if row_dict["TYPE"] == "deposit":
         buy_quantity, buy_asset = _split_asset(row_dict["COINAMOUNT"])
 
@@ -49,12 +51,13 @@ def parse_exodus_v2(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
             data_row.timestamp,
             buy_quantity=buy_quantity,
             buy_asset=buy_asset,
+            fee_quantity=fee_quantity,
+            fee_asset=fee_asset,
             wallet=WALLET,
             note=row_dict["PERSONALNOTE"],
         )
     elif row_dict["TYPE"] == "withdrawal":
         sell_quantity, sell_asset = _split_asset(row_dict["COINAMOUNT"])
-        fee_quantity, fee_asset = _split_asset(row_dict["FEE"])
 
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
@@ -81,12 +84,21 @@ def parse_exodus_v1(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["DATE"], fuzzy=True)
 
+    if row_dict["FEECURRENCY"]:
+        fee_quantity = abs(Decimal(row_dict["FEEAMOUNT"]))
+        fee_asset = row_dict["FEECURRENCY"]
+    else:
+        fee_quantity = None
+        fee_asset = ""
+
     if row_dict["TYPE"] == "deposit":
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["INAMOUNT"]),
             buy_asset=row_dict["INCURRENCY"],
+            fee_quantity=fee_quantity,
+            fee_asset=fee_asset,
             wallet=WALLET,
             note=row_dict["PERSONALNOTE"],
         )
@@ -96,8 +108,8 @@ def parse_exodus_v1(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["OUTAMOUNT"])),
             sell_asset=row_dict["OUTCURRENCY"],
-            fee_quantity=abs(Decimal(row_dict["FEEAMOUNT"])),
-            fee_asset=row_dict["FEECURRENCY"],
+            fee_quantity=fee_quantity,
+            fee_asset=fee_asset,
             wallet=WALLET,
             note=row_dict["PERSONALNOTE"],
         )
@@ -109,8 +121,8 @@ def parse_exodus_v1(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
             buy_asset=row_dict["INCURRENCY"],
             sell_quantity=abs(Decimal(row_dict["OUTAMOUNT"])),
             sell_asset=row_dict["OUTCURRENCY"],
-            fee_quantity=abs(Decimal(row_dict["FEEAMOUNT"])),
-            fee_asset=row_dict["FEECURRENCY"],
+            fee_quantity=fee_quantity,
+            fee_asset=fee_asset,
             wallet=WALLET,
             note=row_dict["PERSONALNOTE"],
         )
