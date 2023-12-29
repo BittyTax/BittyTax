@@ -132,7 +132,51 @@ def _do_parse_coinbase(
     (spot_price_ccy, subtotal, total_ccy, fees) = fiat_values
     row_dict = data_row.row_dict
 
-    if row_dict["Transaction Type"] == "Receive":
+    if row_dict["Transaction Type"] == "Deposit":
+        # Fiat deposit
+        data_row.t_record = TransactionOutRecord(
+            TrType.DEPOSIT,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Quantity Transacted"]) + fees
+            if fees
+            else Decimal(row_dict["Quantity Transacted"]),
+            buy_asset=row_dict["Asset"],
+            fee_quantity=fees,
+            fee_asset=row_dict["Asset"],
+            wallet=WALLET,
+        )
+    elif row_dict["Transaction Type"] == "Withdrawal":
+        # Fiat withdrawal
+        data_row.t_record = TransactionOutRecord(
+            TrType.WITHDRAWAL,
+            data_row.timestamp,
+            sell_quantity=Decimal(row_dict["Quantity Transacted"]) - abs(fees)
+            if fees
+            else Decimal(row_dict["Quantity Transacted"]),
+            sell_asset=row_dict["Asset"],
+            fee_quantity=abs(fees) if fees else None,
+            fee_asset=row_dict["Asset"],
+            wallet=WALLET,
+        )
+    elif row_dict["Transaction Type"] == "Exchange Deposit":
+        # Withdrawal to Coinbase Pro
+        data_row.t_record = TransactionOutRecord(
+            TrType.WITHDRAWAL,
+            data_row.timestamp,
+            sell_quantity=Decimal(row_dict["Quantity Transacted"]),
+            sell_asset=row_dict["Asset"],
+            wallet=WALLET,
+        )
+    elif row_dict["Transaction Type"] == "Exchange Withdrawal":
+        # Deposit from Coinbase Pro
+        data_row.t_record = TransactionOutRecord(
+            TrType.DEPOSIT,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Quantity Transacted"]),
+            buy_asset=row_dict["Asset"],
+            wallet=WALLET,
+        )
+    elif row_dict["Transaction Type"] == "Receive":
         if "Coinbase Referral" in row_dict["Notes"]:
             # We can calculate the exact buy_value from the spot price
             data_row.t_record = TransactionOutRecord(
@@ -146,6 +190,7 @@ def _do_parse_coinbase(
                 wallet=WALLET,
             )
         else:
+            # Crypto deposit
             data_row.t_record = TransactionOutRecord(
                 TrType.DEPOSIT,
                 data_row.timestamp,
@@ -167,6 +212,7 @@ def _do_parse_coinbase(
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] == "Send":
+        # Crypto withdrawal
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -227,7 +273,7 @@ def _do_parse_coinbase(
 
         if currency == quote:
             buy_quantity = subtotal
-            fee_quantity = fees
+            fee_quantity = abs(fees) if fees else None
         else:
             if parser.in_header_row_num is None:
                 raise RuntimeError("Missing in_header_row_num")

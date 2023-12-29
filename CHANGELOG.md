@@ -4,6 +4,9 @@
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
 - Conversion tool: added parser for SwissBorg exchange.
+- Coinbase parser: added new transaction types for transfers.
+### Removed
+- Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 
 ## Version [0.5.2] (2023-12-22)
 Important:-
