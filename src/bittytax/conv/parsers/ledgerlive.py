@@ -23,58 +23,60 @@ def parse_ledger_live(
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Operation Date"])
 
+    if row_dict["Operation Fees"]:
+        fee_quantity = Decimal(row_dict["Operation Fees"])
+        fee_asset = row_dict["Currency Ticker"]
+    else:
+        fee_quantity = None
+        fee_asset = ""
+
     if row_dict["Operation Type"] == "IN":
-        if row_dict["Operation Fees"]:
-            data_row.t_record = TransactionOutRecord(
-                TrType.DEPOSIT,
-                data_row.timestamp,
-                buy_quantity=Decimal(row_dict["Operation Amount"])
-                + Decimal(row_dict["Operation Fees"]),
-                buy_asset=row_dict["Currency Ticker"],
-                fee_quantity=Decimal(row_dict["Operation Fees"]),
-                fee_asset=row_dict["Currency Ticker"],
-                wallet=WALLET,
-            )
-        else:
-            # ERC-20 tokens don't include fees
-            data_row.t_record = TransactionOutRecord(
-                TrType.DEPOSIT,
-                data_row.timestamp,
-                buy_quantity=Decimal(row_dict["Operation Amount"]),
-                buy_asset=row_dict["Currency Ticker"],
-                wallet=WALLET,
-            )
+        data_row.t_record = TransactionOutRecord(
+            TrType.DEPOSIT,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Operation Amount"]) + fee_quantity
+            if fee_quantity
+            else Decimal(row_dict["Operation Amount"]),
+            buy_asset=row_dict["Currency Ticker"],
+            fee_quantity=fee_quantity,
+            fee_asset=fee_asset,
+            wallet=WALLET,
+        )
     elif row_dict["Operation Type"] == "OUT":
-        if row_dict["Operation Fees"]:
-            data_row.t_record = TransactionOutRecord(
-                TrType.WITHDRAWAL,
-                data_row.timestamp,
-                sell_quantity=Decimal(row_dict["Operation Amount"])
-                - Decimal(row_dict["Operation Fees"]),
-                sell_asset=row_dict["Currency Ticker"],
-                fee_quantity=Decimal(row_dict["Operation Fees"]),
-                fee_asset=row_dict["Currency Ticker"],
-                wallet=WALLET,
-            )
-        else:
-            data_row.t_record = TransactionOutRecord(
-                TrType.WITHDRAWAL,
-                data_row.timestamp,
-                sell_quantity=Decimal(row_dict["Operation Amount"]),
-                sell_asset=row_dict["Currency Ticker"],
-                wallet=WALLET,
-            )
-    elif row_dict["Operation Type"] in ("FEES", "REVEAL"):
+        data_row.t_record = TransactionOutRecord(
+            TrType.WITHDRAWAL,
+            data_row.timestamp,
+            sell_quantity=Decimal(row_dict["Operation Amount"]) - fee_quantity
+            if fee_quantity
+            else Decimal(row_dict["Operation Amount"]),
+            sell_asset=row_dict["Currency Ticker"],
+            fee_quantity=fee_quantity,
+            fee_asset=fee_asset,
+            wallet=WALLET,
+        )
+    elif row_dict["Operation Type"] in ("FEES", "REVEAL", "BOND"):
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
             data_row.timestamp,
-            sell_quantity=Decimal(row_dict["Operation Amount"])
-            - Decimal(row_dict["Operation Fees"]),
+            sell_quantity=Decimal(row_dict["Operation Amount"]) - fee_quantity
+            if fee_quantity
+            else Decimal(row_dict["Operation Amount"]),
             sell_asset=row_dict["Currency Ticker"],
-            fee_quantity=Decimal(row_dict["Operation Fees"]),
-            fee_asset=row_dict["Currency Ticker"],
+            fee_quantity=fee_quantity,
+            fee_asset=fee_asset,
             wallet=WALLET,
         )
+    elif row_dict["Operation Type"] == "REWARD":
+        data_row.t_record = TransactionOutRecord(
+            TrType.STAKING,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Operation Amount"]),
+            buy_asset=row_dict["Currency Ticker"],
+            wallet=WALLET,
+        )
+    elif row_dict["Operation Type"] == "NFT_IN":
+        # Skip
+        return
     else:
         raise UnexpectedTypeError(
             parser.in_header.index("Operation Type"),

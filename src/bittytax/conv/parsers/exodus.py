@@ -132,12 +132,11 @@ def parse_exodus_v1(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
 
 DataParser(
     ParserType.WALLET,
-    "Exodus",
+    "Exodus Staking",
     ["Type", "Buy", "Cur.", "Exchange", "Group", "Comment", "Date"],
     worksheet_name="Exodus",
     row_handler=parse_exodus_stake,
 )
-
 
 DataParser(
     ParserType.WALLET,
