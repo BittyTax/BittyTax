@@ -200,11 +200,23 @@ def _do_parse_coinbase(
             )
     elif row_dict["Transaction Type"] in (
         "Coinbase Earn",
-        "Rewards Income",
         "Learning Reward",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.INCOME,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Quantity Transacted"]),
+            buy_asset=row_dict["Asset"],
+            buy_value=total_ccy,
+            wallet=WALLET,
+        )
+    elif row_dict["Transaction Type"] in (
+        "Rewards Income",
+        "Reward Income",
+        "Inflation Reward",
+    ):
+        data_row.t_record = TransactionOutRecord(
+            TrType.STAKING,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Quantity Transacted"]),
             buy_asset=row_dict["Asset"],
@@ -334,7 +346,7 @@ def _get_convert_info(notes: str) -> Optional[Tuple[Any, ...]]:
 
 
 def _get_currency(notes: str) -> Tuple[Optional[str], str]:
-    match = re.match(r".+for .{1}[\d|,]+\.\d{2} (\w{3})(?: on )?(\w+-\w+)?$", notes)
+    match = re.match(r".+for .{1}(?:[\d|,]+\.\d{2}|[\d|,]+) (\w{3})(?: on )?(\w+-\w+)?$", notes)
 
     if match:
         currency = quote = match.group(1)

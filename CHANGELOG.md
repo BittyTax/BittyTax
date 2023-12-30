@@ -1,5 +1,7 @@
 # Change Log
 ## [Unreleased]
+### Fixed
+- Coinbase parser: fixed regex to handle whole numbers.
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
@@ -7,6 +9,8 @@
 - Coinbase parser: added new transaction types for transfers.
 - Exodus parser: added fees for deposits.
 - Ledger Live parser: added additional operation types.
+- Coinbase Pro parser: added "conversion" and "rebate" types.
+- Coinbase parser: added "Reward Income" and "Inflation Reward" transaction types.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 

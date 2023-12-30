@@ -77,17 +77,19 @@ def _parse_coinbase_pro_row(
             buy_asset=row_dict["amount/balance unit"],
             wallet=WALLET,
         )
-    elif row_dict["type"] == "match":
+    elif row_dict["type"] in ("match", "conversion"):
         if Decimal(row_dict["amount"]) < 0:
             sell_quantity: Optional[Decimal] = abs(Decimal(row_dict["amount"]))
             sell_asset = row_dict["amount/balance unit"]
 
-            buy_quantity, buy_asset = _get_trade(trade_ids[row_dict["trade id"]], "match")
+            buy_quantity, buy_asset = _get_trade(trade_ids[row_dict["trade id"]], row_dict["type"])
         else:
             buy_quantity = Decimal(row_dict["amount"])
             buy_asset = row_dict["amount/balance unit"]
 
-            sell_quantity, sell_asset = _get_trade(trade_ids[row_dict["trade id"]], "match")
+            sell_quantity, sell_asset = _get_trade(
+                trade_ids[row_dict["trade id"]], row_dict["type"]
+            )
 
         if sell_quantity is None or buy_quantity is None:
             raise MissingComponentError(
@@ -105,6 +107,14 @@ def _parse_coinbase_pro_row(
             sell_asset=sell_asset,
             fee_quantity=fee_quantity,
             fee_asset=fee_asset,
+            wallet=WALLET,
+        )
+    elif row_dict["type"] == "rebate":
+        data_row.t_record = TransactionOutRecord(
+            TrType.GIFT_RECEIVED,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["amount"]),
+            buy_asset=row_dict["amount/balance unit"],
             wallet=WALLET,
         )
     else:
