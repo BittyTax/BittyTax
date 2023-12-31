@@ -177,16 +177,28 @@ def _do_parse_coinbase(
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] == "Receive":
+        # Calculate the buy_value from the spot price if available
+        if spot_price_ccy:
+            buy_value = spot_price_ccy * Decimal(row_dict["Quantity Transacted"])
+        else:
+            buy_value = None,
+
         if "Coinbase Referral" in row_dict["Notes"]:
-            # We can calculate the exact buy_value from the spot price
             data_row.t_record = TransactionOutRecord(
                 TrType.GIFT_RECEIVED,
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Quantity Transacted"]),
                 buy_asset=row_dict["Asset"],
-                buy_value=spot_price_ccy * Decimal(row_dict["Quantity Transacted"])
-                if spot_price_ccy
-                else None,
+                buy_value=buy_value,
+                wallet=WALLET,
+            )
+        elif "Coinbase Earn" in row_dict["Notes"]:
+            data_row.t_record = TransactionOutRecord(
+                TrType.INCOME,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["Quantity Transacted"]),
+                buy_asset=row_dict["Asset"],
+                buy_value=buy_value,
                 wallet=WALLET,
             )
         else:

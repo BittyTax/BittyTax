@@ -11,6 +11,7 @@
 - Ledger Live parser: added additional operation types.
 - Coinbase Pro parser: added "conversion" and "rebate" types.
 - Coinbase parser: added "Reward Income" and "Inflation Reward" transaction types.
+- Coinbase parser: recognise "Coinbase Earn" transactions from the Notes.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 
