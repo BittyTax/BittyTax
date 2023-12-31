@@ -181,7 +181,7 @@ def _do_parse_coinbase(
         if spot_price_ccy:
             buy_value = spot_price_ccy * Decimal(row_dict["Quantity Transacted"])
         else:
-            buy_value = None,
+            buy_value = None
 
         if "Coinbase Referral" in row_dict["Notes"]:
             data_row.t_record = TransactionOutRecord(
