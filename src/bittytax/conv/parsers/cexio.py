@@ -150,7 +150,7 @@ def _parse_cexio_row(
             wallet=WALLET,
             note=row_dict["Comment"],
         )
-    elif row_dict["Type"] == "staking":
+    elif row_dict["Type"] in ("staking", "staking_accrual", "staking_reward_repayment"):
         data_row.t_record = TransactionOutRecord(
             TrType.STAKING,
             data_row.timestamp,
@@ -159,7 +159,7 @@ def _parse_cexio_row(
             wallet=WALLET,
             note=row_dict["Comment"],
         )
-    elif row_dict["Type"] == "cancel":
+    elif row_dict["Type"] in ("cancel", "staking_deposit", "staking_deposit_repayment"):
         # Skip
         return
     else:
