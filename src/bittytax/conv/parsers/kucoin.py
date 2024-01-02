@@ -21,7 +21,7 @@ def parse_kucoin_trades_v4(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["createdDate"], tz="Asia/Hong_Kong")
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["createdDate"], tz="Asia/Singapore")
 
     if row_dict["direction"].lower() == "buy":
         data_row.t_record = TransactionOutRecord(
@@ -57,7 +57,7 @@ def parse_kucoin_trades_v3(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["tradeCreatedAt"], tz="Asia/Hong_Kong")
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["tradeCreatedAt"], tz="Asia/Singapore")
 
     if row_dict["side"] == "buy":
         data_row.t_record = TransactionOutRecord(
@@ -91,7 +91,7 @@ def parse_kucoin_trades_v2(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["created_at"], tz="Asia/Hong_Kong")
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["created_at"], tz="Asia/Singapore")
 
     if row_dict["direction"].lower() == "buy":
         data_row.t_record = TransactionOutRecord(
@@ -127,7 +127,7 @@ def parse_kucoin_trades_v1(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["created_at"], tz="Asia/Hong_Kong")
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["created_at"], tz="Asia/Singapore")
 
     if row_dict["direction"].lower() == "buy":
         data_row.t_record = TransactionOutRecord(
@@ -155,11 +155,11 @@ def parse_kucoin_trades_v1(
         )
 
 
-def parse_kucoin_deposits_withdrawals(
+def parse_kucoin_deposits_withdrawals_v1(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["created_at"], tz="Asia/Hong_Kong")
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["created_at"], tz="Asia/Singapore")
 
     if row_dict["type"] == "DEPOSIT":
         data_row.t_record = TransactionOutRecord(
@@ -185,7 +185,7 @@ def parse_kucoin_deposits(
     data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"], tz="Asia/Hong_Kong")
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"], tz="Asia/Singapore")
 
     data_row.t_record = TransactionOutRecord(
         TrType.DEPOSIT,
@@ -200,13 +200,63 @@ def parse_kucoin_withdrawals(
     data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"], tz="Asia/Hong_Kong")
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"], tz="Asia/Singapore")
 
     data_row.t_record = TransactionOutRecord(
         TrType.WITHDRAWAL,
         data_row.timestamp,
         sell_quantity=Decimal(row_dict["Amount"]),
         sell_asset=row_dict["Coin"],
+        wallet=WALLET,
+    )
+
+
+def parse_kucoin_deposits_withdrawals_v2(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(
+        row_dict["Time(UTC+08:00)"], tz="Asia/Singapore"
+    )
+
+    if row_dict["Status"] != "SUCCESS":
+        return
+
+    if "Withdrawal Address/Account" in row_dict:
+        data_row.t_record = TransactionOutRecord(
+            TrType.WITHDRAWAL,
+            data_row.timestamp,
+            sell_quantity=Decimal(row_dict["Amount"]),
+            sell_asset=row_dict["Coin"],
+            fee_quantity=Decimal(row_dict["Fee"]),
+            fee_asset=row_dict["Coin"],
+            wallet=row_dict["Withdrawal Address/Account"],
+        )
+    else:
+        data_row.t_record = TransactionOutRecord(
+            TrType.DEPOSIT,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Amount"]),
+            buy_asset=row_dict["Coin"],
+            fee_quantity=Decimal(row_dict["Fee"]),
+            fee_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
+
+
+def parse_kucoin_staking_income(
+    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(
+        row_dict["Time(UTC+08:00)"], tz="Asia/Singapore"
+    )
+
+    data_row.t_record = TransactionOutRecord(
+        TrType.STAKING,
+        data_row.timestamp,
+        buy_quantity=Decimal(row_dict["Amount"]),
+        buy_asset=row_dict["Earnings Coin"],
         wallet=WALLET,
     )
 
@@ -317,5 +367,64 @@ DataParser(
     "KuCoin Deposits/Withdrawals",
     ["coin_type", "type", "add", "hash", "vol", "created_at"],
     worksheet_name="Kucoin D,W",
-    row_handler=parse_kucoin_deposits_withdrawals,
+    row_handler=parse_kucoin_deposits_withdrawals_v1,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Deposits",
+    [
+        "UID",
+        "Account Type",
+        "Time(UTC+08:00)",
+        "Remarks",
+        "Status",
+        "Fee",
+        "Amount",
+        "Coin",
+        "Transfer Network",
+    ],
+    worksheet_name="Kucoin D,W",
+    row_handler=parse_kucoin_deposits_withdrawals_v2,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Withdrawals",
+    [
+        "UID",
+        "Account Type",
+        "Time(UTC+08:00)",
+        "Remarks",
+        "Status",
+        "Fee",
+        "Amount",
+        "Coin",
+        "Transfer Network",
+        "Withdrawal Address/Account",
+    ],
+    worksheet_name="Kucoin D,W",
+    row_handler=parse_kucoin_deposits_withdrawals_v2,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Staking",
+    [
+        "UID",
+        "Account Type",
+        "Order ID",
+        "Time(UTC+08:00)",
+        "Staked Coin",
+        "Product Type",
+        "Product Name",
+        "Earnings Coin",
+        "Earnings Type",
+        "Remarks",
+        "Amount",
+        "Amount（USDT）",
+        "Fee",
+    ],
+    worksheet_name="Kucoin S",
+    row_handler=parse_kucoin_staking_income,
 )

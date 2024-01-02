@@ -13,6 +13,7 @@
 - Coinbase parser: added "Reward Income" and "Inflation Reward" transaction types.
 - Coinbase parser: recognise "Coinbase Earn" transactions from the Notes.
 - Conversion tool: added parser for Subscan explorer. ([#305](https://github.com/BittyTax/BittyTax/issues/305))
+- KuCoin parser: added BillingHistory bundle files. ([#307](https://github.com/BittyTax/BittyTax/issues/307))
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 
