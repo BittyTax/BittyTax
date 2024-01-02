@@ -1,5 +1,6 @@
 from . import (
     accointing,
+    adalite,
     barclays,
     binance,
     bitfinex,
