@@ -16,6 +16,8 @@
 - KuCoin parser: added BillingHistory bundle files. ([#307](https://github.com/BittyTax/BittyTax/issues/307))
 - CEX.IO parser: added additional staking types. ([#297](https://github.com/BittyTax/BittyTax/issues/297))
 - Conversion tool: added parser for AdaLite wallet. ([#221](https://github.com/BittyTax/BittyTax/issues/221))
+- Conversion tool: added parser for Gemini exchange. ([#220](https://github.com/BittyTax/BittyTax/issues/220))
+- Conversion tool: DataParser dynamic field matching.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 

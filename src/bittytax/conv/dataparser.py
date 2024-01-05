@@ -93,6 +93,7 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         p_type: ParserType,
         name: str,
         header: List[Optional[Union[str, Callable]]],
+        header_fixed: bool = True,
         delimiter: str = ",",
         worksheet_name: Optional[str] = None,
         deprecated: Optional["DataParser"] = None,
@@ -102,6 +103,7 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         self.p_type = p_type
         self.name = name
         self.header = header
+        self.header_fixed = header_fixed
         self.worksheet_name = worksheet_name if worksheet_name else name
         self.deprecated = deprecated
         self.delimiter = delimiter
@@ -205,13 +207,30 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         row = [col.strip() for col in row]
         if config.debug:
             sys.stderr.write(
-                f"{Fore.YELLOW}header: row[{row_num + 1}] TRY: {cls.format_row(row)}\n"
+                f"{Fore.YELLOW}header: row[{row_num + 1}] TRY: {cls._format_row(row)}\n"
             )
 
-        parsers_reduced = [p for p in cls.parsers if len(p.header) == len(row)]
+        parser = cls._match_fixed_header(row, row_num)
+        if not parser:
+            parser = cls._match_dynamic_header(row, row_num)
+
+        if parser:
+            if config.debug:
+                sys.stderr.write(
+                    f"{Fore.CYAN}header: row[{row_num + 1}] "
+                    f"MATCHED: {cls._format_row(parser.header)} as '{parser.name}'\n"
+                )
+            return parser
+        raise KeyError
+
+    @classmethod
+    def _match_fixed_header(cls, row: List[str], row_num: int) -> Optional["DataParser"]:
+        parsers_reduced = [p for p in cls.parsers if len(p.header) == len(row) and p.header_fixed]
+
         for parser in parsers_reduced:
             parser.args = []
             match = False
+
             for i, row_field in enumerate(row):
                 if callable(parser.header[i]):
                     match = parser.header[i](row_field)  # type: ignore[operator, misc]
@@ -223,11 +242,6 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
                     break
 
             if match:
-                if config.debug:
-                    sys.stderr.write(
-                        f"{Fore.CYAN}header: row[{row_num + 1}] "
-                        f"MATCHED: {cls.format_row(parser.header)} as '{parser.name}'\n"
-                    )
                 parser.in_header = row
                 parser.in_header_row_num = row_num + 1
                 return parser
@@ -235,10 +249,51 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
             if config.debug:
                 sys.stderr.write(
                     f"{Fore.BLUE}header: row[{row_num + 1}] "
-                    f"NO MATCH: {cls.format_row(parser.header)} '{parser.name}'\n"
+                    f"NO MATCH: {cls._format_row(parser.header)} '{parser.name}'\n"
                 )
 
-        raise KeyError
+        return None
+
+    @classmethod
+    def _match_dynamic_header(cls, row: List[str], row_num: int) -> Optional["DataParser"]:
+        parsers_reduced = [
+            p for p in cls.parsers if len(p.header) <= len(row) and not p.header_fixed
+        ]
+
+        for parser in parsers_reduced:
+            parser.args = []
+            match = False
+            i = 0
+
+            # All fields must exist in order, but don't have to be contiguous
+            for header_field in parser.header:
+                while i < len(row):
+                    if callable(header_field):
+                        match = header_field(row[i])
+                        if match:
+                            parser.args.append(match)
+                    else:
+                        match = row[i] == header_field
+
+                    if match:
+                        break
+                    i += 1
+
+                if not match:
+                    break
+
+            if match:
+                parser.in_header = row
+                parser.in_header_row_num = row_num + 1
+                return parser
+
+            if config.debug:
+                sys.stderr.write(
+                    f"{Fore.BLUE}header: row[{row_num + 1}] "
+                    f"NO MATCH: {cls._format_row(parser.header)} '{parser.name}'\n"
+                )
+
+        return None
 
     @classmethod
     def format_parsers(cls) -> str:
@@ -256,7 +311,7 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         return txt
 
     @staticmethod
-    def format_row(row: List) -> str:
+    def _format_row(row: List) -> str:
         row_out = []
         for col in row:
             if callable(col):

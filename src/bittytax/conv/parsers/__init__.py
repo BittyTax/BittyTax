@@ -34,6 +34,7 @@ from . import (
     exodus,
     ftx,
     gatehub,
+    gemini,
     generic,
     gravity,
     handcash,
