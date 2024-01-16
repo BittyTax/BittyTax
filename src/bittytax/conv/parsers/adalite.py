@@ -58,26 +58,6 @@ DataParser(
         "Date",
         "Transaction ID",
         "Type",
-        "Received from (disclaimer: may not be accurate - first sender address only)",
-        "Received amount",
-        "Received currency",
-        "Sent amount",
-        "Sent currency",
-        "Fee amount",
-        "Fee currency",
-        "",
-    ],
-    worksheet_name="AdaLite",
-    row_handler=parse_adalite,
-)
-
-DataParser(
-    ParserType.WALLET,
-    "AdaLite",
-    [
-        "Date",
-        "Transaction ID",
-        "Type",
         "Received amount",
         "Received currency",
         "Sent amount",

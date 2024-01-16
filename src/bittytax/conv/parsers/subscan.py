@@ -97,7 +97,7 @@ def _get_token(network: str, **kwargs: Unpack[ParserArgs]) -> str:
 
 DataParser(
     ParserType.EXPLORER,
-    "Subscan Tranfers",
+    "Subscan Transfers",
     ["Extrinsic ID", "Block", "Block Timestamp", "From", "To", "Value", "Symbol", "Result", "Hash"],
     worksheet_name="Subscan",
     row_handler=parse_subscan_transfers,
@@ -105,7 +105,7 @@ DataParser(
 
 DataParser(
     ParserType.EXPLORER,
-    "Subscan Tranfers",
+    "Subscan Transfers",
     ["Extrinsic ID", "Date", "Block", "Hash", "Symbol", "From", "To", "Value", "Result"],
     worksheet_name="Subscan",
     row_handler=parse_subscan_transfers,
