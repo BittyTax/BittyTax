@@ -104,12 +104,14 @@ class DataFile:
         warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
         with open(filename, "rb") as df:
             try:
-                workbook = openpyxl.load_workbook(df, read_only=False, data_only=True)
+                workbook = openpyxl.load_workbook(df, read_only=True, data_only=True)
 
                 if config.debug:
                     sys.stderr.write(f"{Fore.CYAN}conv: EXCEL\n")
 
                 for sheet_name in workbook.sheetnames:
+                    if workbook[sheet_name].calculate_dimension() == "A1:A1":
+                        workbook[sheet_name].reset_dimensions()
                     yield workbook[sheet_name]
 
                 workbook.close()

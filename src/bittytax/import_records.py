@@ -38,11 +38,13 @@ class ImportRecords:
 
     def import_excel_xlsx(self, filename: str) -> None:
         warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
-        workbook = load_workbook(filename=filename, read_only=False, data_only=True)
+        workbook = load_workbook(filename=filename, read_only=True, data_only=True)
         print(f"{Fore.WHITE}Excel file: {Fore.YELLOW}{filename}")
 
         for sheet_name in workbook.sheetnames:
             worksheet = workbook[sheet_name]
+            if worksheet.calculate_dimension() == "A1:A1":
+                workbook[sheet_name].reset_dimensions()
 
             if worksheet.title.startswith("--"):
                 print(f"{Fore.GREEN}skipping '{worksheet.title}' worksheet")
