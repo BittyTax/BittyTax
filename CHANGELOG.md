@@ -18,6 +18,7 @@
 - Conversion tool: added parser for AdaLite wallet. ([#221](https://github.com/BittyTax/BittyTax/issues/221))
 - Conversion tool: added parser for Gemini exchange. ([#220](https://github.com/BittyTax/BittyTax/issues/220))
 - Conversion tool: DataParser dynamic field matching.
+- Yoroi parser: added new export format.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 

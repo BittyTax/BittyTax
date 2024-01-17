@@ -75,6 +75,27 @@ DataParser(
         "Trade Group (optional)",
         "Comment (optional)",
         "Date",
+        "ID",
+    ],
+    worksheet_name="Yoroi",
+    row_handler=parse_yoroi,
+)
+
+DataParser(
+    ParserType.WALLET,
+    "Yoroi",
+    [
+        "Type (Trade, IN or OUT)",
+        "Buy Amount",
+        "Buy Cur.",
+        "Sell Amount",
+        "Sell Cur.",
+        "Fee Amount (optional)",
+        "Fee Cur. (optional)",
+        "Exchange (optional)",
+        "Trade Group (optional)",
+        "Comment (optional)",
+        "Date",
     ],
     worksheet_name="Yoroi",
     row_handler=parse_yoroi,
