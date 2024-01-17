@@ -226,6 +226,7 @@ def _do_parse_coinbase(
         "Rewards Income",
         "Reward Income",
         "Inflation Reward",
+        "Staking Income",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.STAKING,

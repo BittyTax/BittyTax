@@ -19,6 +19,7 @@
 - Conversion tool: added parser for Gemini exchange. ([#220](https://github.com/BittyTax/BittyTax/issues/220))
 - Conversion tool: DataParser dynamic field matching.
 - Yoroi parser: added new export format.
+- Coinbase parser: added "Staking Income" transaction type.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 
