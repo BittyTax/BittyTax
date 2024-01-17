@@ -3,6 +3,9 @@
 # Generate the constants for the Binance parser.
 
 import requests
+from colorama import Back
+
+from bittytax.conv.parsers.binance import BASE_ASSETS, QUOTE_ASSETS, _split_trading_pair
 
 
 def get_assets() -> None:
@@ -11,10 +14,13 @@ def get_assets() -> None:
     if response:
         quote_assets = []
         base_assets = []
+        specials = {}
+        passed = True
 
         for symbol in response.json()["symbols"]:
             quote = symbol["quoteAsset"]
             base = symbol["baseAsset"]
+            symbol = symbol["symbol"]
 
             if quote not in quote_assets:
                 quote_assets.append(quote)
@@ -22,17 +28,41 @@ def get_assets() -> None:
             if base[0].isdigit() and base not in base_assets:
                 base_assets.append(base)
 
+            # Validate split method
+            bt_base, bt_quote = _split_trading_pair(symbol)
+
+            if bt_base == base and bt_quote == quote:
+                print(f"{symbol} = {bt_base}/{bt_quote} [OK]")
+            else:
+                specials[symbol] = quote
+                passed = False
+                print(f"{symbol} = {bt_base}/{bt_quote} [Failure] ({base} & {quote})")
+
+        if passed:
+            print("===Split trading pairs PASSED===")
+        else:
+            print("===Split trading pairs FAILED===")
+
         print("\nQUOTE_ASSETS = [")
         for i in sorted(quote_assets):
-            print(f'    "{i}",')
+            if i in QUOTE_ASSETS:
+                print(f'    "{i}",')
+            else:
+                print(f'    {Back.RED}"{i}"{Back.RESET}')
         print("]")
 
-        rows = []
-        for i in range(0, len(base_assets), 10):
-            rows.append(", ".join(f"'{v}'" for v in sorted(base_assets)[i : i + 10]))
+        print("\nBASE_ASSETS = [")
+        for i in sorted(base_assets):
+            if i in BASE_ASSETS:
+                print(f'    "{i}",')
+            else:
+                print(f'    {Back.RED}"{i}"{Back.RESET}')
+        print("]")
 
-        rows_str = ",/\n               ".join(rows)
-        print(f"\nBASE_ASSETS = [{rows_str}]\n")
+        print("\nTRADINGPAIR_TO_QUOTE_ASSET = {")
+        for i in sorted(specials):
+            print(f'    {Back.RED}"{i}": "{specials[i]}"{Back.RESET},')
+        print("}")
     else:
         print(f"{response.status_code} {response.reason}")
 

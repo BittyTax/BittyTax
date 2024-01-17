@@ -20,10 +20,12 @@
 - Conversion tool: DataParser dynamic field matching.
 - Yoroi parser: added new export format.
 - Coinbase parser: added "Staking Income" transaction type.
+- Binance parser: added additional operation types for Statements. ([#319](https://github.com/BittyTax/BittyTax/issues/319))
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Kraken parser: trading pair spliting improvements.
+- Binance parser: trading pair spliting improvements.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 

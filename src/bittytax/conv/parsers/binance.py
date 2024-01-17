@@ -29,6 +29,7 @@ PRECISION = Decimal("0." + "0" * 8)
 WALLET = "Binance"
 
 QUOTE_ASSETS = [
+    "AEUR",
     "ARS",
     "AUD",
     "BIDR",
@@ -66,7 +67,19 @@ QUOTE_ASSETS = [
     "ZAR",
 ]
 
-BASE_ASSETS = ["1INCH", "1INCHDOWN", "1INCHUP"]
+BASE_ASSETS = [
+    "1000SATS",
+    "1INCH",
+    "1INCHDOWN",
+    "1INCHUP",
+]
+
+TRADINGPAIR_TO_QUOTE_ASSET = {
+    "ADAEUR": "EUR",
+    "GALAEUR": "EUR",
+    "LUNAEUR": "EUR",
+    "THETAEUR": "EUR",
+}
 
 
 def parse_binance_trades(
@@ -175,6 +188,11 @@ def parse_binance_trades_statement(
 
 
 def _split_trading_pair(trading_pair: str) -> Tuple[Optional[str], Optional[str]]:
+    if trading_pair in TRADINGPAIR_TO_QUOTE_ASSET:
+        quote_asset = TRADINGPAIR_TO_QUOTE_ASSET[trading_pair]
+        base_asset = trading_pair[: -len(quote_asset)]
+        return base_asset, quote_asset
+
     for quote_asset in QUOTE_ASSETS:
         if trading_pair.endswith(quote_asset):
             return trading_pair[: -len(quote_asset)], quote_asset
@@ -332,6 +350,7 @@ def _parse_binance_statements_row(
                 data_row.timestamp,
                 sell_quantity=abs(Decimal(row_dict["Change"])),
                 sell_asset=row_dict["Coin"],
+                sell_value=Decimal(0),
                 wallet=WALLET,
             )
     elif row_dict["Operation"] == "Super BNB Mining":
@@ -364,6 +383,7 @@ def _parse_binance_statements_row(
         "Liquid Swap rewards",
         "Simple Earn Locked Rewards",
         "DOT Slot Auction Rewards",
+        "Launchpool Earnings Withdrawal",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.STAKING,
@@ -372,9 +392,23 @@ def _parse_binance_statements_row(
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
         )
+    elif row_dict["Operation"] in ("Asset Recovery", "Leveraged Coin Consolidation"):
+        # Replace with REBASE in the future
+        data_row.t_record = TransactionOutRecord(
+            TrType.SPEND,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["Change"])),
+            sell_asset=row_dict["Coin"],
+            sell_value=Decimal(0),
+            wallet=WALLET,
+        )
     elif row_dict["Operation"] in ("Small assets exchange BNB", "Small Assets Exchange BNB"):
         _make_bnb_trade(row_dict["Operation"], tx_times[row_dict["UTC_Time"]], parser)
-    elif row_dict["Operation"] == "ETH 2.0 Staking":
+    elif row_dict["Operation"] in (
+        "ETH 2.0 Staking",
+        "Leverage Token Redemption",
+        "Stablecoins Auto-Conversion",
+    ):
         _make_trade(row_dict["Operation"], tx_times[row_dict["UTC_Time"]])
     elif row_dict["Operation"] in (
         "transfer_out",
@@ -389,6 +423,9 @@ def _parse_binance_statements_row(
         "Staking Redemption",
         "Simple Earn Locked Subscription",
         "Simple Earn Locked Redemption",
+        "Transfer Between Spot Account and UM Futures Account",
+        "Launchpool Subscription/Redemption",
+        "Launchpad Subscribe",
     ):
         # Skip not taxable events
         return
