@@ -34,7 +34,9 @@ QUOTE_ASSETS = [
     "USDT",
 ]
 
-ERROR_ASSETS = ["PAX"]
+TRADINGPAIR_TO_QUOTE_ASSET = {
+    "PAXGUSD": "USD",
+}
 
 
 def parse_gemini(
@@ -149,12 +151,15 @@ def _split_trading_pair(symbol: str) -> Tuple[Optional[str], Optional[str]]:
         # Futures are not supported
         return None, None
 
+    if symbol in TRADINGPAIR_TO_QUOTE_ASSET:
+        quote_asset = TRADINGPAIR_TO_QUOTE_ASSET[symbol]
+        base_asset = symbol[: -len(quote_asset)]
+        return base_asset, quote_asset
+
     for quote_asset in QUOTE_ASSETS:
         if symbol.endswith(quote_asset):
             base_asset = symbol[: -len(quote_asset)]
-
-            if base_asset not in ERROR_ASSETS:
-                return base_asset, quote_asset
+            return base_asset, quote_asset
 
     return None, None
 

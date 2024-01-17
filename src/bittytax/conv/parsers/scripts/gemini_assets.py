@@ -3,8 +3,9 @@
 # Generate the constants for the Gemini parser.
 
 import requests
+from colorama import Back
 
-from bittytax.conv.parsers.gemini import _split_trading_pair
+from bittytax.conv.parsers.gemini import QUOTE_ASSETS, _split_trading_pair
 
 
 def get_assets() -> None:
@@ -12,7 +13,7 @@ def get_assets() -> None:
 
     if response:
         quote_assets = []
-        base_assets = []
+        specials = {}
         passed = True
 
         for symbol in response.json():
@@ -25,9 +26,6 @@ def get_assets() -> None:
 
                 if quote not in quote_assets:
                     quote_assets.append(quote)
-
-                if base not in base_assets:
-                    base_assets.append(base)
             else:
                 print(f"{response.status_code} {response.reason}")
 
@@ -39,6 +37,7 @@ def get_assets() -> None:
             elif bt_base is None and bt_quote is None and symbol.endswith("perp"):
                 print(f"{symbol} = {bt_base}/{bt_quote} [OK] ({base} & {quote}) Skip futures")
             else:
+                specials[symbol.upper()] = quote
                 passed = False
                 print(f"{symbol} = {bt_base}/{bt_quote} [Failure] ({base} & {quote})")
 
@@ -49,15 +48,16 @@ def get_assets() -> None:
 
         print("\nQUOTE_ASSETS = [")
         for i in sorted(quote_assets):
-            print(f'    "{i}",')
+            if i in QUOTE_ASSETS:
+                print(f'    "{i}",')
+            else:
+                print(f'    {Back.RED}"{i}"{Back.RESET}')
         print("]")
 
-        rows = []
-        for i in range(0, len(base_assets), 10):
-            rows.append(", ".join(f"'{v}'" for v in sorted(base_assets)[i : i + 10]))
-
-        rows_str = ",/\n               ".join(rows)
-        print(f"\nBASE_ASSETS = [{rows_str}]\n")
+        print("\nTRADINGPAIR_TO_QUOTE_ASSET = {")
+        for i in sorted(specials):
+            print(f'    {Back.RED}"{i}": "{specials[i]}"{Back.RESET},')
+        print("}")
     else:
         print(f"{response.status_code} {response.reason}")
 
