@@ -36,6 +36,7 @@ QUOTE_ASSETS = [
     "EUR",
     "GBP",
     "JPY",
+    "PYUSD",
     "USD",
     "USDC",
     "USDT",
@@ -71,7 +72,25 @@ ALT_ASSETS = {
     "ZUSD": "USD",
 }
 
-ASSETS_SHORT = ["MC", "MV", "OP", "SC", "T"]
+TRADINGPAIR_TO_QUOTE_ASSET = {
+    "BLZEUR": "EUR",
+    "BLZUSD": "USD",
+    "CHZEUR": "EUR",
+    "CHZUSD": "USD",
+    "ETHPYUSD": "PYUSD",
+    "ICXETH": "ETH",
+    "ICXXBT": "XBT",
+    "SNXETH": "ETH",
+    "SNXXBT": "XBT",
+    "TRXETH": "ETH",
+    "TRXXBT": "XBT",
+    "XBTPYUSD": "PYUSD",
+    "XTZAUD": "AUD",
+    "XTZEUR": "EUR",
+    "XTZGBP": "GBP",
+    "XTZUSD": "USD",
+    "ZRXXBT": "XBT",
+}
 
 
 def parse_kraken_ledgers(
@@ -362,15 +381,15 @@ def parse_kraken_trades(
 
 
 def _split_trading_pair(trading_pair: str) -> Tuple[Optional[str], Optional[str]]:
+    if trading_pair in TRADINGPAIR_TO_QUOTE_ASSET:
+        quote_asset = TRADINGPAIR_TO_QUOTE_ASSET[trading_pair]
+        base_asset = trading_pair[: -len(quote_asset)]
+        return base_asset, quote_asset
+
     for quote_asset in sorted(QUOTE_ASSETS, reverse=True):
         if trading_pair.endswith(quote_asset):
             base_asset = trading_pair[: -len(quote_asset)]
-
-            if len(base_asset) < 3:
-                if base_asset in ASSETS_SHORT:
-                    return base_asset, quote_asset
-            else:
-                return base_asset, quote_asset
+            return base_asset, quote_asset
 
     return None, None
 

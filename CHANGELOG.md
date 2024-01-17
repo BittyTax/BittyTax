@@ -23,6 +23,7 @@
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
+- Kraken parser: trading pair spliting improvements.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 
