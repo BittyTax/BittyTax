@@ -17,6 +17,9 @@ class TrType(Enum):
     AIRDROP = "Airdrop"
     WITHDRAWAL = "Withdrawal"
     SPEND = "Spend"
+    LOAN_RECEIVED = "Loan-Received"
+    LOAN_REPAID = "Loan-Repaid"
+    LOAN_INTEREST = "Loan-Interest"
     GIFT_SENT = "Gift-Sent"
     GIFT_SPOUSE = "Gift-Spouse"
     CHARITY_SENT = "Charity-Sent"
@@ -31,6 +34,8 @@ BUY_TYPES = (
     TrType.INTEREST,
     TrType.DIVIDEND,
     TrType.INCOME,
+    TrType.LOAN_RECEIVED,
+    TrType.LOAN_INTEREST,
     TrType.GIFT_RECEIVED,
     TrType.AIRDROP,
     TrType.TRADE,
@@ -39,6 +44,7 @@ BUY_TYPES = (
 SELL_TYPES = (
     TrType.WITHDRAWAL,
     TrType.SPEND,
+    TrType.LOAN_REPAID,
     TrType.GIFT_SENT,
     TrType.GIFT_SPOUSE,
     TrType.CHARITY_SENT,
