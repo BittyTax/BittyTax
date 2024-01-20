@@ -32,6 +32,7 @@ from . import (
     electrum,
     etherscan,
     exodus,
+    ftmscan,
     ftx,
     gatehub,
     gemini,

@@ -21,6 +21,8 @@
 - Yoroi parser: added new export format.
 - Coinbase parser: added "Staking Income" and "Advance Trade Buy/Sell" transaction types.
 - Binance parser: added additional operation types for Statements. ([#319](https://github.com/BittyTax/BittyTax/issues/319))
+- Conversion tool: added parser for FTMScan explorer. ([#262](https://github.com/BittyTax/BittyTax/issues/262))
+- Conversion tool: added merge parser for FTMScan. ([#262](https://github.com/BittyTax/BittyTax/issues/262))
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
