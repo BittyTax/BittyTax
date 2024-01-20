@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 WALLET = "Nexo"
 
 ASSET_NORMALISE = {
+    "BNBN": "BNB",
     "NEXONEXO": "NEXO",
     "NEXOBNB": "NEXO",
     "NEXOBEP2": "NEXO",
@@ -28,7 +29,10 @@ ASSET_NORMALISE = {
 
 def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Date / Time"], tz="Europe/Zurich")
+    if "Date / Time" in row_dict:
+        data_row.timestamp = DataParser.parse_timestamp(row_dict["Date / Time"], tz="Europe/Zurich")
+    else:
+        data_row.timestamp = DataParser.parse_timestamp(row_dict["Date / Time (UTC)"])
 
     if "rejected" in row_dict["Details"]:
         # Skip failed transactions
@@ -73,19 +77,33 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
     else:
         value = None
 
-    if row_dict["Type"] in ("Deposit", "ExchangeDepositedOn"):
+    if row_dict["Type"] in (
+        "Deposit",
+        "ExchangeDepositedOn",
+        "Exchange Deposited On",
+        "Top up Crypto",
+    ):
+        if "Airdrop" in row_dict["Details"]:
+            t_type = TrType.AIRDROP
+        else:
+            t_type = TrType.DEPOSIT
+
         data_row.t_record = TransactionOutRecord(
-            TrType.DEPOSIT,
+            t_type,
             data_row.timestamp,
             buy_quantity=buy_quantity,
             buy_asset=buy_asset,
             buy_value=value,
             wallet=WALLET,
         )
-    elif row_dict["Type"] in ("Interest", "FixedTermInterest", "InterestAdditional"):
-        if ("Amount" in row_dict and Decimal(row_dict["Amount"]) > 0) or (
-            "Input Amount" in row_dict and Decimal(row_dict["Input Amount"]) > 0
-        ):
+    elif row_dict["Type"] in (
+        "Interest",
+        "FixedTermInterest",
+        "Fixed Term Interest",
+        "InterestAdditional",
+        "Interest Additional",
+    ):
+        if buy_quantity and buy_quantity > 0:
             data_row.t_record = TransactionOutRecord(
                 TrType.INTEREST,
                 data_row.timestamp,
@@ -111,6 +129,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         "Cashback",
         "Exchange Cashback",
         "ReferralBonus",
+        "Referral Bonus",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.GIFT_RECEIVED,
@@ -121,7 +140,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             wallet=WALLET,
         )
 
-    elif row_dict["Type"] in ("Exchange", "CreditCardStatus"):
+    elif row_dict["Type"] in ("Exchange", "CreditCardStatus", "Credit Card Status"):
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
@@ -133,7 +152,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             sell_value=value,
             wallet=WALLET,
         )
-    elif row_dict["Type"] in ("Withdrawal", "WithdrawExchanged"):
+    elif row_dict["Type"] in ("Withdrawal", "WithdrawExchanged", "Withdraw Exchanged"):
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -142,7 +161,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             sell_value=value,
             wallet=WALLET,
         )
-    elif row_dict["Type"] == "Liquidation":
+    elif row_dict["Type"] in ("Liquidation", "Repayment", "Manual Repayment", "Manual Sell Order"):
         # Repayment of loan
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
@@ -153,18 +172,28 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             wallet=WALLET,
         )
     elif row_dict["Type"] in (
+        "Administrator",
+        "Assimilation",
         "WithdrawalCredit",
+        "Withdrawal Credit",
         "UnlockingTermDeposit",
+        "Unlocking Term Deposit",
         "LockingTermDeposit",
+        "Locking Term Deposit",
         "Repayment",
+        "Loan Withdrawal",
     ):
         # Skip loan operations which are not disposals or are just informational
         return
     elif row_dict["Type"] in (
         "DepositToExchange",
+        "Deposit To Exchange",
         "ExchangeToWithdraw",
+        "Exchange To Withdraw",
         "TransferIn",
+        "Transfer In",
         "TransferOut",
+        "Transfer Out",
     ):
         # Skip internal operations
         return
@@ -236,7 +265,7 @@ DataParser(
         "Output Amount",
         "USD Equivalent",
         "Details",
-        "Date / Time",
+        lambda c: c in ("Date / Time", "Date / Time (UTC)"),
     ],
     worksheet_name="Nexo",
     row_handler=parse_nexo,
