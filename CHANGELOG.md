@@ -19,7 +19,7 @@
 - Conversion tool: added parser for Gemini exchange. ([#220](https://github.com/BittyTax/BittyTax/issues/220))
 - Conversion tool: DataParser dynamic field matching.
 - Yoroi parser: added new export format.
-- Coinbase parser: added "Staking Income" transaction type.
+- Coinbase parser: added "Staking Income" and "Advance Trade Buy/Sell" transaction types.
 - Binance parser: added additional operation types for Statements. ([#319](https://github.com/BittyTax/BittyTax/issues/319))
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))

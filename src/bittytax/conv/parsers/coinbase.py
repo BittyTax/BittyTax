@@ -245,7 +245,7 @@ def _do_parse_coinbase(
             sell_asset=row_dict["Asset"],
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] in ("Buy", "Advanced Trade Buy"):
+    elif row_dict["Transaction Type"] in ("Buy", "Advanced Trade Buy", "Advance Trade Buy"):
         currency, quote = _get_currency(row_dict["Notes"])
         if currency is None:
             raise UnexpectedContentError(
@@ -267,7 +267,11 @@ def _do_parse_coinbase(
             sell_quantity = None
             fee_quantity = None
 
-        if config.coinbase_zero_fees_are_gifts and fees == 0:
+        if (
+            config.coinbase_zero_fees_are_gifts
+            and row_dict["Transaction Type"] == "Buy"
+            and fees == 0
+        ):
             # Zero fees "may" indicate an early referral reward, or airdrop
             data_row.t_record = TransactionOutRecord(
                 TrType.GIFT_RECEIVED,
@@ -289,7 +293,7 @@ def _do_parse_coinbase(
                 fee_asset=currency,
                 wallet=WALLET,
             )
-    elif row_dict["Transaction Type"] in ("Sell", "Advanced Trade Sell"):
+    elif row_dict["Transaction Type"] in ("Sell", "Advanced Trade Sell", "Advance Trade Sell"):
         currency, quote = _get_currency(row_dict["Notes"])
         if currency is None:
             raise UnexpectedContentError(
@@ -351,7 +355,9 @@ def _do_parse_coinbase(
 
 
 def _get_convert_info(notes: str) -> Optional[Tuple[Any, ...]]:
-    match = re.match(r"^Converted ([\d|,]*\.\d+) (\w+) to ([\d|,]*\.\d+) (\w+) *$", notes)
+    match = re.match(
+        r"^Converted ([\d|,]*\.\d+|[\d|,]+) (\w+) to ([\d|,]*\.\d+|[\d|,]+) (\w+) *$", notes
+    )
 
     if match:
         return match.groups()
@@ -359,7 +365,7 @@ def _get_convert_info(notes: str) -> Optional[Tuple[Any, ...]]:
 
 
 def _get_currency(notes: str) -> Tuple[Optional[str], str]:
-    match = re.match(r".+for .{1}(?:[\d|,]+\.\d{2}|[\d|,]+) (\w{3})(?: on )?(\w+-\w+)?$", notes)
+    match = re.match(r".+for .?(?:[\d|,]+\.\d{2}|[\d|,]+) (\w{3})(?: on )?(\w+-\w+)?$", notes)
 
     if match:
         currency = quote = match.group(1)
