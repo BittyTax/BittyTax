@@ -94,7 +94,7 @@ def parse_polygonscan_internal(
         )
 
 
-# Tokens and internal transactions have the same header as Etherscan
+# Token and NFT transactions have the same header as Etherscan
 matic_txns = DataParser(
     ParserType.EXPLORER,
     "PolygonScan (MATIC Transactions)",

@@ -92,7 +92,7 @@ def parse_bscscan_internal(
         )
 
 
-# Tokens and internal transactions have the same header as Etherscan
+# Tokens and NFT transactions have the same header as Etherscan
 bsc_txns = DataParser(
     ParserType.EXPLORER,
     "BscScan (BSC Transactions)",

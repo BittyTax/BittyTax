@@ -94,7 +94,7 @@ def parse_snowtrace_internal(
         )
 
 
-# Tokens and internal transactions have the same header as Etherscan
+# Token and NFT transactions have the same header as Etherscan
 avax_txns = DataParser(
     ParserType.EXPLORER,
     "SnowTrace (AVAX Transactions)",

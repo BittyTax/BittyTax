@@ -92,7 +92,7 @@ def parse_hecoinfo_internal(
         )
 
 
-# Tokens and internal transactions have the same header as Etherscan
+# Token and NFT transactions have the same header as Etherscan
 heco_txns = DataParser(
     ParserType.EXPLORER,
     "HecoInfo (HECO Transactions)",
