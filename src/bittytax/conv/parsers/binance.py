@@ -3,6 +3,7 @@
 
 import re
 import sys
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
@@ -11,7 +12,6 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ...config import config
-from ...constants import WARNING
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import (
     DataFilenameError,
@@ -280,12 +280,13 @@ def parse_binance_deposits_withdrawals_cash(
 def parse_binance_statements(
     data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
-    tx_times: Dict[str, List["DataRow"]] = {}
+    tx_times: Dict[datetime, List["DataRow"]] = {}
     for dr in data_rows:
-        if dr.row_dict["UTC_Time"] in tx_times:
-            tx_times[dr.row_dict["UTC_Time"]].append(dr)
+        dr.timestamp = DataParser.parse_timestamp(dr.row_dict["UTC_Time"])
+        if dr.timestamp in tx_times:
+            tx_times[dr.timestamp].append(dr)
         else:
-            tx_times[dr.row_dict["UTC_Time"]] = [dr]
+            tx_times[dr.timestamp] = [dr]
 
     for data_row in data_rows:
         if config.debug:
@@ -312,10 +313,9 @@ def parse_binance_statements(
 
 
 def _parse_binance_statements_row(
-    tx_times: Dict[str, List["DataRow"]], parser: DataParser, data_row: "DataRow"
+    tx_times: Dict[datetime, List["DataRow"]], parser: DataParser, data_row: "DataRow"
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["UTC_Time"])
 
     if row_dict["Account"].lower() not in ("spot", "earn", "pool"):
         raise UnexpectedTypeError(parser.in_header.index("Account"), "Account", row_dict["Account"])
@@ -403,13 +403,22 @@ def _parse_binance_statements_row(
             wallet=WALLET,
         )
     elif row_dict["Operation"] in ("Small assets exchange BNB", "Small Assets Exchange BNB"):
-        _make_bnb_trade(row_dict["Operation"], tx_times[row_dict["UTC_Time"]], parser)
+        if config.binance_multi_bnb_split_even:
+            _make_bnb_trade(
+                _get_op_rows(tx_times, data_row.timestamp, (row_dict["Operation"],)),
+            )
+        else:
+            _make_trade(
+                _get_op_rows(tx_times, data_row.timestamp, (row_dict["Operation"],)),
+            )
     elif row_dict["Operation"] in (
         "ETH 2.0 Staking",
         "Leverage Token Redemption",
         "Stablecoins Auto-Conversion",
     ):
-        _make_trade(row_dict["Operation"], tx_times[row_dict["UTC_Time"]])
+        _make_trade(
+            _get_op_rows(tx_times, data_row.timestamp, (row_dict["Operation"],)),
+        )
     elif row_dict["Operation"] in (
         "transfer_out",
         "transfer_in",
@@ -429,40 +438,97 @@ def _parse_binance_statements_row(
     ):
         # Skip not taxable events
         return
+    elif row_dict["Operation"] in ("Deposit", "Fiat Deposit"):
+        if config.binance_statements_only:
+            data_row.t_record = TransactionOutRecord(
+                TrType.DEPOSIT,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["Change"]),
+                buy_asset=row_dict["Coin"],
+                wallet=WALLET,
+            )
+        else:
+            # Skip duplicate operations
+            return
+    elif row_dict["Operation"] in ("Withdraw", "Fiat Withdraw"):
+        if config.binance_statements_only:
+            data_row.t_record = TransactionOutRecord(
+                TrType.WITHDRAWAL,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["Change"])),
+                sell_asset=row_dict["Coin"],
+                wallet=WALLET,
+            )
+        else:
+            # Skip duplicate operations
+            return
+    elif row_dict["Operation"] in ("Binance Convert", "Large OTC trading"):
+        if config.binance_statements_only:
+            _make_trade(
+                _get_op_rows(tx_times, data_row.timestamp, (row_dict["Operation"],)),
+            )
+        else:
+            # Skip duplicate operations
+            return
     elif row_dict["Operation"] in (
-        "Deposit",
-        "Withdraw",
-        "Transaction Related",
-        "Fiat Deposit",
-        "Fiat Withdraw",
         "Buy",
         "Sell",
         "Fee",
+        "Transaction Related",
         "Transaction Buy",
         "Transaction Fee",
         "Transaction Spend",
         "Transaction Sold",
         "Transaction Revenue",
-        "Large OTC trading",
-        "Binance Convert",
     ):
-        # Skip duplicate operations
-        return
+        if config.binance_statements_only:
+            _make_trade_with_fee(
+                _get_op_rows(
+                    tx_times,
+                    data_row.timestamp,
+                    (
+                        "Buy",
+                        "Sell",
+                        "Fee",
+                        "Transaction Related",
+                        "Transaction Buy",
+                        "Transaction Fee",
+                        "Transaction Spend",
+                        "Transaction Sold",
+                        "Transaction Revenue",
+                    ),
+                ),
+            )
+        else:
+            # Skip duplicate operations
+            return
     else:
         raise UnexpectedTypeError(
             parser.in_header.index("Operation"), "Operation", row_dict["Operation"]
         )
 
 
-def _make_bnb_trade(operation: str, tx_times: List["DataRow"], parser: DataParser) -> None:
-    op_rows = [dr for dr in tx_times if dr.row_dict["Operation"] == operation]
+def _get_op_rows(
+    tx_times: Dict[datetime, List["DataRow"]],
+    timestamp: datetime,
+    operations: Tuple[str, ...],
+) -> List["DataRow"]:
+    timestamp_next_second = timestamp + timedelta(seconds=1)
 
+    if timestamp_next_second in tx_times:
+        tx_period = tx_times[timestamp] + tx_times[timestamp_next_second]
+    else:
+        tx_period = tx_times[timestamp]
+
+    return [dr for dr in tx_period if dr.row_dict["Operation"] in operations and not dr.parsed]
+
+
+def _make_bnb_trade(op_rows: List["DataRow"]) -> None:
     buy_quantity = _get_bnb_quantity(op_rows)
     sell_rows = [dr for dr in op_rows if not dr.parsed]
     tot_buy_quantity = Decimal(0)
 
     for cnt, sell_row in enumerate(sell_rows):
-        sell_row.timestamp = DataParser.parse_timestamp(sell_row.row_dict["UTC_Time"])
         sell_row.parsed = True
 
         if buy_quantity:
@@ -474,57 +540,63 @@ def _make_bnb_trade(operation: str, tx_times: List["DataRow"], parser: DataParse
 
             if config.debug:
                 sys.stderr.write(f"{Fore.GREEN}conv: split_buy_quantity={split_buy_quantity}\n")
-
-            sell_row.t_record = TransactionOutRecord(
-                TrType.TRADE,
-                sell_row.timestamp,
-                buy_quantity=split_buy_quantity,
-                buy_asset="BNB",
-                sell_quantity=abs(Decimal(sell_row.row_dict["Change"])),
-                sell_asset=sell_row.row_dict["Coin"],
-                wallet=WALLET,
-            )
         else:
-            if parser.in_header_row_num is None:
-                raise RuntimeError("Missing in_header_row_num")
+            split_buy_quantity = None
 
-            sys.stderr.write(
-                f"{Fore.YELLOW}row[{parser.in_header_row_num + sell_row.line_num}] {sell_row}\n"
-                f"{WARNING} BNB amount is not identifiable, you will need to add this manually\n"
-            )
-
-            sell_row.t_record = TransactionOutRecord(
-                TrType.TRADE,
-                sell_row.timestamp,
-                buy_quantity=None,
-                buy_asset="BNB",
-                sell_quantity=abs(Decimal(sell_row.row_dict["Change"])),
-                sell_asset=sell_row.row_dict["Coin"],
-                wallet=WALLET,
-            )
+        sell_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            sell_row.timestamp,
+            buy_quantity=split_buy_quantity,
+            buy_asset="BNB",
+            sell_quantity=abs(Decimal(sell_row.row_dict["Change"])),
+            sell_asset=sell_row.row_dict["Coin"],
+            wallet=WALLET,
+        )
 
 
-def _make_trade(operation: str, tx_times: List["DataRow"]) -> None:
-    op_rows = [dr for dr in tx_times if dr.row_dict["Operation"] == operation]
+def _get_bnb_quantity(op_rows: List["DataRow"]) -> Optional[Decimal]:
+    buy_quantity = None
+
+    for data_row in op_rows:
+        if Decimal(data_row.row_dict["Change"]) > 0:
+            data_row.parsed = True
+
+            if data_row.row_dict["Coin"] != "BNB":
+                continue
+
+            if buy_quantity is None:
+                buy_quantity = Decimal(data_row.row_dict["Change"])
+            else:
+                buy_quantity += Decimal(data_row.row_dict["Change"])  # type: ignore[unreachable]
+
+    return buy_quantity
+
+
+def _make_trade(op_rows: List["DataRow"]) -> None:
     buy_quantity = sell_quantity = None
     buy_asset = sell_asset = ""
     trade_row = None
 
     for data_row in op_rows:
         row_dict = data_row.row_dict
-        data_row.timestamp = DataParser.parse_timestamp(row_dict["UTC_Time"])
-        data_row.parsed = True
 
         if Decimal(row_dict["Change"]) > 0:
-            buy_quantity = Decimal(row_dict["Change"])
-            buy_asset = row_dict["Coin"]
+            if buy_quantity is None:
+                buy_quantity = Decimal(row_dict["Change"])
+                buy_asset = row_dict["Coin"]
+                data_row.parsed = True
 
         if Decimal(row_dict["Change"]) <= 0:
-            sell_quantity = abs(Decimal(row_dict["Change"]))
-            sell_asset = row_dict["Coin"]
+            if sell_quantity is None:
+                sell_quantity = abs(Decimal(row_dict["Change"]))
+                sell_asset = row_dict["Coin"]
+                data_row.parsed = True
 
         if not trade_row:
             trade_row = data_row
+
+        if buy_quantity and sell_quantity:
+            break
 
     if trade_row:
         trade_row.t_record = TransactionOutRecord(
@@ -538,38 +610,50 @@ def _make_trade(operation: str, tx_times: List["DataRow"]) -> None:
         )
 
 
-def _get_bnb_quantity(op_rows: List["DataRow"]) -> Optional[Decimal]:
-    bnb_found = False
-    buy_quantity = None
-    sell_assets = 0
+def _make_trade_with_fee(op_rows: List["DataRow"]) -> None:
+    buy_quantity = sell_quantity = fee_quantity = None
+    buy_asset = sell_asset = fee_asset = ""
+    trade_row = None
 
     for data_row in op_rows:
-        if Decimal(data_row.row_dict["Change"]) > 0:
-            data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict["UTC_Time"])
-            data_row.parsed = True
+        row_dict = data_row.row_dict
 
-            if data_row.row_dict["Coin"] != "BNB":
-                continue
+        if Decimal(row_dict["Change"]) > 0:
+            if buy_quantity is None:
+                buy_quantity = Decimal(row_dict["Change"])
+                buy_asset = row_dict["Coin"]
+                data_row.parsed = True
 
-            if not bnb_found:
-                buy_quantity = Decimal(data_row.row_dict["Change"])
-                bnb_found = True
+        if Decimal(row_dict["Change"]) <= 0:
+            if row_dict["Operation"] in ("Fee", "Transaction Fee"):
+                if fee_quantity is None:
+                    fee_quantity = abs(Decimal(row_dict["Change"]))
+                    fee_asset = row_dict["Coin"]
+                    data_row.parsed = True
             else:
-                if config.binance_multi_bnb_split_even and buy_quantity:
-                    buy_quantity += Decimal(data_row.row_dict["Change"])
-                else:
-                    # Multiple BNB buys, quantity will need to be added manually
-                    buy_quantity = None
-        else:
-            sell_assets += 1
+                if sell_quantity is None:
+                    sell_quantity = abs(Decimal(row_dict["Change"]))
+                    sell_asset = row_dict["Coin"]
+                    data_row.parsed = True
 
-    if sell_assets > 1:
-        # Multiple sells, quantity will need to be added manually,
-        #  unless configured to evenly split BNB
-        if not config.binance_multi_bnb_split_even:
-            buy_quantity = None
+        if not trade_row:
+            trade_row = data_row
 
-    return buy_quantity
+        if buy_quantity and sell_quantity and fee_quantity:
+            break
+
+    if trade_row:
+        trade_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            trade_row.timestamp,
+            buy_quantity=buy_quantity,
+            buy_asset=buy_asset,
+            sell_quantity=sell_quantity,
+            sell_asset=sell_asset,
+            fee_quantity=fee_quantity,
+            fee_asset=fee_asset,
+            wallet=WALLET,
+        )
 
 
 DataParser(

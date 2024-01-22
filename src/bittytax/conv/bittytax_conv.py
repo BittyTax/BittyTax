@@ -59,6 +59,19 @@ def main() -> None:
         help="specify a cryptoasset symbol, if it cannot be identified automatically",
     )
     parser.add_argument(
+        "--binance_statements_only",
+        action="store_true",
+        help="use only Binance Statements, for ALL transaction types, "
+        "that includes deposits/withdrawals and trades, "
+        "note this may not be as accurate as using individual files for these",
+    )
+    parser.add_argument(
+        "--binance_multi_bnb_split_even",
+        action="store_true",
+        help="for BNB converts in Binance Statements, "
+        "split the total BNB amount evenly across all the tokens converted in the same period",
+    )
+    parser.add_argument(
         "--duplicates",
         action="store_true",
         help="remove any duplicate input rows across data files",
@@ -85,6 +98,12 @@ def main() -> None:
     args = parser.parse_args()
     config.debug = args.debug
     DataFile.remove_duplicates = args.duplicates
+
+    if args.binance_statements_only:
+        config.config["binance_statements_only"] = True
+
+    if args.binance_multi_bnb_split_even:
+        config.config["binance_multi_bnb_split_even"] = True
 
     if config.debug:
         sys.stderr.write(f"{Fore.YELLOW}{parser.prog} v{__version__}\n")

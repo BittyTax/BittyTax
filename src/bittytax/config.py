@@ -54,6 +54,7 @@ class Config:
         "usernames": [],
         "coinbase_zero_fees_are_gifts": False,
         "binance_multi_bnb_split_even": False,
+        "binance_statements_only": False,
     }
 
     def __init__(self) -> None:

@@ -24,11 +24,16 @@
 - Conversion tool: added parser for FTMScan explorer. ([#262](https://github.com/BittyTax/BittyTax/issues/262))
 - Conversion tool: added merge parser for FTMScan. ([#262](https://github.com/BittyTax/BittyTax/issues/262))
 - Nexo parser: added new export format. ([#335](https://github.com/BittyTax/BittyTax/issues/335))
+- Binance parser: new config "binance_statements_only".
+- Binance parser: the Statements parser can now optionally include ALL transactions, i.e. deposits/withdrawals and trades.
+- Conversion tool: new (--binance_statements_only) command option.
+- Conversion tool: new (--binance_multi_bnb_split_even) command option.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
-- Kraken parser: trading pair spliting improvements.
-- Binance parser: trading pair spliting improvements.
+- Kraken parser: trading pair splitting improvements.
+- Binance parser: trading pair splitting improvements.
+- Binance parser: improved "Small Assets Exchange BNB" handling.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 
