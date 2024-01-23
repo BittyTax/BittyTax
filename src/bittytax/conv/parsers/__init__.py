@@ -3,7 +3,7 @@ from . import (
     adalite,
     barclays,
     binance,
-    binanceus,
+    binance_us,
     bitfinex,
     bitpanda,
     bitstamp,
