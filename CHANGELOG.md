@@ -28,6 +28,7 @@
 - Binance parser: the Statements parser can now optionally include ALL transactions, i.e. deposits/withdrawals and trades.
 - Conversion tool: new (--binance_statements_only) command option.
 - Conversion tool: new (--binance_multi_bnb_split_even) command option.
+- Conversion tool: added parser for Binance.US exchange.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
