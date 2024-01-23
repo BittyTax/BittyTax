@@ -29,7 +29,7 @@
 - Conversion tool: new (--binance_statements_only) command option.
 - Conversion tool: new (--binance_multi_bnb_split_even) command option.
 - BlockFi parser: added new export format.
-- BlockFi parser: added "Crypto Transfer" transaction type.
+- BlockFi parser: added "Crypto Transfer" and "BIA Withdraw" transaction types.
 - Conversion tool: added parser for Binance.US exchange.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
