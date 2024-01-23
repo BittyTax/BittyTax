@@ -194,8 +194,9 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
             if config.debug:
                 print(
                     f"{Fore.YELLOW}price: {timestamp:%Y-%m-%d}, 1 {from_currency}="
-                    f"{config.sym()}{rate_ccy:0,.2f} {config.ccy}, {Decimal(value).normalize():0,f}"
-                    f"{from_currency}{Style.BRIGHT}{config.sym()}{value_in_ccy:0,.2f} "
+                    f"{config.sym()}{rate_ccy:0,.2f} {config.ccy}, "
+                    f"{Decimal(value).normalize():0,f} {from_currency}="
+                    f"{Style.BRIGHT}{config.sym()}{value_in_ccy:0,.2f} "
                     f"{config.ccy}{Style.NORMAL}"
                 )
 
