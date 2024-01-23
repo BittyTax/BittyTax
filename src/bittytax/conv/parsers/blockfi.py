@@ -35,7 +35,12 @@ def parse_blockfi(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Pars
 
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Confirmed At"])
 
-    if row_dict["Transaction Type"] in ("Deposit", "Wire Deposit", "ACH Deposit"):
+    if row_dict["Transaction Type"] in (
+        "Deposit",
+        "Wire Deposit",
+        "ACH Deposit",
+        "Crypto Transfer",
+    ):
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -112,9 +117,43 @@ def parse_blockfi_trades(
 DataParser(
     ParserType.SAVINGS,
     "BlockFi",
+    [
+        "Cryptocurrency",
+        "Amount",
+        "Transaction Type",
+        "Exchange Rate Per Coin (USD)",
+        "Confirmed At",
+    ],
+    worksheet_name="BlockFi",
+    row_handler=parse_blockfi,
+)
+
+DataParser(
+    ParserType.SAVINGS,
+    "BlockFi",
     ["Cryptocurrency", "Amount", "Transaction Type", "Confirmed At"],
     worksheet_name="BlockFi",
     row_handler=parse_blockfi,
+)
+
+DataParser(
+    ParserType.SAVINGS,
+    "BlockFi Trades",
+    [
+        "Trade ID",
+        "Date",
+        "Buy Quantity",
+        "Buy Currency",
+        "Sold Quantity",
+        "Sold Currency",
+        "Rate Amount",
+        "Rate Currency",
+        "Type",
+        "Frequency",
+        "Destination",
+    ],
+    worksheet_name="BlockFi T",
+    row_handler=parse_blockfi_trades,
 )
 
 DataParser(
