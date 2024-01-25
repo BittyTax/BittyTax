@@ -43,7 +43,8 @@ class ImportRecords:
 
         for sheet_name in workbook.sheetnames:
             worksheet = workbook[sheet_name]
-            if worksheet.calculate_dimension() in ("A1:A1", "A1:X1048576"):
+            dimensions = worksheet.calculate_dimension()
+            if dimensions == "A1:A1" or dimensions.endswith("1048576"):
                 workbook[sheet_name].reset_dimensions()
 
             if worksheet.title.startswith("--"):
