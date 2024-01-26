@@ -30,6 +30,7 @@
 - Conversion tool: new (--binance_multi_bnb_split_even) command option.
 - BlockFi parser: added new export format.
 - BlockFi parser: added "Crypto Transfer" transaction type.
+- Celsius parser: added "Swap in" and "Swap out" transaction types.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))

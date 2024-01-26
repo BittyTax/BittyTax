@@ -3,7 +3,7 @@
 
 import sys
 from decimal import Decimal
-from typing import TYPE_CHECKING, Dict, List, Tuple, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from colorama import Fore
 from typing_extensions import Unpack
@@ -22,7 +22,7 @@ WALLET = "Celsius"
 
 
 def parse_celsius(
-    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     datetimes: Dict[str, List["DataRow"]] = {}
     for dr in data_rows:
@@ -45,12 +45,7 @@ def parse_celsius(
             continue
 
         try:
-            parse_celsius_row(
-                datetimes=datetimes,
-                parser=parser,
-                data_row=data_row,
-                unconfirmed_arg=_kwargs["unconfirmed"],
-            )
+            parse_celsius_row(datetimes, parser, data_row, **kwargs)
         except DataRowError as e:
             data_row.failure = e
         except (ValueError, ArithmeticError) as e:
@@ -64,12 +59,12 @@ def parse_celsius_row(
     datetimes: Dict[str, List["DataRow"]],
     parser: DataParser,
     data_row: "DataRow",
-    unconfirmed_arg: bool,
+    **kwargs: Unpack[ParserArgs],
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date and time"])
 
-    if row_dict["Confirmed"] != "Yes" and unconfirmed_arg is False:
+    if row_dict["Confirmed"] != "Yes" and not kwargs["unconfirmed"]:
         if parser.in_header_row_num is None:
             raise RuntimeError("Missing in_header_row_num")
 
@@ -138,9 +133,9 @@ def parse_celsius_row(
         "Swap in",
     ):
         if row_dict["Transaction type"] == "Swap out":
-            sell_quantity = abs(Decimal(row_dict["Coin amount"]))
+            sell_quantity: Optional[Decimal] = abs(Decimal(row_dict["Coin amount"]))
             sell_asset = row_dict["Coin type"]
-            sell_value = abs(Decimal(row_dict["USD Value"]))
+            sell_value: Optional[Decimal] = abs(Decimal(row_dict["USD Value"]))
 
             buy_quantity, buy_asset, buy_value = _get_swap(
                 datetimes[row_dict["Date and time"]], "Swap in"
@@ -165,9 +160,6 @@ def parse_celsius_row(
             sell_value=DataParser.convert_currency(sell_value, "USD", data_row.timestamp),
             wallet=WALLET,
         )
-    # Skip transactions without a type.
-    elif row_dict["Transaction type"] == "":
-        return
     else:
         raise UnexpectedTypeError(
             parser.in_header.index("Transaction type"),
@@ -179,12 +171,14 @@ def parse_celsius_row(
 def _get_swap(
     swap_rows: List["DataRow"], t_type: str
 ) -> Tuple[Optional[Decimal], str, Optional[Decimal]]:
+    quantity = value = None
+    asset = ""
     for data_row in swap_rows:
         if not data_row.parsed and t_type == data_row.row_dict["Transaction type"]:
             data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict["Date and time"])
-            quantity: Optional[Decimal] = abs(Decimal(data_row.row_dict["Coin amount"]))
+            quantity = abs(Decimal(data_row.row_dict["Coin amount"]))
             asset = data_row.row_dict["Coin type"]
-            value: Optional[Decimal] = abs(Decimal(data_row.row_dict["USD Value"]))
+            value = abs(Decimal(data_row.row_dict["USD Value"]))
             data_row.parsed = True
             break
 
