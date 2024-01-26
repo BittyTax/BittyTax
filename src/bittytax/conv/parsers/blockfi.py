@@ -86,8 +86,8 @@ def parse_blockfi(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Pars
             buy_asset=row_dict["Cryptocurrency"],
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] == "Trade":
-        # Skip trades
+    elif row_dict["Transaction Type"] in ("Trade", "BIA Withdraw"):
+        # Skip trades, and internal transfers
         return
     else:
         raise UnexpectedTypeError(

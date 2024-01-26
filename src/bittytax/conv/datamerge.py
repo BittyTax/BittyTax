@@ -30,8 +30,7 @@ class Parser(TypedDict):  # pylint: disable=too-few-public-methods
 
 
 class MergeHandler(Protocol):  # pylint: disable=too-few-public-methods
-    def __call__(self, data_files: Dict[FileId, "DataFile"]) -> bool:
-        ...
+    def __call__(self, data_files: Dict[FileId, "DataFile"]) -> bool: ...
 
 
 class DataMerge:  # pylint: disable=too-few-public-methods

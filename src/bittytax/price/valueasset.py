@@ -85,8 +85,8 @@ class ValueAsset:
 
         if not self.price_tool and timestamp.date() >= datetime.now().date():
             tqdm.write(
-                f"{WARNING} Price for {asset} on {timestamp:Y-%m-%d}, no historic price available, "
-                f"using latest price"
+                f"{WARNING} Price for {asset} on {timestamp:%Y-%m-%d}, "
+                f"no historic price available, using latest price"
             )
             return self.get_latest_price(asset)
 

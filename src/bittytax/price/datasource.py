@@ -196,8 +196,7 @@ class DataSourceBase:
 
     def get_latest(
         self, _asset: AssetSymbol, _quote: QuoteSymbol, _asset_id: AssetId = AssetId("")
-    ) -> Optional[Decimal]:
-        ...
+    ) -> Optional[Decimal]: ...
 
     def get_historical(
         self,
@@ -205,8 +204,7 @@ class DataSourceBase:
         _quote: QuoteSymbol,
         _timestamp: Timestamp,
         _asset_id: AssetId = AssetId(""),
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @classmethod
     def datasources_str(cls) -> str:
@@ -273,9 +271,11 @@ class BittyTaxAPI(DataSourceBase):
             pair,
             {
                 Date(timestamp.date()): {
-                    "price": Decimal(repr(json_resp["rates"][quote]))
-                    if "rates" in json_resp and quote in json_resp["rates"]
-                    else None,
+                    "price": (
+                        Decimal(repr(json_resp["rates"][quote]))
+                        if "rates" in json_resp and quote in json_resp["rates"]
+                        else None
+                    ),
                     "url": SourceUrl(url),
                 }
             },
@@ -360,9 +360,11 @@ class Frankfurter(DataSourceBase):
             pair,
             {
                 Date(timestamp.date()): {
-                    "price": Decimal(repr(json_resp["rates"][quote]))
-                    if "rates" in json_resp and quote in json_resp["rates"]
-                    else None,
+                    "price": (
+                        Decimal(repr(json_resp["rates"][quote]))
+                        if "rates" in json_resp and quote in json_resp["rates"]
+                        else None
+                    ),
                     "url": SourceUrl(url),
                 }
             },

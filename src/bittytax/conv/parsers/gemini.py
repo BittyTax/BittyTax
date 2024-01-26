@@ -95,7 +95,7 @@ def _parse_gemini_row(parser: DataParser, data_row: "DataRow") -> None:
             data_row.t_record = TransactionOutRecord(
                 TrType.WITHDRAWAL,
                 data_row.timestamp,
-                sell_quantity=Decimal(row_dict[f"{asset} Amount {asset}"]),
+                sell_quantity=abs(Decimal(row_dict[f"{asset} Amount {asset}"])),
                 sell_asset=asset,
                 fee_quantity=fee_quantity,
                 fee_asset=fee_asset,

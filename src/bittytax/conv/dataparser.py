@@ -37,15 +37,13 @@ class ParserType(Enum):
 class RowHandler(Protocol):  # pylint: disable=too-few-public-methods
     def __call__(
         self, data_row: "DataRow", parser: "DataParser", **kwargs: Unpack["ParserArgs"]
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class RowHandler2(Protocol):  # pylint: disable=too-few-public-methods
     def __call__(
         self, data_row: "DataRow", _parser: "DataParser", **kwargs: Unpack["ParserArgs"]
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class AllHandler(Protocol):  # pylint: disable=too-few-public-methods
@@ -54,8 +52,7 @@ class AllHandler(Protocol):  # pylint: disable=too-few-public-methods
         data_rows: List["DataRow"],
         parser: "DataParser",
         **kwargs: Unpack[Union["ParserArgs"]],
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class AllHandler2(Protocol):  # pylint: disable=too-few-public-methods
@@ -64,8 +61,7 @@ class AllHandler2(Protocol):  # pylint: disable=too-few-public-methods
         data_rows: List["DataRow"],
         _parser: "DataParser",
         **kwargs: Unpack[Union["ParserArgs"]],
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class ParserArgs(TypedDict):  # pylint: disable=too-few-public-methods, too-many-ancestors
@@ -194,8 +190,9 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
             if config.debug:
                 print(
                     f"{Fore.YELLOW}price: {timestamp:%Y-%m-%d}, 1 {from_currency}="
-                    f"{config.sym()}{rate_ccy:0,.2f} {config.ccy}, {Decimal(value).normalize():0,f}"
-                    f"{from_currency}{Style.BRIGHT}{config.sym()}{value_in_ccy:0,.2f} "
+                    f"{config.sym()}{rate_ccy:0,.2f} {config.ccy}, "
+                    f"{Decimal(value).normalize():0,f} {from_currency}="
+                    f"{Style.BRIGHT}{config.sym()}{value_in_ccy:0,.2f} "
                     f"{config.ccy}{Style.NORMAL}"
                 )
 

@@ -137,9 +137,11 @@ def _do_parse_coinbase(
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=Decimal(row_dict["Quantity Transacted"]) + fees
-            if fees
-            else Decimal(row_dict["Quantity Transacted"]),
+            buy_quantity=(
+                Decimal(row_dict["Quantity Transacted"]) + fees
+                if fees
+                else Decimal(row_dict["Quantity Transacted"])
+            ),
             buy_asset=row_dict["Asset"],
             fee_quantity=fees,
             fee_asset=row_dict["Asset"],
@@ -150,9 +152,11 @@ def _do_parse_coinbase(
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=Decimal(row_dict["Quantity Transacted"]) - abs(fees)
-            if fees
-            else Decimal(row_dict["Quantity Transacted"]),
+            sell_quantity=(
+                Decimal(row_dict["Quantity Transacted"]) - abs(fees)
+                if fees
+                else Decimal(row_dict["Quantity Transacted"])
+            ),
             sell_asset=row_dict["Asset"],
             fee_quantity=abs(fees) if fees else None,
             fee_asset=row_dict["Asset"],

@@ -2,6 +2,8 @@
 ## [Unreleased]
 ### Fixed
 - Coinbase parser: fixed regex to handle whole numbers.
+- Conversion tool: handle .xlsx files with incorrect dimensions. ([#342](https://github.com/BittyTax/BittyTax/issues/342))
+- Accounting tool: handle .xlsx files with incorrect dimensions. ([#342](https://github.com/BittyTax/BittyTax/issues/342))
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
@@ -29,7 +31,8 @@
 - Conversion tool: new (--binance_statements_only) command option.
 - Conversion tool: new (--binance_multi_bnb_split_even) command option.
 - BlockFi parser: added new export format.
-- BlockFi parser: added "Crypto Transfer" transaction type.
+- BlockFi parser: added "Crypto Transfer" and "BIA Withdraw" transaction types.
+- Conversion tool: added parser for Binance.US exchange.
 - Celsius parser: added "Swap in" and "Swap out" transaction types.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))

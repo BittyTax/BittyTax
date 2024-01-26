@@ -96,9 +96,9 @@ def _parse_swissborg_row(
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Gross amount"]),
             buy_asset=row_dict["Currency"],
-            buy_value=Decimal(row_dict["Gross amount (GBP)"])
-            if row_dict["Currency"] != "GBP"
-            else None,
+            buy_value=(
+                Decimal(row_dict["Gross amount (GBP)"]) if row_dict["Currency"] != "GBP" else None
+            ),
             fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Currency"],
             fee_value=Decimal(row_dict["Fee (GBP)"]) if row_dict["Currency"] != "GBP" else None,
@@ -125,19 +125,25 @@ def _make_trade(tx_times: List["DataRow"], data_row: "DataRow", parser: DataPars
             data_row.timestamp,
             buy_quantity=Decimal(buy_rows[0].row_dict["Gross amount"]),
             buy_asset=buy_rows[0].row_dict["Currency"],
-            buy_value=Decimal(buy_rows[0].row_dict["Gross amount (GBP)"])
-            if buy_rows[0].row_dict["Currency"] != "GBP"
-            else None,
+            buy_value=(
+                Decimal(buy_rows[0].row_dict["Gross amount (GBP)"])
+                if buy_rows[0].row_dict["Currency"] != "GBP"
+                else None
+            ),
             sell_quantity=Decimal(sell_rows[0].row_dict["Gross amount"]),
             sell_asset=sell_rows[0].row_dict["Currency"],
-            sell_value=Decimal(sell_rows[0].row_dict["Gross amount (GBP)"])
-            if sell_rows[0].row_dict["Currency"] != "GBP"
-            else None,
+            sell_value=(
+                Decimal(sell_rows[0].row_dict["Gross amount (GBP)"])
+                if sell_rows[0].row_dict["Currency"] != "GBP"
+                else None
+            ),
             fee_quantity=Decimal(buy_rows[0].row_dict["Fee"]),
             fee_asset=buy_rows[0].row_dict["Currency"],
-            fee_value=Decimal(buy_rows[0].row_dict["Fee (GBP)"])
-            if buy_rows[0].row_dict["Currency"] != "GBP"
-            else None,
+            fee_value=(
+                Decimal(buy_rows[0].row_dict["Fee (GBP)"])
+                if buy_rows[0].row_dict["Currency"] != "GBP"
+                else None
+            ),
             wallet=WALLET,
         )
     else:

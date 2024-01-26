@@ -42,9 +42,11 @@ def parse_circle(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Pars
             data_row.timestamp,
             sell_quantity=Decimal(row_dict["From Amount"].strip("£€$").split(" ")[0]),
             sell_asset=row_dict["From Currency"],
-            sell_value=Decimal(row_dict["To Amount"].strip("£€$"))
-            if row_dict["To Currency"] == config.ccy
-            else None,
+            sell_value=(
+                Decimal(row_dict["To Amount"].strip("£€$"))
+                if row_dict["To Currency"] == config.ccy
+                else None
+            ),
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] == "receive":
@@ -53,9 +55,11 @@ def parse_circle(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Pars
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["To Amount"].strip("£€$").split(" ")[0]),
             buy_asset=row_dict["To Currency"],
-            buy_value=Decimal(row_dict["From Amount"].strip("£€$"))
-            if row_dict["From Currency"] == config.ccy
-            else None,
+            buy_value=(
+                Decimal(row_dict["From Amount"].strip("£€$"))
+                if row_dict["From Currency"] == config.ccy
+                else None
+            ),
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] == "fork":

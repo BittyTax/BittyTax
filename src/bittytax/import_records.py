@@ -43,7 +43,8 @@ class ImportRecords:
 
         for sheet_name in workbook.sheetnames:
             worksheet = workbook[sheet_name]
-            if worksheet.calculate_dimension() == "A1:A1":
+            dimensions = worksheet.calculate_dimension()
+            if dimensions == "A1:A1" or dimensions.endswith("1048576"):
                 workbook[sheet_name].reset_dimensions()
 
             if worksheet.title.startswith("--"):
@@ -642,9 +643,11 @@ class TransactionRow:
 
         row_str = ", ".join(
             [
-                f"{Back.RED}'{data}'{Back.RESET}"
-                if self.failure and self.failure.col_num == num
-                else f"'{data}'"
+                (
+                    f"{Back.RED}'{data}'{Back.RESET}"
+                    if self.failure and self.failure.col_num == num
+                    else f"'{data}'"
+                )
                 for num, data in enumerate(self.row)
             ]
         )
