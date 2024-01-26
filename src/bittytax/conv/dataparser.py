@@ -37,15 +37,13 @@ class ParserType(Enum):
 class RowHandler(Protocol):  # pylint: disable=too-few-public-methods
     def __call__(
         self, data_row: "DataRow", parser: "DataParser", **kwargs: Unpack["ParserArgs"]
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class RowHandler2(Protocol):  # pylint: disable=too-few-public-methods
     def __call__(
         self, data_row: "DataRow", _parser: "DataParser", **kwargs: Unpack["ParserArgs"]
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class AllHandler(Protocol):  # pylint: disable=too-few-public-methods
@@ -54,8 +52,7 @@ class AllHandler(Protocol):  # pylint: disable=too-few-public-methods
         data_rows: List["DataRow"],
         parser: "DataParser",
         **kwargs: Unpack[Union["ParserArgs"]],
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class AllHandler2(Protocol):  # pylint: disable=too-few-public-methods
@@ -64,8 +61,7 @@ class AllHandler2(Protocol):  # pylint: disable=too-few-public-methods
         data_rows: List["DataRow"],
         _parser: "DataParser",
         **kwargs: Unpack[Union["ParserArgs"]],
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class ParserArgs(TypedDict):  # pylint: disable=too-few-public-methods, too-many-ancestors

@@ -643,9 +643,11 @@ class TransactionRow:
 
         row_str = ", ".join(
             [
-                f"{Back.RED}'{data}'{Back.RESET}"
-                if self.failure and self.failure.col_num == num
-                else f"'{data}'"
+                (
+                    f"{Back.RED}'{data}'{Back.RESET}"
+                    if self.failure and self.failure.col_num == num
+                    else f"'{data}'"
+                )
                 for num, data in enumerate(self.row)
             ]
         )

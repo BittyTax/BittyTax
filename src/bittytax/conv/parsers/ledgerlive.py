@@ -34,9 +34,11 @@ def parse_ledger_live(
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=Decimal(row_dict["Operation Amount"]) + fee_quantity
-            if fee_quantity
-            else Decimal(row_dict["Operation Amount"]),
+            buy_quantity=(
+                Decimal(row_dict["Operation Amount"]) + fee_quantity
+                if fee_quantity
+                else Decimal(row_dict["Operation Amount"])
+            ),
             buy_asset=row_dict["Currency Ticker"],
             fee_quantity=fee_quantity,
             fee_asset=fee_asset,
@@ -46,9 +48,11 @@ def parse_ledger_live(
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=Decimal(row_dict["Operation Amount"]) - fee_quantity
-            if fee_quantity
-            else Decimal(row_dict["Operation Amount"]),
+            sell_quantity=(
+                Decimal(row_dict["Operation Amount"]) - fee_quantity
+                if fee_quantity
+                else Decimal(row_dict["Operation Amount"])
+            ),
             sell_asset=row_dict["Currency Ticker"],
             fee_quantity=fee_quantity,
             fee_asset=fee_asset,
@@ -58,9 +62,11 @@ def parse_ledger_live(
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
             data_row.timestamp,
-            sell_quantity=Decimal(row_dict["Operation Amount"]) - fee_quantity
-            if fee_quantity
-            else Decimal(row_dict["Operation Amount"]),
+            sell_quantity=(
+                Decimal(row_dict["Operation Amount"]) - fee_quantity
+                if fee_quantity
+                else Decimal(row_dict["Operation Amount"])
+            ),
             sell_asset=row_dict["Currency Ticker"],
             fee_quantity=fee_quantity,
             fee_asset=fee_asset,
