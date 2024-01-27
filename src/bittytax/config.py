@@ -19,7 +19,7 @@ class Config:
 
     TZ_LOCAL = dateutil.tz.gettz("Europe/London")
 
-    FIAT_LIST = ["GBP", "EUR", "USD"]
+    FIAT_LIST = ["GBP", "EUR", "USD", "AUD", "NZD", "CAD", "PLN"]
     CRYPTO_LIST = ["BTC", "ETH", "XRP", "LTC", "BCH", "USDT"]
 
     TRADE_ASSET_TYPE_BUY = 0

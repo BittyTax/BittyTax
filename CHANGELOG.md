@@ -34,6 +34,7 @@
 - BlockFi parser: added "Crypto Transfer" and "BIA Withdraw" transaction types.
 - Conversion tool: added parser for Binance.US exchange.
 - Celsius parser: added "Swap in" and "Swap out" transaction types.
+- Config: added more fiat currencies to FIAT_LIST.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
