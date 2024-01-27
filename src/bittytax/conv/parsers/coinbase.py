@@ -555,7 +555,7 @@ def parse_coinbase_transactions(
             )
 
 
-coinbase_v2 = DataParser(
+DataParser(
     ParserType.EXCHANGE,
     "Coinbase",
     [
