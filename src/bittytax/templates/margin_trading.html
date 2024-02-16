@@ -1,0 +1,27 @@
+<h2>Margin Trading</h2>
+<p>These figures are NOT included in the Summary or Tax Estimate above.</p>
+{% set margin = tax_report[tax_year]['MarginTrading'] %}
+<table repeat="1" width="100%">
+    <tr>
+        <th align="left" width="65%">Wallet</th>
+        <th align="right">Gains</th>
+        <th align="right">Losses</th>
+        <th align="right">Fees</th>
+    </tr>
+    {% for wallet in margin.wallet_totals|sort %}
+        <tr>
+            <td align="left">{{wallet}}</td>
+            <td align="right">{{margin.wallet_totals[wallet]["gains"]|valuefilter}}</td>
+            <td align="right">{{margin.wallet_totals[wallet]["losses"]|valuefilter}}</td>
+            <td align="right">{{margin.wallet_totals[wallet]["fees"]|valuefilter}}</td>
+        </tr>
+    {% endfor %}
+</table>
+<table class="total-table">
+    <tr>
+        <td align="left" width="65%">Total</td>
+        <td align="right">{{margin.totals['gains']|valuefilter}}</td>
+        <td align="right">{{margin.totals['losses']|valuefilter}}</td>
+        <td align="right">{{margin.totals['fees']|valuefilter}}</td>
+    </tr>
+</table>

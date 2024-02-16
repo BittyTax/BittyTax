@@ -87,12 +87,15 @@ class OutputCsv(OutputBase):
         TrType.INCOME: "Income",
         TrType.GIFT_RECEIVED: "Gift",
         TrType.AIRDROP: "Airdrop",
+        TrType.MARGIN_GAIN: "MarginGain",
         TrType.WITHDRAWAL: "Withdrawal",
         TrType.SPEND: "Purchase",
         TrType.GIFT_SENT: "Gift",
         TrType.GIFT_SPOUSE: "Spouse",
         TrType.CHARITY_SENT: "Donation",
         TrType.LOST: "Lost",
+        TrType.MARGIN_LOSS: "MarginLoss",
+        TrType.MARGIN_FEE: "LendingFee",
         TrType.TRADE: "Trade",
     }
 

@@ -263,6 +263,45 @@ def _parse_kraken_ledgers_row(
             raise UnexpectedTypeError(
                 parser.in_header.index("subtype"), "subtype", row_dict["subtype"]
             )
+    elif row_dict["type"] == "margin":
+        if Decimal(row_dict["amount"]) > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.MARGIN_GAIN,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["amount"]),
+                buy_asset=_normalise_asset(row_dict["asset"]),
+                fee_quantity=Decimal(row_dict["fee"]),
+                fee_asset=_normalise_asset(row_dict["asset"]),
+                wallet=WALLET,
+            )
+        elif Decimal(row_dict["amount"]) < 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.MARGIN_LOSS,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["amount"])),
+                sell_asset=_normalise_asset(row_dict["asset"]),
+                fee_quantity=Decimal(row_dict["fee"]),
+                fee_asset=_normalise_asset(row_dict["asset"]),
+                wallet=WALLET,
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.MARGIN_FEE,
+                data_row.timestamp,
+                sell_quantity=Decimal(row_dict["fee"]),
+                sell_asset=_normalise_asset(row_dict["asset"]),
+                wallet=WALLET,
+            )
+    elif row_dict["type"] == "rollover":
+        data_row.t_record = TransactionOutRecord(
+            TrType.MARGIN_FEE,
+            data_row.timestamp,
+            sell_quantity=Decimal(row_dict["fee"]),
+            sell_asset=_normalise_asset(row_dict["asset"]),
+            wallet=WALLET,
+        )
+    elif row_dict["type"] == "settled":
+        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("settled",)))
     elif row_dict["type"] == "trade":
         _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("trade",)))
     elif row_dict["type"] in ("spend", "receive"):

@@ -22,7 +22,13 @@ from .bt_types import AssetName, AssetSymbol, Date, Note, Year
 from .config import config
 from .constants import _H1, ERROR, H1, TAX_RULES_UK_COMPANY
 from .price.valueasset import VaPriceReport
-from .tax import CalculateCapitalGains, CalculateIncome, HoldingsReportRecord, TaxReportRecord
+from .tax import (
+    CalculateCapitalGains,
+    CalculateIncome,
+    CalculateMarginTrading,
+    HoldingsReportRecord,
+    TaxReportRecord,
+)
 from .version import __version__
 
 
@@ -238,6 +244,7 @@ class ReportLog:
                 self._cgt_estimate(tax_report[tax_year]["CapitalGains"])
 
             self._income(tax_report[tax_year]["Income"])
+            self._margin_trading(tax_report[tax_year]["MarginTrading"])
 
         print(f"{H1}Appendix{_H1}")
         for tax_year in sorted(tax_report):
@@ -422,7 +429,6 @@ class ReportLog:
         )
 
         print(f"{Fore.YELLOW}{header}")
-
         for asset in sorted(income.assets):
             events = quantity = amount = fees = Decimal(0)
             for te in income.assets[asset]:
@@ -460,6 +466,28 @@ class ReportLog:
             f'{Fore.YELLOW}{Style.BRIGHT}{"Total":<{self.MAX_SYMBOL_LEN + 11}} {"":<10} '
             f'{"":<40} {"":<25} {self.format_value(income.totals["amount"]):>13} '
             f'{self.format_value(income.totals["fees"]):>13}{Style.NORMAL}'
+        )
+
+    def _margin_trading(self, margin: CalculateMarginTrading) -> None:
+        print(f"\n{Fore.CYAN}Margin Trading\n")
+        print("These figures are NOT included in the Summary or Tax Estimate above.\n")
+        header = f'{"Wallet":<30} {"Gains":>13} {"Losses":>13} {"Fees":>13}'
+
+        print(f"{Fore.YELLOW}{header}")
+        for wallet in sorted(margin.wallet_totals, key=str.lower):
+            print(
+                f"{Fore.WHITE}{wallet:<30} "
+                f'{self.format_value(margin.wallet_totals[wallet]["gains"]):>13} '
+                f'{self.format_value(margin.wallet_totals[wallet]["losses"]):>13} '
+                f'{self.format_value(margin.wallet_totals[wallet]["fees"]):>13}{Style.NORMAL}'
+            )
+
+        print(f'{Fore.YELLOW}{"_" * len(header)}')
+        print(
+            f'{Fore.YELLOW}{Style.BRIGHT}{"Total":<30} '
+            f'{self.format_value(margin.totals["gains"]):>13} '
+            f'{self.format_value(margin.totals["losses"]):>13} '
+            f'{self.format_value(margin.totals["fees"]):>13}{Style.NORMAL}'
         )
 
     def _price_data(self, price_report: Dict[AssetSymbol, Dict[Date, VaPriceReport]]) -> None:

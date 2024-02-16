@@ -13,7 +13,7 @@ import colorama
 from colorama import Fore
 
 from .audit import AuditRecords
-from .bt_types import AssetSymbol, Year
+from .bt_types import AssetSymbol, DisposalType, Year
 from .config import config
 from .constants import ERROR, TAX_RULES_UK_COMPANY, TAX_RULES_UK_INDIVIDUAL, WARNING
 from .exceptions import ImportFailureError
@@ -145,6 +145,7 @@ def main() -> None:
 
             if not args.summary_only:
                 tax.process_income()
+                tax.process_margin_trades()
 
             _do_each_tax_year(tax, args.tax_year, args.summary_only, value_asset)
 
@@ -209,12 +210,12 @@ def _do_tax(
 
     tax = TaxCalculator(transaction_history.transactions, tax_rules)
     tax.pool_same_day()
-    tax.match_sell(tax.DISPOSAL_SAME_DAY)
+    tax.match_sell(DisposalType.SAME_DAY)
 
     if tax_rules == TAX_RULES_UK_INDIVIDUAL:
-        tax.match_buyback(tax.DISPOSAL_BED_AND_BREAKFAST)
+        tax.match_buyback(DisposalType.BED_AND_BREAKFAST)
     elif tax_rules in TAX_RULES_UK_COMPANY:
-        tax.match_sell(tax.DISPOSAL_TEN_DAY)
+        tax.match_sell(DisposalType.TEN_DAY)
 
     tax.process_section104(skip_integrity_check)
     return tax, value_asset
@@ -267,7 +268,12 @@ def _do_each_tax_year(
             tax.tax_report[tax_year] = {"CapitalGains": calc_cgt}
         else:
             calc_income = tax.calculate_income(tax_year)
-            tax.tax_report[tax_year] = {"CapitalGains": calc_cgt, "Income": calc_income}
+            calc_margin_trading = tax.calculate_margin_trading(tax_year)
+            tax.tax_report[tax_year] = {
+                "CapitalGains": calc_cgt,
+                "Income": calc_income,
+                "MarginTrading": calc_margin_trading,
+            }
     else:
         # Calculate for all years
         for year in sorted(tax.tax_events):
@@ -279,7 +285,12 @@ def _do_each_tax_year(
                     tax.tax_report[year] = {"CapitalGains": calc_cgt}
                 else:
                     calc_income = tax.calculate_income(year)
-                    tax.tax_report[year] = {"CapitalGains": calc_cgt, "Income": calc_income}
+                    calc_margin_trading = tax.calculate_margin_trading(year)
+                    tax.tax_report[year] = {
+                        "CapitalGains": calc_cgt,
+                        "Income": calc_income,
+                        "MarginTrading": calc_margin_trading,
+                    }
             else:
                 print(f"{WARNING} Tax year {year} is not supported")
 
