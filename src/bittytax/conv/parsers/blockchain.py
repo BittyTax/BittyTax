@@ -20,7 +20,17 @@ def parse_blockchain(
     data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["date"] + " " + row_dict["time"])
+
+    # The date and time columns can be one of:
+    # date="2024-02-17", time="1708208107"
+    # date="2024-02-17", time="22:15:07 GMT +00:00"
+    # Handle both cases.
+    if row_dict["time"].isdigit():
+        timestamp = int(row_dict["time"])
+    else:
+        timestamp = row_dict["date"] + " " + row_dict["time"]
+
+    data_row.timestamp = DataParser.parse_timestamp(timestamp)
 
     symbol, value_str = row_dict["value_then"][0], row_dict["value_then"].strip("£€$ ").replace(
         ",", ""
@@ -51,9 +61,16 @@ def parse_blockchain(
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=abs(Decimal(row_dict["amount"])),
+            # When comparing blockchain.com's csv export to transactions on the
+            # blockchain, we see that for "sent" transactions, the "amount"
+            # column includes the transaction fee. We should remove it.
+            # The same does not happen for "received" transactions.
+            sell_quantity=abs(Decimal(row_dict["amount"])) - Decimal(row_dict["fee_value"]),
             sell_asset=row_dict["token"],
             sell_value=value,
+            fee_quantity=Decimal(row_dict["fee_value"]),
+            fee_asset=row_dict["token"],
+            fee_value=Decimal(row_dict["fee_value_then"]),
             wallet=WALLET,
             note=row_dict["note"],
         )
@@ -81,6 +98,13 @@ DataParser(
         "exchange_rate_then",
         "tx",
         "note",
+        "fee_value",
+        "fee_value_then",
+        "recipient_received",
+        "recipient_value_then",
+        "value_then_raw",
+        "value_now_raw",
+        "exchange_rate_then_raw",
     ],
     worksheet_name="Blockchain.com",
     row_handler=parse_blockchain,
