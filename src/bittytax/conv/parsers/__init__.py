@@ -30,6 +30,7 @@ from . import (
     cryptocom,
     cryptopia,
     cryptsy,
+    deribit,
     electrum,
     etherscan,
     exodus,
