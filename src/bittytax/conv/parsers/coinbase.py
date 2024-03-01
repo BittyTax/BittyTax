@@ -369,7 +369,7 @@ def _get_convert_info(notes: str) -> Optional[Tuple[Any, ...]]:
 
 
 def _get_currency(notes: str) -> Tuple[Optional[str], str]:
-    match = re.match(r".+for .?(?:[\d|,]+\.\d{2}|[\d|,]+) (\w{3})(?: on )?(\w+-\w+)?$", notes)
+    match = re.match(r".+for .?(?:[\d|,]+\.\d{1,2}|[\d|,]+) (\w{3})(?: on )?(\w+-\w+)?$", notes)
 
     if match:
         currency = quote = match.group(1)

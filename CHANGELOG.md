@@ -1,7 +1,7 @@
 # Change Log
 ## [Unreleased]
 ### Fixed
-- Coinbase parser: fixed regex to handle whole numbers.
+- Coinbase parser: fixed regex to handle whole numbers, and a single digit after the decimal point.
 - Conversion tool: handle .xlsx files with incorrect dimensions. ([#342](https://github.com/BittyTax/BittyTax/issues/342))
 - Accounting tool: handle .xlsx files with incorrect dimensions. ([#342](https://github.com/BittyTax/BittyTax/issues/342))
 ### Added
