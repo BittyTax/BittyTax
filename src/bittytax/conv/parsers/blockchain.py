@@ -40,7 +40,7 @@ def parse_blockchain_v2(
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
-            # When comparing blockchain.com's csv export to transactions on the
+            # When comparing Blockchain.com's CSV export to transactions on the
             # blockchain, we see that for "sent" transactions, the "amount"
             # column includes the transaction fee. We should remove it.
             # The same does not happen for "received" transactions.
