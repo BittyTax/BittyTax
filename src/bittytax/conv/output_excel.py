@@ -419,8 +419,7 @@ class Worksheet:
         self._autofit_calc(col_num, len(note) if note else self.MAX_COL_WIDTH)
 
     def _autofit_calc(self, col_num: int, width: int) -> None:
-        if width > self.MAX_COL_WIDTH:
-            width = self.MAX_COL_WIDTH
+        width = min(width, self.MAX_COL_WIDTH)
 
         if col_num in self.col_width:
             if width > self.col_width[col_num]:
