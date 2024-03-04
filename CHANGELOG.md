@@ -4,6 +4,7 @@
 - Coinbase parser: fixed regex to handle whole numbers, and a single digit after the decimal point.
 - Conversion tool: handle .xlsx files with incorrect dimensions. ([#342](https://github.com/BittyTax/BittyTax/issues/342))
 - Accounting tool: handle .xlsx files with incorrect dimensions. ([#342](https://github.com/BittyTax/BittyTax/issues/342))
+- Coinbase parser: fixed missing "Fee Quantity" when zero.
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.

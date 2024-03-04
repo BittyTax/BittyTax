@@ -48,7 +48,11 @@ def parse_coinbase_v2(
             spot_price_ccy,
             Decimal(row_dict["Subtotal"]) if row_dict["Subtotal"] else None,
             total_ccy,
-            Decimal(row_dict["Fees and/or Spread"]) if row_dict["Fees and/or Spread"] else None,
+            (
+                abs(Decimal(row_dict["Fees and/or Spread"]))
+                if row_dict["Fees and/or Spread"]
+                else None
+            ),
         ),
     )
 
@@ -77,7 +81,7 @@ def parse_coinbase_v1(
             spot_price_ccy,
             Decimal(row_dict["Subtotal"]) if row_dict["Subtotal"] else None,
             total_ccy,
-            Decimal(row_dict["Fees"]) if row_dict["Fees"] else None,
+            abs(Decimal(row_dict["Fees"])) if row_dict["Fees"] else None,
         ),
     )
 
@@ -120,7 +124,7 @@ def _get_fiat_values(
     spot_price_ccy = DataParser.convert_currency(row_dict[sp_header], currency, timestamp)
     subtotal = Decimal(row_dict[st_header]) if row_dict[st_header] else None
     total_ccy = DataParser.convert_currency(row_dict[t_header], currency, timestamp)
-    fees = Decimal(row_dict[f_header]) if row_dict[f_header] else None
+    fees = abs(Decimal(row_dict[f_header])) if row_dict[f_header] else None
     return (spot_price_ccy, subtotal, total_ccy, fees)
 
 
@@ -153,12 +157,12 @@ def _do_parse_coinbase(
             TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=(
-                Decimal(row_dict["Quantity Transacted"]) - abs(fees)
+                Decimal(row_dict["Quantity Transacted"]) - fees
                 if fees
                 else Decimal(row_dict["Quantity Transacted"])
             ),
             sell_asset=row_dict["Asset"],
-            fee_quantity=abs(fees) if fees else None,
+            fee_quantity=fees,
             fee_asset=row_dict["Asset"],
             wallet=WALLET,
         )
@@ -306,7 +310,7 @@ def _do_parse_coinbase(
 
         if currency == quote:
             buy_quantity = subtotal
-            fee_quantity = abs(fees) if fees else None
+            fee_quantity = fees
         else:
             if parser.in_header_row_num is None:
                 raise RuntimeError("Missing in_header_row_num")
