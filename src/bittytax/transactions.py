@@ -353,9 +353,8 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
         elif self.fee_value is None and other.fee_value is not None:
             self.fee_value = other.fee_value
 
-        if other.timestamp < self.timestamp:
-            # Keep timestamp of earliest transaction
-            self.timestamp = other.timestamp
+        # Keep timestamp of earliest transaction
+        self.timestamp = min(other.timestamp, self.timestamp)
 
         if other.wallet != self.wallet:
             self.wallet = Wallet(self.POOLED)
@@ -474,9 +473,8 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
         elif self.fee_value is None and other.fee_value is not None:
             self.fee_value = other.fee_value
 
-        if other.timestamp > self.timestamp:
-            # Keep timestamp of latest transaction
-            self.timestamp = other.timestamp
+        # Keep timestamp of latest transaction
+        self.timestamp = max(other.timestamp, self.timestamp)
 
         if other.wallet != self.wallet:
             self.wallet = Wallet(self.POOLED)
