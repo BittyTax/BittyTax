@@ -317,7 +317,7 @@ def _parse_binance_statements_row(
 ) -> None:
     row_dict = data_row.row_dict
 
-    if row_dict["Account"] in ("USDT-Futures", "USD-MFutures"):
+    if row_dict["Account"] in ("USDT-Futures", "USD-MFutures", "USD-M Futures"):
         _parse_binance_statements_futures_row(parser, data_row)
         return
 
