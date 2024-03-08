@@ -269,7 +269,7 @@ def output_ds_price(asset_data: AsPriceRecord) -> None:
 
     print(
         f'{Fore.YELLOW}1 {asset_data["symbol"]}='
-        f'{asset_data["price"].normalize():0,f} {asset_data["quote"]} '
+        f'{asset_data["price"].normalize():0,f} {asset_data["quote"]}'
         f'{Fore.CYAN} via {asset_data["data_source"]} ({asset_data["name"]})'
         f'{Fore.YELLOW + " <-" if asset_data.get("priority") else ""}'
     )
