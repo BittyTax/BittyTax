@@ -93,15 +93,11 @@ class TaxEventMarginTrade(TaxEvent):  # pylint: disable=too-few-public-methods
                 raise RuntimeError("Missing cost")
 
             self.gain = t.cost.quantize(PRECISION)
-            if t.fee_value:
-                self.fee = t.fee_value.quantize(PRECISION)
         elif isinstance(t, Sell) and t.t_type == TrType.MARGIN_LOSS:
             if t.proceeds is None:
                 raise RuntimeError("Missing proceeds")
 
             self.loss = t.proceeds.quantize(PRECISION)
-            if t.fee_value:
-                self.fee = t.fee_value.quantize(PRECISION)
         elif isinstance(t, Sell) and t.t_type == TrType.MARGIN_FEE:
             if t.proceeds is None:
                 raise RuntimeError("Missing proceeds")
