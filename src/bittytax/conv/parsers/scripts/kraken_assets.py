@@ -2,27 +2,38 @@
 # (c) Nano Nano Ltd 2020
 # Generate the constants for the Kraken parser and verify the split method
 
-from typing import Dict, List, Tuple
+import re
+from typing import Dict, List, Set, Tuple
 
 import requests
 from colorama import Back
 
-from bittytax.conv.parsers.kraken import ALT_ASSETS, QUOTE_ASSETS, _split_trading_pair
+from bittytax.conv.parsers.kraken import (
+    ALT_ASSETS,
+    QUOTE_ASSETS,
+    STAKED_SUFFIX,
+    _split_trading_pair,
+)
 
 
-def get_alt_assets() -> Dict[str, str]:
+def get_alt_assets() -> Tuple[Dict[str, str], Set[str]]:
     response = requests.get("https://api.kraken.com/0/public/Assets", timeout=10)
 
     alt_assets = {}
+    staked_suffix = set()
     if response:
         for asset in response.json()["result"]:
             alt = response.json()["result"][asset]["altname"]
             if asset != alt:
                 alt_assets[asset] = alt
+
+            match = re.match(r"^[A-Z]+((?:\d{2})?\.[S,M,P])$", asset)
+            if match:
+                staked_suffix.add(match.group(1))
     else:
         print(f"{response.status_code} {response.reason}")
 
-    return alt_assets
+    return alt_assets, staked_suffix
 
 
 def get_quote_assets() -> Tuple[List[str], Dict[str, str]]:
@@ -69,14 +80,17 @@ def get_quote_assets() -> Tuple[List[str], Dict[str, str]]:
 
 
 def output_constants(
-    alt_assets: Dict[str, str], quote_assets: List[str], specials: Dict[str, str]
+    alt_assets: Dict[str, str],
+    staked_suffix: Set[str],
+    quote_assets: List[str],
+    specials: Dict[str, str],
 ) -> None:
     print("\nQUOTE_ASSETS = [")
     for i in sorted(quote_assets):
         if i in QUOTE_ASSETS:
-            print(f'    "{i}"')
+            print(f'    "{i}",')
         else:
-            print(f'    {Back.RED}"{i}"{Back.RESET}')
+            print(f'    {Back.RED}"{i}"{Back.RESET},')
     print("]")
 
     print("\nALT_ASSETS = {")
@@ -87,6 +101,14 @@ def output_constants(
             print(f'    {Back.RED}"{k}": "{v}"{Back.RESET},')
     print("}")
 
+    print("\nSTAKED_SUFFIX = [")
+    for i in sorted(staked_suffix):
+        if i in STAKED_SUFFIX:
+            print(f'    "{i}",')
+        else:
+            print(f'    {Back.RED}"{i}"{Back.RESET},')
+    print("]")
+
     print("\nTRADINGPAIR_TO_QUOTE_ASSET = {")
     for i in sorted(specials):
         print(f'    {Back.RED}"{i}": "{specials[i]}"{Back.RESET},')
@@ -94,4 +116,4 @@ def output_constants(
 
 
 if __name__ == "__main__":
-    output_constants(get_alt_assets(), *get_quote_assets())
+    output_constants(*get_alt_assets(), *get_quote_assets())
