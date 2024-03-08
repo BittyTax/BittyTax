@@ -72,6 +72,18 @@ ALT_ASSETS = {
     "ZUSD": "USD",
 }
 
+STAKED_SUFFIX = [
+    ".M",
+    ".P",
+    ".S",
+    "03.S",
+    "04.S",
+    "07.S",
+    "14.S",
+    "21.S",
+    "28.S",
+]
+
 TRADINGPAIR_TO_QUOTE_ASSET = {
     "BLZEUR": "EUR",
     "BLZUSD": "USD",
@@ -217,13 +229,22 @@ def _parse_kraken_ledgers_row(
             wallet=WALLET,
         )
     elif row_dict["type"] == "staking":
-        data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
-            data_row.timestamp,
-            buy_quantity=Decimal(row_dict["amount"]),
-            buy_asset=_normalise_asset(row_dict["asset"]),
-            wallet=WALLET,
-        )
+        if Decimal(row_dict["amount"]) > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.STAKING,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["amount"]),
+                buy_asset=_normalise_asset(row_dict["asset"]),
+                wallet=WALLET,
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.SPEND,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["amount"])),
+                sell_asset=_normalise_asset(row_dict["asset"]),
+                wallet=WALLET,
+            )
     elif row_dict["type"] == "dividend":
         data_row.t_record = TransactionOutRecord(
             TrType.DIVIDEND,
@@ -275,6 +296,9 @@ def _parse_kraken_ledgers_row(
         _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("trade",)))
     elif row_dict["type"] in ("spend", "receive"):
         _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("spend", "receive")))
+    elif row_dict["type"] == "earn":
+        # Skip internal transfers
+        return
     else:
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
@@ -286,8 +310,10 @@ def _get_ref_ids(
 
 
 def _make_trade(ref_ids: List["DataRow"]) -> None:
-    buy_quantity = sell_quantity = fee_quantity = None
-    buy_asset = sell_asset = fee_asset = ""
+    buy_quantity = sell_quantity = Decimal(0)
+    fee_quantity = None
+    buy_asset = sell_asset = config.ccy
+    fee_asset = ""
     trade_row = None
 
     for data_row in ref_ids:
@@ -408,8 +434,9 @@ def _normalise_asset(asset: str) -> str:
     if asset == "XBT":
         return "BTC"
 
-    if asset.endswith(".S"):
-        return asset[:-2]
+    for suffix in sorted(STAKED_SUFFIX, reverse=True):
+        if asset.endswith(suffix):
+            return asset[: -len(suffix)]
     return asset
 
 
