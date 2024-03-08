@@ -48,7 +48,7 @@ def get_assets() -> None:
             if i in QUOTE_ASSETS:
                 print(f'    "{i}",')
             else:
-                print(f'    {Back.RED}"{i}"{Back.RESET}')
+                print(f'    {Back.RED}"{i}"{Back.RESET},')
         print("]")
 
         print("\nBASE_ASSETS = [")
@@ -56,7 +56,7 @@ def get_assets() -> None:
             if i in BASE_ASSETS:
                 print(f'    "{i}",')
             else:
-                print(f'    {Back.RED}"{i}"{Back.RESET}')
+                print(f'    {Back.RED}"{i}"{Back.RESET},')
         print("]")
 
         print("\nTRADINGPAIR_TO_QUOTE_ASSET = {")
