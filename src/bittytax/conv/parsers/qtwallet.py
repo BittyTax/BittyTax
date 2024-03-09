@@ -10,6 +10,7 @@ from colorama import Fore
 from typing_extensions import Unpack
 
 from ...bt_types import TrType
+from ...config import config
 from ...constants import WARNING
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError, UnknownCryptoassetError
@@ -23,7 +24,7 @@ WALLET = "Qt Wallet"
 
 def parse_qt_wallet(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], tz="Europe/London")
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], tz=config.local_timezone)
 
     amount, symbol = _get_amount(data_row.row[5])
 
@@ -119,7 +120,7 @@ def parse_vericoin_qt_wallet(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Date/Time"], tz="Europe/London")
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Date/Time"], tz=config.local_timezone)
 
     if row_dict["Type"] == "Receive":
         data_row.t_record = TransactionOutRecord(

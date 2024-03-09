@@ -38,12 +38,20 @@
 - Config: added more fiat currencies to FIAT_LIST.
 - BscScan parser: added new export formats. ([#343](https://github.com/BittyTax/BittyTax/issues/343))
 - Binance parser: added "Airdrop Assets" operation. ([#347](https://github.com/BittyTax/BittyTax/issues/347))
+- Config: added local_timezone and date_is_day_first parameters.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Kraken parser: trading pair splitting improvements.
 - Binance parser: trading pair splitting improvements.
 - Binance parser: improved "Small Assets Exchange BNB" handling.
+- Bitfinex parser: use date_is_day_first from config.
+- CoinTracking parser: use date_is_day_first from config.
+- Electrum parser: use local_timezone from config.
+- Qt Wallet parser: use local_timezone from config.
+- Trezor Suite parser: use local_timezone and date_is_day_first from config.
+- Volt parser: use local_timezone and date_is_day_first from config.
+- Zerion parser: use local_timezone from config.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 

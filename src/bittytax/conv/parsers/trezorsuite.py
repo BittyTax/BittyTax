@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from typing_extensions import Unpack
 
 from ...bt_types import TrType
+from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
@@ -82,7 +83,7 @@ def parse_trezor_suite_v1(
     row_dict = data_row.row_dict
     if "Date & Time" in row_dict:
         data_row.timestamp = DataParser.parse_timestamp(
-            row_dict["Date & Time"], dayfirst=True, tz="Europe/London"
+            row_dict["Date & Time"], dayfirst=config.date_is_day_first, tz=config.local_timezone
         )
     else:
         data_row.timestamp = DataParser.parse_timestamp(int(row_dict["Timestamp"]))

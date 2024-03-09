@@ -56,7 +56,7 @@ def _parse_zerion_row(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(
-        row_dict["Date"] + " " + row_dict["Time"], tz="Europe/London"
+        row_dict["Date"] + " " + row_dict["Time"], tz=config.local_timezone
     )
     data_row.parsed = True
 
