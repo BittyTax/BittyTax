@@ -339,6 +339,14 @@ def _parse_binance_statements_row(
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
         )
+    elif row_dict["Operation"] == "Airdrop Assets":
+        data_row.t_record = TransactionOutRecord(
+            TrType.AIRDROP,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Change"]),
+            buy_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
     elif row_dict["Operation"] == "Distribution":
         if Decimal(row_dict["Change"]) > 0:
             data_row.t_record = TransactionOutRecord(
@@ -437,6 +445,7 @@ def _parse_binance_statements_row(
         "Simple Earn Locked Subscription",
         "Simple Earn Locked Redemption",
         "Transfer Between Spot Account and UM Futures Account",
+        "Transfer Between Main Account/Futures and Margin Account",
         "Launchpool Subscription/Redemption",
         "Launchpad Subscribe",
     ):
