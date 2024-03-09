@@ -193,7 +193,7 @@ def _do_parse_coinbase(
 
         if "Coinbase Referral" in row_dict["Notes"]:
             data_row.t_record = TransactionOutRecord(
-                TrType.GIFT_RECEIVED,
+                TrType.REFERRAL,
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Quantity Transacted"]),
                 buy_asset=row_dict["Asset"],
@@ -282,7 +282,7 @@ def _do_parse_coinbase(
         ):
             # Zero fees "may" indicate an early referral reward, or airdrop
             data_row.t_record = TransactionOutRecord(
-                TrType.GIFT_RECEIVED,
+                TrType.REFERRAL,
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Quantity Transacted"]),
                 buy_asset=row_dict["Asset"],
@@ -517,7 +517,7 @@ def parse_coinbase_transactions(
         if row_dict["Notes"] != "" and row_dict["Currency"] == "BTC":
             # Bonus is always in BTC
             data_row.t_record = TransactionOutRecord(
-                TrType.GIFT_RECEIVED,
+                TrType.REFERRAL,
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Amount"]),
                 buy_asset=row_dict["Currency"],

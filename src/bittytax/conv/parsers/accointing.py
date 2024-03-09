@@ -20,7 +20,7 @@ ACCOINTING_D_MAPPING = {
     "bounty": TrType.INCOME,
     "gambling_income": TrType.GIFT_RECEIVED,
     "gift_received": TrType.GIFT_RECEIVED,
-    "hard_fork": TrType.GIFT_RECEIVED,
+    "hard_fork": TrType.FORK,
     "income": TrType.INCOME,
     "internal": TrType.DEPOSIT,
     "lending_income": TrType.INTEREST,

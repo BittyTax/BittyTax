@@ -55,12 +55,12 @@ def _parse_hitbtc_trades_row(
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date (UTC)"])
     data_row.parsed = True
 
-    # Negative fees are rebates, add as gift-received
+    # Negative fees are rebates
     if Decimal(row_dict["Fee"]) < 0:
         dup_data_row = copy.copy(data_row)
         dup_data_row.row = []
         dup_data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.FEE_REBATE,
             data_row.timestamp,
             buy_quantity=abs(Decimal(row_dict["Fee"])),
             buy_asset=row_dict["Instrument"].split("/")[1],

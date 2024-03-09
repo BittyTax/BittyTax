@@ -20,7 +20,7 @@ WALLET = "CoinTracking"
 COINTRACKING_D_MAPPING = {
     "Income": TrType.INCOME,
     "Gift/Tip": TrType.GIFT_RECEIVED,
-    "Reward/Bonus": TrType.GIFT_RECEIVED,
+    "Reward/Bonus": TrType.AIRDROP,
     "Mining": TrType.MINING,
     "Airdrop": TrType.AIRDROP,
     "Staking": TrType.STAKING,

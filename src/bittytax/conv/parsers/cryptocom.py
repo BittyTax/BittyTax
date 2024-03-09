@@ -118,18 +118,18 @@ def parse_crypto_com(
                 sell_asset=row_dict["Currency"],
                 wallet=WALLET,
             )
-    elif row_dict["Transaction Kind"] in (
-        "referral_bonus",
-        "referral_card_cashback",
-        "reimbursement",
-        "gift_card_reward",
-        "transfer_cashback",
-        "admin_wallet_credited",
-        "referral_gift",
-        "campaign_reward",
-    ):
+    elif row_dict["Transaction Kind"] in ("referral_bonus", "referral_gift"):
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.REFERRAL,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Amount"]),
+            buy_asset=row_dict["Currency"],
+            buy_value=value,
+            wallet=WALLET,
+        )
+    elif row_dict["Transaction Kind"] in ("referral_card_cashback", "transfer_cashback"):
+        data_row.t_record = TransactionOutRecord(
+            TrType.CASHBACK,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Currency"],
@@ -137,18 +137,25 @@ def parse_crypto_com(
             wallet=WALLET,
         )
     elif row_dict["Transaction Kind"] in (
+        "reimbursement",
+        "gift_card_reward",
+        "admin_wallet_credited",
+        "campaign_reward",
+    ):
+        data_row.t_record = TransactionOutRecord(
+            TrType.AIRDROP,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Amount"]),
+            buy_asset=row_dict["Currency"],
+            buy_value=value,
+            wallet=WALLET,
+        )
+    elif row_dict["Transaction Kind"] in (
+        "crypto_payment",
+        "card_top_up",
         "card_cashback_reverted",
         "reimbursement_reverted",
     ):
-        data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_SENT,
-            data_row.timestamp,
-            sell_quantity=abs(Decimal(row_dict["Amount"])),
-            sell_asset=row_dict["Currency"],
-            sell_value=value,
-            wallet=WALLET,
-        )
-    elif row_dict["Transaction Kind"] in ("crypto_payment", "card_top_up"):
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
             data_row.timestamp,
@@ -157,10 +164,7 @@ def parse_crypto_com(
             sell_value=value,
             wallet=WALLET,
         )
-    elif row_dict["Transaction Kind"] in (
-        "crypto_withdrawal",
-        "crypto_to_exchange_transfer",
-    ):
+    elif row_dict["Transaction Kind"] in ("crypto_withdrawal", "crypto_to_exchange_transfer"):
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -169,10 +173,7 @@ def parse_crypto_com(
             sell_value=value,
             wallet=WALLET,
         )
-    elif row_dict["Transaction Kind"] in (
-        "crypto_deposit",
-        "exchange_to_crypto_transfer",
-    ):
+    elif row_dict["Transaction Kind"] in ("crypto_deposit", "exchange_to_crypto_transfer"):
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,

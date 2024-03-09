@@ -41,7 +41,7 @@ def parse_paxful(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Pars
         )
     elif row_dict["type"] == "Received (internal) from affiliate balance":
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.REFERRAL,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["crypto_amount"]),
             buy_asset=row_dict["crypto_currency"],

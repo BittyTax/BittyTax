@@ -112,7 +112,7 @@ def parse_bitfinex_ledger(
 
     if _is_referral(row_dict["DESCRIPTION"]):
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.REFERRAL,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["AMOUNT"]),
             buy_asset=row_dict["CURRENCY"],

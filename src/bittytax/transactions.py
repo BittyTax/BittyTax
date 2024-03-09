@@ -312,7 +312,11 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
         TrType.DIVIDEND,
         TrType.INCOME,
         TrType.GIFT_RECEIVED,
+        TrType.FORK,
         TrType.AIRDROP,
+        TrType.REFERRAL,
+        TrType.CASHBACK,
+        TrType.FEE_REBATE,
         TrType.TRADE,
     }
 

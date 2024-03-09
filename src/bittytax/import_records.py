@@ -338,7 +338,55 @@ class TransactionRow:
             fee_asset=FieldRequired.OPTIONAL,
             fee_value=FieldRequired.OPTIONAL,
         ),
+        TrType.FORK: FieldValidation(
+            t_type=FieldRequired.MANDATORY,
+            buy_quantity=FieldRequired.MANDATORY,
+            buy_asset=FieldRequired.MANDATORY,
+            buy_value=FieldRequired.NOT_REQUIRED,
+            sell_quantity=FieldRequired.NOT_REQUIRED,
+            sell_asset=FieldRequired.NOT_REQUIRED,
+            sell_value=FieldRequired.NOT_REQUIRED,
+            fee_quantity=FieldRequired.OPTIONAL,
+            fee_asset=FieldRequired.OPTIONAL,
+            fee_value=FieldRequired.OPTIONAL,
+        ),
         TrType.AIRDROP: FieldValidation(
+            t_type=FieldRequired.MANDATORY,
+            buy_quantity=FieldRequired.MANDATORY,
+            buy_asset=FieldRequired.MANDATORY,
+            buy_value=FieldRequired.OPTIONAL,
+            sell_quantity=FieldRequired.NOT_REQUIRED,
+            sell_asset=FieldRequired.NOT_REQUIRED,
+            sell_value=FieldRequired.NOT_REQUIRED,
+            fee_quantity=FieldRequired.OPTIONAL,
+            fee_asset=FieldRequired.OPTIONAL,
+            fee_value=FieldRequired.OPTIONAL,
+        ),
+        TrType.REFERRAL: FieldValidation(
+            t_type=FieldRequired.MANDATORY,
+            buy_quantity=FieldRequired.MANDATORY,
+            buy_asset=FieldRequired.MANDATORY,
+            buy_value=FieldRequired.OPTIONAL,
+            sell_quantity=FieldRequired.NOT_REQUIRED,
+            sell_asset=FieldRequired.NOT_REQUIRED,
+            sell_value=FieldRequired.NOT_REQUIRED,
+            fee_quantity=FieldRequired.OPTIONAL,
+            fee_asset=FieldRequired.OPTIONAL,
+            fee_value=FieldRequired.OPTIONAL,
+        ),
+        TrType.CASHBACK: FieldValidation(
+            t_type=FieldRequired.MANDATORY,
+            buy_quantity=FieldRequired.MANDATORY,
+            buy_asset=FieldRequired.MANDATORY,
+            buy_value=FieldRequired.OPTIONAL,
+            sell_quantity=FieldRequired.NOT_REQUIRED,
+            sell_asset=FieldRequired.NOT_REQUIRED,
+            sell_value=FieldRequired.NOT_REQUIRED,
+            fee_quantity=FieldRequired.OPTIONAL,
+            fee_asset=FieldRequired.OPTIONAL,
+            fee_value=FieldRequired.OPTIONAL,
+        ),
+        TrType.FEE_REBATE: FieldValidation(
             t_type=FieldRequired.MANDATORY,
             buy_quantity=FieldRequired.MANDATORY,
             buy_asset=FieldRequired.MANDATORY,
@@ -497,6 +545,9 @@ class TransactionRow:
         if buy_asset:
             if buy_quantity is None:
                 raise RuntimeError("Missing buy_quantity")
+
+            if t_type is TrType.FORK:
+                buy_value = Decimal(0)
 
             buy = Buy(t_type, buy_quantity, buy_asset, buy_value)
         if sell_asset:

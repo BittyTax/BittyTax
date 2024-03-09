@@ -39,6 +39,7 @@
 - BscScan parser: added new export formats. ([#343](https://github.com/BittyTax/BittyTax/issues/343))
 - Binance parser: added "Airdrop Assets" operation. ([#347](https://github.com/BittyTax/BittyTax/issues/347))
 - Config: added local_timezone and date_is_day_first parameters.
+- Accounting tool: new transaction types added. Fork, Referral, Cashback and Fee-Rebate.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -52,6 +53,28 @@
 - Trezor Suite parser: use local_timezone and date_is_day_first from config.
 - Volt parser: use local_timezone and date_is_day_first from config.
 - Zerion parser: use local_timezone from config.
+- Accointing parser: use Fork instead of Gift-Received.
+- Binance parser: use Referral/Airdrop instead of Gift-Received.
+- Bitfinex parser: use Referral instead of Gift-Received.
+- BlockFi parser: use Referral/Airdrop instead of Gift-Received.
+- BnkToTheFuture parser: use Airdrop instead of Gift-Received.
+- Celsius parser: use Referral/Airdrop instead of Gift-Received.
+- CEX.IO parser: use Referral/Fee-Rebate instead of Gift-Received.
+- Circle parser: use Fork instead of Airdrop.
+- Coinbase parser: use Referral instead of Gift-Received.
+- Coinbase Pro parser: use Fee-Rebate instead of Gift-Received.
+- CoinTracking parser: use Airdrop instead of Gift-Received.
+- Crypto.com parser: use Referral/Cashback/Airdrop instead of Gift-Received, use Spend instead of Gift-Sent.
+- FTX parser: use Fee-Rebate instead of Gift-Received.
+- Gravity parser: use Referral instead of Gift-Received.
+- HitBTC parser: use Fee-Rebate instead of Gift-Received.
+- Hotbit parser: use Fee-Rebate instead of Gift-Received.
+- Koinly parser: use Fork/Airdrop instead of Gift-Received.
+- Kraken parser: use Referral/Fee-Rebate instead of Gift-Received.
+- Nexo parser: use Referral/Cashback/Airdrop instead of Gift-Received.
+- OKX parser: use Fee-Rebate instead of Gift-Received.
+- Paxful parser: use Referral instead of Gift-Received.
+- SwissBorg parser: use Airdrop instead of Gift-Received.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 

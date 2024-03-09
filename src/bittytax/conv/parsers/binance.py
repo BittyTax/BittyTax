@@ -325,17 +325,16 @@ def _parse_binance_statements_row(
         "Referrer rebates",
         "Commission Rebate",
         "Commission Fee Shared With You",
-        "Cash Voucher distribution",
         "Referral Kickback",
     ):
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.REFERRAL,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Change"]),
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
         )
-    elif row_dict["Operation"] == "Airdrop Assets":
+    elif row_dict["Operation"] in ("Airdrop Assets", "Cash Voucher distribution"):
         data_row.t_record = TransactionOutRecord(
             TrType.AIRDROP,
             data_row.timestamp,

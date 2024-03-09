@@ -111,7 +111,7 @@ def _parse_ftx_trades_row(
         dup_data_row.row = []
 
         dup_data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.FEE_REBATE,
             data_row.timestamp,
             buy_quantity=abs(Decimal(row_dict["Fee"])),
             buy_asset=row_dict["Fee Currency"],

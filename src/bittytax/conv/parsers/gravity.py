@@ -129,7 +129,7 @@ def _parse_gravity_row(
         if buy_quantity is None:
             return
     elif row_dict["transaction type"] == referral_type:
-        t_type = TrType.GIFT_RECEIVED
+        t_type = TrType.REFERRAL
         buy_quantity = Decimal(row_dict["amount"])
         buy_asset = row_dict["currency"]
     elif row_dict["transaction type"] in (
