@@ -37,6 +37,7 @@
 - Celsius parser: added "Swap in" and "Swap out" transaction types.
 - Config: added more fiat currencies to FIAT_LIST.
 - BscScan parser: added new export formats. ([#343](https://github.com/BittyTax/BittyTax/issues/343))
+- Binance parser: added "Airdrop Assets" operation. ([#347](https://github.com/BittyTax/BittyTax/issues/347))
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
