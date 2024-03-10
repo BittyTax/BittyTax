@@ -224,6 +224,14 @@ def _parse_kraken_ledgers_row(
             buy_asset=_normalise_asset(row_dict["asset"]),
             wallet=WALLET,
         )
+    elif row_dict["type"] == "dividend":
+        data_row.t_record = TransactionOutRecord(
+            TrType.DIVIDEND,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["amount"]),
+            buy_asset=_normalise_asset(row_dict["asset"]),
+            wallet=WALLET,
+        )
     elif row_dict["type"] == "transfer":
         if len(_get_ref_ids(ref_ids, row_dict["refid"], ("transfer",))) > 1:
             # Multiple transfer rows is a rebase? Not currently supported

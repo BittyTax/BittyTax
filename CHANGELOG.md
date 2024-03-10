@@ -40,6 +40,7 @@
 - Binance parser: added "Airdrop Assets" operation. ([#347](https://github.com/BittyTax/BittyTax/issues/347))
 - Config: added local_timezone and date_is_day_first parameters.
 - Accounting tool: new transaction types added. Fork, Referral, Cashback and Fee-Rebate.
+- Kraken parser: added "dividend" type.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
