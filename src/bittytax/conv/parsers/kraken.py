@@ -230,8 +230,6 @@ def _parse_kraken_ledgers_row(
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["amount"]),
             buy_asset=_normalise_asset(row_dict["asset"]),
-            fee_quantity=Decimal(row_dict["fee"]),
-            fee_asset=_normalise_asset(row_dict["asset"]),
             wallet=WALLET,
         )
     elif row_dict["type"] == "transfer":
