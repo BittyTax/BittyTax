@@ -29,6 +29,16 @@ def parse_deribit(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Par
             buy_asset=get_asset(row_dict["Info"]),
             wallet=WALLET,
         )
+    elif row_dict["Type"] == "withdrawal":
+        data_row.t_record = TransactionOutRecord(
+            TrType.WITHDRAWAL,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["Change"])) - Decimal(row_dict["Fee Paid"]),
+            sell_asset=get_asset(row_dict["Info"]),
+            fee_quantity=Decimal(row_dict["Fee Paid"]),
+            fee_asset=get_asset(row_dict["Info"]),
+            wallet=WALLET,
+        )
     elif row_dict["Type"] == "settlement":
         if Decimal(row_dict["Change"]) > 0:
             data_row.t_record = TransactionOutRecord(
@@ -57,7 +67,7 @@ def parse_deribit(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Par
             )
         elif Decimal(row_dict["Fee Paid"]) < 0:
             data_row.t_record = TransactionOutRecord(
-                TrType.GIFT_RECEIVED,
+                TrType.GIFT_RECEIVED,  # Update to FEE_REBATE when merged
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Change"]),
                 buy_asset=row_dict["Instrument"].split("-")[0],
@@ -65,7 +75,7 @@ def parse_deribit(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Par
             )
     elif row_dict["Type"] == "transfer from insurance":
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.GIFT_RECEIVED,  # Update to FEE_REBATE when merged
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Change"]),
             buy_asset="BTC",
