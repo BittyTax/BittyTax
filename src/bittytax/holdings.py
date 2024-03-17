@@ -31,7 +31,7 @@ class Holdings:
 
         if config.debug:
             print(
-                f"{Fore.YELLOW}section104:   "
+                f"{Fore.YELLOW}holdings:   "
                 f"{self.asset}={self.quantity.normalize():0,f} (+{quantity.normalize():0,f}) "
                 f"cost={config.sym()}{self.cost:0,.2f} {config.ccy} "
                 f"(+{config.sym()}{cost:0,.2f} {config.ccy}) "
@@ -51,7 +51,7 @@ class Holdings:
 
         if config.debug:
             print(
-                f"{Fore.YELLOW}section104:   "
+                f"{Fore.YELLOW}holdings:   "
                 f"{self.asset}={self.quantity.normalize():0,f} (-{quantity.normalize():0,f}) "
                 f"cost={config.sym()}{self.cost:0,.2f} {config.ccy} "
                 f"(-{config.sym()}{cost:0,.2f} {config.ccy}) "

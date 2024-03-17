@@ -10,9 +10,9 @@ class TrType(Enum):
     DEPOSIT = "Deposit"
     MINING = "Mining"
     STAKING = "Staking"
-    INCOME = "Income"
     INTEREST = "Interest"
     DIVIDEND = "Dividend"
+    INCOME = "Income"
     GIFT_RECEIVED = "Gift-Received"
     FORK = "Fork"
     AIRDROP = "Airdrop"
@@ -26,6 +26,17 @@ class TrType(Enum):
     CHARITY_SENT = "Charity-Sent"
     LOST = "Lost"
     TRADE = "Trade"
+
+
+class DisposalType(Enum):
+    SAME_DAY = "Same Day"
+    TEN_DAY = "Ten Day"
+    BED_AND_BREAKFAST = "Bed & Breakfast"
+    SECTION_104 = "Section 104"
+    UNPOOLED = "Unpooled"
+    NO_GAIN_NO_LOSS = "No Gain/No Loss"
+    LONG_TERM = "Long-Term"
+    SHORT_TERM = "Short-Term"
 
 
 BUY_TYPES = (

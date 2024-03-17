@@ -20,9 +20,23 @@ from xhtml2pdf import pisa
 from .audit import AuditRecords
 from .bt_types import AssetName, AssetSymbol, Date, Note, Year
 from .config import config
-from .constants import _H1, ERROR, H1, TAX_RULES_UK_COMPANY
+from .constants import (
+    _H1,
+    ERROR,
+    H1,
+    TAX_RULES_UK_COMPANY,
+    TAX_RULES_UK_INDIVIDUAL,
+    TAX_RULES_US_INDIVIDUAL,
+)
 from .price.valueasset import VaPriceReport
-from .tax import CalculateCapitalGains, CalculateIncome, HoldingsReportRecord, TaxReportRecord
+from .tax import (
+    CalculateCapitalGains,
+    CalculateIncome,
+    CapitalGainsReportTotal,
+    HoldingsReportRecord,
+    TaxReportRecord,
+)
+from .tax_event import TaxEventCapitalGains
 from .version import __version__
 
 
@@ -68,16 +82,7 @@ class ReportPdf:
                 }
             )
         elif args.summary_only:
-            template = self.env.get_template(self.TAX_SUMMARY_TEMPLATE)
-            html = template.render(
-                {
-                    "date": datetime.datetime.now(),
-                    "author": f"{progname} v{__version__}",
-                    "config": config,
-                    "args": args,
-                    "tax_report": tax_report,
-                }
-            )
+            raise RuntimeError("To be implemented")
         else:
             template = self.env.get_template(self.TAX_FULL_TEMPLATE)
             html = template.render(
@@ -104,7 +109,7 @@ class ReportPdf:
 
     @staticmethod
     def datefilter(date: Date) -> str:
-        return f"{date:%d/%m/%Y}"
+        return f"{date:{config.date_format}}"
 
     @staticmethod
     def datefilter2(date: Date) -> str:
@@ -121,6 +126,8 @@ class ReportPdf:
         if config.ccy == "EUR":
             return f"&euro;{value:0,.2f}"
         if config.ccy in ("USD", "AUD", "NZD"):
+            if value < 0:
+                return f"(&dollar;{abs(value):0,.2f})"
             return f"&dollar;{value:0,.2f}"
         if config.ccy in ("DKK", "NOK", "SEK"):
             return f"kr.{value:0,.2f}"
@@ -206,10 +213,10 @@ class ReportLog:
             )
             if tax_rules in TAX_RULES_UK_COMPANY:
                 print(f"{Fore.CYAN}Chargeable Gains")
-                self._capital_gains(tax_report[tax_year]["CapitalGains"])
+                # self._capital_gains(tax_report[tax_year]["CapitalGains"])
             else:
                 print(f"{Fore.CYAN}Capital Gains")
-                self._capital_gains(tax_report[tax_year]["CapitalGains"])
+                # self._capital_gains(tax_report[tax_year]["CapitalGains"])
 
     def _tax_full(
         self,
@@ -230,12 +237,26 @@ class ReportLog:
             )
             if tax_rules in TAX_RULES_UK_COMPANY:
                 print(f"{Fore.CYAN}Chargeable Gains")
-                self._capital_gains(tax_report[tax_year]["CapitalGains"])
+                # self._capital_gains(tax_report[tax_year]["CapitalGains"])
                 self._ct_estimate(tax_report[tax_year]["CapitalGains"])
-            else:
+            elif tax_rules == TAX_RULES_UK_INDIVIDUAL:
                 print(f"{Fore.CYAN}Capital Gains")
-                self._capital_gains(tax_report[tax_year]["CapitalGains"])
+                # self._capital_gains(tax_report[tax_year]["CapitalGains"])
                 self._cgt_estimate(tax_report[tax_year]["CapitalGains"])
+            elif tax_rules == TAX_RULES_US_INDIVIDUAL:
+                print(f"{Fore.CYAN}Capital Gains (Short-Term)")
+                self._capital_gains(
+                    tax_report[tax_year]["CapitalGains"].short_term,
+                    tax_report[tax_year]["CapitalGains"].short_term_totals,
+                )
+                print(f"\n{Fore.CYAN}Capital Gains (Long-Term)")
+                self._capital_gains(
+                    tax_report[tax_year]["CapitalGains"].long_term,
+                    tax_report[tax_year]["CapitalGains"].long_term_totals,
+                )
+                self._no_gain_no_loss(tax_report[tax_year]["CapitalGains"])
+            else:
+                raise RuntimeError("Unexpected tax_rules")
 
             self._income(tax_report[tax_year]["Income"])
 
@@ -243,8 +264,11 @@ class ReportLog:
         for tax_year in sorted(tax_report):
             print(f"{Fore.CYAN}Price Data - {config.format_tax_year(tax_year)}\n")
             print(
-                f'{Fore.YELLOW}{"Asset":<{self.ASSET_WIDTH + 2}} {"Data Source":<16} '
-                f'{"Date":<10}  {"Price (" + config.ccy + ")":>13} {"Price (BTC)":>25}'
+                f'{Fore.YELLOW}{"Asset":<{self.ASSET_WIDTH + 2}} '
+                f'{"Data Source":<16} '
+                f'{"Date":<14}  '
+                f'{"Price (" + config.ccy + ")":>18} '
+                f'{"Price (BTC)":>25}'
             )
 
             if tax_year in price_report:
@@ -267,85 +291,114 @@ class ReportLog:
                     f"{self.format_quantity(audit_report.wallets[wallet][asset]):>25}"
                 )
 
-    def _capital_gains(self, cgains: CalculateCapitalGains) -> None:
+    def _capital_gains(
+        self,
+        cgains: Dict[AssetSymbol, List[TaxEventCapitalGains]],
+        cgains_totals: CapitalGainsReportTotal,
+    ) -> None:
         header = (
-            f'{"Asset":<{self.MAX_SYMBOL_LEN}} {"Date":<10} {"Disposal Type":<28} '
-            f'{"Quantity":>25} {"Cost":>13} {"Fees":>13} {"Proceeds":>13} {"Gain":>13}'
+            f'{"Asset":<{self.MAX_SYMBOL_LEN}} '
+            f'{"Quantity":<25} '
+            f'{"Date Acq.":<14} '
+            f'{"Date Sold":<14} '
+            f'{"Proceeds":>18} '
+            f'{"Cost Basis":>18} '
+            f'{"Gain or (Loss)":>18}'
         )
-        for asset in sorted(cgains.assets):
-            disposals = quantity = cost = fees = proceeds = gain = Decimal(0)
-            print(f"\n{Fore.YELLOW}{header}")
-            for te in cgains.assets[asset]:
+        print(f"\n{Fore.YELLOW}{header}")
+        for i, asset in enumerate(sorted(cgains)):
+            disposals = quantity = cost = proceeds = gain = Decimal(0)
+            if i != 0:
+                print(f"\n{Fore.YELLOW}{header}")
+
+            for te in cgains[asset]:
                 disposals += 1
                 quantity += te.quantity
-                cost += te.cost
-                fees += te.fees
                 proceeds += te.proceeds
+                cost += te.cost
                 gain += te.gain
                 print(
                     f"{Fore.WHITE}{te.asset:<{self.MAX_SYMBOL_LEN}} "
-                    f"{self.format_date(te.date):<10} "
-                    f"{te.format_disposal():<28} {self.format_quantity(te.quantity):>25} "
-                    f"{self.format_value(te.cost):>13} {self.format_value(te.fees):>13} "
-                    f"{self.format_value(te.proceeds):>13} "
-                    f"{Fore.RED if te.gain < 0 else Fore.WHITE}{self.format_value(te.gain):>13}"
+                    f"{self.format_quantity(te.quantity):<25} "
+                    f"{te.a_date():<14} "
+                    f"{self.format_date(te.date):<14} "
+                    f"{self.format_value(te.proceeds):>18} "
+                    f"{self.format_value(te.cost):>18} "
+                    f"{Fore.RED if te.gain < 0 else Fore.WHITE}{self.format_value(te.gain):>18}"
                 )
 
             if disposals > 1:
                 print(
-                    f'{Fore.YELLOW}{"Total":<{self.MAX_SYMBOL_LEN}} {"":<10} '
-                    f'{"":<28} {self.format_quantity(quantity):>25} '
-                    f"{self.format_value(cost):>13} {self.format_value(fees):>13} "
-                    f"{self.format_value(proceeds):>13} "
-                    f"{Fore.RED if gain < 0 else Fore.WHITE}{self.format_value(gain):>13}"
+                    f'{Fore.YELLOW}{"Total":<{self.MAX_SYMBOL_LEN}} '
+                    f"{self.format_quantity(quantity):<25} "
+                    f'{"":<14} '
+                    f'{"":<14} '
+                    f"{self.format_value(proceeds):>18} "
+                    f"{self.format_value(cost):>18} "
+                    f"{Fore.RED if gain < 0 else Fore.WHITE}{self.format_value(gain):>18}"
                 )
 
         print(f'{Fore.YELLOW}{"_" * len(header)}')
         print(
-            f'{Fore.YELLOW}{Style.BRIGHT}{"Total":<{self.MAX_SYMBOL_LEN}} {"":<10} '
-            f'{"":<28} {"":>25} {self.format_value(cgains.totals["cost"]):>13} '
-            f'{self.format_value(cgains.totals["fees"]):>13} '
-            f'{self.format_value(cgains.totals["proceeds"]):>13} '
-            f'{Fore.RED if cgains.totals["gain"] < 0 else Fore.YELLOW}'
-            f'{self.format_value(cgains.totals["gain"]):>13}{Style.NORMAL}'
+            f'{Fore.YELLOW}{Style.BRIGHT}{"Total":<{self.MAX_SYMBOL_LEN}} '
+            f'{"":<25} '
+            f'{"":<14} '
+            f'{"":<14} '
+            f'{self.format_value(cgains_totals["proceeds"]):>18} '
+            f'{self.format_value(cgains_totals["cost"]):>18} '
+            f'{Fore.RED if cgains_totals["gain"] < 0 else Fore.YELLOW}'
+            f'{self.format_value(cgains_totals["gain"]):>18}{Style.NORMAL}'
         )
 
-        print(f"\n{Fore.CYAN}Summary\n")
-        print(f'{Fore.WHITE}{"Number of disposals:":<40} {cgains.summary["disposals"]:>13}')
-        if cgains.cgt_estimate["proceeds_warning"]:
+    def _no_gain_no_loss(self, cgains: CalculateCapitalGains) -> None:
+        header = (
+            f'{"Asset":<{self.MAX_SYMBOL_LEN}} '
+            f'{"Quantity":<25} '
+            f'{"Description":<40} '
+            f'{"Date Disp.":<14} '
+            f'{"Disposal Type":<14} '
+            f'{"Market Value":>18} '
+            f'{"Cost Basis":>18}'
+        )
+        if not cgains.non_tax_by_type:
+            print(f"\n{Fore.CYAN}Other Disposals\n")
+            print(f"{Fore.YELLOW}{header}")
+            print(f'{Fore.YELLOW}{"_" * len(header)}')
             print(
-                f'{Fore.WHITE}{"Disposal proceeds:":<40} '
-                f'{"*" + self.format_value(cgains.totals["proceeds"]):>13}'.replace(
-                    "*", f"{Fore.YELLOW}*{Fore.WHITE}"
+                f'{Fore.YELLOW}{Style.BRIGHT}{"Total":<{self.MAX_SYMBOL_LEN}} '
+                f'{"":<25} '
+                f'{"":<40} '
+                f'{"":<14} '
+                f'{"":<14} '
+                f"{self.format_value(Decimal(0)):>18} "
+                f"{self.format_value(Decimal(0)):>18}{Style.NORMAL}"
+            )
+
+        for t_type in sorted(cgains.non_tax_by_type):
+            print(f"\n{Fore.CYAN}Other Disposals ({t_type})\n")
+            print(f"{Fore.YELLOW}{header}")
+
+            for te in cgains.non_tax_by_type[t_type]:
+                print(
+                    f"{Fore.WHITE}{te.asset:<{self.MAX_SYMBOL_LEN}} "
+                    f"{self.format_quantity(te.quantity):<25} "
+                    f"{self.format_note(te.note):<40} "
+                    f"{self.format_date(te.date):<14} "
+                    f"{te.format_disposal():<14} "
+                    f"{self.format_value(te.market_value):>18} "
+                    f"{self.format_value(te.cost):>18}"
                 )
-            )
 
-        else:
+            print(f'{Fore.YELLOW}{"_" * len(header)}')
             print(
-                f'{Fore.WHITE}{"Disposal proceeds:":<40} '
-                f'{self.format_value(cgains.totals["proceeds"]):>13}'
-            )
-
-        print(
-            f'{Fore.WHITE}{"Allowable costs (including the":<40} '
-            f'{self.format_value(cgains.totals["cost"] + cgains.totals["fees"]):>13}'
-        )
-
-        print(f"{Fore.WHITE}purchase price):")
-        print(
-            f'{Fore.WHITE}{"Gains in the year, before losses:":<40} '
-            f'{self.format_value(cgains.summary["total_gain"]):>13}'
-        )
-        print(
-            f'{Fore.WHITE}{"Losses in the year:":<40} '
-            f'{self.format_value(abs(cgains.summary["total_loss"])):>13}'
-        )
-
-        if cgains.cgt_estimate["proceeds_warning"]:
-            print(
-                f"{Fore.YELLOW}*Assets sold are more than "
-                f'{self.format_value(cgains.cgt_estimate["proceeds_limit"])}, '
-                "this needs to be reported to HMRC if you already complete a Self Assessment"
+                f'{Fore.YELLOW}{Style.BRIGHT}{"Total":<{self.MAX_SYMBOL_LEN}} '
+                f'{"":<25} '
+                f'{"":<40} '
+                f'{"":<14} '
+                f'{"":<14} '
+                f'{self.format_value(cgains.non_tax_by_type_total[t_type]["proceeds"]):>18} '
+                f'{self.format_value(cgains.non_tax_by_type_total[t_type]["cost"]):>18}'
+                f"{Style.NORMAL}"
             )
 
     def _cgt_estimate(self, cgains: CalculateCapitalGains) -> None:
@@ -417,13 +470,17 @@ class ReportLog:
     def _income(self, income: CalculateIncome) -> None:
         print(f"\n{Fore.CYAN}Income\n")
         header = (
-            f'{"Asset":<{self.MAX_SYMBOL_LEN}} {"Date":<10} {"Type":<10} {"Description":<40} '
-            f'{"Quantity":<25} {"Amount":>13} {"Fees":>13}'
+            f'{"Asset":<{self.MAX_SYMBOL_LEN}} '
+            f'{"Quantity":<25} '
+            f'{"Description":<40} '
+            f'{"Date Acq.":<14} '
+            f'{"Income Type":<14} '
+            f'{"Market Value":>18} '
+            f'{"Fees":>18}'
         )
 
-        print(f"{Fore.YELLOW}{header}")
-
         for asset in sorted(income.assets):
+            print(f"{Fore.YELLOW}{header}")
             events = quantity = amount = fees = Decimal(0)
             for te in income.assets[asset]:
                 events += 1
@@ -432,34 +489,53 @@ class ReportLog:
                 fees += te.fees
                 print(
                     f"{Fore.WHITE}{te.asset:<{self.MAX_SYMBOL_LEN}} "
-                    f"{self.format_date(te.date):<10} {te.type.value:<10} "
-                    f"{self.format_note(te.note):<40} {self.format_quantity(te.quantity):<25} "
-                    f"{self.format_value(te.amount):>13} {self.format_value(te.fees):>13}"
+                    f"{self.format_quantity(te.quantity):<25} "
+                    f"{self.format_note(te.note):<40} "
+                    f"{self.format_date(te.date):<14} "
+                    f"{te.type.value:<14} "
+                    f"{self.format_value(te.amount):>18} "
+                    f"{self.format_value(te.fees):>18}"
                 )
             if events > 1:
                 print(
-                    f'{Fore.YELLOW}{"Total":<{self.MAX_SYMBOL_LEN}} {"":<10} '
-                    f'{"":<10} {"":<40} {self.format_quantity(quantity):<25} '
-                    f"{self.format_value(amount):>13} {self.format_value(fees):>13}\n"
+                    f'{Fore.YELLOW}{"Total":<{self.MAX_SYMBOL_LEN}} '
+                    f"{self.format_quantity(quantity):<25} "
+                    f'{"":<40} '
+                    f'{"":<14} '
+                    f'{"":<14} '
+                    f"{self.format_value(amount):>18} "
+                    f"{self.format_value(fees):>18}\n"
                 )
 
         print(
-            f'{Fore.YELLOW}{"Income Type":<{self.MAX_SYMBOL_LEN + 11}} {"":<10} '
-            f'{"":<40} {"":<25} {"Amount":>13} {"Fees":>13}'
+            f'{Fore.YELLOW}{"Income Type":<{self.MAX_SYMBOL_LEN+25}}  '
+            f'{"":<40} '
+            f'{"":<14} '
+            f'{"":<14} '
+            f'{"Market Value":>18} '
+            f'{"Fees":>18}'
         )
 
         for i_type in sorted(income.type_totals):
             print(
-                f'{Fore.WHITE}{i_type:<{self.MAX_SYMBOL_LEN + 11}} {"":<10} '
-                f'{"":<40} {"":<25} {self.format_value(income.type_totals[i_type]["amount"]):>13} '
-                f'{self.format_value(income.type_totals[i_type]["fees"]):>13}'
+                f"{Fore.WHITE}{i_type:<{self.MAX_SYMBOL_LEN}} "
+                f'{"":<25} '
+                f'{"":<40} '
+                f'{"":<14} '
+                f'{"":<14} '
+                f'{self.format_value(income.type_totals[i_type]["amount"]):>18} '
+                f'{self.format_value(income.type_totals[i_type]["fees"]):>18}'
             )
 
         print(f'{Fore.YELLOW}{"_" * len(header)}')
         print(
-            f'{Fore.YELLOW}{Style.BRIGHT}{"Total":<{self.MAX_SYMBOL_LEN + 11}} {"":<10} '
-            f'{"":<40} {"":<25} {self.format_value(income.totals["amount"]):>13} '
-            f'{self.format_value(income.totals["fees"]):>13}{Style.NORMAL}'
+            f'{Fore.YELLOW}{Style.BRIGHT}{"Total":<{self.MAX_SYMBOL_LEN}} '
+            f'{"":<25} '
+            f'{"":<40} '
+            f'{"":<14} '
+            f'{"":<14} '
+            f'{self.format_value(income.totals["amount"]):>18} '
+            f'{self.format_value(income.totals["fees"]):>18}{Style.NORMAL}'
         )
 
     def _price_data(self, price_report: Dict[AssetSymbol, Dict[Date, VaPriceReport]]) -> None:
@@ -471,8 +547,9 @@ class ReportLog:
                     print(
                         f"{Fore.WHITE}"
                         f'1 {self.format_asset(asset, price_data["name"]):<{self.ASSET_WIDTH}} '
-                        f'{price_data["data_source"]:<16} {self.format_date(date):<10}  '
-                        f'{self.format_value(price_data["price_ccy"]):>13} '
+                        f'{price_data["data_source"]:<16} '
+                        f"{self.format_date(date):<14}  "
+                        f'{self.format_value(price_data["price_ccy"]):>18} '
                         f'{self.format_quantity(price_data["price_btc"]):>25}'
                     )
                 else:
@@ -480,7 +557,8 @@ class ReportLog:
                     print(
                         f"{Fore.WHITE}"
                         f'1 {self.format_asset(asset, price_data["name"]):<{self.ASSET_WIDTH}} '
-                        f'{"":<16} {self.format_date(date):<10} '
+                        f'{"":<16} '
+                        f"{self.format_date(date):<18} "
                         f'{Fore.BLUE}{"Not available*":>13} '
                         f'{"":>25}'
                     )
@@ -492,8 +570,11 @@ class ReportLog:
         print(f"{Fore.CYAN}Current Holdings\n")
 
         header = (
-            f'{"Asset":<{self.ASSET_WIDTH}} {"Quantity":>25} {"Cost + Fees":>16} {"Value":>16} '
-            f'{"Gain":>16}'
+            f'{"Asset":<{self.ASSET_WIDTH}} '
+            f'{"Quantity":<25} '
+            f'{"Cost Basis":>18} '
+            f'{"Market Value":>18} '
+            f'{"Gain or (Loss)":>18}'
         )
 
         print(f"{Fore.YELLOW}{header}")
@@ -503,35 +584,35 @@ class ReportLog:
                 print(
                     f"{Fore.WHITE}"
                     f'{self.format_asset(h, holding["name"]):<{self.ASSET_WIDTH}} '
-                    f'{self.format_quantity(holding["quantity"]):>25} '
-                    f'{self.format_value(holding["cost"]):>16} '
-                    f'{self.format_value(holding["value"]):>16} '
+                    f'{self.format_quantity(holding["quantity"]):<25} '
+                    f'{self.format_value(holding["cost"]):>18} '
+                    f'{self.format_value(holding["value"]):>18} '
                     f'{Fore.RED if holding["gain"] < 0 else Fore.WHITE}'
-                    f'{self.format_value(holding["gain"]):>16}'
+                    f'{self.format_value(holding["gain"]):>18}'
                 )
             else:
                 print(
                     f"{Fore.WHITE}"
                     f'{self.format_asset(h, holding["name"]):<{self.ASSET_WIDTH}} '
-                    f'{self.format_quantity(holding["quantity"]):>25} '
-                    f'{self.format_value(holding["cost"]):>16} '
-                    f'{Fore.BLUE}{"Not available":>16} '
-                    f'{"":>16}'
+                    f'{self.format_quantity(holding["quantity"]):<25} '
+                    f'{self.format_value(holding["cost"]):>18} '
+                    f'{Fore.BLUE}{"Not available":>18} '
+                    f'{"":>18}'
                 )
 
         print(f'{Fore.YELLOW}{"_" * len(header)}')
         print(
             f"{Fore.YELLOW}{Style.BRIGHT}"
-            f'{"Total":<{self.ASSET_WIDTH}} {"":>25} '
-            f'{self.format_value(holdings_report["totals"]["cost"]):>16} '
-            f'{self.format_value(holdings_report["totals"]["value"]):>16} '
+            f'{"Total":<{self.ASSET_WIDTH}} {"":<25} '
+            f'{self.format_value(holdings_report["totals"]["cost"]):>18} '
+            f'{self.format_value(holdings_report["totals"]["value"]):>18} '
             f'{Fore.RED if holdings_report["totals"]["gain"] < 0 else Fore.YELLOW}'
-            f'{self.format_value(holdings_report["totals"]["gain"]):>16}'
+            f'{self.format_value(holdings_report["totals"]["gain"]):>18}{Style.NORMAL}'
         )
 
     @staticmethod
     def format_date(date: Date) -> str:
-        return f"{date:%d/%m/%Y}"
+        return f"{date:{config.date_format}}"
 
     @staticmethod
     def format_date2(date: Date) -> str:
@@ -549,7 +630,9 @@ class ReportLog:
 
     @staticmethod
     def format_value(value: Decimal) -> str:
-        return f"{config.sym()}{value + 0:0,.2f}"
+        if value < 0:
+            return f"({config.sym()}{abs(value):0,.2f})"
+        return f"{config.sym()}{value:0,.2f}"
 
     @staticmethod
     def format_asset(asset: AssetSymbol, name: AssetName) -> str:

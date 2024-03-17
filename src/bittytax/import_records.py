@@ -342,7 +342,7 @@ class TransactionRow:
             t_type=FieldRequired.MANDATORY,
             buy_quantity=FieldRequired.MANDATORY,
             buy_asset=FieldRequired.MANDATORY,
-            buy_value=FieldRequired.NOT_REQUIRED,
+            buy_value=FieldRequired.OPTIONAL,
             sell_quantity=FieldRequired.NOT_REQUIRED,
             sell_asset=FieldRequired.NOT_REQUIRED,
             sell_value=FieldRequired.NOT_REQUIRED,
@@ -546,8 +546,9 @@ class TransactionRow:
             if buy_quantity is None:
                 raise RuntimeError("Missing buy_quantity")
 
-            if t_type is TrType.FORK:
-                buy_value = Decimal(0)
+            # USA - fork is income tax so buy_value should have fair market value
+            # if t_type is TrType.FORK:
+            #    buy_value = Decimal(0)
 
             buy = Buy(t_type, buy_quantity, buy_asset, buy_value)
         if sell_asset:

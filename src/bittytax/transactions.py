@@ -37,7 +37,7 @@ class TransactionHistory:
 
             self.get_all_values(tr)
 
-            # Attribute the fee value (allowable cost) to the buy, the sell or both
+            # The fee value (trading fee) as an allowable cost to the buy, the sell or both
             if tr.fee and tr.fee.disposal and tr.fee.proceeds:
                 if tr.buy and tr.buy.acquisition and tr.sell and tr.sell.disposal:
                     if tr.buy.asset in config.fiat_list:
@@ -60,17 +60,18 @@ class TransactionHistory:
                             tr.buy.fee_fixed = tr.fee.proceeds_fixed
                             tr.sell.fee_value = tr.fee.proceeds - tr.buy.fee_value
                             tr.sell.fee_fixed = tr.fee.proceeds_fixed
-                elif tr.buy and tr.buy.acquisition:
-                    tr.buy.fee_value = tr.fee.proceeds
-                    tr.buy.fee_fixed = tr.fee.proceeds_fixed
-                elif tr.sell and tr.sell.disposal:
-                    tr.sell.fee_value = tr.fee.proceeds
-                    tr.sell.fee_fixed = tr.fee.proceeds_fixed
-                else:
-                    # Special case for transfer fees
-                    if config.transfer_fee_allowable_cost:
-                        tr.fee.fee_value = tr.fee.proceeds
-                        tr.fee.fee_fixed = tr.fee.proceeds_fixed
+                # USA - transaction fees are NOT an allowable cost
+                # elif tr.buy and tr.buy.acquisition:
+                #    tr.buy.fee_value = tr.fee.proceeds
+                #    tr.buy.fee_fixed = tr.fee.proceeds_fixed
+                # elif tr.sell and tr.sell.disposal:
+                #    tr.sell.fee_value = tr.fee.proceeds
+                #    tr.sell.fee_fixed = tr.fee.proceeds_fixed
+                # else:
+                #    # Special case for transfer fees
+                #    if config.transfer_fee_allowable_cost:
+                #        tr.fee.fee_value = tr.fee.proceeds
+                #        tr.fee.fee_fixed = tr.fee.proceeds_fixed
 
             if tr.t_type is not TrType.LOST:
                 if tr.buy and (tr.buy.quantity or tr.buy.fee_value):
@@ -247,7 +248,7 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
     def date(self) -> Date:
         return Date(self.timestamp.date())
 
-    def _format_quantity(self) -> str:
+    def format_quantity(self) -> str:
         return f"{self.quantity.normalize():0,f}"
 
     def _format_note(self) -> str:
@@ -305,7 +306,7 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
 
 
 class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
-    ACQUISITION_TYPES = {
+    ACQUISITIONS = {
         TrType.MINING,
         TrType.STAKING,
         TrType.INTEREST,
@@ -328,7 +329,7 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
         buy_value: Optional[Decimal],
     ):
         super().__init__(t_type, buy_asset, buy_quantity)
-        self.acquisition = bool(self.t_type in self.ACQUISITION_TYPES)
+        self.acquisition = bool(self.t_type in self.ACQUISITIONS)
         self.cost = None
         self.cost_fixed: FixedValue = FixedValue(False)
 
@@ -412,7 +413,7 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
             f"{self.name().upper()}{'*' if not self.acquisition else ''} "
             f"{self.t_type.value}"
             f"{Style.BRIGHT if quantity_bold else ''} "
-            f"{self._format_quantity()} "
+            f"{self.format_quantity()} "
             f"{self.asset}"
             f"{Style.NORMAL if quantity_bold else ''}"
             f"{self._format_cost()}"
@@ -429,7 +430,7 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
 
 
 class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
-    DISPOSAL_TYPES = {
+    DISPOSALS = {
         TrType.SPEND,
         TrType.GIFT_SENT,
         TrType.GIFT_SPOUSE,
@@ -446,7 +447,7 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
         sell_value: Optional[Decimal],
     ):
         super().__init__(t_type, sell_asset, sell_quantity)
-        self.disposal = bool(self.t_type in self.DISPOSAL_TYPES)
+        self.disposal = bool(self.t_type in self.DISPOSALS)
         self.proceeds = None
         self.proceeds_fixed: FixedValue = FixedValue(False)
 
@@ -530,7 +531,7 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
             f"{self.name().upper()}{'*' if not self.disposal else ''} "
             f"{self.t_type.value}"
             f"{Style.BRIGHT if quantity_bold else ''} "
-            f"{self._format_quantity()} "
+            f"{self.format_quantity()} "
             f"{self.asset}"
             f"{Style.NORMAL if quantity_bold else ''}"
             f"{self._format_proceeds()}"

@@ -1,11 +1,7 @@
 <div id="cover-page">
     <img src="{{TEMPLATE_PATH}}/img/BittyTax300dpi.png" class="logo">
     <h1>Cryptoasset Accounting Report</h1>
-    {% if args.tax_rules in TAX_RULES_UK_COMPANY %}
-        <h2>UK Company Tax Rules</h2>
-    {% else %}
-        <h2>UK Individual Tax Rules</h2>
-    {% endif %}
+    <h2>US Individual Tax Rules</h2>
     {% if args.tax_year %}
         <h3>Tax Year: {{config.format_tax_year(args.tax_year)}}</h3>
     {% else %}

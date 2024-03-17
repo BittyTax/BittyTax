@@ -31,9 +31,10 @@ class Config:
     DATA_SOURCE_CRYPTO = ["CryptoCompare", "CoinGecko"]
 
     DEFAULT_CONFIG = {
-        "local_currency": "GBP",
-        "local_timezone": "Europe/London",
-        "date_is_day_first": True,
+        "local_currency": "USD",
+        "local_timezone": "America/New_York",
+        "date_is_day_first": False,
+        "default_tax_rules": "US_INDIVIDUAL",
         "fiat_list": FIAT_LIST,
         "crypto_list": CRYPTO_LIST,
         "trade_asset_type": TRADE_ASSET_TYPE_PRIORITY,
@@ -43,8 +44,8 @@ class Config:
         "transfers_include": False,
         "transfer_fee_disposal": True,
         "transfer_fee_allowable_cost": False,
-        "fiat_income": False,
-        "lost_buyback": True,
+        "fiat_income": True,
+        "lost_buyback": False,
         "large_data": False,
         "classic_report": False,
         "data_source_select": {},
@@ -58,8 +59,10 @@ class Config:
 
     def __init__(self) -> None:
         self.debug = False
-        self.start_of_year_month = 4
-        self.start_of_year_day = 6
+        self.start_of_year_month = 1
+        self.start_of_year_day = 1
+        # self.date_format = "%m/%d/%Y"
+        self.date_format = "%b %-d, %Y"
 
         if not os.path.exists(BITTYTAX_PATH):
             os.mkdir(BITTYTAX_PATH)

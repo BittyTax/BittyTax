@@ -2,10 +2,10 @@
 <table repeat="1" width="100%" class="asset-table">
     <tr>
         <th align="left">Asset</th>
-        <th align="right">Quantity</th>
-        <th align="right">Cost (inc. fees) </th>
-        <th align="right">Value</th>
-        <th align="right">Gain</th>
+        <th align="left">Quantity</th>
+        <th align="right">Cost Basis</th>
+        <th align="right">Market Value</th>
+        <th align="right">Gain or (Loss)</th>
     </tr>
     {% for h in holdings_report['holdings']|sort %}
         <tr>
@@ -14,7 +14,7 @@
             {% else %}
                 <td>{{h}}</td>
             {% endif %}
-            <td align="right">{{holdings_report['holdings'][h]['quantity']|quantityfilter}}</td>
+            <td align="left">{{holdings_report['holdings'][h]['quantity']|quantityfilter}}</td>
             <td align="right">{{holdings_report['holdings'][h]['cost']|valuefilter}}</td>
             {% if holdings_report['holdings'][h]['value'] is not none %}
                 <td align="right">{{holdings_report['holdings'][h]['value']|valuefilter}}</td>
@@ -33,7 +33,7 @@
 <table class="total-table">
     <tr>
         <td align="left">Total</td>
-        <td align="right"></td>
+        <td align="left""></td>
         <td align="right">{{holdings_report['totals']['cost']|valuefilter}}</td>
         <td align="right">{{holdings_report['totals']['value']|valuefilter}}</td>
         {% if holdings_report['totals']['gain'] >= 0 %}

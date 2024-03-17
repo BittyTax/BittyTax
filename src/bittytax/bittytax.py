@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Cryptocurrency tax calculator for UK tax rules
+# Cryptocurrency tax calculator for US tax rules
 # (c) Nano Nano Ltd 2019
 
 import argparse
@@ -15,7 +15,13 @@ from colorama import Fore
 from .audit import AuditRecords
 from .bt_types import AssetSymbol, Year
 from .config import config
-from .constants import ERROR, TAX_RULES_UK_COMPANY, TAX_RULES_UK_INDIVIDUAL, WARNING
+from .constants import (
+    ERROR,
+    TAX_RULES_UK_COMPANY,
+    TAX_RULES_UK_INDIVIDUAL,
+    TAX_RULES_US_INDIVIDUAL,
+    WARNING,
+)
 from .exceptions import ImportFailureError
 from .export_records import ExportRecords
 from .holdings import Holdings
@@ -61,13 +67,13 @@ def main() -> None:
     )
     parser.add_argument(
         "--taxrules",
-        choices=[TAX_RULES_UK_INDIVIDUAL] + TAX_RULES_UK_COMPANY,
-        metavar="{UK_INDIVIDUAL, UK_COMPANY_XXX} "
+        choices=[TAX_RULES_UK_INDIVIDUAL] + TAX_RULES_UK_COMPANY + [TAX_RULES_US_INDIVIDUAL],
+        metavar="{UK_INDIVIDUAL, US_INDIVIDUAL, UK_COMPANY_XXX} "
         "where XXX is the month which starts the financial year, i.e. JAN, FEB, etc.",
-        default=TAX_RULES_UK_INDIVIDUAL,
+        default=config.default_tax_rules,
         type=str.upper,
         dest="tax_rules",
-        help="specify tax rules to use, default: UK_INDIVIDUAL",
+        help=f"specify tax rules to use, default: {config.default_tax_rules}",
     )
     parser.add_argument(
         "--audit",
@@ -113,6 +119,9 @@ def main() -> None:
         print(f"{Fore.GREEN}system: {platform.system()}, release: {platform.release()}")
         config.output_config(sys.stdout)
 
+    if args.tax_rules in [TAX_RULES_UK_INDIVIDUAL] + TAX_RULES_UK_COMPANY:
+        parser.exit(message=f"{ERROR} {args.tax_rules} not supported in this version\n")
+
     if args.tax_rules in TAX_RULES_UK_COMPANY:
         config.start_of_year_month = TAX_RULES_UK_COMPANY.index(args.tax_rules) + 1
         config.start_of_year_day = 1
@@ -137,7 +146,13 @@ def main() -> None:
             ReportPdf(parser.prog, args, audit)
     else:
         try:
-            tax, value_asset = _do_tax(transaction_records, args.tax_rules, args.skip_integrity)
+            tax, value_asset = _do_tax(transaction_records, args.tax_rules)
+            if tax.match_missing:
+                parser.exit(
+                    message=f"{ERROR} Unmatched disposal(s) detected, "
+                    f"turn on logging [-d] to see transactions\n"
+                )
+
             if not args.skip_integrity:
                 int_passed = _do_integrity_check(audit, tax.holdings)
                 if not int_passed:
@@ -202,21 +217,30 @@ def _do_import(filename: str) -> List[TransactionRecord]:
 
 
 def _do_tax(
-    transaction_records: List[TransactionRecord], tax_rules: str, skip_integrity_check: bool
+    transaction_records: List[TransactionRecord], tax_rules: str
 ) -> Tuple[TaxCalculator, ValueAsset]:
     value_asset = ValueAsset()
     transaction_history = TransactionHistory(transaction_records, value_asset)
 
     tax = TaxCalculator(transaction_history.transactions, tax_rules)
-    tax.pool_same_day()
-    tax.match_sell(tax.DISPOSAL_SAME_DAY)
 
-    if tax_rules == TAX_RULES_UK_INDIVIDUAL:
-        tax.match_buyback(tax.DISPOSAL_BED_AND_BREAKFAST)
-    elif tax_rules in TAX_RULES_UK_COMPANY:
-        tax.match_sell(tax.DISPOSAL_TEN_DAY)
+    # UK tax rules disabled
+    #
+    # tax.pool_same_day()
+    # tax.match_sell(tax.DISPOSAL_SAME_DAY)
+    #
+    # if tax_rules == TAX_RULES_UK_INDIVIDUAL:
+    #    tax.match_buy(tax.DISPOSAL_BED_AND_BREAKFAST)
+    # elif tax_rules in TAX_RULES_UK_COMPANY:
+    #    tax.match_sell(tax.DISPOSAL_TEN_DAY)
+    #
+    # tax.process_section104(skip_integrity_check)
 
-    tax.process_section104(skip_integrity_check)
+    tax.order_transactions()
+    tax.fifo_match()
+    if not tax.match_missing:
+        tax.process_holdings()
+
     return tax, value_asset
 
 
@@ -228,7 +252,7 @@ def _do_integrity_check(audit: AuditRecords, holdings: Dict[AssetSymbol, Holding
     else:
         transfer_mismatch = False
 
-    pools_match = audit.compare_pools(holdings)
+    pools_match = audit.compare_holdings(holdings)
 
     if not pools_match or transfer_mismatch:
         int_passed = False
@@ -243,8 +267,8 @@ def _do_integrity_check(audit: AuditRecords, holdings: Dict[AssetSymbol, Holding
     elif not pools_match:
         if not config.transfers_include:
             print(
-                f"{WARNING} Integrity check failed: audit does not match section 104 pools, "
-                f"please check Withdrawals and Deposits for missing fees"
+                f"{WARNING} Integrity check failed: audit does not match holdings, "
+                f"please check Withdrawals and Deposits are correct, and have correct fees"
             )
         else:
             print(f"{ERROR} Integrity check failed: audit does not match section 104 pools")

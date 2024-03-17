@@ -19,7 +19,7 @@ from .record import TransactionRecord
 class ComparePoolFail(TypedDict):  # pylint: disable=too-few-public-methods
     asset: AssetSymbol
     audit_tot: Decimal
-    s104_tot: Optional[Decimal]
+    holding_tot: Optional[Decimal]
 
 
 class AuditRecords:
@@ -121,7 +121,7 @@ class AuditRecords:
             if not self.wallets[wallet]:
                 self.wallets.pop(wallet)
 
-    def compare_pools(self, holdings: Dict[AssetSymbol, Holdings]) -> bool:
+    def compare_holdings(self, holdings: Dict[AssetSymbol, Holdings]) -> bool:
         passed = True
         for asset in sorted(self.totals):
             if asset in config.fiat_list:
@@ -130,11 +130,11 @@ class AuditRecords:
             if asset in holdings:
                 if self.totals[asset] == holdings[asset].quantity:
                     if config.debug:
-                        print(f"{Fore.GREEN}check pool: {asset} (ok)")
+                        print(f"{Fore.GREEN}check holding: {asset} (ok)")
                 else:
                     if config.debug:
                         print(
-                            f"{Fore.RED}check pool: {asset}"
+                            f"{Fore.RED}check holding: {asset}"
                             f"{(holdings[asset].quantity - self.totals[asset]).normalize():+0,f} "
                             f"(mismatch)"
                         )
@@ -143,7 +143,7 @@ class AuditRecords:
                     passed = False
             else:
                 if config.debug:
-                    print(f"{Fore.RED}check pool: {asset} (missing)")
+                    print(f"{Fore.RED}check holding: {asset} (missing)")
 
                 self._log_failure(asset, self.totals[asset], None)
                 passed = False
@@ -151,23 +151,27 @@ class AuditRecords:
         return passed
 
     def _log_failure(
-        self, asset: AssetSymbol, audit_tot: Decimal, s104_tot: Optional[Decimal]
+        self, asset: AssetSymbol, audit_tot: Decimal, holding_tot: Optional[Decimal]
     ) -> None:
-        failure: ComparePoolFail = {"asset": asset, "audit_tot": audit_tot, "s104_tot": s104_tot}
+        failure: ComparePoolFail = {
+            "asset": asset,
+            "audit_tot": audit_tot,
+            "holding_tot": holding_tot,
+        }
         self.failures.append(failure)
 
     def report_failures(self) -> None:
         print(
             f"\n{Fore.YELLOW}"
-            f'{"Asset":<8} {"Audit Balance":>25} {"Section 104 Pool":>25} {"Difference":>25}'
+            f'{"Asset":<8} {"Audit Balance":>25} {"Holding":>25} {"Difference":>25}'
         )
 
         for failure in self.failures:
-            if failure["s104_tot"] is not None:
+            if failure["holding_tot"] is not None:
                 print(
                     f'{Fore.WHITE}{failure["asset"]:<8} {failure["audit_tot"].normalize():25,f} '
-                    f'{failure["s104_tot"].normalize():25,f}'
-                    f'{Fore.RED}{(failure["s104_tot"] - failure["audit_tot"]).normalize():+25,f}'
+                    f'{failure["holding_tot"].normalize():25,f} '
+                    f'{Fore.RED}{(failure["holding_tot"] - failure["audit_tot"]).normalize():+25,f}'
                 )
             else:
                 print(
