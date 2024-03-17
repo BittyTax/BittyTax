@@ -76,14 +76,25 @@ def parse_binance_us(
                 wallet=WALLET,
             )
         elif row_dict["Operation"] == "Staking Rewards":
-            data_row.t_record = TransactionOutRecord(
-                TrType.STAKING,
-                data_row.timestamp,
-                buy_quantity=Decimal(row_dict["Realized_Amount_For_Primary_Asset"]),
-                buy_asset=row_dict["Primary_Asset"],
-                buy_value=primary_value,
-                wallet=WALLET,
-            )
+            if Decimal(row_dict["Realized_Amount_For_Primary_Asset"]) > 0:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.STAKING,
+                    data_row.timestamp,
+                    buy_quantity=Decimal(row_dict["Realized_Amount_For_Primary_Asset"]),
+                    buy_asset=row_dict["Primary_Asset"],
+                    buy_value=primary_value,
+                    wallet=WALLET,
+                )
+            else:
+                # Negative amount is a service fee
+                data_row.t_record = TransactionOutRecord(
+                    TrType.SPEND,
+                    data_row.timestamp,
+                    sell_quantity=abs(Decimal(row_dict["Realized_Amount_For_Primary_Asset"])),
+                    sell_asset=row_dict["Primary_Asset"],
+                    sell_value=primary_value,
+                    wallet=WALLET,
+                )
         else:
             raise UnexpectedTypeError(
                 parser.in_header.index("Operation"), "Operation", row_dict["Operation"]
@@ -107,6 +118,7 @@ def parse_binance_us(
         if not row_dict["Realized_Amount_For_Quote_Asset"] and row_dict["Quote_Asset"] in (
             "USD",
             "USDT",
+            "BUSD",
         ):
             quote_amount = row_dict["Realized_Amount_For_Quote_Asset_In_USD_Value"]
 
