@@ -224,18 +224,6 @@ def _do_tax(
 
     tax = TaxCalculator(transaction_history.transactions, tax_rules)
 
-    # UK tax rules disabled
-    #
-    # tax.pool_same_day()
-    # tax.match_sell(tax.DISPOSAL_SAME_DAY)
-    #
-    # if tax_rules == TAX_RULES_UK_INDIVIDUAL:
-    #    tax.match_buy(tax.DISPOSAL_BED_AND_BREAKFAST)
-    # elif tax_rules in TAX_RULES_UK_COMPANY:
-    #    tax.match_sell(tax.DISPOSAL_TEN_DAY)
-    #
-    # tax.process_section104(skip_integrity_check)
-
     tax.order_transactions()
     tax.fifo_match()
     if not tax.match_missing:
