@@ -3,6 +3,7 @@
 
 import datetime
 import os
+import platform
 import sys
 from typing import Any, TextIO
 
@@ -62,7 +63,11 @@ class Config:
         self.start_of_year_month = 1
         self.start_of_year_day = 1
         # self.date_format = "%m/%d/%Y"
-        self.date_format = "%b %-d, %Y"
+
+        if platform.system() == "Windows":
+            self.date_format = "%b %#d, %Y"
+        else:
+            self.date_format = "%b %-d, %Y"
 
         if not os.path.exists(BITTYTAX_PATH):
             os.mkdir(BITTYTAX_PATH)
