@@ -61,17 +61,6 @@ class TransactionHistory:
                             tr.sell.fee_value = tr.fee.proceeds - tr.buy.fee_value
                             tr.sell.fee_fixed = tr.fee.proceeds_fixed
                 # USA - transaction fees are NOT an allowable cost
-                # elif tr.buy and tr.buy.acquisition:
-                #    tr.buy.fee_value = tr.fee.proceeds
-                #    tr.buy.fee_fixed = tr.fee.proceeds_fixed
-                # elif tr.sell and tr.sell.disposal:
-                #    tr.sell.fee_value = tr.fee.proceeds
-                #    tr.sell.fee_fixed = tr.fee.proceeds_fixed
-                # else:
-                #    # Special case for transfer fees
-                #    if config.transfer_fee_allowable_cost:
-                #        tr.fee.fee_value = tr.fee.proceeds
-                #        tr.fee.fee_fixed = tr.fee.proceeds_fixed
 
             if tr.t_type is not TrType.LOST:
                 if tr.buy and (tr.buy.quantity or tr.buy.fee_value):
