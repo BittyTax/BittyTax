@@ -166,7 +166,7 @@ class AuditRecords:
             if failure["s104_tot"] is not None:
                 print(
                     f'{Fore.WHITE}{failure["asset"]:<8} {failure["audit_tot"].normalize():25,f} '
-                    f'{failure["s104_tot"].normalize():25,f}'
+                    f'{failure["s104_tot"].normalize():25,f} '
                     f'{Fore.RED}{(failure["s104_tot"] - failure["audit_tot"]).normalize():+25,f}'
                 )
             else:
