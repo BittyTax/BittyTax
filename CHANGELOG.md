@@ -41,6 +41,7 @@
 - Config: added local_timezone and date_is_day_first parameters.
 - Accounting tool: new transaction types added. Fork, Referral, Cashback and Fee-Rebate.
 - Kraken parser: added "dividend" type.
+- Bitpanda parser: added new export format. ([#352](https://github.com/BittyTax/BittyTax/issues/352))
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
