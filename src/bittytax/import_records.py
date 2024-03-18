@@ -27,6 +27,7 @@ from .exceptions import (
     UnexpectedTransactionTypeError,
 )
 from .record import TransactionRecord
+from .tax import TaxCalculator
 from .transactions import Buy, Sell
 
 
@@ -546,9 +547,9 @@ class TransactionRow:
             if buy_quantity is None:
                 raise RuntimeError("Missing buy_quantity")
 
-            # USA - fork is income tax so buy_value should have fair market value
-            # if t_type is TrType.FORK:
-            #    buy_value = Decimal(0)
+            if t_type is TrType.FORK:
+                if t_type not in TaxCalculator.INCOME_TYPES:
+                    buy_value = Decimal(0)
 
             buy = Buy(t_type, buy_quantity, buy_asset, buy_value)
         if sell_asset:
@@ -556,8 +557,9 @@ class TransactionRow:
                 raise RuntimeError("Missing sell_quantity")
 
             if t_type is TrType.LOST:
-                if sell_value is None:
-                    sell_value = Decimal(0)
+                if t_type not in TaxCalculator.NO_GAIN_NO_LOSS_TYPES:
+                    if sell_value is None:
+                        sell_value = Decimal(0)
 
                 sell = Sell(t_type, sell_quantity, sell_asset, sell_value)
                 if config.lost_buyback:
