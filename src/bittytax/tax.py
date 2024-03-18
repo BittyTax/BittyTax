@@ -120,7 +120,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         TrType.FEE_REBATE,
     )
 
-    NO_GAIN_NO_LOSS_TYPES = (TrType.GIFT_SENT, TrType.GIFT_SPOUSE, TrType.CHARITY_SENT)
+    NO_GAIN_NO_LOSS_TYPES = (TrType.GIFT_SENT, TrType.GIFT_SPOUSE, TrType.CHARITY_SENT, TrType.LOST)
 
     # These transactions are except from the "same day" & "b&b" rule
     NO_MATCH_TYPES = (TrType.GIFT_SPOUSE, TrType.CHARITY_SENT, TrType.LOST)
