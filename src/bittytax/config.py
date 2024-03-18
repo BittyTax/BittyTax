@@ -39,7 +39,7 @@ class Config:
         "fiat_list": FIAT_LIST,
         "crypto_list": CRYPTO_LIST,
         "trade_asset_type": TRADE_ASSET_TYPE_PRIORITY,
-        "trade_allowable_cost_type": TRADE_ALLOWABLE_COST_SPLIT,
+        "trade_allowable_cost_type": TRADE_ASSET_TYPE_BUY,
         "audit_hide_empty": False,
         "show_empty_wallets": False,
         "transfers_include": False,

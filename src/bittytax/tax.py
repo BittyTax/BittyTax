@@ -116,6 +116,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         TrType.FORK,
         TrType.AIRDROP,
         TrType.REFERRAL,
+        TrType.CASHBACK,
+        TrType.FEE_REBATE,
     )
 
     NO_GAIN_NO_LOSS_TYPES = (TrType.GIFT_SENT, TrType.GIFT_SPOUSE, TrType.CHARITY_SENT)
