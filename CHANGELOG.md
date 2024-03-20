@@ -42,6 +42,7 @@
 - Accounting tool: new transaction types added. Fork, Referral, Cashback and Fee-Rebate.
 - Kraken parser: added "dividend" type.
 - Bitpanda parser: added new export format. ([#352](https://github.com/BittyTax/BittyTax/issues/352))
+- Koinly parser: added support for USD and EUR exports. ([#353](https://github.com/BittyTax/BittyTax/issues/353))
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
