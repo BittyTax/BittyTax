@@ -1,15 +1,20 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2023
 
-import json
+import sys
 from decimal import Decimal
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, List, Union
 
+from colorama import Fore
 from typing_extensions import Unpack
 
 from ...bt_types import TrType, UnmappedType
+from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
-from ..exceptions import UnexpectedTypeError
+from ..exceptions import (
+    DataRowError,
+    UnexpectedTypeError,
+)
 from ..out_record import TransactionOutRecord
 from ..output_csv import OutputBase
 
@@ -26,21 +31,90 @@ STAKETAX_MAPPING = {
     "LP_WITHDRAW": TrType.TRADE,
 }
 
+STANDARDIZE_ASSET_TERRA = {
+    "LUNA": "LUNC",
+    "UST": "USTC",
+    "AUD": "AUDC",
+    "CAD": "CADC",
+    "CHF": "CHFC",
+    "CNY": "CNYC",
+    "DKK": "DKKC",
+    "EUR": "EURC",
+    "GBP": "GBPC",
+    "HKD": "HKDC",
+    "IDR": "IDRC",
+    "INR": "INRC",
+    "JPY": "JPYC",
+    "KRT": "KRTC",
+    "MNT": "MNTC",
+    "MYR": "MYRC",
+    "NOK": "NOKC",
+    "PHP": "PHPC",
+    "SDR": "SDRC",
+    "SEK": "SEKC",
+    "SGD": "SGDC",
+    "THB": "THBC",
+    "TWD": "TWDC",
+}
+
 
 def parse_staketax_default(
-    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    for row_index, data_row in enumerate(data_rows):
+        if row_index == 1:
+            row_dict = data_row.row_dict
+            if parser.p_type == ParserType.ACCOUNTING:
+                parser.worksheet_name = (
+                    "StakeTax " + row_dict["exchange"].replace("_blockchain", "").capitalize()
+                )
+            else:
+                parser.worksheet_name = (
+                    "StakeTax " + row_dict["Wallet"][: row_dict["Wallet"].find("-")]
+                )
+        if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
+            sys.stderr.write(
+                f"{Fore.YELLOW}conv: "
+                f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
+            )
+
+        if data_row.parsed:
+            continue
+
+        try:
+            if parser.p_type == ParserType.ACCOUNTING:
+                parse_staketax_row(parser, data_row)
+            else:
+                parse_bittytax_row(parser, data_row)
+        except DataRowError as e:
+            data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
+
+
+def parse_staketax_row(
+    parser: DataParser,
+    data_row: "DataRow",
 ) -> None:
     row_dict = data_row.row_dict
     if row_dict["timestamp"]:
         data_row.timestamp = DataParser.parse_timestamp(row_dict["timestamp"])
+    data_row.parsed = True
 
+    # Ignore known unhandled types.
     if row_dict["tx_type"].startswith("_"):
-        t_type: Union[TrType, UnmappedType] = UnmappedType(row_dict["tx_type"])
+        return
+
+    if row_dict["tx_type"] in STAKETAX_MAPPING:
+        t_type = STAKETAX_MAPPING[row_dict["tx_type"]]
     else:
-        if row_dict["tx_type"] in STAKETAX_MAPPING:
-            t_type = STAKETAX_MAPPING[row_dict["tx_type"]]
-        else:
-            t_type = UnmappedType(f'_{row_dict["tx_type"]}')
+        t_type = UnmappedType(f'_{row_dict["tx_type"]}')
 
     if row_dict["received_amount"]:
         buy_quantity = Decimal(row_dict["received_amount"])
@@ -67,6 +141,10 @@ def parse_staketax_default(
                 parser.in_header.index("tx_type"), "tx_type", row_dict["tx_type"]
             )
 
+    buy_asset = row_dict["received_currency"]
+    sell_asset = row_dict["sent_currency"]
+    fee_asset = row_dict["fee_currency"]
+
     # Add a dummy sell_quantity if fee is on it's own
     if fee_quantity is not None and (buy_quantity is None and sell_quantity is None):
         sell_quantity = Decimal(0)
@@ -74,21 +152,24 @@ def parse_staketax_default(
     else:
         sell_asset = row_dict["sent_currency"]
 
+    # Convert assets to a recognized token name.
+    if row_dict["Wallet"].find("Terra") > -1:
+        for wallet_asset, asset in STANDARDIZE_ASSET_TERRA.items():
+            buy_asset = buy_asset.replace(wallet_asset, asset)
+            sell_asset = sell_asset.replace(wallet_asset, asset)
+            fee_asset = fee_asset.replace(wallet_asset, asset)
+
     data_row.t_record = TransactionOutRecord(
         t_type,
         data_row.timestamp,
         buy_quantity=buy_quantity,
-        buy_asset=row_dict["received_currency"],
+        buy_asset=buy_asset,
         sell_quantity=sell_quantity,
         sell_asset=sell_asset,
         fee_quantity=fee_quantity,
-        fee_asset=row_dict["fee_currency"],
+        fee_asset=fee_asset,
         wallet=_get_wallet(row_dict["exchange"], row_dict["wallet_address"]),
         note=row_dict["comment"],
-    )
-
-    parser.worksheet_name = (
-        "StakeTax " + row_dict["exchange"].replace("_blockchain", "").capitalize()
     )
 
 
@@ -96,12 +177,14 @@ def _get_wallet(exchange: str, wallet_address: str) -> str:
     return f'{exchange.replace("_blockchain", "").capitalize()}-{wallet_address[0:16]}'
 
 
-def parse_staketax_bittytax(
-    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+def parse_bittytax_row(
+    parser: DataParser,
+    data_row: "DataRow",
 ) -> None:
     row_dict = data_row.row_dict
     if row_dict["Timestamp"]:
         data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
+    data_row.parsed = True
 
     try:
         t_type: Union[TrType, UnmappedType] = TrType(row_dict["Type"])
@@ -123,15 +206,26 @@ def parse_staketax_bittytax(
     else:
         fee_quantity = None
 
+    buy_asset = row_dict["Buy Asset"]
+    sell_asset = row_dict["Sell Asset"]
+    fee_asset = row_dict["Fee Asset"]
+
+    # Convert assets to a recognized token name.
+    if row_dict["Wallet"].find("Terra") > -1:
+        for wallet_asset, asset in STANDARDIZE_ASSET_TERRA.items():
+            buy_asset = buy_asset.replace(wallet_asset, asset)
+            sell_asset = sell_asset.replace(wallet_asset, asset)
+            fee_asset = fee_asset.replace(wallet_asset, asset)
+
     data_row.t_record = TransactionOutRecord(
         t_type,
         data_row.timestamp,
         buy_quantity=buy_quantity,
-        buy_asset=row_dict["Buy Asset"],
+        buy_asset=buy_asset,
         sell_quantity=sell_quantity,
-        sell_asset=row_dict["Sell Asset"],
+        sell_asset=sell_asset,
         fee_quantity=fee_quantity,
-        fee_asset=row_dict["Fee Asset"],
+        fee_asset=fee_asset,
         wallet=row_dict["Wallet"],
         note=row_dict["Note"],
     )
@@ -140,9 +234,6 @@ def parse_staketax_bittytax(
     if len(parser.in_header) > len(OutputBase.BITTYTAX_OUT_HEADER):
         del parser.in_header[0 : len(OutputBase.BITTYTAX_OUT_HEADER)]
     del data_row.row[0 : len(OutputBase.BITTYTAX_OUT_HEADER)]
-
-    raw = json.loads(row_dict["Raw Data"])
-    parser.worksheet_name = "StakeTax " + raw["exchange"].replace("_blockchain", "").capitalize()
 
 
 DataParser(
@@ -164,7 +255,7 @@ DataParser(
         "wallet_address",
     ],
     worksheet_name="StakeTax",
-    row_handler=parse_staketax_default,
+    all_handler=parse_staketax_default,
 )
 
 DataParser(
@@ -189,5 +280,5 @@ DataParser(
         "Raw Data",
     ],
     worksheet_name="StakeTax",
-    row_handler=parse_staketax_bittytax,
+    all_handler=parse_staketax_default,
 )
