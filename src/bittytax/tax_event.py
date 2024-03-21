@@ -58,17 +58,16 @@ class TaxEventCapitalGains(TaxEvent):
 
         return self.disposal_type.value
 
-    def a_date(self) -> str:
+    def a_date(self, date_format: Optional[str] = None) -> str:
         if self.acquisition_dates:
             if len(self.acquisition_dates) > 1 and not all(
                 date == self.acquisition_dates[0] for date in self.acquisition_dates
             ):
                 return "VARIOUS"
+            if date_format:
+                return f"{self.acquisition_dates[0]:{date_format}}"
             return f"{self.acquisition_dates[0]:{config.date_format}}"
         return ""
-
-    def description(self) -> str:
-        return f"{self.quantity.normalize():0,f} {self.asset}"
 
     def __str__(self) -> str:
         return (
@@ -104,16 +103,6 @@ class TaxEventNoGainNoLoss(TaxEvent):
 
     def format_disposal(self) -> str:
         return self.disposal_type.value
-
-    def a_date(self) -> str:
-        if self.acquisition_dates:
-            if len(self.acquisition_dates) > 1:
-                return "VARIOUS"
-            return f"{self.acquisition_dates[0]:{config.date_format}}"
-        return ""
-
-    def description(self) -> str:
-        return f"{self.quantity.normalize():0,f} {self.asset}"
 
     def __str__(self) -> str:
         return (

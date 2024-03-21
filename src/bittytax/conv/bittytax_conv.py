@@ -14,7 +14,7 @@ import colorama
 from colorama import Fore
 
 from ..config import config
-from ..constants import FORMAT_CSV, FORMAT_EXCEL, FORMAT_RECAP
+from ..constants import CONV_FORMAT_CSV, CONV_FORMAT_EXCEL, CONV_FORMAT_RECAP
 from ..version import __version__
 from .datafile import DataFile
 from .datamerge import DataMerge
@@ -78,8 +78,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--format",
-        choices=[FORMAT_EXCEL, FORMAT_CSV, FORMAT_RECAP],
-        default=FORMAT_EXCEL,
+        choices=[CONV_FORMAT_EXCEL, CONV_FORMAT_CSV, CONV_FORMAT_RECAP],
+        default=CONV_FORMAT_EXCEL,
         type=str.upper,
         help="specify the output format, default: EXCEL",
     )
@@ -155,7 +155,7 @@ def main() -> None:
     if DataFile.data_files:
         DataMerge.match_merge(DataFile.data_files)
 
-        if args.format == FORMAT_EXCEL:
+        if args.format == CONV_FORMAT_EXCEL:
             output_excel = OutputExcel(parser.prog, DataFile.data_files_ordered, args)
             output_excel.write_excel()
         else:

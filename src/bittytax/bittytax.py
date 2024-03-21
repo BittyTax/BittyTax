@@ -16,6 +16,10 @@ from .audit import AuditRecords
 from .bt_types import AssetSymbol, Year
 from .config import config
 from .constants import (
+    ACCT_FORMAT_F8949,
+    ACCT_FORMAT_PDF,
+    ACCT_FORMAT_TAXACT,
+    ACCT_FORMAT_TURBOTAX,
     ERROR,
     TAX_RULES_UK_COMPANY,
     TAX_RULES_UK_INDIVIDUAL,
@@ -26,6 +30,7 @@ from .exceptions import ImportFailureError
 from .export_records import ExportRecords
 from .holdings import Holdings
 from .import_records import ImportRecords
+from .output_csv import OutputCapitalGainsCsv, OutputTaxAct, OutputTurboTax
 from .price.exceptions import DataSourceError
 from .price.valueasset import ValueAsset
 from .record import TransactionRecord
@@ -100,6 +105,13 @@ def main() -> None:
         help="specify the output filename for the tax report",
     )
     parser.add_argument(
+        "--format",
+        choices=[ACCT_FORMAT_PDF, ACCT_FORMAT_F8949, ACCT_FORMAT_TURBOTAX, ACCT_FORMAT_TAXACT],
+        default=ACCT_FORMAT_PDF,
+        type=str.upper,
+        help="specify the output format, default: PDF",
+    )
+    parser.add_argument(
         "--nopdf",
         action="store_true",
         help="don't output PDF report, output report to terminal only",
@@ -169,14 +181,23 @@ def main() -> None:
         if args.nopdf:
             ReportLog(args, audit, tax.tax_report, value_asset.price_report, tax.holdings_report)
         else:
-            ReportPdf(
-                parser.prog,
-                args,
-                audit,
-                tax.tax_report,
-                value_asset.price_report,
-                tax.holdings_report,
-            )
+            if args.format == ACCT_FORMAT_PDF:
+                ReportPdf(
+                    parser.prog,
+                    args,
+                    audit,
+                    tax.tax_report,
+                    value_asset.price_report,
+                    tax.holdings_report,
+                )
+            elif args.format == ACCT_FORMAT_TURBOTAX:
+                output_csv: OutputCapitalGainsCsv = OutputTurboTax(
+                    args.output_filename, tax.tax_report
+                )
+                output_csv.write_csv()
+            elif args.format == ACCT_FORMAT_TAXACT:
+                output_csv = OutputTaxAct(args.output_filename, tax.tax_report)
+                output_csv.write_csv()
 
 
 def _validate_year(value: str) -> int:

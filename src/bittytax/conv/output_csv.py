@@ -14,7 +14,7 @@ from colorama import Fore
 
 from ..bt_types import TrType, UnmappedType
 from ..config import config
-from ..constants import FORMAT_RECAP
+from ..constants import CONV_FORMAT_RECAP
 from .out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -111,13 +111,13 @@ class OutputCsv(OutputBase):
         self.append_raw_data = args.append
 
     def out_header(self) -> List[str]:
-        if self.csv_format == FORMAT_RECAP:
+        if self.csv_format == CONV_FORMAT_RECAP:
             return self.RECAP_OUT_HEADER
 
         return self.BITTYTAX_OUT_HEADER
 
     def in_header(self, in_header: List[str]) -> List[str]:
-        if self.csv_format == FORMAT_RECAP:
+        if self.csv_format == CONV_FORMAT_RECAP:
             return [name if name not in self.out_header() else name + "_" for name in in_header]
 
         return in_header
@@ -161,7 +161,7 @@ class OutputCsv(OutputBase):
                     writer.writerow(self._to_csv(data_row.t_record))
 
     def _to_csv(self, t_record: TransactionOutRecord) -> List[str]:
-        if self.csv_format == FORMAT_RECAP:
+        if self.csv_format == CONV_FORMAT_RECAP:
             return self._to_recap_csv(t_record)
 
         return self._to_bittytax_csv(t_record)
