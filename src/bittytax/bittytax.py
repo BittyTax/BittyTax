@@ -19,7 +19,8 @@ from .constants import (
     ACCT_FORMAT_F8949,
     ACCT_FORMAT_PDF,
     ACCT_FORMAT_TAXACT,
-    ACCT_FORMAT_TURBOTAX,
+    ACCT_FORMAT_TURBOTAX_CSV,
+    ACCT_FORMAT_TURBOTAX_TXF,
     ERROR,
     TAX_RULES_UK_COMPANY,
     TAX_RULES_UK_INDIVIDUAL,
@@ -30,7 +31,9 @@ from .exceptions import ImportFailureError
 from .export_records import ExportRecords
 from .holdings import Holdings
 from .import_records import ImportRecords
-from .output_csv import OutputCapitalGainsCsv, OutputTaxAct, OutputTurboTax
+from .output_csv import OutputCapitalGainsCsv, OutputTaxAct, OutputTurboTaxCsv
+from .output_f8949 import OutputF8949
+from .output_txf import OutputTurboTaxTxf
 from .price.exceptions import DataSourceError
 from .price.valueasset import ValueAsset
 from .record import TransactionRecord
@@ -106,7 +109,13 @@ def main() -> None:
     )
     parser.add_argument(
         "--format",
-        choices=[ACCT_FORMAT_PDF, ACCT_FORMAT_F8949, ACCT_FORMAT_TURBOTAX, ACCT_FORMAT_TAXACT],
+        choices=[
+            ACCT_FORMAT_PDF,
+            ACCT_FORMAT_F8949,
+            ACCT_FORMAT_TURBOTAX_CSV,
+            ACCT_FORMAT_TURBOTAX_TXF,
+            ACCT_FORMAT_TAXACT,
+        ],
         default=ACCT_FORMAT_PDF,
         type=str.upper,
         help="specify the output format, default: PDF",
@@ -190,11 +199,17 @@ def main() -> None:
                     value_asset.price_report,
                     tax.holdings_report,
                 )
-            elif args.format == ACCT_FORMAT_TURBOTAX:
-                output_csv: OutputCapitalGainsCsv = OutputTurboTax(
+            elif args.format == ACCT_FORMAT_F8949:
+                output_pdf = OutputF8949(args.output_filename, tax.tax_report)
+                output_pdf.write_pdf()
+            elif args.format == ACCT_FORMAT_TURBOTAX_CSV:
+                output_csv: OutputCapitalGainsCsv = OutputTurboTaxCsv(
                     args.output_filename, tax.tax_report
                 )
                 output_csv.write_csv()
+            elif args.format == ACCT_FORMAT_TURBOTAX_TXF:
+                output_txf = OutputTurboTaxTxf(args.output_filename, tax.tax_report)
+                output_txf.write_txf()
             elif args.format == ACCT_FORMAT_TAXACT:
                 output_csv = OutputTaxAct(args.output_filename, tax.tax_report)
                 output_csv.write_csv()

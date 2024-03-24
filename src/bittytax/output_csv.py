@@ -5,20 +5,14 @@ import csv
 import os
 import sys
 from abc import ABC, abstractmethod
-from enum import Enum
 from typing import Dict, List
 
 import _csv
 from colorama import Fore
 
-from .bt_types import Year
+from .bt_types import DisposalType, Year
 from .tax import TaxReportRecord
 from .tax_event import TaxEventCapitalGains
-
-
-class HoldingPeriod(Enum):
-    SHORT = "SHORT"
-    LONG = "LONG"
 
 
 class OutputCapitalGainsCsv(ABC):
@@ -79,46 +73,48 @@ class OutputCapitalGainsCsv(ABC):
         for tax_year in sorted(self.tax_report):
             for asset in sorted(self.tax_report[tax_year]["CapitalGains"].short_term):
                 for te in self.tax_report[tax_year]["CapitalGains"].short_term[asset]:
-                    writer.writerow(self._to_csv(te, HoldingPeriod.SHORT))
+                    writer.writerow(self._to_csv(te))
             for asset in sorted(self.tax_report[tax_year]["CapitalGains"].long_term):
                 for te in self.tax_report[tax_year]["CapitalGains"].long_term[asset]:
-                    writer.writerow(self._to_csv(te, HoldingPeriod.LONG))
+                    writer.writerow(self._to_csv(te))
 
     @staticmethod
     @abstractmethod
-    def _to_csv(te: TaxEventCapitalGains, _holding_period: HoldingPeriod) -> List[str]:
+    def _to_csv(te: TaxEventCapitalGains) -> List[str]:
         pass
 
 
-class OutputTurboTax(OutputCapitalGainsCsv):
-    output_format = "TurboTax"
-    default_filename = "TurboTax"
+class OutputTurboTaxCsv(OutputCapitalGainsCsv):
+    output_format = "TurboTax CSV"
+    default_filename = "BittyTax_TurboTax"
 
     header = [
+        "Amount",
+        "Currency Name",
         "Purchase Date",
         "Date Sold",
         "Proceeds",
         "Cost Basis",
-        "Currency Name",
     ]
 
     @staticmethod
-    def _to_csv(te: TaxEventCapitalGains, _holding_period: HoldingPeriod) -> List[str]:
+    def _to_csv(te: TaxEventCapitalGains) -> List[str]:
         if not te.acquisition_dates:
             raise RuntimeError("missing te.acquisition_dates")
 
         return [
+            f"{te.quantity.normalize():0,f}",
+            f"{te.asset}",
             ", ".join([f"{d:%m/%d/%Y}" for d in sorted(set(te.acquisition_dates))]),
             f"{te.date:%m/%d/%Y}",
             f"{te.proceeds.normalize():0f}",
             f"{te.cost.normalize():0f}",
-            f"{te.asset} {te.quantity.normalize():0,f}",
         ]
 
 
 class OutputTaxAct(OutputCapitalGainsCsv):
     output_format = "TaxAct"
-    default_filename = "TaxAct"
+    default_filename = "BittyTax_TaxAct"
 
     header = [
         "Description",
@@ -130,12 +126,20 @@ class OutputTaxAct(OutputCapitalGainsCsv):
     ]
 
     @staticmethod
-    def _to_csv(te: TaxEventCapitalGains, holding_period: HoldingPeriod) -> List[str]:
+    def _to_csv(te: TaxEventCapitalGains) -> List[str]:
         return [
-            f"{te.asset} {te.quantity.normalize():0,f}",
+            f"{te.quantity.normalize():0,f} {te.asset}",
             te.a_date("%m/%d/%Y"),
             f"{te.date:%m/%d/%Y}",
             f"{te.proceeds.normalize():0f}",
             f"{te.cost.normalize():0f}",
-            holding_period.value,
+            OutputTaxAct._format_disposal(te.disposal_type),
         ]
+
+    @staticmethod
+    def _format_disposal(disposal_type: DisposalType) -> str:
+        if disposal_type is DisposalType.LONG_TERM:
+            return "LONG"
+        if disposal_type is DisposalType.SHORT_TERM:
+            return "SHORT"
+        raise RuntimeError("Unexpected disposal_type")

@@ -2,6 +2,7 @@ include LICENSE
 include README.md
 include CHANGELOG.md
 include src/bittytax/config/bittytax.conf
+include src/bittytax/irs_forms/*.pdf
 include src/bittytax/templates/*.html
 include src/bittytax/templates/css/*.html
 include src/bittytax/templates/img/BittyTax300dpi.png
