@@ -27,7 +27,7 @@ def get_alt_assets() -> Tuple[Dict[str, str], Set[str]]:
             if asset != alt:
                 alt_assets[asset] = alt
 
-            match = re.match(r"^[A-Z]+((?:\d{2})?\.[S,M,P])$", asset)
+            match = re.match(r"^[A-Z]+((?:\d{2})?\.\w+)$", asset)
             if match:
                 staked_suffix.add(match.group(1))
     else:
