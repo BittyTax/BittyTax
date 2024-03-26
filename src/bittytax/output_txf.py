@@ -8,7 +8,8 @@ from typing import Dict, TextIO
 
 from colorama import Fore
 
-from .bt_types import Year
+from .bt_types import DisposalType, Year
+from .constants import ACQUISITIONS_VARIOUS
 from .tax import TaxReportRecord
 from .tax_event import TaxEventCapitalGains
 from .version import __version__
@@ -72,8 +73,16 @@ class OutputTurboTaxTxf:  # pylint: disable=too-few-public-methods
         txt_file.write("TD\n")
         txt_file.write(f"N{tax_ref}\n")
         txt_file.write(f"P{te.quantity.normalize():0,f} {te.asset}\n")
-        txt_file.write(f"D{te.a_date('%m/%d/%Y').replace('VARIOUS', 'Various')}\n")
+        txt_file.write(f"D{self._format_acq_date(te)}\n")
         txt_file.write(f"D{te.date:%m/%d/%Y}\n")
         txt_file.write(f"${te.cost.normalize():0f}\n")
         txt_file.write(f"${te.proceeds.normalize():0f}\n")
         txt_file.write("^\n")
+
+    @staticmethod
+    def _format_acq_date(te: TaxEventCapitalGains) -> str:
+        acq_date = te.a_date("%m/%d/%Y")
+        if acq_date == ACQUISITIONS_VARIOUS and te.disposal_type != DisposalType.LONG_TERM:
+            # Lowercase "various" indicates a short-term disposal, uppercase "VARIOUS" is long-term
+            return acq_date.lower()
+        return acq_date

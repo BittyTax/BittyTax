@@ -7,6 +7,7 @@ from typing import List, Optional
 
 from .bt_types import AssetSymbol, Date, DisposalType
 from .config import config
+from .constants import ACQUISITIONS_VARIOUS
 from .transactions import Buy, Sell
 
 PRECISION = Decimal("0.00")
@@ -63,7 +64,7 @@ class TaxEventCapitalGains(TaxEvent):
             if len(self.acquisition_dates) > 1 and not all(
                 date == self.acquisition_dates[0] for date in self.acquisition_dates
             ):
-                return "VARIOUS"
+                return ACQUISITIONS_VARIOUS
             if date_format:
                 return f"{self.acquisition_dates[0]:{date_format}}"
             return f"{self.acquisition_dates[0]:{config.date_format}}"

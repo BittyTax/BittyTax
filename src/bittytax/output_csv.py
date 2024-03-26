@@ -11,6 +11,7 @@ import _csv
 from colorama import Fore
 
 from .bt_types import DisposalType, Year
+from .constants import ACQUISITIONS_VARIOUS
 from .tax import TaxReportRecord
 from .tax_event import TaxEventCapitalGains
 
@@ -105,11 +106,19 @@ class OutputTurboTaxCsv(OutputCapitalGainsCsv):
         return [
             f"{te.quantity.normalize():0,f}",
             f"{te.asset}",
-            ", ".join([f"{d:%m/%d/%Y}" for d in sorted(set(te.acquisition_dates))]),
+            f"{OutputTurboTaxCsv._format_acq_date(te)}",
             f"{te.date:%m/%d/%Y}",
             f"{te.proceeds.normalize():0f}",
             f"{te.cost.normalize():0f}",
         ]
+
+    @staticmethod
+    def _format_acq_date(te: TaxEventCapitalGains) -> str:
+        acq_date = te.a_date("%m/%d/%Y")
+        if acq_date == ACQUISITIONS_VARIOUS and te.disposal_type != DisposalType.LONG_TERM:
+            # Lowercase "various" indicates a short-term disposal, uppercase "VARIOUS" is long-term
+            return acq_date.lower()
+        return acq_date
 
 
 class OutputTaxAct(OutputCapitalGainsCsv):
