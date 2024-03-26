@@ -16,7 +16,7 @@ from .audit import AuditRecords
 from .bt_types import AssetSymbol, Year
 from .config import config
 from .constants import (
-    ACCT_FORMAT_F8949,
+    ACCT_FORMAT_IRS,
     ACCT_FORMAT_PDF,
     ACCT_FORMAT_TAXACT,
     ACCT_FORMAT_TURBOTAX_CSV,
@@ -32,7 +32,7 @@ from .export_records import ExportRecords
 from .holdings import Holdings
 from .import_records import ImportRecords
 from .output_csv import OutputCapitalGainsCsv, OutputTaxAct, OutputTurboTaxCsv
-from .output_f8949 import OutputF8949
+from .output_irs import OutputIrs
 from .output_txf import OutputTurboTaxTxf
 from .price.exceptions import DataSourceError
 from .price.valueasset import ValueAsset
@@ -111,7 +111,7 @@ def main() -> None:
         "--format",
         choices=[
             ACCT_FORMAT_PDF,
-            ACCT_FORMAT_F8949,
+            ACCT_FORMAT_IRS,
             ACCT_FORMAT_TURBOTAX_CSV,
             ACCT_FORMAT_TURBOTAX_TXF,
             ACCT_FORMAT_TAXACT,
@@ -199,8 +199,8 @@ def main() -> None:
                     value_asset.price_report,
                     tax.holdings_report,
                 )
-            elif args.format == ACCT_FORMAT_F8949:
-                output_pdf = OutputF8949(args.output_filename, tax.tax_report)
+            elif args.format == ACCT_FORMAT_IRS:
+                output_pdf = OutputIrs(args.output_filename, tax.tax_report)
                 output_pdf.write_pdf()
             elif args.format == ACCT_FORMAT_TURBOTAX_CSV:
                 output_csv: OutputCapitalGainsCsv = OutputTurboTaxCsv(

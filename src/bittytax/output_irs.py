@@ -159,8 +159,8 @@ class FormFieldNames:  # pylint: disable=too-few-public-methods
         return self.rows[row_num]
 
 
-class OutputF8949:
-    DEFAULT_FILENAME = "BittyTax_f8949"
+class OutputIrs:
+    DEFAULT_FILENAME = "BittyTax_IRS"
     FILE_EXTENSION = "pdf"
     OUTPUT_FORMAT = "IRS Form 8949"
 
@@ -205,7 +205,7 @@ class OutputF8949:
     def write_pdf(self) -> None:
         for tax_year in sorted(self.tax_report):
             if tax_year not in self.FORMS:
-                print(f"{WARNING} IRS Form 8949-{tax_year} missing, skipping...")
+                print(f"{WARNING} {self.OUTPUT_FORMAT} for {tax_year} missing, skipping...")
                 continue
 
             reader = PdfReader(self.FORMS[tax_year])
@@ -235,7 +235,10 @@ class OutputF8949:
             with open(filename, "wb") as output_stream:
                 self.writer.write(output_stream)
 
-            sys.stderr.write(f"{Fore.WHITE}{self.OUTPUT_FORMAT} created: {Fore.YELLOW}{filename}\n")
+            sys.stderr.write(
+                f"{Fore.WHITE}{self.OUTPUT_FORMAT} for {tax_year} created: "
+                f"{Fore.YELLOW}{filename}\n"
+            )
 
     def _update_page_field_names(self, source_page: PageObject, fnum_new: int) -> None:
         for j in range(0, len(source_page["/Annots"])):  # type: ignore[arg-type]
