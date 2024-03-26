@@ -20,7 +20,7 @@
             {% with assets=cgains["long_term"], totals=cgains["long_term_totals"] %}
                {% include "capital_gains.html" %}
             {% endwith %}
-            <h2>Other Disposals</h2>
+            <h2>Non-Taxable Transactions</h2>
             {% include "no_gain_no_loss.html" %}
             {% include "income.html" %}
             {% if not loop.last %}

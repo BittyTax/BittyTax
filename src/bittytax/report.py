@@ -361,7 +361,7 @@ class ReportLog:
             f'{"Cost Basis":>18}'
         )
         if not cgains.non_tax_by_type:
-            print(f"\n{Fore.CYAN}Other Disposals\n")
+            print(f"\n{Fore.CYAN}Non-Taxable Transactions\n")
             print(f"{Fore.YELLOW}{header}")
             print(f'{Fore.YELLOW}{"_" * len(header)}')
             print(
@@ -375,7 +375,7 @@ class ReportLog:
             )
 
         for t_type in sorted(cgains.non_tax_by_type):
-            print(f"\n{Fore.CYAN}Other Disposals ({t_type})\n")
+            print(f"\n{Fore.CYAN}Non-Taxable Transactions ({t_type})\n")
             print(f"{Fore.YELLOW}{header}")
 
             for te in cgains.non_tax_by_type[t_type]:
