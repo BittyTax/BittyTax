@@ -2,6 +2,7 @@
 # (c) Nano Nano Ltd 2020
 
 import copy
+import re
 import sys
 from decimal import Decimal
 from typing import TYPE_CHECKING, List
@@ -216,12 +217,12 @@ def parse_kucoin_withdrawals(
 
 
 def parse_kucoin_deposits_withdrawals_v2(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(
-        row_dict["Time(UTC+08:00)"], tz="Asia/Singapore"
-    )
+    timestamp_hdr = parser.args[0].group(1)
+    utc_offset = parser.args[0].group(2)
+    data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
 
     if row_dict["Status"] != "SUCCESS":
         return
@@ -234,7 +235,7 @@ def parse_kucoin_deposits_withdrawals_v2(
             sell_asset=row_dict["Coin"],
             fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Coin"],
-            wallet=row_dict["Withdrawal Address/Account"],
+            wallet=WALLET,
         )
     else:
         data_row.t_record = TransactionOutRecord(
@@ -249,12 +250,12 @@ def parse_kucoin_deposits_withdrawals_v2(
 
 
 def parse_kucoin_staking_income(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(
-        row_dict["Time(UTC+08:00)"], tz="Asia/Singapore"
-    )
+    timestamp_hdr = parser.args[0].group(1)
+    utc_offset = parser.args[0].group(2)
+    data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
 
     data_row.t_record = TransactionOutRecord(
         TrType.STAKING,
@@ -294,14 +295,14 @@ def parse_kucoin_futures(
 
 def _parse_kucoin_futures_row(
     data_rows: List["DataRow"],
-    _parser: DataParser,
+    parser: DataParser,
     data_row: "DataRow",
     row_index: int,
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(
-        row_dict["Position Closing Time(UTC+08:00)"], tz="Asia/Singapore"
-    )
+    timestamp_hdr = parser.args[1].group(1)
+    utc_offset = parser.args[1].group(2)
+    data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
     data_row.parsed = True
 
     if Decimal(row_dict["Realized PNL"]) > 0:
@@ -450,7 +451,7 @@ DataParser(
     [
         "UID",
         "Account Type",
-        "Time(UTC+08:00)",
+        lambda c: re.match(r"(^Time\((UTC[-+]\d{2}:\d{2})\))", c),
         "Remarks",
         "Status",
         "Fee",
@@ -468,7 +469,7 @@ DataParser(
     [
         "UID",
         "Account Type",
-        "Time(UTC+08:00)",
+        lambda c: re.match(r"(^Time\((UTC[-+]\d{2}:\d{2})\))", c),
         "Remarks",
         "Status",
         "Fee",
@@ -488,7 +489,7 @@ DataParser(
         "UID",
         "Account Type",
         "Order ID",
-        "Time(UTC+08:00)",
+        lambda c: re.match(r"(^Time\((UTC[-+]\d{2}:\d{2})\))", c),
         "Staked Coin",
         "Product Type",
         "Product Name",
@@ -515,8 +516,8 @@ DataParser(
         "Total Realized PNL",
         "Total Funding Fees",
         "Total Trading Fees",
-        "Position Opening Time(UTC+08:00)",
-        "Position Closing Time(UTC+08:00)",
+        lambda c: re.match(r"(^Position Opening Time\((UTC[-+]\d{2}:\d{2})\))", c),
+        lambda c: re.match(r"(^Position Closing Time\((UTC[-+]\d{2}:\d{2})\))", c),
     ],
     worksheet_name="Kucoin F",
     all_handler=parse_kucoin_futures,
