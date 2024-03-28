@@ -64,6 +64,11 @@ class DataFormatUnrecognised(DataParserError):
         return f"Data file format is unrecognised: {self.format_filename()}"
 
 
+class DataFormatNotSupported(DataParserError):
+    def __str__(self) -> str:
+        return f"Data file format not supported: {self.format_filename()}"
+
+
 class DataFilenameError(DataParserError):
     def __init__(self, filename: str, component: str) -> None:
         super().__init__(filename)

@@ -13,13 +13,52 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
-from ..exceptions import DataRowError, UnexpectedTypeError
+from ..exceptions import DataFormatNotSupported, DataRowError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
     from ..datarow import DataRow
 
 WALLET = "KuCoin"
+
+
+def parse_kucoin_trades_v5(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+
+    if parser.args:
+        timestamp_hdr = parser.args[0].group(1)
+        utc_offset = parser.args[0].group(2)
+
+    data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
+
+    if row_dict["Side"] == "BUY":
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Filled Amount"]),
+            buy_asset=row_dict["Symbol"].split("-")[0],
+            sell_quantity=Decimal(row_dict["Filled Volume"]),
+            sell_asset=row_dict["Symbol"].split("-")[1],
+            fee_quantity=Decimal(row_dict["Fee"]),
+            fee_asset=row_dict["Fee Currency"],
+            wallet=WALLET,
+        )
+    elif row_dict["Side"] == "SELL":
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Filled Volume"]),
+            buy_asset=row_dict["Symbol"].split("-")[1],
+            sell_quantity=Decimal(row_dict["Filled Amount"]),
+            sell_asset=row_dict["Symbol"].split("-")[0],
+            fee_quantity=Decimal(row_dict["Fee"]),
+            fee_asset=row_dict["Fee Currency"],
+            wallet=WALLET,
+        )
+    else:
+        raise UnexpectedTypeError(parser.in_header.index("Side"), "Side", row_dict["Side"])
 
 
 def parse_kucoin_trades_v4(
@@ -336,6 +375,31 @@ def _parse_kucoin_futures_row(
         data_rows.insert(row_index + 1, dup_data_row)
 
 
+# This parser is only used for Airdrops, everything else is duplicates
+def parse_kucoin_account_history_funding(
+    data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
+) -> None:
+    if "History_Funding" not in kwargs["filename"]:
+        raise DataFormatNotSupported(kwargs["filename"])
+
+    row_dict = data_row.row_dict
+
+    if parser.args:
+        timestamp_hdr = parser.args[0].group(1)
+        utc_offset = parser.args[0].group(2)
+
+    data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
+
+    if "Distribution" in row_dict["Remark"]:
+        data_row.t_record = TransactionOutRecord(
+            TrType.AIRDROP,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Amount"]),
+            buy_asset=row_dict["Currency"],
+            wallet=WALLET,
+        )
+
+
 DataParser(
     ParserType.EXCHANGE,
     "KuCoin Trades",
@@ -441,10 +505,11 @@ DataParser(
     ParserType.EXCHANGE,
     "KuCoin Deposits/Withdrawals",
     ["coin_type", "type", "add", "hash", "vol", "created_at"],
-    worksheet_name="Kucoin D,W",
+    worksheet_name="KuCoin D,W",
     row_handler=parse_kucoin_deposits_withdrawals_v1,
 )
 
+# Deposit_Withdrawal History_Deposit History (Bundle)
 DataParser(
     ParserType.EXCHANGE,
     "KuCoin Deposits",
@@ -459,10 +524,11 @@ DataParser(
         "Coin",
         "Transfer Network",
     ],
-    worksheet_name="Kucoin D,W",
+    worksheet_name="KuCoin D,W",
     row_handler=parse_kucoin_deposits_withdrawals_v2,
 )
 
+# Deposit_Withdrawal History_Withdrawal Record (Bundle)
 DataParser(
     ParserType.EXCHANGE,
     "KuCoin Withdrawals",
@@ -478,10 +544,11 @@ DataParser(
         "Transfer Network",
         "Withdrawal Address/Account",
     ],
-    worksheet_name="Kucoin D,W",
+    worksheet_name="KuCoin D,W",
     row_handler=parse_kucoin_deposits_withdrawals_v2,
 )
 
+# Earn Orders_Profit History (Bundle)
 DataParser(
     ParserType.EXCHANGE,
     "KuCoin Staking",
@@ -500,10 +567,11 @@ DataParser(
         "Amount（USDT）",
         "Fee",
     ],
-    worksheet_name="Kucoin S",
+    worksheet_name="KuCoin S",
     row_handler=parse_kucoin_staking_income,
 )
 
+# Futures Orders_Realized PNL (Bundle)
 DataParser(
     ParserType.EXCHANGE,
     "KuCoin Bundle Futures Orders Realized PNL",
@@ -521,4 +589,49 @@ DataParser(
     ],
     worksheet_name="Kucoin F",
     all_handler=parse_kucoin_futures,
+)
+
+# Account History_Funding Account (Bundle)
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Account History",
+    [
+        "UID",
+        "Account Type",
+        "Currency",
+        "Side",
+        "Amount",
+        "Fee",
+        lambda c: re.match(r"(^Time\((UTC[-+]\d{2}:\d{2})\))", c),
+        "Remark",
+    ],
+    worksheet_name="KuCoin A",
+    row_handler=parse_kucoin_account_history_funding,
+)
+
+# Spot Orders_Filled Orders (Bundle)
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Trades",
+    [
+        "UID",
+        "Account Type",
+        "Order ID",
+        lambda c: re.match(r"(^Order Time\((UTC[-+]\d{2}:\d{2})\))", c),
+        "Symbol",
+        "Side",
+        "Order Type",
+        "Order Price",
+        "Order Amount",
+        "Avg. Filled Price",
+        "Filled Amount",
+        "Filled Volume",
+        "Filled Volume (USDT)",
+        lambda c: re.match(r"(^Filled Time\((UTC[-+]\d{2}:\d{2})\))", c),
+        "Fee",
+        "Fee Currency",
+        "Status",
+    ],
+    worksheet_name="KuCoin T",
+    row_handler=parse_kucoin_trades_v5,
 )
