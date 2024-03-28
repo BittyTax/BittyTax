@@ -47,6 +47,8 @@
 - Kraken parser: added removal of staking suffixes.
 - Kraken parser: negative "staking" transactions result in a Spend.
 - Kraken parser: handle trades with no counter asset.
+- Conversion tool: added DataFormatNotSupported exception.
+- KuCoin parser: added "Spot Orders" and "Account History_Funding" files.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
