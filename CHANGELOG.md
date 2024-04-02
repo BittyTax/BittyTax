@@ -49,6 +49,7 @@
 - Kraken parser: handle trades with no counter asset.
 - Conversion tool: added DataFormatNotSupported exception.
 - KuCoin parser: added "Spot Orders" and "Account History_Funding" files.
+- Kraken parser: added new export format. ([#355](https://github.com/BittyTax/BittyTax/issues/355))
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
