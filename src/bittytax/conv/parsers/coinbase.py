@@ -3,9 +3,8 @@
 
 import re
 import sys
-from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 from colorama import Fore
 from typing_extensions import Unpack
@@ -24,6 +23,28 @@ WALLET = "Coinbase"
 DUPLICATE = UnmappedType("Duplicate")
 
 
+def parse_coinbase_v3(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
+
+    spot_price_ccy = DataParser.convert_currency(
+        row_dict["Spot Price at Transaction"],
+        row_dict["Spot Price Currency"],
+        data_row.timestamp,
+    )
+    subtotal = Decimal(row_dict["Subtotal"]) if row_dict["Subtotal"] else None
+    total_ccy = DataParser.convert_currency(
+        row_dict["Total (inclusive of fees and/or spread)"],
+        row_dict["Spot Price Currency"],
+        data_row.timestamp,
+    )
+    fees = abs(Decimal(row_dict["Fees and/or Spread"])) if row_dict["Fees and/or Spread"] else None
+
+    _do_parse_coinbase(data_row, parser, (spot_price_ccy, subtotal, total_ccy, fees))
+
+
 def parse_coinbase_v2(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
@@ -35,26 +56,15 @@ def parse_coinbase_v2(
         row_dict["Spot Price Currency"],
         data_row.timestamp,
     )
+    subtotal = Decimal(row_dict["Subtotal"]) if row_dict["Subtotal"] else None
     total_ccy = DataParser.convert_currency(
-        row_dict["Total (inclusive of fees and/or spread)"],
+        row_dict["Total (inclusive of fees)"],
         row_dict["Spot Price Currency"],
         data_row.timestamp,
     )
+    fees = abs(Decimal(row_dict["Fees"])) if row_dict["Fees"] else None
 
-    _do_parse_coinbase(
-        data_row,
-        parser,
-        (
-            spot_price_ccy,
-            Decimal(row_dict["Subtotal"]) if row_dict["Subtotal"] else None,
-            total_ccy,
-            (
-                abs(Decimal(row_dict["Fees and/or Spread"]))
-                if row_dict["Fees and/or Spread"]
-                else None
-            ),
-        ),
-    )
+    _do_parse_coinbase(data_row, parser, (spot_price_ccy, subtotal, total_ccy, fees))
 
 
 def parse_coinbase_v1(
@@ -62,70 +72,20 @@ def parse_coinbase_v1(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
+    currency = parser.args[0].group(1)
 
     spot_price_ccy = DataParser.convert_currency(
-        row_dict["Spot Price at Transaction"],
-        row_dict["Spot Price Currency"],
-        data_row.timestamp,
+        row_dict[f"{currency} Spot Price at Transaction"], currency, data_row.timestamp
+    )
+    subtotal = (
+        Decimal(row_dict[f"{currency} Subtotal"]) if row_dict[f"{currency} Subtotal"] else None
     )
     total_ccy = DataParser.convert_currency(
-        row_dict["Total (inclusive of fees)"],
-        row_dict["Spot Price Currency"],
-        data_row.timestamp,
+        row_dict[f"{currency} Total (inclusive of fees)"], currency, data_row.timestamp
     )
+    fees = abs(Decimal(row_dict[f"{currency} Fees"])) if row_dict[f"{currency} Fees"] else None
 
-    _do_parse_coinbase(
-        data_row,
-        parser,
-        (
-            spot_price_ccy,
-            Decimal(row_dict["Subtotal"]) if row_dict["Subtotal"] else None,
-            total_ccy,
-            abs(Decimal(row_dict["Fees"])) if row_dict["Fees"] else None,
-        ),
-    )
-
-
-def parse_coinbase_gbp(
-    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
-) -> None:
-    row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
-    fiat_values = _get_fiat_values(row_dict, "GBP", data_row.timestamp)
-    _do_parse_coinbase(data_row, parser, fiat_values)
-
-
-def parse_coinbase_eur(
-    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
-) -> None:
-    row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
-    fiat_values = _get_fiat_values(row_dict, "EUR", data_row.timestamp)
-    _do_parse_coinbase(data_row, parser, fiat_values)
-
-
-def parse_coinbase_usd(
-    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
-) -> None:
-    row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
-    fiat_values = _get_fiat_values(row_dict, "USD", data_row.timestamp)
-    _do_parse_coinbase(data_row, parser, fiat_values)
-
-
-def _get_fiat_values(
-    row_dict: Dict[str, Any], currency: str, timestamp: datetime
-) -> Tuple[Optional[Decimal], Optional[Decimal], Optional[Decimal], Optional[Decimal]]:
-    sp_header = f"{currency} Spot Price at Transaction"
-    st_header = f"{currency} Subtotal"
-    t_header = f"{currency} Total (inclusive of fees)"
-    f_header = f"{currency} Fees"
-
-    spot_price_ccy = DataParser.convert_currency(row_dict[sp_header], currency, timestamp)
-    subtotal = Decimal(row_dict[st_header]) if row_dict[st_header] else None
-    total_ccy = DataParser.convert_currency(row_dict[t_header], currency, timestamp)
-    fees = abs(Decimal(row_dict[f_header])) if row_dict[f_header] else None
-    return (spot_price_ccy, subtotal, total_ccy, fees)
+    _do_parse_coinbase(data_row, parser, (spot_price_ccy, subtotal, total_ccy, fees))
 
 
 def _do_parse_coinbase(
@@ -575,7 +535,7 @@ DataParser(
         "Notes",
     ],
     worksheet_name="Coinbase",
-    row_handler=parse_coinbase_v2,
+    row_handler=parse_coinbase_v3,
 )
 
 DataParser(
@@ -594,61 +554,25 @@ DataParser(
         "Notes",
     ],
     worksheet_name="Coinbase",
+    row_handler=parse_coinbase_v2,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Coinbase",
+    [
+        "Timestamp",
+        "Transaction Type",
+        "Asset",
+        "Quantity Transacted",
+        lambda h: re.match(r"^(\w{3}) Spot Price at Transaction", h),
+        lambda h: re.match(r"^(\w{3}) Subtotal", h),
+        lambda h: re.match(r"^(\w{3}) Total \(inclusive of fees\)", h),
+        lambda h: re.match(r"^(\w{3}) Fees", h),
+        "Notes",
+    ],
+    worksheet_name="Coinbase",
     row_handler=parse_coinbase_v1,
-)
-
-DataParser(
-    ParserType.EXCHANGE,
-    "Coinbase",
-    [
-        "Timestamp",
-        "Transaction Type",
-        "Asset",
-        "Quantity Transacted",
-        "GBP Spot Price at Transaction",
-        "GBP Subtotal",
-        "GBP Total (inclusive of fees)",
-        "GBP Fees",
-        "Notes",
-    ],
-    worksheet_name="Coinbase",
-    row_handler=parse_coinbase_gbp,
-)
-
-DataParser(
-    ParserType.EXCHANGE,
-    "Coinbase",
-    [
-        "Timestamp",
-        "Transaction Type",
-        "Asset",
-        "Quantity Transacted",
-        "EUR Spot Price at Transaction",
-        "EUR Subtotal",
-        "EUR Total (inclusive of fees)",
-        "EUR Fees",
-        "Notes",
-    ],
-    worksheet_name="Coinbase",
-    row_handler=parse_coinbase_eur,
-)
-
-DataParser(
-    ParserType.EXCHANGE,
-    "Coinbase",
-    [
-        "Timestamp",
-        "Transaction Type",
-        "Asset",
-        "Quantity Transacted",
-        "USD Spot Price at Transaction",
-        "USD Subtotal",
-        "USD Total (inclusive of fees)",
-        "USD Fees",
-        "Notes",
-    ],
-    worksheet_name="Coinbase",
-    row_handler=parse_coinbase_usd,
 )
 
 DataParser(

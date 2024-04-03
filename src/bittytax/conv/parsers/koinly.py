@@ -55,9 +55,7 @@ KOINLY_W_MAPPING = {
 def parse_koinly(
     data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
-
-    if parser.args and parser.args[1].group(1):
-        currency = parser.args[1].group(1)
+    currency = parser.args[2].group(1)
 
     for row_index, data_row in enumerate(data_rows):
         if config.debug:
@@ -197,7 +195,7 @@ DataParser(
     [
         "Date",
         "Type",
-        lambda c: c in ("Label", "Tag"),
+        lambda h: h in ("Label", "Tag"),
         "Sending Wallet",
         "Sent Amount",
         "Sent Currency",
@@ -208,9 +206,9 @@ DataParser(
         "Received Cost Basis",
         "Fee Amount",
         "Fee Currency",
-        lambda c: re.match(r"Gain \((GBP|USD|EUR)\)", c),
-        lambda c: re.match(r"Net Value \((GBP|USD|EUR)\)", c),
-        lambda c: re.match(r"Fee Value \((GBP|USD|EUR)\)", c),
+        lambda h: re.match(r"Gain \((\w{3})\)", h),
+        lambda h: re.match(r"Net Value \((\w{3})\)", h),
+        lambda h: re.match(r"Fee Value \((\w{3})\)", h),
         "TxSrc",
         "TxDest",
         "TxHash",

@@ -43,13 +43,17 @@
 - Accounting tool: new transaction types added. Fork, Referral, Cashback and Fee-Rebate.
 - Kraken parser: added "dividend" and "earn" types.
 - Bitpanda parser: added new export format. ([#352](https://github.com/BittyTax/BittyTax/issues/352))
-- Koinly parser: added support for USD and EUR exports. ([#353](https://github.com/BittyTax/BittyTax/issues/353))
+- Koinly parser: added support for non-GBP exports. ([#353](https://github.com/BittyTax/BittyTax/issues/353))
 - Kraken parser: added removal of staking suffixes.
 - Kraken parser: negative "staking" transactions result in a Spend.
 - Kraken parser: handle trades with no counter asset.
 - Conversion tool: added DataFormatNotSupported exception.
 - KuCoin parser: added "Spot Orders" and "Account History_Funding" files.
 - Kraken parser: added new export format. ([#355](https://github.com/BittyTax/BittyTax/issues/355))
+- CoinTracking parser: added support for non-GBP exports.
+- Generic parser: added support for non-GBP exports.
+- Trezor Suite parser: added support for non-GBP exports.
+- Uphold parser: added support for non-GBP exports.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -85,6 +89,8 @@
 - OKX parser: use Fee-Rebate instead of Gift-Received.
 - Paxful parser: use Referral instead of Gift-Received.
 - SwissBorg parser: use Airdrop instead of Gift-Received.
+- Coinbase parser: reworked legacy multi-currency support.
+- CoinTracking parser: Lost/Stolen transactions now include sell value if available.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 

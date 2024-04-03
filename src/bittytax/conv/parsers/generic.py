@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2021
 
+import re
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
 def parse_generic(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
+    currency = parser.args[0].group(1)
 
     try:
         t_type = TrType(row_dict["Type"])
@@ -30,8 +32,10 @@ def parse_generic(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Par
     else:
         buy_quantity = None
 
-    if row_dict["Buy Value in GBP"]:
-        buy_value = Decimal(row_dict["Buy Value in GBP"])
+    if row_dict[f"Buy Value in {currency}"]:
+        buy_value = DataParser.convert_currency(
+            row_dict[f"Buy Value in {currency}"], currency, data_row.timestamp
+        )
     else:
         buy_value = None
 
@@ -40,8 +44,10 @@ def parse_generic(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Par
     else:
         sell_quantity = None
 
-    if row_dict["Sell Value in GBP"]:
-        sell_value = Decimal(row_dict["Sell Value in GBP"])
+    if row_dict[f"Sell Value in {currency}"]:
+        sell_value = DataParser.convert_currency(
+            row_dict[f"Sell Value in {currency}"], currency, data_row.timestamp
+        )
     else:
         sell_value = None
 
@@ -50,8 +56,10 @@ def parse_generic(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Par
     else:
         fee_quantity = None
 
-    if row_dict["Fee Value in GBP"]:
-        fee_value = Decimal(row_dict["Fee Value in GBP"])
+    if row_dict[f"Fee Value in {currency}"]:
+        fee_value = DataParser.convert_currency(
+            row_dict[f"Fee Value in {currency}"], currency, data_row.timestamp
+        )
     else:
         fee_value = None
 
@@ -86,13 +94,13 @@ DataParser(
         "Type",
         "Buy Quantity",
         "Buy Asset",
-        "Buy Value in GBP",
+        lambda h: re.match(r"^Buy Value in (\w{3})", h),
         "Sell Quantity",
         "Sell Asset",
-        "Sell Value in GBP",
+        lambda h: re.match(r"^Sell Value in (\w{3})", h),
         "Fee Quantity",
         "Fee Asset",
-        "Fee Value in GBP",
+        lambda h: re.match(r"^Fee Value in (\w{3})", h),
         "Wallet",
         "Timestamp",
         "Note",
