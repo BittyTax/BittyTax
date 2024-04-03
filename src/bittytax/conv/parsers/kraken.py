@@ -164,7 +164,7 @@ def _parse_kraken_ledgers_row(
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["amount"]),
                 buy_asset=_normalise_asset(row_dict["asset"]),
-                fee_quantity=Decimal(row_dict["fee"]),
+                fee_quantity=abs(Decimal(row_dict["fee"])),
                 fee_asset=_normalise_asset(row_dict["asset"]),
                 wallet=WALLET,
             )
@@ -177,7 +177,7 @@ def _parse_kraken_ledgers_row(
                 wallet=WALLET,
                 note="Reverse failed Deposit",
             )
-            if Decimal(row_dict["fee"]) < 0:
+            if Decimal(row_dict["fee"]) != 0:
                 dup_data_row = copy.copy(data_row)
                 dup_data_row.row = []
                 dup_data_row.t_record = TransactionOutRecord(
@@ -196,7 +196,7 @@ def _parse_kraken_ledgers_row(
                 data_row.timestamp,
                 sell_quantity=abs(Decimal(row_dict["amount"])),
                 sell_asset=_normalise_asset(row_dict["asset"]),
-                fee_quantity=Decimal(row_dict["fee"]),
+                fee_quantity=abs(Decimal(row_dict["fee"])),
                 fee_asset=_normalise_asset(row_dict["asset"]),
                 wallet=WALLET,
             )
@@ -209,7 +209,7 @@ def _parse_kraken_ledgers_row(
                 wallet=WALLET,
                 note="Reverse failed Withdrawal",
             )
-            if Decimal(row_dict["fee"]) < 0:
+            if Decimal(row_dict["fee"]) != 0:
                 dup_data_row = copy.copy(data_row)
                 dup_data_row.row = []
                 dup_data_row.t_record = TransactionOutRecord(
@@ -254,6 +254,23 @@ def _parse_kraken_ledgers_row(
             buy_asset=_normalise_asset(row_dict["asset"]),
             wallet=WALLET,
         )
+    elif row_dict["type"] == "adjustment":
+        if Decimal(row_dict["amount"]) > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.AIRDROP,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["amount"]),
+                buy_asset=_normalise_asset(row_dict["asset"]),
+                wallet=WALLET,
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.SPEND,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["amount"])),
+                sell_asset=_normalise_asset(row_dict["asset"]),
+                wallet=WALLET,
+            )
     elif row_dict["type"] == "transfer":
         if len(_get_ref_ids(ref_ids, row_dict["refid"], ("transfer",))) > 1:
             # Multiple transfer rows is a rebase? Not currently supported
@@ -262,7 +279,7 @@ def _parse_kraken_ledgers_row(
             )
 
         if row_dict["subtype"] == "":
-            if Decimal(row_dict["amount"]) >= 0:
+            if Decimal(row_dict["amount"]) > 0:
                 # Fork or Airdrop
                 data_row.t_record = TransactionOutRecord(
                     TrType.AIRDROP,
@@ -272,9 +289,9 @@ def _parse_kraken_ledgers_row(
                     wallet=WALLET,
                 )
             else:
-                # Delisting
+                # Delisting?
                 data_row.t_record = TransactionOutRecord(
-                    TrType.LOST,
+                    TrType.SPEND,
                     data_row.timestamp,
                     sell_quantity=abs(Decimal(row_dict["amount"])),
                     sell_asset=_normalise_asset(row_dict["asset"]),
@@ -377,7 +394,7 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
                 data_row.timestamp,
                 sell_quantity=Decimal(0),
                 sell_asset=_normalise_asset(row_dict["asset"]),
-                fee_quantity=Decimal(row_dict["fee"]),
+                fee_quantity=abs(Decimal(row_dict["fee"])),
                 fee_asset=_normalise_asset(row_dict["asset"]),
                 wallet=WALLET,
                 note="Trading fee",
@@ -395,9 +412,9 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
         if not trade_row:
             trade_row = data_row
 
-        if Decimal(row_dict["fee"]) > 0:
+        if Decimal(row_dict["fee"]) != 0:
             if not fee_quantity:
-                fee_quantity = Decimal(row_dict["fee"])
+                fee_quantity = abs(Decimal(row_dict["fee"]))
                 fee_asset = _normalise_asset(row_dict["asset"])
             else:
                 # Add as secondary fee
@@ -406,7 +423,7 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
                     data_row.timestamp,
                     sell_quantity=Decimal(0),
                     sell_asset=_normalise_asset(row_dict["asset"]),
-                    fee_quantity=Decimal(row_dict["fee"]),
+                    fee_quantity=abs(Decimal(row_dict["fee"])),
                     fee_asset=_normalise_asset(row_dict["asset"]),
                     wallet=WALLET,
                     note="Trading fee",

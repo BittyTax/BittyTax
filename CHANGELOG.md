@@ -41,6 +41,7 @@
 - KuCoin parser: added "Spot Orders" and "Account History_Funding" files.
 - Kraken parser: added new export format. ([#355](https://github.com/BittyTax/BittyTax/issues/355))
 - Kraken parser: added "dividend" type.
+- Kraken parser: added "adjustment" type.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
