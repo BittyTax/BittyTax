@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2020
 
+import re
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
@@ -40,9 +41,17 @@ def parse_cointracking(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
+
     data_row.timestamp = DataParser.parse_timestamp(
         row_dict["Date"], dayfirst=config.date_is_day_first
     )
+
+    currency = parser.args[0].group(1)
+    if data_row.row[4] != "-":
+        buy_value = DataParser.convert_currency(data_row.row[4], currency, data_row.timestamp)
+
+    if data_row.row[8] != "-":
+        sell_value = DataParser.convert_currency(data_row.row[8], currency, data_row.timestamp)
 
     if row_dict["Type"] == "Trade":
         data_row.t_record = TransactionOutRecord(
@@ -50,10 +59,10 @@ def parse_cointracking(
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Buy"]),
             buy_asset=data_row.row[2],
-            buy_value=Decimal(data_row.row[4]),
+            buy_value=buy_value,
             sell_quantity=Decimal(row_dict["Sell"]),
             sell_asset=data_row.row[6],
-            sell_value=Decimal(data_row.row[8]),
+            sell_value=sell_value,
             wallet=_wallet_name(row_dict["Exchange"]),
         )
     elif row_dict["Type"] == "Deposit":
@@ -70,7 +79,7 @@ def parse_cointracking(
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Buy"]),
             buy_asset=data_row.row[2],
-            buy_value=Decimal(data_row.row[4]),
+            buy_value=buy_value,
             wallet=_wallet_name(row_dict["Exchange"]),
         )
     elif row_dict["Type"] == "Withdrawal":
@@ -82,11 +91,6 @@ def parse_cointracking(
             wallet=_wallet_name(row_dict["Exchange"]),
         )
     elif row_dict["Type"] in COINTRACKING_W_MAPPING:
-        if row_dict["Type"] in ("Stolen", "Lost"):
-            sell_value = None
-        else:
-            sell_value = Decimal(data_row.row[8])
-
         data_row.t_record = TransactionOutRecord(
             COINTRACKING_W_MAPPING[row_dict["Type"]],
             data_row.timestamp,
@@ -113,11 +117,11 @@ DataParser(
         "Buy",
         "Cur.",
         "Value in BTC",
-        "Value in GBP",
+        lambda h: re.match(r"^Value in (\w{3})", h),
         "Sell",
         "Cur.",
         "Value in BTC",
-        "Value in GBP",
+        lambda h: re.match(r"^Value in (\w{3})", h),
         "Spread",
         "Exchange",
         "Group",

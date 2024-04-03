@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import re
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
@@ -142,8 +143,8 @@ DataParser(
         "date",
         "id",
         "type",
-        "value_in_GBP",
-        "commission_in_GBP",
+        lambda h: re.match(r"^value_in_(\w{3})", h),
+        lambda h: re.match(r"^commission_in_(\w{3})", h),
         "pair",
         "rate",
         "origin_currency",

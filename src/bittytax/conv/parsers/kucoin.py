@@ -22,10 +22,8 @@ def parse_kucoin_trades_v5(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-
-    if parser.args:
-        timestamp_hdr = parser.args[0].group(1)
-        utc_offset = parser.args[0].group(2)
+    timestamp_hdr = parser.args[0].group(1)
+    utc_offset = parser.args[0].group(2)
 
     data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
 

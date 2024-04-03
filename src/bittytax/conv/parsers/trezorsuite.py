@@ -157,7 +157,7 @@ DataParser(
         "Label",
         "Amount",
         "Amount unit",
-        "Fiat (GBP)",
+        lambda c: re.match(r"^Fiat \((\w{3})\)", c),
         "Other",
     ],
     worksheet_name="Trezor",
