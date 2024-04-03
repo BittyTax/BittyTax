@@ -48,6 +48,7 @@ QUOTE_ASSETS = [
     "GBP",
     "GYEN",
     "IDRT",
+    "JPY",
     "NGN",
     "PAX",
     "PLN",
@@ -63,6 +64,7 @@ QUOTE_ASSETS = [
     "USDT",
     "UST",
     "VAI",
+    "XMR",
     "XRP",
     "ZAR",
 ]
@@ -334,7 +336,11 @@ def _parse_binance_statements_row(
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
         )
-    elif row_dict["Operation"] in ("Airdrop Assets", "Cash Voucher distribution"):
+    elif row_dict["Operation"] in (
+        "Airdrop Assets",
+        "Cash Voucher distribution",
+        "Simple Earn Flexible Airdrop",
+    ):
         data_row.t_record = TransactionOutRecord(
             TrType.AIRDROP,
             data_row.timestamp,
@@ -391,6 +397,7 @@ def _parse_binance_statements_row(
         "Simple Earn Locked Rewards",
         "DOT Slot Auction Rewards",
         "Launchpool Earnings Withdrawal",
+        "BNB Vault Rewards",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.STAKING,
