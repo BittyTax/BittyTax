@@ -127,6 +127,20 @@ def _parse_koinly_row(
             wallet=row_dict["Sending Wallet"],
             note=row_dict["Description"],
         )
+    if row_dict["Type"] == "swap":
+        data_row.t_record = TransactionOutRecord(
+            TrType.SWAP,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Received Amount"]),
+            buy_asset=row_dict["Received Currency"],
+            sell_quantity=Decimal(row_dict["Sent Amount"]),
+            sell_asset=row_dict["Sent Currency"],
+            fee_quantity=fee_quantity,
+            fee_asset=row_dict["Fee Currency"],
+            fee_value=fee_value,
+            wallet=row_dict["Sending Wallet"],
+            note=row_dict["Description"],
+        )
     elif row_dict["Type"] == "transfer":
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
@@ -135,6 +149,7 @@ def _parse_koinly_row(
             sell_asset=row_dict["Sent Currency"],
             fee_quantity=fee_quantity,
             fee_asset=row_dict["Fee Currency"],
+            fee_value=fee_value,
             wallet=row_dict["Sending Wallet"],
             note=row_dict["Description"],
         )

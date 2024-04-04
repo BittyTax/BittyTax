@@ -5,6 +5,7 @@
 import copy
 import datetime
 import sys
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -20,6 +21,12 @@ from .price.valueasset import ValueAsset
 from .transactions import Buy, Sell
 
 PRECISION = Decimal("0.00")
+
+
+@dataclass
+class SwapHolding:
+    cost: Decimal
+    fees: Decimal
 
 
 class TaxReportRecord(TypedDict):  # pylint: disable=too-few-public-methods
@@ -117,7 +124,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
     NO_GAIN_NO_LOSS_TYPES = (TrType.GIFT_SPOUSE, TrType.CHARITY_SENT)
 
     # These transactions are except from the "same day" & "b&b" rule
-    NO_MATCH_TYPES = (TrType.GIFT_SPOUSE, TrType.CHARITY_SENT, TrType.LOST)
+    NO_MATCH_TYPES = (TrType.GIFT_SPOUSE, TrType.CHARITY_SENT, TrType.LOST, TrType.SWAP)
 
     def __init__(self, transactions: List[Union[Buy, Sell]], tax_rules: str) -> None:
         self.transactions = transactions
@@ -127,6 +134,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         self.other_transactions: List[Union[Buy, Sell]] = []
 
         self.tax_events: Dict[Year, List[TaxEvent]] = {}
+        self.swap_events: Dict[Sell, SwapHolding] = {}
         self.holdings: Dict[AssetSymbol, Holdings] = {}
 
         self.tax_report: Dict[Year, TaxReportRecord] = {}
@@ -399,19 +407,27 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 self._subtract_tokens(t, skip_integrity_check)
 
     def _add_tokens(self, t: Buy) -> None:
-        if not t.acquisition:
+        if not t.acquisition and t.t_type is not TrType.SWAP:
             cost = fees = Decimal(0)
         else:
-            if t.cost is None:
-                raise RuntimeError("Missing cost")
+            if t.t_type is TrType.SWAP:
+                # Cost basis is copied from "Sell" asset
+                if t.t_record and t.t_record.sell:
+                    cost = self.swap_events[t.t_record.sell].cost
+                    fees = self.swap_events[t.t_record.sell].fees
+                else:
+                    raise RuntimeError("Missing t_record.sell")
+            else:
+                if t.cost is None:
+                    raise RuntimeError("Missing cost")
 
-            cost = t.cost
-            fees = t.fee_value or Decimal(0)
+                cost = t.cost
+                fees = t.fee_value or Decimal(0)
 
         self.holdings[t.asset].add_tokens(t.quantity, cost, fees, t.t_type is TrType.DEPOSIT)
 
     def _subtract_tokens(self, t: Sell, skip_integrity_check: bool) -> None:
-        if not t.disposal:
+        if not t.disposal and t.t_type is not TrType.SWAP:
             cost = fees = Decimal(0)
         else:
             if self.holdings[t.asset].quantity:
@@ -452,6 +468,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
             if config.transfers_include and not skip_integrity_check:
                 self.holdings[t.asset].check_transfer_mismatch()
+        else:
+            if t.t_type is TrType.SWAP:
+                self.swap_events[t] = SwapHolding(cost, fees)
 
     def process_income(self) -> None:
         if config.debug:

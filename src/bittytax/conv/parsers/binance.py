@@ -433,6 +433,11 @@ def _parse_binance_statements_row(
         _make_trade(
             _get_op_rows(tx_times, data_row.timestamp, (row_dict["Operation"],)),
         )
+    elif row_dict["Operation"] == "Token Swap - Redenomination/Rebranding":
+        _make_trade(
+            _get_op_rows(tx_times, data_row.timestamp, (row_dict["Operation"],)),
+            TrType.SWAP,
+        )
     elif row_dict["Operation"] in (
         "transfer_out",
         "transfer_in",
@@ -587,7 +592,7 @@ def _get_bnb_quantity(op_rows: List["DataRow"]) -> Optional[Decimal]:
     return buy_quantity
 
 
-def _make_trade(op_rows: List["DataRow"]) -> None:
+def _make_trade(op_rows: List["DataRow"], t_type: TrType = TrType.TRADE) -> None:
     buy_quantity = sell_quantity = None
     buy_asset = sell_asset = ""
     trade_row = None
@@ -615,7 +620,7 @@ def _make_trade(op_rows: List["DataRow"]) -> None:
 
     if trade_row:
         trade_row.t_record = TransactionOutRecord(
-            TrType.TRADE,
+            t_type,
             trade_row.timestamp,
             buy_quantity=buy_quantity,
             buy_asset=buy_asset,

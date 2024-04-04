@@ -14,7 +14,7 @@ from colorama import Fore
 from typing_extensions import TypedDict
 from xlsxwriter.utility import xl_rowcol_to_cell
 
-from ..bt_types import BUY_TYPES, SELL_TYPES, TrType, UnmappedType
+from ..bt_types import BUY_AND_SELL_TYPES, BUY_TYPES, SELL_TYPES, TrType, UnmappedType
 from ..config import config
 from ..constants import TZ_UTC
 from ..version import __version__
@@ -298,13 +298,13 @@ class Worksheet:
         col_num: int,
         t_record: TransactionOutRecord,
     ) -> None:
-        if t_type is TrType.TRADE or t_record.buy_asset and t_record.sell_asset:
+        if t_type in BUY_AND_SELL_TYPES or t_record.buy_asset and t_record.sell_asset:
             self.worksheet.data_validation(
                 row_num,
                 col_num,
                 row_num,
                 col_num,
-                {"validate": "list", "source": [TrType.TRADE.value]},
+                {"validate": "list", "source": [t.value for t in BUY_AND_SELL_TYPES]},
             )
         elif t_type in BUY_TYPES or t_record.buy_asset and not t_record.sell_asset:
             self.worksheet.data_validation(

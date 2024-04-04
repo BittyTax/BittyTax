@@ -482,6 +482,18 @@ class TransactionRow:
             fee_asset=FieldRequired.OPTIONAL,
             fee_value=FieldRequired.OPTIONAL,
         ),
+        TrType.SWAP: FieldValidation(
+            t_type=FieldRequired.MANDATORY,
+            buy_quantity=FieldRequired.MANDATORY,
+            buy_asset=FieldRequired.MANDATORY,
+            buy_value=FieldRequired.NOT_REQUIRED,
+            sell_quantity=FieldRequired.MANDATORY,
+            sell_asset=FieldRequired.MANDATORY,
+            sell_value=FieldRequired.NOT_REQUIRED,
+            fee_quantity=FieldRequired.OPTIONAL,
+            fee_asset=FieldRequired.OPTIONAL,
+            fee_value=FieldRequired.OPTIONAL,
+        ),
     }
 
     TRANSFER_TYPES = (TrType.DEPOSIT, TrType.WITHDRAWAL)

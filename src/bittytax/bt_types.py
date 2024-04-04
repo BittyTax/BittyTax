@@ -26,6 +26,7 @@ class TrType(Enum):
     CHARITY_SENT = "Charity-Sent"
     LOST = "Lost"
     TRADE = "Trade"
+    SWAP = "Swap"
 
 
 BUY_TYPES = (
@@ -42,6 +43,7 @@ BUY_TYPES = (
     TrType.CASHBACK,
     TrType.FEE_REBATE,
     TrType.TRADE,
+    TrType.SWAP,
 )
 
 SELL_TYPES = (
@@ -52,7 +54,10 @@ SELL_TYPES = (
     TrType.CHARITY_SENT,
     TrType.LOST,
     TrType.TRADE,
+    TrType.SWAP,
 )
+
+BUY_AND_SELL_TYPES = [t for t in BUY_TYPES if t in SELL_TYPES]
 
 UnmappedType = NewType("UnmappedType", str)
 
