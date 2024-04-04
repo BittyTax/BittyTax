@@ -62,7 +62,7 @@ class TransactionHistory:
                             tr.sell.fee_fixed = tr.fee.proceeds_fixed
                 # USA - transaction fees are NOT an allowable cost
 
-            if tr.t_type is not TrType.LOST:
+            if tr.t_type not in (TrType.LOST, TrType.SWAP):
                 if tr.buy and (tr.buy.quantity or tr.buy.fee_value):
                     tr.buy.set_tid()
                     self.transactions.append(tr.buy)
@@ -75,7 +75,7 @@ class TransactionHistory:
                     if config.debug:
                         print(f"{Fore.GREEN}split:   {tr.sell}")
             else:
-                # Special case for LOST sell must be before buy-back
+                # Special case for LOST/SWAP sell must happen before buy-back/buy
                 if tr.sell and (tr.sell.quantity or tr.sell.fee_value):
                     tr.sell.set_tid()
                     self.transactions.append(tr.sell)
@@ -309,6 +309,7 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
         TrType.CASHBACK,
         TrType.FEE_REBATE,
         TrType.TRADE,
+        TrType.SWAP,
     }
 
     def __init__(
@@ -427,6 +428,7 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
         TrType.CHARITY_SENT,
         TrType.LOST,
         TrType.TRADE,
+        TrType.SWAP,
     }
 
     def __init__(

@@ -125,10 +125,13 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         TrType.FEE_REBATE,
     )
 
-    NO_GAIN_NO_LOSS_TYPES = (TrType.GIFT_SENT, TrType.GIFT_SPOUSE, TrType.CHARITY_SENT, TrType.LOST)
-
-    # These transactions are except from the "same day" & "b&b" rule
-    NO_MATCH_TYPES = (TrType.GIFT_SPOUSE, TrType.CHARITY_SENT, TrType.LOST)
+    NO_GAIN_NO_LOSS_TYPES = (
+        TrType.GIFT_SENT,
+        TrType.GIFT_SPOUSE,
+        TrType.CHARITY_SENT,
+        TrType.LOST,
+        TrType.SWAP,
+    )
 
     def __init__(self, transactions: List[Union[Buy, Sell]], tax_rules: str) -> None:
         self.transactions = transactions
@@ -145,13 +148,11 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         self.holdings_report: Optional[HoldingsReportRecord] = None
 
     def order_transactions(self) -> None:
-        transactions = copy.deepcopy(self.transactions)
-
         if config.debug:
             print(f"{Fore.CYAN}order transactions")
 
         for t in tqdm(
-            transactions,
+            self.transactions,
             unit="t",
             desc=f"{Fore.CYAN}order transactions{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
@@ -175,6 +176,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 print(f"{Fore.GREEN}sells: {t}")
 
     def fifo_match(self) -> None:
+        # Keep copy for income tax processing
+        self.transactions = copy.deepcopy(self.transactions)
+
         if config.debug:
             print(f"{Fore.CYAN}fifo match transactions")
 
@@ -266,7 +270,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         if short_term.dates:
             sell_adjusted = copy.deepcopy(sell)
             if sell.proceeds is None:
-                raise RuntimeError("missing sell.proceeds")
+                raise RuntimeError("Missing sell.proceeds")
 
             if sell.fee_value:
                 sell_adjusted.proceeds = sell.proceeds.quantize(
@@ -274,7 +278,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 ) - sell.fee_value.quantize(PRECISION)
 
             if sell_adjusted.proceeds is None:
-                raise RuntimeError("missing sell_adjusted.proceeds")
+                raise RuntimeError("Missing sell_adjusted.proceeds")
 
             sell_adjusted.proceeds = sell_adjusted.proceeds * (short_term.quantity / sell.quantity)
 
@@ -302,7 +306,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         if long_term.dates:
             sell_adjusted = copy.deepcopy(sell)
             if sell.proceeds is None:
-                raise RuntimeError("missing sell.proceeds")
+                raise RuntimeError("Missing sell.proceeds")
 
             if sell.fee_value:
                 sell_adjusted.proceeds = sell.proceeds.quantize(
@@ -310,7 +314,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 ) - sell.fee_value.quantize(PRECISION)
 
             if sell_adjusted.proceeds is None:
-                raise RuntimeError("missing sell_adjusted.proceeds")
+                raise RuntimeError("Missing sell_adjusted.proceeds")
 
             sell_adjusted.proceeds = sell_adjusted.proceeds * (long_term.quantity / sell.quantity)
 
@@ -334,6 +338,15 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
             if config.debug:
                 print(f"{Fore.CYAN}fifo: {tax_event}")
+
+        if sell.t_type is TrType.SWAP:
+            # Cost basis copied to "Buy" asset
+            if sell.t_record and sell.t_record.buy:
+                sell.t_record.buy.cost = short_term.cost + long_term.cost
+                if short_term.fee_value + long_term.fee_value:
+                    sell.t_record.buy.fee_value = short_term.fee_value + long_term.fee_value
+            else:
+                raise RuntimeError("Missing t_record.buy for SWAP")
 
     def process_holdings(self) -> None:
         if config.debug:
@@ -385,18 +398,11 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
     def _subtract_tokens(self, t: Sell) -> None:
         if not t.disposal:
-            cost = fees = Decimal(0)
+            self.holdings[t.asset].subtract_tokens(
+                t.quantity, Decimal(0), Decimal(0), t.t_type is TrType.WITHDRAWAL
+            )
         else:
-            if self.holdings[t.asset].quantity:
-                cost = self.holdings[t.asset].cost * (t.quantity / self.holdings[t.asset].quantity)
-                fees = self.holdings[t.asset].fees * (t.quantity / self.holdings[t.asset].quantity)
-            else:
-                # Should never happen, only if incorrect transaction records
-                cost = fees = Decimal(0)
-
-        self.holdings[t.asset].subtract_tokens(
-            t.quantity, cost, fees, t.t_type is TrType.WITHDRAWAL
-        )
+            RuntimeError("Unmatched disposal in holdings")
 
     def process_income(self) -> None:
         if config.debug:
