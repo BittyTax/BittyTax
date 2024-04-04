@@ -331,7 +331,7 @@ def _parse_kraken_ledgers_row(
             data_row.t_record = TransactionOutRecord(
                 TrType.MARGIN_FEE,
                 data_row.timestamp,
-                sell_quantity=Decimal(row_dict["fee"]),
+                sell_quantity=abs(Decimal(row_dict["fee"])),
                 sell_asset=_normalise_asset(row_dict["asset"]),
                 wallet=WALLET,
             )
@@ -343,7 +343,7 @@ def _parse_kraken_ledgers_row(
             dup_data_row.t_record = TransactionOutRecord(
                 TrType.MARGIN_FEE,
                 data_row.timestamp,
-                sell_quantity=Decimal(row_dict["fee"]),
+                sell_quantity=abs(Decimal(row_dict["fee"])),
                 sell_asset=_normalise_asset(row_dict["asset"]),
                 wallet=WALLET,
             )
@@ -352,7 +352,7 @@ def _parse_kraken_ledgers_row(
         data_row.t_record = TransactionOutRecord(
             TrType.MARGIN_FEE,
             data_row.timestamp,
-            sell_quantity=Decimal(row_dict["fee"]),
+            sell_quantity=abs(Decimal(row_dict["fee"])),
             sell_asset=_normalise_asset(row_dict["asset"]),
             wallet=WALLET,
         )
