@@ -57,6 +57,7 @@ def parse_crypto_com(
         "mco_stake_reward",
         "crypto_earn_extra_interest_paid",
         "supercharger_reward_to_app_credited",
+        "finance.lockup.dpos_compound_interest.crypto_wallet",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.INTEREST,
@@ -203,6 +204,7 @@ def parse_crypto_com(
         "trading.limit_order.fiat_wallet.purchase_lock",
         "trading.limit_order.fiat_wallet.purchase_unlock",
         "trading.limit_order.fiat_wallet.sell_lock",
+        "finance.lockup.dpos_lock.crypto_wallet",
     ):
         return
     elif row_dict["Transaction Kind"] == "":
