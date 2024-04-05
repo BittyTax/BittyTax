@@ -11,6 +11,7 @@ from . import (
     bittylicious,
     blockchain,
     blockfi,
+    blockpit,
     blockscout,
     bnktothefuture,
     bscscan,
