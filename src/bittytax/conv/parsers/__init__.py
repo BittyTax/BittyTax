@@ -36,6 +36,7 @@ from . import (
     ftmscan,
     ftx,
     gatehub,
+    gateio,
     gemini,
     generic,
     gravity,
