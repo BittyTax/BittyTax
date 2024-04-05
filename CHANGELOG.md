@@ -55,6 +55,7 @@
 - Uphold parser: added support for non-GBP exports.
 - Kraken parser: added new export format. ([#355](https://github.com/BittyTax/BittyTax/issues/355))
 - Kraken parser: added "adjustment" type.
+- Conversion tool: added parser for Gate.io exchange.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
