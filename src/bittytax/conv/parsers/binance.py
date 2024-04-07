@@ -323,6 +323,10 @@ def _parse_binance_statements_row(
         _parse_binance_statements_futures_row(parser, data_row)
         return
 
+    if row_dict["Account"] in ("Isolated Margin", "Cross Margin"):
+        _parse_binance_statements_margin_row(tx_times, parser, data_row)
+        return
+
     if row_dict["Account"].lower() not in ("spot", "earn", "pool"):
         raise UnexpectedTypeError(parser.in_header.index("Account"), "Account", row_dict["Account"])
 
@@ -568,7 +572,63 @@ def _parse_binance_statements_futures_row(parser: DataParser, data_row: "DataRow
         "transfer_out",
         "transfer_in",
         "Transfer Between Spot Account and UM Futures Account",
+        "Transfer Between Main Account/Futures and Margin Account",
     ):
+        # Skip not taxable events
+        return
+    else:
+        raise UnexpectedTypeError(
+            parser.in_header.index("Operation"), "Operation", row_dict["Operation"]
+        )
+
+
+def _parse_binance_statements_margin_row(
+    tx_times: Dict[datetime, List["DataRow"]], parser: DataParser, data_row: "DataRow"
+) -> None:
+    row_dict = data_row.row_dict
+
+    if row_dict["Operation"] == "Isolated Margin Loan":
+        data_row.t_record = TransactionOutRecord(
+            TrType.LOAN,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Change"]),
+            buy_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
+    elif row_dict["Operation"] == "Isolated Margin Repayment":
+        data_row.t_record = TransactionOutRecord(
+            TrType.LOAN_REPAYMENT,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["Change"])),
+            sell_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
+    elif row_dict["Operation"] in (
+        "Buy",
+        "Sell",
+        "Fee",
+        "Transaction Buy",
+        "Transaction Spend",
+        "Transaction Sold",
+        "Transaction Revenue",
+    ):
+        _make_trade_with_fee(
+            _get_op_rows(
+                tx_times,
+                data_row.timestamp,
+                (
+                    "Buy",
+                    "Sell",
+                    "Fee",
+                    "Transaction Buy",
+                    "Transaction Spend",
+                    "Transaction Sold",
+                    "Transaction Revenue",
+                ),
+            ),
+        )
+
+    elif row_dict["Operation"] == "Transfer Between Main Account/Futures and Margin Account":
         # Skip not taxable events
         return
     else:
