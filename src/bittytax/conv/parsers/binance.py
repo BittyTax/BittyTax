@@ -323,7 +323,7 @@ def _parse_binance_statements_row(
         _parse_binance_statements_futures_row(parser, data_row)
         return
 
-    if row_dict["Account"] in ("Isolated Margin", "Cross Margin"):
+    if row_dict["Account"] in ("Isolated Margin", "CrossMargin"):
         _parse_binance_statements_margin_row(tx_times, parser, data_row)
         return
 
@@ -587,7 +587,7 @@ def _parse_binance_statements_margin_row(
 ) -> None:
     row_dict = data_row.row_dict
 
-    if row_dict["Operation"] == "Isolated Margin Loan":
+    if row_dict["Operation"] in ("Margin loan", "Isolated Margin Loan"):
         data_row.t_record = TransactionOutRecord(
             TrType.LOAN,
             data_row.timestamp,
@@ -595,7 +595,7 @@ def _parse_binance_statements_margin_row(
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
         )
-    elif row_dict["Operation"] == "Isolated Margin Repayment":
+    elif row_dict["Operation"] in ("Margin Repayment", "Isolated Margin Repayment"):
         data_row.t_record = TransactionOutRecord(
             TrType.LOAN_REPAYMENT,
             data_row.timestamp,
