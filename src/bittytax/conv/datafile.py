@@ -110,9 +110,14 @@ class DataFile:
                     sys.stderr.write(f"{Fore.CYAN}conv: EXCEL\n")
 
                 for sheet_name in workbook.sheetnames:
-                    dimensions = workbook[sheet_name].calculate_dimension()
-                    if dimensions == "A1:A1" or dimensions.endswith("1048576"):
+                    try:
+                        dimensions = workbook[sheet_name].calculate_dimension()
+                    except ValueError:
                         workbook[sheet_name].reset_dimensions()
+                    else:
+                        if dimensions == "A1:A1" or dimensions.endswith("1048576"):
+                            workbook[sheet_name].reset_dimensions()
+
                     yield workbook[sheet_name]
 
                 workbook.close()

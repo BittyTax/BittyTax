@@ -47,10 +47,10 @@ class ImportRecords:
             try:
                 dimensions = worksheet.calculate_dimension()
             except ValueError:
-                workbook[sheet_name].reset_dimensions()
+                worksheet.reset_dimensions()
             else:
                 if dimensions == "A1:A1" or dimensions.endswith("1048576"):
-                    workbook[sheet_name].reset_dimensions()
+                    worksheet.reset_dimensions()
 
             if worksheet.title.startswith("--"):
                 print(f"{Fore.GREEN}skipping '{worksheet.title}' worksheet")
