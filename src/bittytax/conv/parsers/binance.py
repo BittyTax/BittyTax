@@ -48,6 +48,7 @@ QUOTE_ASSETS = [
     "GBP",
     "GYEN",
     "IDRT",
+    "JPY",
     "NGN",
     "PAX",
     "PLN",
@@ -63,6 +64,7 @@ QUOTE_ASSETS = [
     "USDT",
     "UST",
     "VAI",
+    "XMR",
     "XRP",
     "ZAR",
 ]
@@ -325,11 +327,22 @@ def _parse_binance_statements_row(
         "Referrer rebates",
         "Commission Rebate",
         "Commission Fee Shared With You",
-        "Cash Voucher distribution",
         "Referral Kickback",
     ):
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.REFERRAL,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Change"]),
+            buy_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
+    elif row_dict["Operation"] in (
+        "Airdrop Assets",
+        "Cash Voucher distribution",
+        "Simple Earn Flexible Airdrop",
+    ):
+        data_row.t_record = TransactionOutRecord(
+            TrType.AIRDROP,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Change"]),
             buy_asset=row_dict["Coin"],
@@ -384,6 +397,7 @@ def _parse_binance_statements_row(
         "Simple Earn Locked Rewards",
         "DOT Slot Auction Rewards",
         "Launchpool Earnings Withdrawal",
+        "BNB Vault Rewards",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.STAKING,
@@ -433,6 +447,7 @@ def _parse_binance_statements_row(
         "Simple Earn Locked Subscription",
         "Simple Earn Locked Redemption",
         "Transfer Between Spot Account and UM Futures Account",
+        "Transfer Between Main Account/Futures and Margin Account",
         "Launchpool Subscription/Redemption",
         "Launchpad Subscribe",
     ):

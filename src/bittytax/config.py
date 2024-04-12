@@ -6,7 +6,6 @@ import os
 import sys
 from typing import Any, TextIO
 
-import dateutil.tz
 import pkg_resources
 import yaml
 from colorama import Fore
@@ -16,8 +15,6 @@ from .constants import BITTYTAX_PATH, ERROR
 
 class Config:
     BITTYTAX_CONFIG = "bittytax.conf"
-
-    TZ_LOCAL = dateutil.tz.gettz("Europe/London")
 
     FIAT_LIST = ["GBP", "EUR", "USD", "AUD", "NZD", "CAD", "PLN"]
     CRYPTO_LIST = ["BTC", "ETH", "XRP", "LTC", "BCH", "USDT"]
@@ -35,6 +32,8 @@ class Config:
 
     DEFAULT_CONFIG = {
         "local_currency": "GBP",
+        "local_timezone": "Europe/London",
+        "date_is_day_first": True,
         "fiat_list": FIAT_LIST,
         "crypto_list": CRYPTO_LIST,
         "trade_asset_type": TRADE_ASSET_TYPE_PRIORITY,

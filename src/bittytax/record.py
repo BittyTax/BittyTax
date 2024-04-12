@@ -4,11 +4,15 @@
 from decimal import Decimal
 from typing import TYPE_CHECKING, List, Optional
 
+import dateutil.tz
+
 from .bt_types import Note, Timestamp, TrType, Wallet
 from .config import config
 
 if TYPE_CHECKING:
     from .transactions import Buy, Sell
+
+TZ_LOCAL = dateutil.tz.gettz(config.local_timezone)
 
 
 # pylint: disable=too-few-public-methods, too-many-instance-attributes
@@ -36,17 +40,17 @@ class TransactionRecord:
 
         if self.buy:
             self.buy.t_record = self
-            self.buy.timestamp = Timestamp(self.timestamp.astimezone(config.TZ_LOCAL))
+            self.buy.timestamp = Timestamp(self.timestamp.astimezone(TZ_LOCAL))
             self.buy.wallet = self.wallet
             self.buy.note = self.note
         if self.sell:
             self.sell.t_record = self
-            self.sell.timestamp = Timestamp(self.timestamp.astimezone(config.TZ_LOCAL))
+            self.sell.timestamp = Timestamp(self.timestamp.astimezone(TZ_LOCAL))
             self.sell.wallet = self.wallet
             self.sell.note = self.note
         if self.fee:
             self.fee.t_record = self
-            self.fee.timestamp = Timestamp(self.timestamp.astimezone(config.TZ_LOCAL))
+            self.fee.timestamp = Timestamp(self.timestamp.astimezone(TZ_LOCAL))
             self.fee.wallet = self.wallet
             self.fee.note = self.note
 

@@ -21,6 +21,7 @@ from .datamerge import DataMerge
 from .dataparser import DataParser
 from .exceptions import (
     DataFilenameError,
+    DataFormatNotSupported,
     DataFormatUnrecognised,
     UnknownCryptoassetError,
     UnknownUsernameError,
@@ -146,6 +147,8 @@ def main() -> None:
                 parser.exit(message=f"{parser.prog}: error: {e}\n")
             except DataFormatUnrecognised:
                 sys.stderr.write(_file_msg(pathname, None, msg="unrecognised"))
+            except DataFormatNotSupported:
+                sys.stderr.write(_file_msg(pathname, None, msg="format not supported"))
             except IOError as e:
                 if e.errno == errno.ENOENT:
                     sys.stderr.write(_file_msg(pathname, None, msg="no such file or directory"))

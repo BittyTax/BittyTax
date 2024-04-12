@@ -111,7 +111,7 @@ def _parse_coinbase_pro_row(
         )
     elif row_dict["type"] == "rebate":
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.FEE_REBATE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["amount"]),
             buy_asset=row_dict["amount/balance unit"],

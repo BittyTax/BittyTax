@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2023
 
+import re
 import sys
 from decimal import Decimal
 from typing import TYPE_CHECKING, Dict, List
@@ -60,8 +61,13 @@ def _parse_swissborg_row(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time in UTC"])
+    currency = parser.args[0].group(1)
 
     if row_dict["Type"] == "Deposit":
+        fee_value = DataParser.convert_currency(
+            row_dict[f"Fee ({currency})"], currency, data_row.timestamp
+        )
+
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -69,10 +75,14 @@ def _parse_swissborg_row(
             buy_asset=row_dict["Currency"],
             fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Currency"],
-            fee_value=Decimal(row_dict["Fee (GBP)"]) if row_dict["Currency"] != "GBP" else None,
+            fee_value=fee_value if row_dict["Currency"] != config.ccy else None,
             wallet=WALLET,
         )
     elif row_dict["Type"] == "Withdrawal":
+        fee_value = DataParser.convert_currency(
+            row_dict[f"Fee ({currency})"], currency, data_row.timestamp
+        )
+
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -80,28 +90,33 @@ def _parse_swissborg_row(
             sell_asset=row_dict["Currency"],
             fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Currency"],
-            fee_value=Decimal(row_dict["Fee (GBP)"]) if row_dict["Currency"] != "GBP" else None,
+            fee_value=fee_value if row_dict["Currency"] != config.ccy else None,
             wallet=WALLET,
         )
     elif row_dict["Type"] in ("Sell", "Buy"):
         _make_trade(tx_times[row_dict["Time in UTC"]], data_row, parser)
     elif row_dict["Type"] == "Payouts":
+        gross_amount = DataParser.convert_currency(
+            row_dict[f"Gross amount ({currency})"], currency, data_row.timestamp
+        )
+        fee_value = DataParser.convert_currency(
+            row_dict[f"Fee ({currency})"], currency, data_row.timestamp
+        )
+
         if row_dict["Note"] == "Yield payouts":
             t_type = TrType.STAKING
         else:
-            t_type = TrType.GIFT_RECEIVED
+            t_type = TrType.AIRDROP
 
         data_row.t_record = TransactionOutRecord(
             t_type,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Gross amount"]),
             buy_asset=row_dict["Currency"],
-            buy_value=(
-                Decimal(row_dict["Gross amount (GBP)"]) if row_dict["Currency"] != "GBP" else None
-            ),
+            buy_value=gross_amount if row_dict["Currency"] != config.ccy else None,
             fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Currency"],
-            fee_value=Decimal(row_dict["Fee (GBP)"]) if row_dict["Currency"] != "GBP" else None,
+            fee_value=fee_value if row_dict["Currency"] != config.ccy else None,
             wallet=WALLET,
         )
     else:
@@ -109,6 +124,7 @@ def _parse_swissborg_row(
 
 
 def _make_trade(tx_times: List["DataRow"], data_row: "DataRow", parser: DataParser) -> None:
+    currency = parser.args[0].group(1)
     buy_rows = [dr for dr in tx_times if dr.row_dict["Type"] == "Buy"]
     sell_rows = [dr for dr in tx_times if dr.row_dict["Type"] == "Sell"]
 
@@ -120,30 +136,30 @@ def _make_trade(tx_times: List["DataRow"], data_row: "DataRow", parser: DataPars
             buy_rows[0].timestamp = data_row.timestamp
             buy_rows[0].parsed = True
 
+        gross_buy_amount = DataParser.convert_currency(
+            buy_rows[0].row_dict[f"Gross amount ({currency})"], currency, data_row.timestamp
+        )
+        gross_sell_amount = DataParser.convert_currency(
+            sell_rows[0].row_dict[f"Gross amount ({currency})"], currency, data_row.timestamp
+        )
+        fee_value = DataParser.convert_currency(
+            buy_rows[0].row_dict[f"Fee ({currency})"], currency, data_row.timestamp
+        )
+
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
             buy_quantity=Decimal(buy_rows[0].row_dict["Gross amount"]),
             buy_asset=buy_rows[0].row_dict["Currency"],
-            buy_value=(
-                Decimal(buy_rows[0].row_dict["Gross amount (GBP)"])
-                if buy_rows[0].row_dict["Currency"] != "GBP"
-                else None
-            ),
+            buy_value=gross_buy_amount if buy_rows[0].row_dict["Currency"] != config.ccy else None,
             sell_quantity=Decimal(sell_rows[0].row_dict["Gross amount"]),
             sell_asset=sell_rows[0].row_dict["Currency"],
             sell_value=(
-                Decimal(sell_rows[0].row_dict["Gross amount (GBP)"])
-                if sell_rows[0].row_dict["Currency"] != "GBP"
-                else None
+                gross_sell_amount if sell_rows[0].row_dict["Currency"] != config.ccy else None
             ),
             fee_quantity=Decimal(buy_rows[0].row_dict["Fee"]),
             fee_asset=buy_rows[0].row_dict["Currency"],
-            fee_value=(
-                Decimal(buy_rows[0].row_dict["Fee (GBP)"])
-                if buy_rows[0].row_dict["Currency"] != "GBP"
-                else None
-            ),
+            fee_value=fee_value if buy_rows[0].row_dict["Currency"] != config.ccy else None,
             wallet=WALLET,
         )
     else:
@@ -161,11 +177,11 @@ DataParser(
         "Type",
         "Currency",
         "Gross amount",
-        "Gross amount (GBP)",
+        lambda h: re.match(r"^Gross amount \((\w{3})\)", h),
         "Fee",
-        "Fee (GBP)",
+        lambda h: re.match(r"^Fee \((\w{3})\)", h),
         "Net amount",
-        "Net amount (GBP)",
+        lambda h: re.match(r"^Net amount \((\w{3})\)", h),
         "Note",
     ],
     worksheet_name="SwissBorg",

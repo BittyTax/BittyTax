@@ -78,9 +78,17 @@ def parse_blockfi(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Pars
             buy_asset=row_dict["Cryptocurrency"],
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] in ("Bonus Payment", "Referral Bonus"):
+    elif row_dict["Transaction Type"] == "Referral Bonus":
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.REFERRAL,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Amount"]),
+            buy_asset=row_dict["Cryptocurrency"],
+            wallet=WALLET,
+        )
+    elif row_dict["Transaction Type"] == "Bonus Payment":
+        data_row.t_record = TransactionOutRecord(
+            TrType.AIRDROP,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Cryptocurrency"],

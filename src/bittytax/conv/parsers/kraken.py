@@ -72,6 +72,19 @@ ALT_ASSETS = {
     "ZUSD": "USD",
 }
 
+STAKED_SUFFIX = [
+    ".HOLD",
+    ".M",
+    ".P",
+    ".S",
+    "03.S",
+    "04.S",
+    "07.S",
+    "14.S",
+    "21.S",
+    "28.S",
+]
+
 TRADINGPAIR_TO_QUOTE_ASSET = {
     "BLZEUR": "EUR",
     "BLZUSD": "USD",
@@ -151,7 +164,7 @@ def _parse_kraken_ledgers_row(
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["amount"]),
                 buy_asset=_normalise_asset(row_dict["asset"]),
-                fee_quantity=Decimal(row_dict["fee"]),
+                fee_quantity=abs(Decimal(row_dict["fee"])),
                 fee_asset=_normalise_asset(row_dict["asset"]),
                 wallet=WALLET,
             )
@@ -164,11 +177,11 @@ def _parse_kraken_ledgers_row(
                 wallet=WALLET,
                 note="Reverse failed Deposit",
             )
-            if Decimal(row_dict["fee"]) < 0:
+            if Decimal(row_dict["fee"]) != 0:
                 dup_data_row = copy.copy(data_row)
                 dup_data_row.row = []
                 dup_data_row.t_record = TransactionOutRecord(
-                    TrType.GIFT_RECEIVED,
+                    TrType.FEE_REBATE,
                     data_row.timestamp,
                     buy_quantity=abs(Decimal(row_dict["fee"])),
                     buy_asset=_normalise_asset(row_dict["asset"]),
@@ -183,7 +196,7 @@ def _parse_kraken_ledgers_row(
                 data_row.timestamp,
                 sell_quantity=abs(Decimal(row_dict["amount"])),
                 sell_asset=_normalise_asset(row_dict["asset"]),
-                fee_quantity=Decimal(row_dict["fee"]),
+                fee_quantity=abs(Decimal(row_dict["fee"])),
                 fee_asset=_normalise_asset(row_dict["asset"]),
                 wallet=WALLET,
             )
@@ -196,11 +209,11 @@ def _parse_kraken_ledgers_row(
                 wallet=WALLET,
                 note="Reverse failed Withdrawal",
             )
-            if Decimal(row_dict["fee"]) < 0:
+            if Decimal(row_dict["fee"]) != 0:
                 dup_data_row = copy.copy(data_row)
                 dup_data_row.row = []
                 dup_data_row.t_record = TransactionOutRecord(
-                    TrType.GIFT_RECEIVED,
+                    TrType.FEE_REBATE,
                     data_row.timestamp,
                     buy_quantity=abs(Decimal(row_dict["fee"])),
                     buy_asset=_normalise_asset(row_dict["asset"]),
@@ -210,20 +223,54 @@ def _parse_kraken_ledgers_row(
                 data_rows.insert(row_index + 1, dup_data_row)
     elif row_dict["type"] == "invite bonus":
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.REFERRAL,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["amount"]),
             buy_asset=_normalise_asset(row_dict["asset"]),
             wallet=WALLET,
         )
     elif row_dict["type"] == "staking":
+        if Decimal(row_dict["amount"]) > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.STAKING,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["amount"]),
+                buy_asset=_normalise_asset(row_dict["asset"]),
+                wallet=WALLET,
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.SPEND,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["amount"])),
+                sell_asset=_normalise_asset(row_dict["asset"]),
+                wallet=WALLET,
+            )
+    elif row_dict["type"] == "dividend":
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.DIVIDEND,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["amount"]),
             buy_asset=_normalise_asset(row_dict["asset"]),
             wallet=WALLET,
         )
+    elif row_dict["type"] == "adjustment":
+        if Decimal(row_dict["amount"]) > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.AIRDROP,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["amount"]),
+                buy_asset=_normalise_asset(row_dict["asset"]),
+                wallet=WALLET,
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.SPEND,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["amount"])),
+                sell_asset=_normalise_asset(row_dict["asset"]),
+                wallet=WALLET,
+            )
     elif row_dict["type"] == "transfer":
         if len(_get_ref_ids(ref_ids, row_dict["refid"], ("transfer",))) > 1:
             # Multiple transfer rows is a rebase? Not currently supported
@@ -232,7 +279,7 @@ def _parse_kraken_ledgers_row(
             )
 
         if row_dict["subtype"] == "":
-            if Decimal(row_dict["amount"]) >= 0:
+            if Decimal(row_dict["amount"]) > 0:
                 # Fork or Airdrop
                 data_row.t_record = TransactionOutRecord(
                     TrType.AIRDROP,
@@ -242,9 +289,9 @@ def _parse_kraken_ledgers_row(
                     wallet=WALLET,
                 )
             else:
-                # Delisting
+                # Delisting?
                 data_row.t_record = TransactionOutRecord(
-                    TrType.LOST,
+                    TrType.SPEND,
                     data_row.timestamp,
                     sell_quantity=abs(Decimal(row_dict["amount"])),
                     sell_asset=_normalise_asset(row_dict["asset"]),
@@ -267,6 +314,9 @@ def _parse_kraken_ledgers_row(
         _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("trade",)))
     elif row_dict["type"] in ("spend", "receive"):
         _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("spend", "receive")))
+    elif row_dict["type"] == "earn":
+        # Skip internal transfers
+        return
     else:
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
@@ -278,8 +328,10 @@ def _get_ref_ids(
 
 
 def _make_trade(ref_ids: List["DataRow"]) -> None:
-    buy_quantity = sell_quantity = fee_quantity = None
-    buy_asset = sell_asset = fee_asset = ""
+    buy_quantity = sell_quantity = Decimal(0)
+    fee_quantity = None
+    buy_asset = sell_asset = config.ccy
+    fee_asset = ""
     trade_row = None
 
     for data_row in ref_ids:
@@ -294,7 +346,7 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
                 data_row.timestamp,
                 sell_quantity=Decimal(0),
                 sell_asset=_normalise_asset(row_dict["asset"]),
-                fee_quantity=Decimal(row_dict["fee"]),
+                fee_quantity=abs(Decimal(row_dict["fee"])),
                 fee_asset=_normalise_asset(row_dict["asset"]),
                 wallet=WALLET,
                 note="Trading fee",
@@ -312,9 +364,9 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
         if not trade_row:
             trade_row = data_row
 
-        if Decimal(row_dict["fee"]) > 0:
+        if Decimal(row_dict["fee"]) != 0:
             if not fee_quantity:
-                fee_quantity = Decimal(row_dict["fee"])
+                fee_quantity = abs(Decimal(row_dict["fee"]))
                 fee_asset = _normalise_asset(row_dict["asset"])
             else:
                 # Add as secondary fee
@@ -323,7 +375,7 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
                     data_row.timestamp,
                     sell_quantity=Decimal(0),
                     sell_asset=_normalise_asset(row_dict["asset"]),
-                    fee_quantity=Decimal(row_dict["fee"]),
+                    fee_quantity=abs(Decimal(row_dict["fee"])),
                     fee_asset=_normalise_asset(row_dict["asset"]),
                     wallet=WALLET,
                     note="Trading fee",
@@ -400,8 +452,9 @@ def _normalise_asset(asset: str) -> str:
     if asset == "XBT":
         return "BTC"
 
-    if asset.endswith(".S"):
-        return asset[:-2]
+    for suffix in sorted(STAKED_SUFFIX, reverse=True):
+        if asset.endswith(suffix):
+            return asset[: -len(suffix)]
     return asset
 
 
@@ -416,6 +469,46 @@ kraken_ledgers = DataParser(
         "subtype",
         "aclass",
         "asset",
+        "wallet",
+        "amount",
+        "fee",
+        "balance",
+    ],
+    worksheet_name="Kraken L",
+    all_handler=parse_kraken_ledgers,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Kraken Ledgers",
+    [
+        "txid",
+        "refid",
+        "time",
+        "type",
+        "subtype",
+        "aclass",
+        "asset",
+        "amount",
+        "fee",
+        "balance",
+    ],
+    worksheet_name="Kraken L",
+    all_handler=parse_kraken_ledgers,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Kraken Ledgers",
+    [
+        "txid",
+        "refid",
+        "time",
+        "type",
+        "subtype",
+        "aclass",
+        "asset",
+        "wallet",
         "amount",
         "fee",
         "balance",

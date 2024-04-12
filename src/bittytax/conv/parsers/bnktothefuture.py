@@ -58,7 +58,7 @@ def parse_bnktothefuture(
             )
     elif row_dict["Description"] == "Reward":
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.AIRDROP,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["In"]),
             buy_asset=_asset(row_dict["Currency"]),

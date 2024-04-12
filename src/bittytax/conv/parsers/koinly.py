@@ -2,6 +2,7 @@
 # (c) Nano Nano Ltd 2022
 
 import copy
+import re
 import sys
 from decimal import Decimal
 from typing import TYPE_CHECKING, List, Union
@@ -22,12 +23,12 @@ KOINLY_D_MAPPING = {
     "": TrType.GIFT_RECEIVED,
     "Airdrop": TrType.AIRDROP,
     "airdrop": TrType.AIRDROP,
-    "Fork": TrType.GIFT_RECEIVED,
-    "fork": TrType.GIFT_RECEIVED,
+    "Fork": TrType.FORK,
+    "fork": TrType.FORK,
     "Mining": TrType.MINING,
     "mining": TrType.MINING,
-    "Reward": TrType.GIFT_RECEIVED,
-    "reward": TrType.GIFT_RECEIVED,
+    "Reward": TrType.AIRDROP,
+    "reward": TrType.AIRDROP,
     "Income": TrType.INCOME,
     "income": TrType.INCOME,
     "Loan interest": TrType.INTEREST,
@@ -54,6 +55,8 @@ KOINLY_W_MAPPING = {
 def parse_koinly(
     data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
+    currency = parser.args[2].group(1)
+
     for row_index, data_row in enumerate(data_rows):
         if config.debug:
             if parser.in_header_row_num is None:
@@ -68,7 +71,7 @@ def parse_koinly(
             continue
 
         try:
-            _parse_koinly_row(data_rows, parser, data_row, row_index)
+            _parse_koinly_row(data_rows, parser, data_row, row_index, currency)
         except DataRowError as e:
             data_row.failure = e
         except (ValueError, ArithmeticError) as e:
@@ -79,21 +82,34 @@ def parse_koinly(
 
 
 def _parse_koinly_row(
-    data_rows: List["DataRow"], parser: DataParser, data_row: "DataRow", row_index: int
+    data_rows: List["DataRow"],
+    parser: DataParser,
+    data_row: "DataRow",
+    row_index: int,
+    currency: str,
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
     data_row.parsed = True
+
+    if "Label" in row_dict:
+        row_dict["Tag"] = row_dict["Label"]
 
     if row_dict["Fee Amount"]:
         fee_quantity = Decimal(row_dict["Fee Amount"])
     else:
         fee_quantity = None
 
-    if row_dict["Fee Value (GBP)"]:
-        fee_value = Decimal(row_dict["Fee Value (GBP)"])
+    if row_dict[f"Fee Value ({currency})"]:
+        fee_value = DataParser.convert_currency(
+            row_dict[f"Fee Value ({currency})"], currency, data_row.timestamp
+        )
     else:
         fee_value = None
+
+    net_value = DataParser.convert_currency(
+        row_dict[f"Net Value ({currency})"], currency, data_row.timestamp
+    )
 
     if row_dict["Type"] in ("buy", "sell", "exchange"):
         data_row.t_record = TransactionOutRecord(
@@ -101,10 +117,10 @@ def _parse_koinly_row(
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Received Amount"]),
             buy_asset=row_dict["Received Currency"],
-            buy_value=Decimal(row_dict["Net Value (GBP)"]),
+            buy_value=net_value,
             sell_quantity=Decimal(row_dict["Sent Amount"]),
             sell_asset=row_dict["Sent Currency"],
-            sell_value=Decimal(row_dict["Net Value (GBP)"]),
+            sell_value=net_value,
             fee_quantity=fee_quantity,
             fee_asset=row_dict["Fee Currency"],
             fee_value=fee_value,
@@ -134,17 +150,17 @@ def _parse_koinly_row(
         )
         data_rows.insert(row_index + 1, dup_data_row)
     elif row_dict["Type"] in ("fiat_deposit", "crypto_deposit"):
-        if row_dict["Label"] in KOINLY_D_MAPPING:
-            t_type: Union[TrType, UnmappedType] = KOINLY_D_MAPPING[row_dict["Label"]]
+        if row_dict["Tag"] in KOINLY_D_MAPPING:
+            t_type: Union[TrType, UnmappedType] = KOINLY_D_MAPPING[row_dict["Tag"]]
         else:
-            t_type = UnmappedType(f'_{row_dict["Label"]}')
+            t_type = UnmappedType(f'_{row_dict["Tag"]}')
 
         data_row.t_record = TransactionOutRecord(
             t_type,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Received Amount"]),
             buy_asset=row_dict["Received Currency"],
-            buy_value=Decimal(row_dict["Net Value (GBP)"]),
+            buy_value=net_value,
             fee_quantity=fee_quantity,
             fee_asset=row_dict["Fee Currency"],
             fee_value=fee_value,
@@ -152,17 +168,17 @@ def _parse_koinly_row(
             note=row_dict["Description"],
         )
     elif row_dict["Type"] in ("fiat_withdrawal", "crypto_withdrawal"):
-        if row_dict["Label"] in KOINLY_W_MAPPING:
-            t_type = KOINLY_W_MAPPING[row_dict["Label"]]
+        if row_dict["Tag"] in KOINLY_W_MAPPING:
+            t_type = KOINLY_W_MAPPING[row_dict["Tag"]]
         else:
-            t_type = UnmappedType(f'_{row_dict["Label"]}')
+            t_type = UnmappedType(f'_{row_dict["Tag"]}')
 
         data_row.t_record = TransactionOutRecord(
             t_type,
             data_row.timestamp,
             sell_quantity=Decimal(row_dict["Sent Amount"]),
             sell_asset=row_dict["Sent Currency"],
-            sell_value=Decimal(row_dict["Net Value (GBP)"]),
+            sell_value=net_value,
             fee_quantity=fee_quantity,
             fee_asset=row_dict["Fee Currency"],
             fee_value=fee_value,
@@ -179,7 +195,7 @@ DataParser(
     [
         "Date",
         "Type",
-        "Label",
+        lambda h: h in ("Label", "Tag"),
         "Sending Wallet",
         "Sent Amount",
         "Sent Currency",
@@ -190,9 +206,9 @@ DataParser(
         "Received Cost Basis",
         "Fee Amount",
         "Fee Currency",
-        "Gain (GBP)",
-        "Net Value (GBP)",
-        "Fee Value (GBP)",
+        lambda h: re.match(r"Gain \((\w{3})\)", h),
+        lambda h: re.match(r"Net Value \((\w{3})\)", h),
+        lambda h: re.match(r"Fee Value \((\w{3})\)", h),
         "TxSrc",
         "TxDest",
         "TxHash",

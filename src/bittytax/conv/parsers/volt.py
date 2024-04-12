@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Optional, Tuple
 from typing_extensions import Unpack
 
 from ...bt_types import TrType
+from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
@@ -21,7 +22,7 @@ WALLET = "Volt"
 def parse_volt(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(
-        row_dict["time"], tz="Europe/London", dayfirst=True
+        row_dict["time"], tz=config.local_timezone, dayfirst=config.date_is_day_first
     )
 
     amount, symbol = _get_amount(row_dict["amount"].replace(",", ""))

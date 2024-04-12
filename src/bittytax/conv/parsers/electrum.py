@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from typing_extensions import Unpack
 
 from ...bt_types import TrType
+from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..exceptions import UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
@@ -21,7 +22,7 @@ def parse_electrum_v3(
     data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["timestamp"], tz="Europe/London")
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["timestamp"], tz=config.local_timezone)
 
     if not kwargs["cryptoasset"]:
         raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet", ""))
@@ -68,7 +69,7 @@ def parse_electrum_v1(
     data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["timestamp"], tz="Europe/London")
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["timestamp"], tz=config.local_timezone)
 
     if not kwargs["cryptoasset"]:
         raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet", ""))

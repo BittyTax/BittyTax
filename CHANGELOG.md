@@ -1,9 +1,12 @@
 # Change Log
 ## [Unreleased]
 ### Fixed
-- Coinbase parser: fixed regex to handle whole numbers.
+- Coinbase parser: fixed regex to handle whole numbers, and a single digit after the decimal point.
 - Conversion tool: handle .xlsx files with incorrect dimensions. ([#342](https://github.com/BittyTax/BittyTax/issues/342))
 - Accounting tool: handle .xlsx files with incorrect dimensions. ([#342](https://github.com/BittyTax/BittyTax/issues/342))
+- Coinbase parser: fixed missing "Fee Quantity" when zero.
+- KuCoin parser: use UTC offset from Time header for timestamp.
+- Accounting/Conversion tool: catch exception when importing a Google Sheet.
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
@@ -36,6 +39,25 @@
 - Celsius parser: added "Swap in" and "Swap out" transaction types.
 - Config: added more fiat currencies to FIAT_LIST.
 - BscScan parser: added new export formats. ([#343](https://github.com/BittyTax/BittyTax/issues/343))
+- Binance parser: added "Airdrop Assets" operation. ([#347](https://github.com/BittyTax/BittyTax/issues/347))
+- Config: added local_timezone and date_is_day_first parameters.
+- Accounting tool: new transaction types added. Fork, Referral, Cashback and Fee-Rebate.
+- Kraken parser: added "dividend" and "earn" types.
+- Bitpanda parser: added new export format. ([#352](https://github.com/BittyTax/BittyTax/issues/352))
+- Koinly parser: added support for non-GBP exports. ([#353](https://github.com/BittyTax/BittyTax/issues/353))
+- Kraken parser: added removal of staking suffixes.
+- Kraken parser: negative "staking" transactions result in a Spend.
+- Kraken parser: handle trades with no counter asset.
+- Conversion tool: added DataFormatNotSupported exception.
+- KuCoin parser: added "Spot Orders" and "Account History_Funding" files.
+- Kraken parser: added new export format. ([#355](https://github.com/BittyTax/BittyTax/issues/355))
+- CoinTracking parser: added support for non-GBP exports.
+- Generic parser: added support for non-GBP exports.
+- Trezor Suite parser: added support for non-GBP exports.
+- Uphold parser: added support for non-GBP exports.
+- Kraken parser: added "adjustment" type.
+- Conversion tool: added parser for Gate.io exchange. ([#152](https://github.com/BittyTax/BittyTax/issues/152))
+- Crypto.com parser: added "finance.lockup.dpos_compound_interest.crypto_wallet" and finance.lockup.dpos_lock.crypto_wallet" transaction kinds. ([#356](https://github.com/BittyTax/BittyTax/issues/356))
 - Blockchain.com paraser: added new export format.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -43,6 +65,37 @@
 - Kraken parser: trading pair splitting improvements.
 - Binance parser: trading pair splitting improvements.
 - Binance parser: improved "Small Assets Exchange BNB" handling.
+- Bitfinex parser: use date_is_day_first from config.
+- CoinTracking parser: use date_is_day_first from config.
+- Electrum parser: use local_timezone from config.
+- Qt Wallet parser: use local_timezone from config.
+- Trezor Suite parser: use local_timezone and date_is_day_first from config.
+- Volt parser: use local_timezone and date_is_day_first from config.
+- Zerion parser: use local_timezone from config.
+- Accointing parser: use Fork instead of Gift-Received.
+- Binance parser: use Referral/Airdrop instead of Gift-Received.
+- Bitfinex parser: use Referral instead of Gift-Received.
+- BlockFi parser: use Referral/Airdrop instead of Gift-Received.
+- BnkToTheFuture parser: use Airdrop instead of Gift-Received.
+- Celsius parser: use Referral/Airdrop instead of Gift-Received.
+- CEX.IO parser: use Referral/Fee-Rebate instead of Gift-Received.
+- Circle parser: use Fork instead of Airdrop.
+- Coinbase parser: use Referral instead of Gift-Received.
+- Coinbase Pro parser: use Fee-Rebate instead of Gift-Received.
+- CoinTracking parser: use Airdrop instead of Gift-Received.
+- Crypto.com parser: use Referral/Cashback/Airdrop instead of Gift-Received, use Spend instead of Gift-Sent.
+- FTX parser: use Fee-Rebate instead of Gift-Received.
+- Gravity parser: use Referral instead of Gift-Received.
+- HitBTC parser: use Fee-Rebate instead of Gift-Received.
+- Hotbit parser: use Fee-Rebate instead of Gift-Received.
+- Koinly parser: use Fork/Airdrop instead of Gift-Received.
+- Kraken parser: use Referral/Fee-Rebate instead of Gift-Received.
+- Nexo parser: use Referral/Cashback/Airdrop instead of Gift-Received.
+- OKX parser: use Fee-Rebate instead of Gift-Received.
+- Paxful parser: use Referral instead of Gift-Received.
+- SwissBorg parser: use Airdrop instead of Gift-Received.
+- Coinbase parser: reworked legacy multi-currency support.
+- CoinTracking parser: Lost/Stolen transactions now include sell value if available.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 

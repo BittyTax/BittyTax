@@ -64,11 +64,10 @@ def parse_circle(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Pars
         )
     elif row_dict["Transaction Type"] == "fork":
         data_row.t_record = TransactionOutRecord(
-            TrType.AIRDROP,
+            TrType.FORK,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["To Amount"].strip("£€$").split(" ")[0]),
             buy_asset=row_dict["To Currency"],
-            buy_value=Decimal(0),
             wallet=WALLET,
         )
     else:

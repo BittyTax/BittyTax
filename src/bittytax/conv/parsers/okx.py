@@ -206,7 +206,7 @@ def parse_okx_funding(
         )
     elif row_dict["Type"] == "Fee rebate":
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.FEE_REBATE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Symbol"],
