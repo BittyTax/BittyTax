@@ -116,6 +116,9 @@ def main() -> None:
 
     file_hashes = set()
     for filename in args.filename:
+        if os.path.isdir(filename):
+            filename = os.path.join(filename, "**", "*")
+
         pathnames = glob.glob(filename, recursive=True)
         if not pathnames:
             pathnames = [filename]
