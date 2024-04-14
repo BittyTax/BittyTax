@@ -95,6 +95,7 @@
 - SwissBorg parser: use Airdrop instead of Gift-Received.
 - Coinbase parser: reworked legacy multi-currency support.
 - CoinTracking parser: Lost/Stolen transactions now include sell value if available.
+- Conversion Tool: specifying a directory as the filename will recursively parse all files in all subdirectories
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 
