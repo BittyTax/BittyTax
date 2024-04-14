@@ -25,6 +25,7 @@ def parse_blockchain_v2(
 
     value = _get_fiat_value(row_dict["value_then"], data_row.timestamp)
     fee_value = _get_fiat_value(row_dict["fee_value_then"], data_row.timestamp)
+    recipient_value = _get_fiat_value(row_dict["recipient_value_then"], data_row.timestamp)
 
     if Decimal(row_dict["amount"]) > 0:
         data_row.t_record = TransactionOutRecord(
@@ -40,13 +41,9 @@ def parse_blockchain_v2(
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
-            # When comparing Blockchain.com's CSV export to transactions on the
-            # blockchain, we see that for "sent" transactions, the "amount"
-            # column includes the transaction fee. We should remove it.
-            # The same does not happen for "received" transactions.
-            sell_quantity=abs(Decimal(row_dict["amount"])) - Decimal(row_dict["fee_value"]),
+            sell_quantity=Decimal(row_dict["recipient_received"]),
             sell_asset=row_dict["token"],
-            sell_value=value - fee_value if value and fee_value else value,
+            sell_value=recipient_value,
             fee_quantity=Decimal(row_dict["fee_value"]),
             fee_asset=row_dict["token"],
             fee_value=fee_value,
