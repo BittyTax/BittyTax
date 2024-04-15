@@ -125,7 +125,6 @@ def main() -> None:
 
         for pathname in pathnames:
             if os.path.isdir(pathname):
-                sys.stderr.write(_file_msg(pathname, None, msg="is a directory"))
                 continue
 
             try:

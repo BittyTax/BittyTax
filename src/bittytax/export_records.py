@@ -57,7 +57,9 @@ class ExportRecords:
             writer = csv.writer(csv_file, lineterminator="\n")
             self.write_rows(writer)
 
-        sys.stderr.write(f"{Fore.WHITE}export file created: {Fore.YELLOW}{filename}\n")
+        sys.stderr.write(
+            f"{Fore.WHITE}export file created: {Fore.YELLOW}{os.path.abspath(filename)}\n"
+        )
 
     def write_rows(self, writer: "_csv._writer") -> None:
         writer.writerow(self.OUT_HEADER)

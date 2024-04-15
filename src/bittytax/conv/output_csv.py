@@ -41,7 +41,6 @@ class OutputBase:  # pylint: disable=too-few-public-methods
 
     def __init__(self, data_files: List["DataFile"]) -> None:
         self.data_files = data_files
-        self.filename: Optional[str] = None
 
     @staticmethod
     def get_output_filename(filename: str, extension_type: str) -> str:
@@ -102,6 +101,7 @@ class OutputCsv(OutputBase):
 
     def __init__(self, data_files: List["DataFile"], args: argparse.Namespace) -> None:
         super().__init__(data_files)
+        self.filename: Optional[str] = None
         if args.output_filename:
             self.filename = self.get_output_filename(args.output_filename, self.FILE_EXTENSION)
 
@@ -128,7 +128,10 @@ class OutputCsv(OutputBase):
                 writer = csv.writer(csv_file, lineterminator="\n")
                 self.write_rows(writer)
 
-            sys.stderr.write(f"{Fore.WHITE}output CSV file created: {Fore.YELLOW}{self.filename}\n")
+            sys.stderr.write(
+                f"{Fore.WHITE}output CSV file created: "
+                f"{Fore.YELLOW}{os.path.abspath(self.filename)}\n"
+            )
         else:
             sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
             writer = csv.writer(sys.stdout, lineterminator="\n")
