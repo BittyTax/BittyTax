@@ -28,6 +28,21 @@ class TrType(Enum):
     TRADE = "Trade"
 
 
+class DisposalType(Enum):
+    SAME_DAY = "Same Day"
+    TEN_DAY = "Ten Day"
+    BED_AND_BREAKFAST = "Bed & Breakfast"
+    SECTION_104 = "Section 104"
+    UNPOOLED = "Unpooled"
+    NO_GAIN_NO_LOSS = "No Gain/No Loss"
+
+
+class TrRecordPart(Enum):
+    BUY = "Buy"
+    SELL = "Sell"
+    FEE = "Fee"
+
+
 BUY_TYPES = (
     TrType.DEPOSIT,
     TrType.MINING,

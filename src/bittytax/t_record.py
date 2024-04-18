@@ -10,6 +10,7 @@ from .bt_types import Note, Timestamp, TrType, Wallet
 from .config import config
 
 if TYPE_CHECKING:
+    from .t_row import TransactionRow
     from .transactions import Buy, Sell
 
 TZ_LOCAL = dateutil.tz.gettz(config.local_timezone)
@@ -28,6 +29,7 @@ class TransactionRecord:
         wallet: Wallet,
         timestamp: Timestamp,
         note: Note,
+        t_row: "TransactionRow",
     ) -> None:
         self.tid: Optional[List[int]] = None
         self.t_type = t_type
@@ -37,6 +39,7 @@ class TransactionRecord:
         self.wallet = wallet
         self.timestamp = timestamp
         self.note = note
+        self.t_row = t_row
 
         if self.buy:
             self.buy.t_record = self

@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -27,6 +28,10 @@ def parse_bittylicious(
         return
 
     if row_dict["direction"] == "BUY":
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("transactionID"),
+            tx_src_pos=parser.in_header.index("coinAddress"),
+        )
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
@@ -37,6 +42,10 @@ def parse_bittylicious(
             wallet=WALLET,
         )
     elif row_dict["direction"] == "SELL":
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("transactionID"),
+            tx_dest_pos=parser.in_header.index("coinAddress"),
+        )
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,

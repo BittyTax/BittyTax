@@ -13,6 +13,7 @@ from ...bt_types import TrType
 from ...config import config
 from ...constants import WARNING
 from ..dataparser import ConsolidateType, DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataRowError, UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
 
@@ -80,6 +81,15 @@ def _parse_qt_wallet_row(
 
     amount, amount_symbol = _get_amount(row_dict[amount_hdr])
 
+    if amount > 0:
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("ID"), tx_src_pos=parser.in_header.index("Address")
+        )
+    else:
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("ID"), tx_dest_pos=parser.in_header.index("Address")
+        )
+
     if amount_symbol:
         # Amount has symbol
         symbol = amount_symbol
@@ -116,7 +126,7 @@ def _parse_qt_wallet_row(
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=amount,
+            sell_quantity=abs(amount),
             sell_asset=symbol,
             wallet=_get_wallet(symbol),
             note=row_dict["Label"],
@@ -145,7 +155,7 @@ def _parse_qt_wallet_row(
             data_row.timestamp,
             sell_quantity=Decimal(0),
             sell_asset=symbol,
-            fee_quantity=amount,
+            fee_quantity=abs(amount),
             fee_asset=symbol,
             wallet=_get_wallet(symbol),
             note=row_dict["Label"],
@@ -154,7 +164,7 @@ def _parse_qt_wallet_row(
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
             data_row.timestamp,
-            sell_quantity=amount,
+            sell_quantity=abs(amount),
             sell_asset=symbol,
             wallet=_get_wallet(symbol),
             note=row_dict["Label"],
@@ -171,8 +181,8 @@ def _get_amount(amount: str) -> Tuple[Decimal, str]:
     if match:
         amount = match.group(1)
         symbol = match.group(2)
-        return abs(Decimal(amount)), symbol
-    return abs(Decimal(amount)), ""
+        return Decimal(amount), symbol
+    return Decimal(amount), ""
 
 
 def _get_wallet(symbol: str) -> str:
@@ -184,6 +194,7 @@ def parse_vericoin_qt_wallet(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date/Time"], tz=config.local_timezone)
+    data_row.tx_raw = TxRawPos(parser.in_header.index("Transaction"))
     symbol = "VRC"
 
     if row_dict["Type"] == "Receive":

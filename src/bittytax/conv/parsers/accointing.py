@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType, UnmappedType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -44,10 +45,15 @@ ACCOINTING_W_MAPPING = {
 
 
 def parse_accointing(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["timeExecuted"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("txId"),
+        parser.in_header.index("primaryAddress"),
+        parser.in_header.index("otherAddress"),
+    )
 
     if row_dict["feeCurrency"]:
         fee_quantity = Decimal(row_dict["feeQuantity"])

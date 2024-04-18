@@ -13,6 +13,7 @@ import colorama
 from colorama import Fore
 
 from .audit import AuditRecords
+from .audit_excel import AuditLogExcel
 from .bt_types import AssetSymbol, Year
 from .config import config
 from .constants import ERROR, TAX_RULES_UK_COMPANY, TAX_RULES_UK_INDIVIDUAL, WARNING
@@ -22,8 +23,8 @@ from .holdings import Holdings
 from .import_records import ImportRecords
 from .price.exceptions import DataSourceError
 from .price.valueasset import ValueAsset
-from .record import TransactionRecord
 from .report import ReportLog, ReportPdf
+from .t_record import TransactionRecord
 from .tax import CalculateCapitalGains as CCG
 from .tax import TaxCalculator
 from .transactions import TransactionHistory
@@ -133,6 +134,10 @@ def main() -> None:
     audit = AuditRecords(transaction_records)
 
     if args.audit_only:
+        if audit.audit_log:
+            audit_log_excel = AuditLogExcel(parser.prog, audit.audit_log)
+            audit_log_excel.write_excel()
+
         if args.nopdf:
             ReportLog(args, audit)
         else:
@@ -188,7 +193,7 @@ def _do_import(filename: str) -> List[TransactionRecord]:
             import_records.import_excel_xls(filename)
         else:
             with io.open(filename, newline="", encoding="utf-8") as csv_file:
-                import_records.import_csv(csv_file)
+                import_records.import_csv(csv_file, filename)
     else:
         import_records.import_csv(sys.stdin)
 

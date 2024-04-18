@@ -84,6 +84,7 @@
 - Exodus parser: added "deposit (failed)" type.
 - Conversion tool: added new parser for Eternl wallet.
 - Conversion tool: added new parser for MyMonero wallet.
+- Accounting/Conversion tool: audit spreadsheet output to help with troubleshooting negative balances, and integity check issues.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))

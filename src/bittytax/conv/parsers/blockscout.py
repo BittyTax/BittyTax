@@ -12,6 +12,7 @@ from ...bt_types import TrType
 from ...config import config
 from ...constants import WARNING
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataRowError, UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
 
@@ -59,6 +60,11 @@ def parse_blockscout(
 def _parse_blockscout_row(data_row: "DataRow", parser: DataParser, symbol: str) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["UnixTimestamp"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("TxHash"),
+        parser.in_header.index("FromAddress"),
+        parser.in_header.index("ToAddress"),
+    )
 
     quantity = Decimal(row_dict["Value"]) / 10**18
 
@@ -96,6 +102,11 @@ def parse_blockscout_tokens(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["UnixTimestamp"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("TxHash"),
+        parser.in_header.index("FromAddress"),
+        parser.in_header.index("ToAddress"),
+    )
 
     if row_dict["Type"] == "IN":
         data_row.t_record = TransactionOutRecord(

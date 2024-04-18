@@ -13,6 +13,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import (
     DataFilenameError,
     DataRowError,
@@ -217,7 +218,7 @@ def _split_asset(amount: str) -> Tuple[Optional[Decimal], str]:
 
 
 def parse_binance_deposits_withdrawals_crypto(
-    data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(data_row.row[0])
@@ -226,6 +227,9 @@ def parse_binance_deposits_withdrawals_crypto(
         return
 
     if "deposit" in kwargs["filename"].lower():
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("TXID"), tx_src_pos=parser.in_header.index("Address")
+        )
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -236,6 +240,9 @@ def parse_binance_deposits_withdrawals_crypto(
             wallet=WALLET,
         )
     elif "withdraw" in kwargs["filename"].lower():
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("TXID"), tx_dest_pos=parser.in_header.index("Address")
+        )
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,

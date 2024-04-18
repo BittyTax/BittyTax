@@ -8,7 +8,7 @@ from typing import List
 import _csv
 from colorama import Fore
 
-from .record import TransactionRecord
+from .t_record import TransactionRecord
 
 
 class ExportRecords:  # pylint: disable=too-few-public-methods
