@@ -42,6 +42,7 @@
 - Kraken parser: added new export format. ([#355](https://github.com/BittyTax/BittyTax/issues/355))
 - Kraken parser: added "dividend" type.
 - Kraken parser: added "adjustment" type.
+- Kraken parser: handle "/" in trading pair.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
