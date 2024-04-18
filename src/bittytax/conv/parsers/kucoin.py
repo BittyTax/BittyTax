@@ -9,6 +9,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataFormatNotSupported, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -198,6 +199,7 @@ def parse_kucoin_deposits_withdrawals_v1(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["created_at"], tz="Asia/Singapore")
+    data_row.tx_raw = TxRawPos(parser.in_header.index("hash"))
 
     if row_dict["type"] == "DEPOSIT":
         data_row.t_record = TransactionOutRecord(
@@ -235,10 +237,11 @@ def parse_kucoin_deposits(
 
 
 def parse_kucoin_withdrawals(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"], tz="Asia/Singapore")
+    data_row.tx_raw = TxRawPos(None, None, parser.in_header.index("Wallet Address"))
 
     data_row.t_record = TransactionOutRecord(
         TrType.WITHDRAWAL,
@@ -264,6 +267,7 @@ def parse_kucoin_deposits_withdrawals_v2(
         return
 
     if "Withdrawal Address/Account" in row_dict:
+        data_row.tx_raw = TxRawPos(None, None, parser.in_header.index("Withdrawal Address/Account"))
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,

@@ -203,7 +203,7 @@ class DataFile:
         cls.consolidate_datafiles(data_file)
 
     @staticmethod
-    def get_cell_values_xlsx(rows: Iterator[List[openpyxl.cell.cell.Cell]]) -> Iterator[List[str]]:
+    def get_cell_values_xlsx(rows: List[openpyxl.cell.cell.Cell]) -> Iterator[List[str]]:
         for row in rows:
             yield [DataFile.convert_cell_xlsx(cell) for cell in row]
 

@@ -13,7 +13,7 @@ from tqdm import tqdm
 from .bt_types import AssetSymbol, Date, FixedValue, Note, Timestamp, TrType, Wallet
 from .config import config
 from .price.valueasset import ValueAsset
-from .record import TransactionRecord
+from .t_record import TransactionRecord
 
 
 class TransactionHistory:

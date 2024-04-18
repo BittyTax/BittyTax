@@ -2,6 +2,7 @@
 # (c) Nano Nano Ltd 2019
 
 import datetime
+from dataclasses import dataclass
 from typing import List, Optional
 
 from colorama import Back, Fore
@@ -11,11 +12,16 @@ from ..config import config
 from ..constants import TZ_UTC
 from .dataparser import DataParser, ParserArgs
 from .exceptions import DataRowError
-from .mergers import *  # pylint: disable=wildcard-import, unused-wildcard-import
 from .out_record import TransactionOutRecord
-from .parsers import *  # type: ignore[no-redef] # pylint: disable=wildcard-import, unused-wildcard-import # noqa: E501
 
 DEFAULT_TIMESTAMP = datetime.datetime(datetime.MINYEAR, 1, 1, tzinfo=TZ_UTC)
+
+
+@dataclass
+class TxRawPos:
+    tx_hash_pos: Optional[int] = None
+    tx_src_pos: Optional[int] = None
+    tx_dest_pos: Optional[int] = None
 
 
 class DataRow:
@@ -25,6 +31,7 @@ class DataRow:
         self.row_dict = dict(zip(in_header, row))
         self.timestamp = DEFAULT_TIMESTAMP
         self.t_record: Optional[TransactionOutRecord] = None
+        self.tx_raw: Optional[TxRawPos] = None
         self.parsed = False
         self.failure: Optional[Exception] = None
 

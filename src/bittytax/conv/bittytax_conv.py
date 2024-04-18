@@ -26,8 +26,10 @@ from .exceptions import (
     UnknownCryptoassetError,
     UnknownUsernameError,
 )
+from .mergers import *  # pylint: disable=wildcard-import, unused-wildcard-import
 from .output_csv import OutputCsv
 from .output_excel import OutputExcel
+from .parsers import *  # type: ignore[no-redef] # pylint: disable=wildcard-import, unused-wildcard-import # noqa: E501
 
 if sys.stderr.encoding != "UTF-8":
     sys.stderr.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]

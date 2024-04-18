@@ -10,6 +10,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -70,7 +71,7 @@ def parse_bitfinex_trades_v1(
 
 
 def parse_bitfinex_deposits_withdrawals(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(
@@ -81,6 +82,10 @@ def parse_bitfinex_deposits_withdrawals(
         return
 
     if Decimal(row_dict["AMOUNT"]) > 0:
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("TRANSACTION ID"),
+            tx_src_pos=parser.in_header.index("DESCRIPTION"),
+        )
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -91,6 +96,10 @@ def parse_bitfinex_deposits_withdrawals(
             wallet=WALLET,
         )
     else:
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("TRANSACTION ID"),
+            tx_dest_pos=parser.in_header.index("DESCRIPTION"),
+        )
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,

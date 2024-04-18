@@ -39,6 +39,12 @@ class DisposalType(Enum):
     SHORT_TERM = "Short-Term"
 
 
+class TrRecordPart(Enum):
+    BUY = "Buy"
+    SELL = "Sell"
+    FEE = "Fee"
+
+
 BUY_TYPES = (
     TrType.DEPOSIT,
     TrType.MINING,

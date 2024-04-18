@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
 
@@ -20,6 +21,11 @@ WALLET = "Blockscout"
 def parse_blockscout(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["UnixTimestamp"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("TxHash"),
+        parser.in_header.index("FromAddress"),
+        parser.in_header.index("ToAddress"),
+    )
 
     if not kwargs["cryptoasset"]:
         raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet", ""))
@@ -60,6 +66,11 @@ def parse_blockscout_tokens(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["UnixTimestamp"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("TxHash"),
+        parser.in_header.index("FromAddress"),
+        parser.in_header.index("ToAddress"),
+    )
 
     if row_dict["Type"] == "IN":
         data_row.t_record = TransactionOutRecord(

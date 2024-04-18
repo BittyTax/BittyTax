@@ -13,6 +13,7 @@ from ...bt_types import TrType
 from ...config import config
 from ...constants import WARNING
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
 
@@ -27,6 +28,15 @@ def parse_qt_wallet(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Pa
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], tz=config.local_timezone)
 
     amount, symbol = _get_amount(data_row.row[5])
+
+    if amount > 0:
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("ID"), tx_src_pos=parser.in_header.index("Address")
+        )
+    else:
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("ID"), tx_dest_pos=parser.in_header.index("Address")
+        )
 
     if parser.args and parser.args[0].group(1):
         symbol = parser.args[0].group(1)
@@ -59,7 +69,7 @@ def parse_qt_wallet(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Pa
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=amount,
+            sell_quantity=abs(amount),
             sell_asset=symbol,
             wallet=WALLET,
             note=row_dict["Label"],
@@ -88,7 +98,7 @@ def parse_qt_wallet(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Pa
             data_row.timestamp,
             sell_quantity=Decimal(0),
             sell_asset=symbol,
-            fee_quantity=amount,
+            fee_quantity=abs(amount),
             fee_asset=symbol,
             wallet=WALLET,
             note=row_dict["Label"],
@@ -97,7 +107,7 @@ def parse_qt_wallet(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Pa
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
             data_row.timestamp,
-            sell_quantity=amount,
+            sell_quantity=abs(amount),
             sell_asset=symbol,
             wallet=WALLET,
             note=row_dict["Label"],
@@ -112,8 +122,8 @@ def _get_amount(amount: str) -> Tuple[Decimal, str]:
     if match:
         amount = match.group(1)
         symbol = match.group(2)
-        return abs(Decimal(amount)), symbol
-    return abs(Decimal(amount)), ""
+        return Decimal(amount), symbol
+    return Decimal(amount), ""
 
 
 def parse_vericoin_qt_wallet(
@@ -121,6 +131,7 @@ def parse_vericoin_qt_wallet(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date/Time"], tz=config.local_timezone)
+    data_row.tx_raw = TxRawPos(parser.in_header.index("Transaction"))
 
     if row_dict["Type"] == "Receive":
         data_row.t_record = TransactionOutRecord(

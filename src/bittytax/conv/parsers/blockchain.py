@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -17,10 +18,11 @@ WALLET = "Blockchain.com"
 
 
 def parse_blockchain(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["date"] + " " + row_dict["time"])
+    data_row.tx_raw = TxRawPos(parser.in_header.index("tx"))
 
     symbol, value_str = row_dict["value_then"][0], row_dict["value_then"].strip("£€$ ").replace(
         ",", ""

@@ -2,6 +2,7 @@
 # (c) Nano Nano Ltd 2019
 
 import sys
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Dict, List, Optional
 
@@ -9,11 +10,22 @@ from colorama import Fore, Style
 from tqdm import tqdm
 from typing_extensions import TypedDict
 
-from .bt_types import AssetSymbol, Wallet
+from .bt_types import AssetSymbol, TrRecordPart, Wallet
 from .config import config
 from .constants import WARNING
 from .holdings import Holdings
-from .record import TransactionRecord
+from .t_record import TransactionRecord
+
+
+@dataclass
+class AuditLogEntry:
+    change: Optional[Decimal]
+    fee: Optional[Decimal]
+    balance: Decimal
+    wallet: Wallet
+    total: Decimal
+    tr_part: TrRecordPart
+    t_record: TransactionRecord
 
 
 class ComparePoolFail(TypedDict):  # pylint: disable=too-few-public-methods
@@ -26,6 +38,7 @@ class AuditRecords:
     def __init__(self, transaction_records: List[TransactionRecord]) -> None:
         self.wallets: Dict[Wallet, Dict[AssetSymbol, Decimal]] = {}
         self.totals: Dict[AssetSymbol, Decimal] = {}
+        self.audit_log: Dict[AssetSymbol, List[AuditLogEntry]] = {}
         self.failures: List[ComparePoolFail] = []
 
         if config.debug:
@@ -41,12 +54,21 @@ class AuditRecords:
                 print(f"{Fore.MAGENTA}audit: TR {tr}")
             if tr.buy:
                 self._add_tokens(tr.wallet, tr.buy.asset, tr.buy.quantity)
+                self._audit_log(
+                    tr.buy.asset, tr.wallet, tr.buy.quantity, None, TrRecordPart.BUY, tr
+                )
 
             if tr.sell:
                 self._subtract_tokens(tr.wallet, tr.sell.asset, tr.sell.quantity)
+                self._audit_log(
+                    tr.sell.asset, tr.wallet, -abs(tr.sell.quantity), None, TrRecordPart.SELL, tr
+                )
 
             if tr.fee:
                 self._subtract_tokens(tr.wallet, tr.fee.asset, tr.fee.quantity)
+                self._audit_log(
+                    tr.fee.asset, tr.wallet, None, -abs(tr.fee.quantity), TrRecordPart.FEE, tr
+                )
 
         if config.debug:
             print(f"{Fore.CYAN}audit: final balances by wallet")
@@ -106,12 +128,29 @@ class AuditRecords:
                 f"{Fore.GREEN}audit:   {wallet}:{asset}="
                 f"{self.wallets[wallet][asset].normalize():0,f} (-{quantity.normalize():0,f})"
             )
-
         if self.wallets[wallet][asset] < 0 and asset not in config.fiat_list:
             tqdm.write(
                 f"{WARNING} Balance at {wallet}:{asset} "
                 f"is negative {self.wallets[wallet][asset].normalize():0,f}"
             )
+
+    def _audit_log(
+        self,
+        asset: AssetSymbol,
+        wallet: Wallet,
+        quantity: Optional[Decimal],
+        fee: Optional[Decimal],
+        tr_part: TrRecordPart,
+        tr: TransactionRecord,
+    ) -> None:
+        audit_log_entry = AuditLogEntry(
+            quantity, fee, self.wallets[wallet][asset], wallet, self.totals[asset], tr_part, tr
+        )
+
+        if asset not in self.audit_log:
+            self.audit_log[asset] = []
+
+        self.audit_log[asset].append(audit_log_entry)
 
     def _prune_empty(self) -> None:
         for wallet in list(self.wallets):
