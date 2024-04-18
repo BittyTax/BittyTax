@@ -272,12 +272,6 @@ def _parse_kraken_ledgers_row(
                 wallet=WALLET,
             )
     elif row_dict["type"] == "transfer":
-        if len(_get_ref_ids(ref_ids, row_dict["refid"], ("transfer",))) > 1:
-            # Multiple transfer rows is a rebase? Not currently supported
-            raise UnexpectedContentError(
-                parser.in_header.index("refid"), "refid", row_dict["refid"]
-            )
-
         if row_dict["subtype"] == "":
             if Decimal(row_dict["amount"]) > 0:
                 # Fork or Airdrop
@@ -302,6 +296,7 @@ def _parse_kraken_ledgers_row(
             "stakingtospot",
             "spotfromstaking",
             "stakingfromspot",
+            "spottofutures",
             "spotfromfutures",
         ):
             # Skip internal transfers
@@ -433,15 +428,19 @@ def parse_kraken_trades(
 
 
 def _split_trading_pair(trading_pair: str) -> Tuple[Optional[str], Optional[str]]:
-    if trading_pair in TRADINGPAIR_TO_QUOTE_ASSET:
-        quote_asset = TRADINGPAIR_TO_QUOTE_ASSET[trading_pair]
-        base_asset = trading_pair[: -len(quote_asset)]
+    if "/" in trading_pair:
+        base_asset, quote_asset = trading_pair.split("/")
         return base_asset, quote_asset
-
-    for quote_asset in sorted(QUOTE_ASSETS, reverse=True):
-        if trading_pair.endswith(quote_asset):
+    else:
+        if trading_pair in TRADINGPAIR_TO_QUOTE_ASSET:
+            quote_asset = TRADINGPAIR_TO_QUOTE_ASSET[trading_pair]
             base_asset = trading_pair[: -len(quote_asset)]
             return base_asset, quote_asset
+
+        for quote_asset in sorted(QUOTE_ASSETS, reverse=True):
+            if trading_pair.endswith(quote_asset):
+                base_asset = trading_pair[: -len(quote_asset)]
+                return base_asset, quote_asset
 
     return None, None
 
