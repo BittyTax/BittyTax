@@ -12,12 +12,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
-from ..exceptions import (
-    DataRowError,
-    UnexpectedContentError,
-    UnexpectedTradingPairError,
-    UnexpectedTypeError,
-)
+from ..exceptions import DataRowError, UnexpectedTradingPairError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -479,16 +474,16 @@ def _split_trading_pair(trading_pair: str) -> Tuple[Optional[str], Optional[str]
     if "/" in trading_pair:
         base_asset, quote_asset = trading_pair.split("/")
         return base_asset, quote_asset
-    else:
-        if trading_pair in TRADINGPAIR_TO_QUOTE_ASSET:
-            quote_asset = TRADINGPAIR_TO_QUOTE_ASSET[trading_pair]
+
+    if trading_pair in TRADINGPAIR_TO_QUOTE_ASSET:
+        quote_asset = TRADINGPAIR_TO_QUOTE_ASSET[trading_pair]
+        base_asset = trading_pair[: -len(quote_asset)]
+        return base_asset, quote_asset
+
+    for quote_asset in sorted(QUOTE_ASSETS, reverse=True):
+        if trading_pair.endswith(quote_asset):
             base_asset = trading_pair[: -len(quote_asset)]
             return base_asset, quote_asset
-
-        for quote_asset in sorted(QUOTE_ASSETS, reverse=True):
-            if trading_pair.endswith(quote_asset):
-                base_asset = trading_pair[: -len(quote_asset)]
-                return base_asset, quote_asset
 
     return None, None
 
