@@ -406,7 +406,7 @@ class Worksheet:
         # Remove characters which are not allowed
         name = re.sub(r"[^a-zA-Z0-9\._]", "", name)
 
-        # First character can't be a digit to fullstop
+        # First character can't be a digit or full stop
         match = re.match(r"^[a-zA-Z\_].*$", name)
         if not match:
             name = f"_{name}"

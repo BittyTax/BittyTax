@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataFilenameError
 from ..out_record import TransactionOutRecord
 
@@ -17,11 +18,14 @@ if TYPE_CHECKING:
 WALLET = "Ethereum"
 
 
-def parse_etherscan(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
-) -> None:
+def parse_etherscan(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Txhash"),
+        parser.in_header.index("From"),
+        parser.in_header.index("To"),
+    )
 
     if row_dict["Status"] != "":
         # Failed transactions should not have a Value_OUT
@@ -78,10 +82,15 @@ def _get_note(row_dict: Dict[str, str]) -> str:
 
 
 def parse_etherscan_internal(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Txhash"),
+        parser.in_header.index("From"),
+        parser.in_header.index("TxTo"),
+    )
 
     # Failed internal transaction
     if row_dict["Status"] != "0":
@@ -106,10 +115,15 @@ def parse_etherscan_internal(
 
 
 def parse_etherscan_tokens(
-    data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Txhash"),
+        parser.in_header.index("From"),
+        parser.in_header.index("To"),
+    )
 
     if row_dict["TokenSymbol"].endswith("-LP"):
         asset = row_dict["TokenSymbol"] + "-" + row_dict["ContractAddress"][0:10]
@@ -142,10 +156,15 @@ def parse_etherscan_tokens(
 
 
 def parse_etherscan_nfts(
-    data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Txhash"),
+        parser.in_header.index("From"),
+        parser.in_header.index("To"),
+    )
 
     if "TokenId" in row_dict:
         row_dict["Token ID"] = row_dict["TokenId"]

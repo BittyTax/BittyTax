@@ -11,6 +11,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataRowError, UnexpectedTradingPairError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -82,6 +83,10 @@ def _parse_gemini_row(parser: DataParser, data_row: "DataRow") -> None:
             fee_asset = ""
 
         if row_dict["Type"] == "Credit":
+            data_row.tx_raw = TxRawPos(
+                parser.in_header.index("Tx Hash"),
+                tx_src_pos=parser.in_header.index("Deposit Destination"),
+            )
             data_row.t_record = TransactionOutRecord(
                 TrType.DEPOSIT,
                 data_row.timestamp,
@@ -92,6 +97,10 @@ def _parse_gemini_row(parser: DataParser, data_row: "DataRow") -> None:
                 wallet=WALLET,
             )
         else:
+            data_row.tx_raw = TxRawPos(
+                parser.in_header.index("Tx Hash"),
+                tx_src_pos=parser.in_header.index("Withdrawal Destination"),
+            )
             data_row.t_record = TransactionOutRecord(
                 TrType.WITHDRAWAL,
                 data_row.timestamp,
