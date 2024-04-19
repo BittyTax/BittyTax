@@ -13,6 +13,7 @@ from ...bt_types import TrType
 from ...config import config
 from ...constants import WARNING
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataFilenameError, DataRowError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
 
@@ -23,6 +24,11 @@ if TYPE_CHECKING:
 def parse_etherscan(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Txhash"),
+        parser.in_header.index("From"),
+        parser.in_header.index("To"),
+    )
 
     # Skip over any args which are not regex
     matches = [arg for arg in parser.args if isinstance(arg, re.Match)]
@@ -93,6 +99,11 @@ def parse_etherscan_internal(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Txhash"),
+        parser.in_header.index("From"),
+        parser.in_header.index("TxTo"),
+    )
 
     # Skip over any args which are not matches
     matches = [arg for arg in parser.args if isinstance(arg, re.Match)]
@@ -160,10 +171,15 @@ def parse_etherscan_tokens(
 
 
 def _parse_etherscan_tokens_row(
-    data_row: "DataRow", _parser: DataParser, symbol: str, **kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, symbol: str, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Txhash"),
+        parser.in_header.index("From"),
+        parser.in_header.index("To"),
+    )
 
     if row_dict["TokenSymbol"].endswith("-LP"):
         asset = row_dict["TokenSymbol"] + "-" + row_dict["ContractAddress"][0:10]
@@ -231,10 +247,15 @@ def parse_etherscan_nfts(
 
 
 def _parse_etherscan_nfts_row(
-    data_row: "DataRow", _parser: DataParser, symbol: str, **kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, symbol: str, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Txhash"),
+        parser.in_header.index("From"),
+        parser.in_header.index("To"),
+    )
 
     if "TokenId" in row_dict:
         row_dict["Token ID"] = row_dict["TokenId"]

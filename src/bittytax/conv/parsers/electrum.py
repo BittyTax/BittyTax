@@ -12,6 +12,7 @@ from ...bt_types import TrType
 from ...config import config
 from ...constants import WARNING
 from ..dataparser import ConsolidateType, DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataRowError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
 
@@ -56,9 +57,10 @@ def parse_electrum_v2(
             data_row.failure = e
 
 
-def _parse_electrum_row_v2(data_row: "DataRow", _parser: DataParser, symbol: str) -> None:
+def _parse_electrum_row_v2(data_row: "DataRow", parser: DataParser, symbol: str) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["timestamp"], tz=config.local_timezone)
+    data_row.tx_raw = TxRawPos(parser.in_header.index("transaction_hash"))
 
     value = Decimal(row_dict["value"].replace(",", ""))
     if value > 0:
@@ -132,9 +134,10 @@ def parse_electrum_v1(
             data_row.failure = e
 
 
-def _parse_electrum_row_v1(data_row: "DataRow", _parser: DataParser, symbol: str) -> None:
+def _parse_electrum_row_v1(data_row: "DataRow", parser: DataParser, symbol: str) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["timestamp"], tz=config.local_timezone)
+    data_row.tx_raw = TxRawPos(parser.in_header.index("transaction_hash"))
 
     value = Decimal(row_dict["value"].replace(",", ""))
     if value > 0:

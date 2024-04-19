@@ -13,6 +13,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataRowError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -57,6 +58,11 @@ def _parse_cointracker_row(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Transaction ID"),
+        parser.in_header.index("Received Address"),
+        parser.in_header.index("Sent Address"),
+    )
     data_row.parsed = True
 
     if row_dict["Fee Amount"]:

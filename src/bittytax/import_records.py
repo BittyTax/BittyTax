@@ -2,6 +2,7 @@
 # (c) Nano Nano Ltd 2019
 
 import csv
+import re
 import sys
 import warnings
 from typing import List, Optional, TextIO
@@ -145,15 +146,24 @@ class ImportRecords:
         for cell in worksheet_row[len(TransactionRow.HEADER) :]:
             if cell.value and cell.font.color.type == "rgb":
                 if cell.font.color.rgb == f"FF{FONT_COLOR_TX_HASH}":
-                    tx_hash = str(cell.value)
+                    tx_hash = self.get_tx_component(str(cell.value))
                 elif cell.font.color.rgb == f"FF{FONT_COLOR_TX_SRC}":
-                    tx_src = str(cell.value)
+                    tx_src = self.get_tx_component(str(cell.value))
                 elif cell.font.color.rgb == f"FF{FONT_COLOR_TX_DEST}":
-                    tx_dest = str(cell.value)
+                    tx_dest = self.get_tx_component(str(cell.value))
 
         if any((tx_hash, tx_src, tx_dest)):
             return TxRaw(tx_hash, tx_src, tx_dest)
         return None
+
+    @staticmethod
+    def get_tx_component(cell_str: str) -> str:
+        if " " in cell_str:
+            match = re.search(r"\b[\w:]{26,}\b", cell_str)
+            if match:
+                return match.group(0)
+            return ""
+        return cell_str
 
     @staticmethod
     def convert_cell_xls(cell: xlrd.sheet.Cell, workbook: xlrd.Book) -> str:
