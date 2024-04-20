@@ -167,7 +167,8 @@ DataParser(
 DataParser(
     ParserType.EXCHANGE,
     "Bitstamp",
-    ["ID", "Account", "Type", "Subtype", "Datetime", "Amount", "Amount currency", "Value", "Value currency", "Rate", "Rate currency", "Fee", "Fee currency", "Order ID" ],
+    ["ID", "Account", "Type", "Subtype", "Datetime", "Amount", "Amount currency", "Value",
+     "Value currency", "Rate", "Rate currency", "Fee", "Fee currency", "Order ID" ],
     worksheet_name="Bitstamp",
     row_handler=parse_bitstamp_rfc4180,
 )
