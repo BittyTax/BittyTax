@@ -85,7 +85,8 @@ def parse_bitstamp(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Pa
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
 
-def parse_bitstamp_rfc4180(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
+def parse_bitstamp_rfc4180(data_row: "DataRow", parser: DataParser,
+                           **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Datetime"])
 
@@ -170,6 +171,3 @@ DataParser(
     worksheet_name="Bitstamp",
     row_handler=parse_bitstamp_rfc4180,
 )
-
-
-
