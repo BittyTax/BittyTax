@@ -114,11 +114,12 @@ def parse_bitstamp_rfc4180(data_row: "DataRow", parser: DataParser, **_kwargs: U
         )
     elif row_dict["Type"] == "Market":
         if row_dict["Fee"]:
-            fee_quantity = Decimal(row_dict["Fee"]),
-            fee_asset = row_dict["Fee currency"],
+            fee_quantity = Decimal(row_dict["Fee"])
+            fee_asset = row_dict["Fee currency"]
         else:
             fee_quantity = None
             fee_asset = ""
+
 
         if row_dict["Subtype"] == "Buy":
             data_row.t_record = TransactionOutRecord(
