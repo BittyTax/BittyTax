@@ -84,6 +84,7 @@ def parse_bitstamp(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Pa
     else:
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
+
 def parse_bitstamp_rfc4180(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Datetime"])
@@ -112,6 +113,8 @@ def parse_bitstamp_rfc4180(data_row: "DataRow", parser: DataParser, **_kwargs: U
             buy_asset=row_dict["Amount currency"],
             wallet=WALLET,
         )
+
+
     elif row_dict["Type"] == "Market":
         if row_dict["Fee"]:
             fee_quantity = Decimal(row_dict["Fee"])
