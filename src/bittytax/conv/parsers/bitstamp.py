@@ -112,7 +112,7 @@ def parse_bitstamp_rfc4180(
             TrType.STAKING,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Amount"]),
-            buy_asset=row_dict["Amount currency"],
+            buy_asset=_normalise_asset(row_dict["Amount currency"]),
             wallet=WALLET,
         )
 
@@ -154,6 +154,12 @@ def parse_bitstamp_rfc4180(
             )
     else:
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
+
+
+def _normalise_asset(asset: str) -> str:
+    if asset == "ETH2R":
+        return "ETH2"
+    return asset
 
 
 DataParser(
