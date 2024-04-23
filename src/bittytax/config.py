@@ -45,6 +45,7 @@ class Config:
         "transfers_include": False,
         "transfer_fee_disposal": True,
         "transfer_fee_allowable_cost": False,
+        "cost_basis_zero_if_missing": False,
         "fiat_income": True,
         "lost_buyback": False,
         "large_data": False,

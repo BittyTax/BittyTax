@@ -13,7 +13,7 @@ from dateutil.relativedelta import relativedelta
 from tqdm import tqdm
 from typing_extensions import NotRequired, TypedDict
 
-from .bt_types import AssetName, AssetSymbol, Date, DisposalType, TrType, Year
+from .bt_types import AssetName, AssetSymbol, Date, DisposalType, Note, TrType, Year
 from .config import config
 from .constants import TAX_RULES_UK_COMPANY, WARNING
 from .holdings import Holdings
@@ -264,7 +264,17 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     f"{WARNING} No matching Buy of {s_quantity_remaining.normalize():0,f} "
                     f"{s.asset} for Sell of {s.format_quantity()} {s.asset}"
                 )
-                self.match_missing = True
+                if config.cost_basis_zero_if_missing:
+                    buy_match = Buy(TrType.TRADE, s_quantity_remaining, s.asset, Decimal(0))
+                    buy_match.wallet = s.wallet
+                    buy_match.timestamp = s.timestamp
+                    buy_match.note = Note("Added as cost basis zero")
+                    tqdm.write(f"{Fore.GREEN}fifo: {buy_match}")
+                    matches.append(buy_match)
+                    s.matched = True
+                    self._create_disposal(s, matches)
+                else:
+                    self.match_missing = True
             else:
                 s.matched = True
                 self._create_disposal(s, matches)

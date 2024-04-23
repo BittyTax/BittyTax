@@ -182,7 +182,8 @@ def main() -> None:
             if not args.skip_integrity:
                 int_passed = _do_integrity_check(audit, tax.holdings)
                 if not int_passed:
-                    parser.exit()
+                    if input(f"{Fore.RESET}Do you want to continue? [y/N] ") != "y":
+                        parser.exit()
 
             if not args.summary_only:
                 tax.process_income()
