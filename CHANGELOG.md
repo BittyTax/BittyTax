@@ -59,6 +59,7 @@
 - Conversion tool: added parser for Gate.io exchange. ([#152](https://github.com/BittyTax/BittyTax/issues/152))
 - Crypto.com parser: added "finance.lockup.dpos_compound_interest.crypto_wallet" and finance.lockup.dpos_lock.crypto_wallet" transaction kinds. ([#356](https://github.com/BittyTax/BittyTax/issues/356))
 - Kraken parser: handle "/" in trading pair.
+- Binance parser: added "Token Swap - Redenomination/Rebranding" operation.
 - Bitstamp parser: added new export format.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
