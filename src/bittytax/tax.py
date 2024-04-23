@@ -99,6 +99,7 @@ class IncomeReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
 
 
 class BuyAccumulator(TypedDict):
+    quantity: Decimal
     cost: Decimal
     fee_value: Decimal
     dates: List[Date]
@@ -258,39 +259,64 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
                 buy_index += 1
 
-            if not matches:
-                tqdm.write(f"{WARNING} No matching Buy for Sell of {s.format_quantity()} {s.asset}")
+            if s_quantity_remaining > 0:
+                tqdm.write(
+                    f"{WARNING} No matching Buy of {s_quantity_remaining.normalize():0,f} "
+                    f"{s.asset} for Sell of {s.format_quantity()} {s.asset}"
+                )
                 self.match_missing = True
             else:
                 s.matched = True
                 self._create_disposal(s, matches)
 
     def _create_disposal(self, sell: Sell, matches: List[Buy]) -> None:
-        short_term: BuyAccumulator = {"cost": Decimal(0), "fee_value": Decimal(0), "dates": []}
-        long_term: BuyAccumulator = {"cost": Decimal(0), "fee_value": Decimal(0), "dates": []}
+        short_term: BuyAccumulator = {
+            "quantity": Decimal(0),
+            "cost": Decimal(0),
+            "fee_value": Decimal(0),
+            "dates": [],
+        }
+        long_term: BuyAccumulator = {
+            "quantity": Decimal(0),
+            "cost": Decimal(0),
+            "fee_value": Decimal(0),
+            "dates": [],
+        }
 
         for buy in matches:
             if buy.cost is None:
                 raise RuntimeError("Missing cost")
 
             if sell.date() <= buy.date() + relativedelta(years=1):
+                short_term["quantity"] += buy.quantity
                 short_term["cost"] += buy.cost
                 if buy.fee_value:
                     short_term["fee_value"] += buy.fee_value
                 short_term["dates"].append(buy.date())
             else:
+                long_term["quantity"] += buy.quantity
                 long_term["cost"] += buy.cost
                 if buy.fee_value:
                     long_term["fee_value"] += buy.fee_value
                 long_term["dates"].append(buy.date())
 
-        sell_adjusted = copy.deepcopy(sell)
-        if sell.proceeds and sell.fee_value:
-            sell_adjusted.proceeds = sell.proceeds.quantize(PRECISION) - sell.fee_value.quantize(
-                PRECISION
+        if short_term["dates"]:
+            sell_adjusted = copy.deepcopy(sell)
+            if not sell.proceeds:
+                raise RuntimeError("missing sell.proceeds")
+
+            if sell.fee_value:
+                sell_adjusted.proceeds = sell.proceeds.quantize(
+                    PRECISION
+                ) - sell.fee_value.quantize(PRECISION)
+
+            if not sell_adjusted.proceeds:
+                raise RuntimeError("missing sell_adjusted.proceeds")
+
+            sell_adjusted.proceeds = sell_adjusted.proceeds * (
+                short_term["quantity"] / sell.quantity
             )
 
-        if short_term["dates"]:
             if sell.t_type in self.NO_GAIN_NO_LOSS_TYPES:
                 tax_event: Union[TaxEventCapitalGains, TaxEventNoGainNoLoss] = TaxEventNoGainNoLoss(
                     DisposalType.SHORT_TERM,
@@ -315,6 +341,22 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 print(f"{Fore.CYAN}fifo: {tax_event}")
 
         if long_term["dates"]:
+            sell_adjusted = copy.deepcopy(sell)
+            if not sell.proceeds:
+                raise RuntimeError("missing sell.proceeds")
+
+            if sell.fee_value:
+                sell_adjusted.proceeds = sell.proceeds.quantize(
+                    PRECISION
+                ) - sell.fee_value.quantize(PRECISION)
+
+            if not sell_adjusted.proceeds:
+                raise RuntimeError("missing sell_adjusted.proceeds")
+
+            sell_adjusted.proceeds = sell_adjusted.proceeds * (
+                long_term["quantity"] / sell.quantity
+            )
+
             if sell.t_type in self.NO_GAIN_NO_LOSS_TYPES:
                 tax_event = TaxEventNoGainNoLoss(
                     DisposalType.LONG_TERM,
