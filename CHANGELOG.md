@@ -43,6 +43,7 @@
 - Kraken parser: added "dividend" type.
 - Kraken parser: added "adjustment" type.
 - Kraken parser: handle "/" in trading pair.
+- Binance parser: added "Token Swap - Redenomination/Rebranding" operation.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
