@@ -357,7 +357,7 @@ def _parse_binance_statements_row(
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
         )
-    elif row_dict["Operation"] == "Distribution":
+    elif row_dict["Operation"] in ("Distribution", "Token Swap - Redenomination/Rebranding"):
         if Decimal(row_dict["Change"]) > 0:
             data_row.t_record = TransactionOutRecord(
                 TrType.AIRDROP,
