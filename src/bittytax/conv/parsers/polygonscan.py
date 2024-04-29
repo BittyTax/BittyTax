@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..out_record import TransactionOutRecord
 from .etherscan import _get_note
 
@@ -19,10 +20,15 @@ WORKSHEET_NAME = "PolygonScan"
 
 
 def parse_polygonscan(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Txhash"),
+        parser.in_header.index("From"),
+        parser.in_header.index("To"),
+    )
 
     if row_dict["Status"] != "":
         # Failed transactions should not have a Value_OUT
@@ -67,10 +73,15 @@ def _get_wallet(address: str) -> str:
 
 
 def parse_polygonscan_internal(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Txhash"),
+        parser.in_header.index("From"),
+        parser.in_header.index("TxTo"),
+    )
 
     # Failed internal transaction
     if row_dict["Status"] != "0":

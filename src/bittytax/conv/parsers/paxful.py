@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -32,6 +33,9 @@ def parse_paxful(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Pars
             wallet=WALLET,
         )
     elif row_dict["type"] == "Sent out":
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("transaction_id"), tx_dest_pos=parser.in_header.index("sent_to")
+        )
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,

@@ -12,6 +12,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataRowError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -137,7 +138,7 @@ def parse_hitbtc_trades_v1(
 
 
 def parse_hitbtc_deposits_withdrawals_v2(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date (UTC)"])
@@ -145,6 +146,7 @@ def parse_hitbtc_deposits_withdrawals_v2(
     # Looks like a bug in the exporter, Withdrawals are blank
     #  failed transactions have no transaction hash
     if row_dict["Type"] in ("Withdraw", "") and row_dict["Transaction hash"] != "":
+        data_row.tx_raw = TxRawPos(parser.in_header.index("Transaction hash"))
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -153,6 +155,7 @@ def parse_hitbtc_deposits_withdrawals_v2(
             wallet=WALLET,
         )
     elif row_dict["Type"] == "Deposit" and row_dict["Transaction hash"] != "":
+        data_row.tx_raw = TxRawPos(parser.in_header.index("Transaction hash"))
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -163,12 +166,13 @@ def parse_hitbtc_deposits_withdrawals_v2(
 
 
 def parse_hitbtc_deposits_withdrawals_v1(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date (UTC)"])
 
     if row_dict["Type"] == "Withdraw":
+        data_row.tx_raw = TxRawPos(parser.in_header.index("Transaction Hash"))
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -177,6 +181,7 @@ def parse_hitbtc_deposits_withdrawals_v1(
             wallet=WALLET,
         )
     elif row_dict["Type"] == "Deposit":
+        data_row.tx_raw = TxRawPos(parser.in_header.index("Transaction Hash"))
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,

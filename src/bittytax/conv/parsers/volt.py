@@ -10,6 +10,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -37,6 +38,9 @@ def parse_volt(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         fee_asset = ""
 
     if row_dict["status"] == "Received":
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("txid"), tx_src_pos=parser.in_header.index("address")
+        )
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -47,6 +51,9 @@ def parse_volt(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             wallet=WALLET,
         )
     elif row_dict["status"] == "OUT":
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("txid"), tx_dest_pos=parser.in_header.index("address")
+        )
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,

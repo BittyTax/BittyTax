@@ -241,7 +241,7 @@ def parse_kucoin_withdrawals(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"], tz="Asia/Singapore")
-    data_row.tx_raw = TxRawPos(None, None, parser.in_header.index("Wallet Address"))
+    data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Wallet Address"))
 
     data_row.t_record = TransactionOutRecord(
         TrType.WITHDRAWAL,
@@ -267,7 +267,7 @@ def parse_kucoin_deposits_withdrawals_v2(
         return
 
     if "Withdrawal Address/Account" in row_dict:
-        data_row.tx_raw = TxRawPos(None, None, parser.in_header.index("Withdrawal Address/Account"))
+        data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Withdrawal Address/Account"))
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,

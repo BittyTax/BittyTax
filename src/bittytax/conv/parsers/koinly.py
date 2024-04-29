@@ -13,6 +13,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType, UnmappedType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataRowError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -90,6 +91,11 @@ def _parse_koinly_row(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("TxHash"),
+        parser.in_header.index("TxSrc"),
+        parser.in_header.index("TxDest"),
+    )
     data_row.parsed = True
 
     if "Label" in row_dict:

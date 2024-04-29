@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -26,10 +27,11 @@ def parse_tradesatoshi_deposits_v2(
 
 
 def parse_tradesatoshi_deposits_v1(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["TimeStamp"])
+    data_row.tx_raw = TxRawPos(parser.in_header.index("TxId"))
 
     data_row.t_record = TransactionOutRecord(
         TrType.DEPOSIT,
@@ -41,10 +43,13 @@ def parse_tradesatoshi_deposits_v1(
 
 
 def parse_tradesatoshi_withdrawals_v2(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["TimeStamp"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("TxId"), tx_dest_pos=parser.in_header.index("Address")
+    )
 
     data_row.t_record = TransactionOutRecord(
         TrType.WITHDRAWAL,
@@ -56,10 +61,13 @@ def parse_tradesatoshi_withdrawals_v2(
 
 
 def parse_tradesatoshi_withdrawals_v1(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["TimeStamp"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("TxId"), tx_dest_pos=parser.in_header.index("Address")
+    )
 
     data_row.t_record = TransactionOutRecord(
         TrType.WITHDRAWAL,
