@@ -98,16 +98,16 @@ class ReportPdf:
                 }
             )
 
-        with ProgressSpinner():
+        with ProgressSpinner(f"{Fore.CYAN}generating PDF report{Fore.GREEN}: "):
             with open(self.filename, "w+b") as pdf_file:
                 status = pisa.CreatePDF(html, dest=pdf_file)
 
         if not status.err:
             print(
-                f"{Fore.WHITE}PDF tax report created: {Fore.YELLOW}{os.path.abspath(self.filename)}"
+                f"{Fore.WHITE}PDF report created: {Fore.YELLOW}{os.path.abspath(self.filename)}"
             )
         else:
-            print(f"{ERROR} Failed to create PDF tax report")
+            print(f"{ERROR} Failed to create PDF report")
 
     @staticmethod
     def datefilter(date: Date) -> str:
@@ -658,7 +658,8 @@ class ReportLog:
 
 
 class ProgressSpinner:
-    def __init__(self) -> None:
+    def __init__(self, message: str) -> None:
+        self.message = message
         self.spinner = itertools.cycle(["-", "\\", "|", "/"])
         self.busy = False
 
@@ -667,13 +668,14 @@ class ProgressSpinner:
             sys.stdout.write(next(self.spinner))
             sys.stdout.flush()
             time.sleep(0.1)
-            sys.stdout.write("\b")
-            sys.stdout.flush()
+            if self.busy:
+                sys.stdout.write("\b")
+                sys.stdout.flush()
 
     def __enter__(self) -> None:
         if sys.stdout.isatty():
             self.busy = True
-            sys.stdout.write(f"{Fore.CYAN}generating PDF report{Fore.GREEN}: ")
+            sys.stdout.write(self.message)
             threading.Thread(target=self.do_spinner).start()
 
     def __exit__(
