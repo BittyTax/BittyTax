@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataFilenameError
 from ..out_record import TransactionOutRecord
 from .etherscan import _get_note
@@ -18,11 +19,14 @@ if TYPE_CHECKING:
 WALLET = "AVAX"
 
 
-def parse_snowtrace(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
-) -> None:
+def parse_snowtrace(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Txhash"),
+        parser.in_header.index("From"),
+        parser.in_header.index("To"),
+    )
 
     if row_dict["Status"] != "":
         # Failed transactions should not have a Value_OUT
@@ -67,11 +71,16 @@ def _get_wallet(address: str) -> str:
 
 
 def parse_snowtrace_tokens(
-    data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["block_unix_timestamp"]) / 1000)
     row_dict["Transaction Hash"] = row_dict["tx_hash"]
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("tx_hash"),
+        parser.in_header.index("from"),
+        parser.in_header.index("to"),
+    )
 
     if row_dict["token_symbol"].endswith("-LP"):
         asset = row_dict["token_symbol"] + "-" + row_dict["ContractAddress"][0:10]

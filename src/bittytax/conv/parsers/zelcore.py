@@ -9,6 +9,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -18,10 +19,11 @@ WALLET = "Zelcore"
 
 
 def parse_zelcore_kda(
-    data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["timestamp"]) / 1000)
+    data_row.tx_raw = TxRawPos(parser.in_header.index("txid"))
 
     if row_dict["isError"] != "0":
         quantity = Decimal(0)

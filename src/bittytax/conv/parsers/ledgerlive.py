@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -22,6 +23,14 @@ def parse_ledger_live(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Operation Date"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Operation Hash"),
+        tx_src_pos=(
+            parser.in_header.index("Account xpub")
+            if "Account xpub" in parser.in_header
+            else parser.in_header.index("Account id")
+        ),
+    )
 
     if "Status" in row_dict and row_dict["Status"] != "Confirmed":
         return

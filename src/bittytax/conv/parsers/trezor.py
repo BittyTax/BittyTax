@@ -9,6 +9,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import ConsolidateType, DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
 
@@ -35,6 +36,9 @@ def parse_trezor(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Parse
         symbol = kwargs["cryptoasset"]
 
     if row_dict["TX type"] == "IN":
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("TX id"), tx_src_pos=parser.in_header.index("Address")
+        )
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -46,6 +50,9 @@ def parse_trezor(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Parse
             note=row_dict.get("Address Label", ""),
         )
     elif row_dict["TX type"] == "OUT":
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("TX id"), tx_dest_pos=parser.in_header.index("Address")
+        )
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -57,6 +64,7 @@ def parse_trezor(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Parse
             note=row_dict.get("Address Label", ""),
         )
     elif row_dict["TX type"] == "SELF":
+        data_row.tx_raw = TxRawPos(parser.in_header.index("TX id"))
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
