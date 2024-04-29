@@ -19,6 +19,7 @@ from .audit import AuditLogEntry
 from .bt_types import BUY_TYPES, SELL_TYPES, AssetSymbol, TrRecordPart, TrType
 from .config import config
 from .constants import PROJECT_URL, TZ_UTC
+from .report import ProgressSpinner
 from .t_row import TransactionRow
 from .version import __version__
 
@@ -155,17 +156,19 @@ class AuditLogExcel:  # pylint: disable=too-few-public-methods, too-many-instanc
 
     def write_excel(self) -> None:
         audit_log = sorted(self.audit_log)
-        for asset in audit_log:
-            worksheet = Worksheet(self, asset)
-            for i, audit_log_entry in enumerate(self.audit_log[asset]):
-                worksheet.add_row(asset, audit_log_entry, i + 1)
+        with ProgressSpinner(f"{Fore.CYAN}generating EXCEL audit log{Fore.GREEN}: "):
+            for asset in audit_log:
+                worksheet = Worksheet(self, asset)
+                for i, audit_log_entry in enumerate(self.audit_log[asset]):
+                    worksheet.add_row(asset, audit_log_entry, i + 1)
 
-            worksheet.make_table(len(self.audit_log[asset]), asset)
-            worksheet.autofit()
+                worksheet.make_table(len(self.audit_log[asset]), asset)
+                worksheet.autofit()
 
-        self.workbook.close()
+            self.workbook.close()
+
         sys.stderr.write(
-            f"{Fore.WHITE}audit log EXCEL file created: "
+            f"{Fore.WHITE}EXCEL audit log created: "
             f"{Fore.YELLOW}{os.path.abspath(self.filename)}\n"
         )
 
@@ -404,12 +407,11 @@ class Worksheet:
 
     def _table_name(self, name: str) -> str:
         # Remove characters which are not allowed
+        name = name.replace(" ", "_")
         name = re.sub(r"[^a-zA-Z0-9\._]", "", name)
 
-        # First character can't be a digit or full stop
-        match = re.match(r"^[a-zA-Z\_].*$", name)
-        if not match:
-            name = f"_{name}"
+        # Add backslash to prevent xlsxwriter warnings
+        name = f"\\{name}"
 
         if name.lower() not in self.table_names:
             self.table_names[name.lower()] = 1
