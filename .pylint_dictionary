@@ -32,5 +32,6 @@ timestamp
 timezone
 txhash
 xlsx
+xlsxwriter
 yaml
 zerion
