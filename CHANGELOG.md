@@ -85,6 +85,9 @@
 - Conversion tool: added new parser for Eternl wallet.
 - Conversion tool: added new parser for MyMonero wallet.
 - Accounting/Conversion tool: audit spreadsheet output to help with troubleshooting negative balances, and integity check issues.
+- Accounting tool: calculate transfer mismatches and warn during audit instead of waiting for the integrity check to fail.
+- Accounting tool: audit report now shows asset balances (split by crypto and fiat) as well as any transfer mismatches.
+- Accounting tool: added source filename of transaction records to cover page of PDF report.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
