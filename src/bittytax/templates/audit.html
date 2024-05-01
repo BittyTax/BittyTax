@@ -1,6 +1,7 @@
-<h2>Final Balances</h2>
+<h2>Wallet Balances</h2>
 {% for wallet in audit.wallets|sort %}
-    <table repeat="1" width="50%" class="asset-table">
+    <h3>{{wallet}}</h3>
+    <table repeat="1" class="asset-table">
         <tr>
             <th align="left">Wallet</th>
             <th align="left">Asset</th>
@@ -10,9 +11,52 @@
             <tr>
                 <td>{{wallet|nowrapfilter}}</td>
                 <td>{{asset}}</td>
-                <td align="right">{{audit.wallets[wallet][asset]|quantityfilter}}</td>
+                {% if audit.wallets[wallet][asset] >= 0 %}
+                    <td align="right">{{audit.wallets[wallet][asset]|quantityfilter}}</td>
+                {% else %}
+                    <td align="right" class="red-font">{{audit.wallets[wallet][asset]|quantityfilter}}</td>
+                {% endif %}
             </tr>
         {% endfor %}
-     </table>
-     <br>
+    </table>
 {% endfor %}
+<pdf:nextpage />
+<h2>Asset Balances</h2>
+<h3>Cryptoassets</h3>
+<table repeat="1" class="asset-table">
+    <tr>
+        <th align="left">Asset</th>
+        <th align="right">Balance</th>
+        <th align="right">Transfers Mismatch</th>
+    </tr>
+    {% for asset in audit.totals|sort if asset not in config.fiat_list %}
+        <tr>
+            <td>{{asset}}</td>
+            {% if audit.totals[asset].total >= 0 %}
+                <td align="right">{{audit.totals[asset].total|quantityfilter}}</td>
+            {% else %}
+                <td align="right" class="red-font">{{audit.totals[asset].total|quantityfilter}}</td>
+            {% endif %}
+            <td align="right" class="red-font">{{audit.totals[asset].transfers_mismatch|mismatchfilter}}</td>
+        </tr>
+    {% endfor %}
+</table>
+<h3>Fiat Currency</h3>
+<table repeat="1" class="asset-table">
+    <tr>
+        <th align="left">Asset</th>
+        <th align="right">Balance</th>
+        <th align="right"></th>
+    </tr>
+    {% for asset in audit.totals|sort if asset in config.fiat_list %}
+        <tr>
+            <td>{{asset}}</td>
+            {% if audit.totals[asset].total >= 0 %}
+                <td align="right">{{audit.totals[asset].total|quantityfilter}}</td>
+            {% else %}
+                <td align="right" class="red-font">{{audit.totals[asset].total|quantityfilter}}</td>
+            {% endif %}
+            <td align="right"></td>
+        </tr>
+    {% endfor %}
+</table>

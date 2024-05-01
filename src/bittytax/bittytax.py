@@ -106,7 +106,7 @@ def main() -> None:
         "-o",
         dest="output_filename",
         type=str,
-        help="specify the output filename for the tax report",
+        help="specify the output filename for the PDF report",
     )
     parser.add_argument(
         "--format",

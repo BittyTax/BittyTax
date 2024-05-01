@@ -67,6 +67,7 @@ class ReportPdf:
         self.env.filters["ratesfilter"] = self.ratesfilter
         self.env.filters["nowrapfilter"] = self.nowrapfilter
         self.env.filters["lenfilter"] = self.lenfilter
+        self.env.filters["mismatchfilter"] = self.mismatchfilter
         self.env.globals["TAX_RULES_UK_COMPANY"] = TAX_RULES_UK_COMPANY
         self.env.globals["TEMPLATE_PATH"] = pkg_resources.resource_filename(__name__, "templates")
 
@@ -103,9 +104,7 @@ class ReportPdf:
                 status = pisa.CreatePDF(html, dest=pdf_file)
 
         if not status.err:
-            print(
-                f"{Fore.WHITE}PDF report created: {Fore.YELLOW}{os.path.abspath(self.filename)}"
-            )
+            print(f"{Fore.WHITE}PDF report created: {Fore.YELLOW}{os.path.abspath(self.filename)}")
         else:
             print(f"{ERROR} Failed to create PDF report")
 
@@ -154,6 +153,12 @@ class ReportPdf:
         return text[: max_len - dots] + "." * dots if len(text) > max_len else text
 
     @staticmethod
+    def mismatchfilter(quantity: Decimal) -> str:
+        if quantity:
+            return f"{quantity.normalize():+0,f}"
+        return ""
+
+    @staticmethod
     def get_output_filename(filename: str, extension_type: str) -> str:
         if filename:
             filepath, file_extension = os.path.splitext(filename)
@@ -176,7 +181,7 @@ class ReportPdf:
 
 
 class ReportLog:
-    MAX_SYMBOL_LEN = 8
+    MAX_SYMBOL_LEN = 20
     MAX_NAME_LEN = 32
     MAX_NOTE_LEN = 40
     ASSET_WIDTH = MAX_SYMBOL_LEN + MAX_NAME_LEN + 3
@@ -223,13 +228,13 @@ class ReportLog:
     def _tax_full(
         self,
         tax_rules: str,
-        audit_report: AuditRecords,
+        audit: AuditRecords,
         tax_report: Dict[Year, TaxReportRecord],
         price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]],
         holdings_report: Optional[HoldingsReportRecord],
     ) -> None:
         print(f"{Fore.WHITE}tax report output:")
-        self._audit(audit_report)
+        self._audit(audit)
 
         for tax_year in sorted(tax_report):
             print(
@@ -281,17 +286,40 @@ class ReportLog:
         if holdings_report:
             self._holdings(holdings_report)
 
-    def _audit(self, audit_report: AuditRecords) -> None:
+    def _audit(self, audit: AuditRecords) -> None:
         print(f"{H1}Audit{_H1}")
-        print(f"{Fore.CYAN}Final Balances")
-        for wallet in sorted(audit_report.wallets, key=str.lower):
+        print(f"{Fore.CYAN}Wallet Balances")
+        for wallet in sorted(audit.wallets, key=str.lower):
             print(f'\n{Fore.YELLOW}{"Wallet":<30} {"Asset":<{self.MAX_SYMBOL_LEN}} {"Balance":>25}')
 
-            for asset in sorted(audit_report.wallets[wallet]):
+            for asset in sorted(audit.wallets[wallet]):
                 print(
                     f"{Fore.WHITE}{wallet:<30} {asset:<{self.MAX_SYMBOL_LEN}} "
-                    f"{self.format_quantity(audit_report.wallets[wallet][asset]):>25}"
+                    f"{Fore.RED if audit.wallets[wallet][asset] < 0 else Fore.WHITE}"
+                    f"{self.format_quantity(audit.wallets[wallet][asset]):>25}"
                 )
+
+        print(f"\n{Fore.CYAN}Asset Balances (Cryptoassets)")
+        print(
+            f'\n{Fore.YELLOW}{"Asset":<{self.MAX_SYMBOL_LEN}} {"Balance":>25} '
+            f'{"Transfers Mismatch":>25}'
+        )
+        for asset in sorted([a for a in audit.totals if a not in config.fiat_list]):
+            print(
+                f"{Fore.WHITE}{asset:<{self.MAX_SYMBOL_LEN}} "
+                f"{Fore.RED if audit.totals[asset].total < 0 else Fore.WHITE}"
+                f"{self.format_quantity(audit.totals[asset].total):>25} "
+                f"{Fore.RED}{self.format_mismatch(audit.totals[asset].transfers_mismatch):>25}"
+            )
+
+        print(f"\n{Fore.CYAN}Asset Balances (Fiat Currency)")
+        print(f'\n{Fore.YELLOW}{"Asset":<{self.MAX_SYMBOL_LEN}} {"Balance":>25}')
+        for asset in sorted([a for a in audit.totals if a in config.fiat_list]):
+            print(
+                f"{Fore.WHITE}{asset:<{self.MAX_SYMBOL_LEN}} "
+                f"{Fore.RED if audit.totals[asset].total < 0 else Fore.WHITE}"
+                f"{self.format_quantity(audit.totals[asset].total):>25}"
+            )
 
     def _capital_gains(
         self,
@@ -655,6 +683,12 @@ class ReportLog:
             if len(note) > ReportLog.MAX_NOTE_LEN
             else note
         )
+
+    @staticmethod
+    def format_mismatch(quantity: Decimal) -> str:
+        if quantity:
+            return f"{quantity.normalize():+0,f}"
+        return ""
 
 
 class ProgressSpinner:
