@@ -139,6 +139,8 @@ def main() -> None:
         print(f"{Fore.YELLOW}{parser.prog} v{__version__}")
         print(f"{Fore.GREEN}python: v{platform.python_version()}")
         print(f"{Fore.GREEN}system: {platform.system()}, release: {platform.release()}")
+        for arg in vars(args):
+            print(f"{Fore.GREEN}args: {arg}: {getattr(args, arg)}")
         config.output_config(sys.stdout)
 
     if args.tax_rules in [TAX_RULES_UK_INDIVIDUAL] + TAX_RULES_UK_COMPANY:
