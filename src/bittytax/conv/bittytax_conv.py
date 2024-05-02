@@ -112,6 +112,8 @@ def main() -> None:
         sys.stderr.write(
             f"{Fore.GREEN}system: {platform.system()}, release: {platform.release()}\n"
         )
+        for arg in vars(args):
+            sys.stderr.write(f"{Fore.GREEN}args: {arg}: {getattr(args, arg)}\n")
         config.output_config(sys.stderr)
 
     file_hashes = set()

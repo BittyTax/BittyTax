@@ -61,6 +61,7 @@
 - Kraken parser: handle "/" in trading pair.
 - Binance parser: added "Token Swap - Redenomination/Rebranding" operation.
 - Bitstamp parser: added new export format.
+- Accounting/Conversion/Price tool: output command line arguments in debug log.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
