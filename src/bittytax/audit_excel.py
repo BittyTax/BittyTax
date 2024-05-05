@@ -4,7 +4,6 @@
 import os
 import platform
 import re
-import sys
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
@@ -155,9 +154,8 @@ class AuditLogExcel:  # pylint: disable=too-few-public-methods, too-many-instanc
         return new_fname
 
     def write_excel(self) -> None:
-        audit_log = sorted(self.audit_log)
         with ProgressSpinner(f"{Fore.CYAN}generating EXCEL audit log{Fore.GREEN}: "):
-            for asset in audit_log:
+            for asset in sorted(self.audit_log):
                 worksheet = Worksheet(self, asset)
                 for i, audit_log_entry in enumerate(self.audit_log[asset]):
                     worksheet.add_row(asset, audit_log_entry, i + 1)
@@ -167,10 +165,7 @@ class AuditLogExcel:  # pylint: disable=too-few-public-methods, too-many-instanc
 
             self.workbook.close()
 
-        sys.stderr.write(
-            f"{Fore.WHITE}EXCEL audit log created: "
-            f"{Fore.YELLOW}{os.path.abspath(self.filename)}\n"
-        )
+        print(f"{Fore.WHITE}EXCEL audit log created: {Fore.YELLOW}{os.path.abspath(self.filename)}")
 
 
 class Worksheet:

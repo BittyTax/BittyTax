@@ -188,10 +188,6 @@ class AuditRecords:
             if not self.wallets[wallet]:
                 self.wallets.pop(wallet)
 
-        for asset in list(self.totals):
-            if not self.totals[asset].total and not self.totals[asset].transfers_mismatch:
-                self.totals.pop(asset)
-
     def compare_holdings(self, holdings: Dict[AssetSymbol, Holdings]) -> bool:
         passed = True
         for asset in sorted(self.totals):
