@@ -8,7 +8,7 @@ import itertools
 import sys
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 from colorama import Fore
 from dateutil.relativedelta import relativedelta
@@ -415,7 +415,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 tax_event = TaxEventIncome(t)
                 self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
 
-    def all_transactions(self) -> itertools.chain[Union[Buy, Sell]]:
+    def all_transactions(self) -> Iterator[Union[Buy, Sell]]:
         # Ordered so transfers appear before the fee spend in the log
         return itertools.chain(
             self.other_transactions, *self.buys_ordered.values(), self.sells_ordered
