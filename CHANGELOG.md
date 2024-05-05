@@ -105,6 +105,7 @@
 - CoinTracking parser: Lost/Stolen transactions now include sell value if available.
 - Conversion tool: specifying a directory as the filename will recursively parse all files in all subdirectories
 - Accounting/Conversion tool: display output filenames with absolute paths.
+- Accounting tool: use stdout not stderr.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
