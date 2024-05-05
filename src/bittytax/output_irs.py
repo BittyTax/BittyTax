@@ -3,7 +3,6 @@
 
 import os
 import re
-import sys
 from decimal import Decimal
 from typing import Dict, List, Optional
 
@@ -15,6 +14,7 @@ from typing_extensions import TypedDict
 
 from .bt_types import AssetSymbol, Year
 from .constants import WARNING
+from .report import ProgressSpinner
 from .tax import CapitalGainsReportTotal, TaxReportRecord
 from .tax_event import TaxEventCapitalGains
 
@@ -162,16 +162,16 @@ class FormFieldNames:  # pylint: disable=too-few-public-methods
 class OutputIrs:
     DEFAULT_FILENAME = "BittyTax_IRS"
     FILE_EXTENSION = "pdf"
-    OUTPUT_FORMAT = "IRS Form 8949"
+    OUTPUT_FORMAT = "Form 8949"
 
-    FORMS_DIR = pkg_resources.resource_filename(__name__, "irs_forms")
-    FORMS: Dict[Year, str] = {
-        Year(2018): f"{FORMS_DIR}/f8949--2018.pdf",
-        Year(2019): f"{FORMS_DIR}/f8949--2019.pdf",
-        Year(2020): f"{FORMS_DIR}/f8949--2020.pdf",
-        Year(2021): f"{FORMS_DIR}/f8949--2021.pdf",
-        Year(2022): f"{FORMS_DIR}/f8949--2022.pdf",
-        Year(2023): f"{FORMS_DIR}/f8949--2023.pdf",
+    IRS_FORMS_DIR = pkg_resources.resource_filename(__name__, "irs_forms")
+    F8949_PDF: Dict[Year, str] = {
+        Year(2018): f"{IRS_FORMS_DIR}/f8949--2018.pdf",
+        Year(2019): f"{IRS_FORMS_DIR}/f8949--2019.pdf",
+        Year(2020): f"{IRS_FORMS_DIR}/f8949--2020.pdf",
+        Year(2021): f"{IRS_FORMS_DIR}/f8949--2021.pdf",
+        Year(2022): f"{IRS_FORMS_DIR}/f8949--2022.pdf",
+        Year(2023): f"{IRS_FORMS_DIR}/f8949--2023.pdf",
     }
 
     def __init__(self, filename: str, tax_report: Dict[Year, TaxReportRecord]) -> None:
@@ -182,6 +182,7 @@ class OutputIrs:
         self.page_num = 0
         self.f_num = 0
         self.writer: Optional[PdfWriter] = None
+        self.reader: Optional[PdfReader] = None
 
     def _get_output_filename(self, tax_year: Year) -> str:
         if self.filename:
@@ -204,41 +205,54 @@ class OutputIrs:
 
     def write_pdf(self) -> None:
         for tax_year in sorted(self.tax_report):
-            if tax_year not in self.FORMS:
+            if tax_year not in self.F8949_PDF:
                 print(f"{WARNING} {self.OUTPUT_FORMAT} for {tax_year} missing, skipping...")
                 continue
 
-            reader = PdfReader(self.FORMS[tax_year])
-            self.writer = PdfWriter()
-            self.writer.clone_reader_document_root(reader)
-            self.writer.reset_translation(reader)
+            self._get_name_ssn()
 
-            self.page_num = 0
-            self.f_num = 2
+            with ProgressSpinner(
+                f"{Fore.CYAN}generating {self.OUTPUT_FORMAT} for {tax_year}{Fore.GREEN}: "
+            ):
+                self._make_f8949_pdf(tax_year)
+                if self.writer:
+                    filename = self._get_output_filename(tax_year)
+                    with open(filename, "wb") as output_stream:
+                        self.writer.write(output_stream)
 
-            fn = FormFieldNames(1)
-            self._fill_header(fn)
-            fn = self._fill_table(
-                self.tax_report[tax_year]["CapitalGains"].short_term, fn, reader.pages[0]
+            print(
+                f"{Fore.WHITE}{self.OUTPUT_FORMAT} for {tax_year} created: {Fore.YELLOW}{filename}"
             )
-            self._fill_totals(self.tax_report[tax_year]["CapitalGains"].short_term_totals, fn)
 
-            self.page_num += 1
-            fn = FormFieldNames(2)
-            self._fill_header(fn)
-            fn = self._fill_table(
-                self.tax_report[tax_year]["CapitalGains"].long_term, fn, reader.pages[1]
-            )
-            self._fill_totals(self.tax_report[tax_year]["CapitalGains"].long_term_totals, fn)
+    def _get_name_ssn(self) -> None:
+        if not self.name:
+            self.name = input("Enter Name: ")
 
-            filename = self._get_output_filename(tax_year)
-            with open(filename, "wb") as output_stream:
-                self.writer.write(output_stream)
+        if not self.ssn:
+            self.ssn = input("Enter SSN or TIN: ")
 
-            sys.stderr.write(
-                f"{Fore.WHITE}{self.OUTPUT_FORMAT} for {tax_year} created: "
-                f"{Fore.YELLOW}{filename}\n"
-            )
+    def _make_f8949_pdf(self, tax_year: Year) -> None:
+        self.reader = PdfReader(self.F8949_PDF[tax_year])
+        self.writer = PdfWriter()
+        self.writer.clone_reader_document_root(self.reader)
+
+        self.page_num = 0
+        self.f_num = 2
+
+        fn = FormFieldNames(1)
+        self._fill_header(fn)
+        fn = self._fill_table(
+            self.tax_report[tax_year]["CapitalGains"].short_term, fn, self.reader.pages[0]
+        )
+        self._fill_totals(self.tax_report[tax_year]["CapitalGains"].short_term_totals, fn)
+
+        self.page_num += 1
+        fn = FormFieldNames(2)
+        self._fill_header(fn)
+        fn = self._fill_table(
+            self.tax_report[tax_year]["CapitalGains"].long_term, fn, self.reader.pages[1]
+        )
+        self._fill_totals(self.tax_report[tax_year]["CapitalGains"].long_term_totals, fn)
 
     def _update_page_field_names(self, source_page: PageObject, fnum_new: int) -> None:
         for j in range(0, len(source_page["/Annots"])):  # type: ignore[arg-type]
@@ -259,12 +273,6 @@ class OutputIrs:
             )
 
     def _fill_header(self, fn: FormFieldNames) -> None:
-        if not self.name:
-            self.name = input("Enter Name: ")
-
-        if not self.ssn:
-            self.ssn = input("Enter SSN or TIN: ")
-
         if self.writer:
             self.writer.update_page_form_field_values(
                 self.writer.pages[self.page_num],
@@ -289,6 +297,7 @@ class OutputIrs:
 
                     self._update_page_field_names(source_page, self.f_num)
                     if self.writer:
+                        self.writer.reset_translation(self.reader)
                         self.writer.insert_page(source_page, self.page_num)
 
                     fn = FormFieldNames(self.f_num)
