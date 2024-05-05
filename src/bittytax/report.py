@@ -10,14 +10,14 @@ import threading
 import time
 from decimal import Decimal
 from types import TracebackType
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Optional, Tuple, Type
 
 import jinja2
 import pkg_resources
 from colorama import Fore, Style
 from xhtml2pdf import pisa
 
-from .audit import AuditRecords
+from .audit import AuditRecords, AuditTotals
 from .bt_types import AssetName, AssetSymbol, Date, Note, Year
 from .config import config
 from .constants import _H1, ERROR, H1, TAX_RULES_UK_COMPANY
@@ -55,6 +55,7 @@ class ReportPdf:
         self.env.filters["ratesfilter"] = self.ratesfilter
         self.env.filters["nowrapfilter"] = self.nowrapfilter
         self.env.filters["lenfilter"] = self.lenfilter
+        self.env.filters["audittotalsfilter"] = self.audittotalsfilter
         self.env.filters["mismatchfilter"] = self.mismatchfilter
         self.env.globals["TAX_RULES_UK_COMPANY"] = TAX_RULES_UK_COMPANY
         self.env.globals["TEMPLATE_PATH"] = pkg_resources.resource_filename(__name__, "templates")
@@ -149,6 +150,23 @@ class ReportPdf:
     @staticmethod
     def lenfilter(text: str, max_len: int = 40, dots: int = 3) -> str:
         return text[: max_len - dots] + "." * dots if len(text) > max_len else text
+
+    @staticmethod
+    def audittotalsfilter(
+        audit_totals_list: List[Tuple[AssetSymbol, AuditTotals]], fiat_only: bool = False
+    ) -> List[Tuple[AssetSymbol, AuditTotals]]:
+        for asset, audit_totals in list(audit_totals_list):
+            if config.audit_hide_empty:
+                if not audit_totals.total and not audit_totals.transfers_mismatch:
+                    audit_totals_list.remove((asset, audit_totals))
+                    continue
+
+            if fiat_only and asset not in config.fiat_list:
+                audit_totals_list.remove((asset, audit_totals))
+            elif not fiat_only and asset in config.fiat_list:
+                audit_totals_list.remove((asset, audit_totals))
+
+        return audit_totals_list
 
     @staticmethod
     def mismatchfilter(quantity: Decimal) -> str:
@@ -285,21 +303,25 @@ class ReportLog:
             f'\n{Fore.YELLOW}{"Asset":<{self.MAX_SYMBOL_LEN}} {"Balance":>25} '
             f'{"Transfers Mismatch":>25}'
         )
-        for asset in sorted([a for a in audit.totals if a not in config.fiat_list]):
+        for asset, audit_totals in sorted(filter(self.filter_audit_totals, audit.totals.items())):
             print(
                 f"{Fore.WHITE}{asset:<{self.MAX_SYMBOL_LEN}} "
-                f"{Fore.RED if audit.totals[asset].total < 0 else Fore.WHITE}"
-                f"{self.format_quantity(audit.totals[asset].total):>25} "
-                f"{Fore.RED}{self.format_mismatch(audit.totals[asset].transfers_mismatch):>25}"
+                f"{Fore.RED if audit_totals.total < 0 else Fore.WHITE}"
+                f"{self.format_quantity(audit_totals.total):>25} "
+                f"{Fore.RED}{self.format_mismatch(audit_totals.transfers_mismatch):>25}"
             )
 
         print(f"\n{Fore.CYAN}Asset Balances (Fiat Currency)")
         print(f'\n{Fore.YELLOW}{"Asset":<{self.MAX_SYMBOL_LEN}} {"Balance":>25}')
-        for asset in sorted([a for a in audit.totals if a in config.fiat_list]):
+        for asset, audit_totals in sorted(
+            filter(
+                lambda pair: self.filter_audit_totals(pair, fiat_only=True), audit.totals.items()
+            )
+        ):
             print(
                 f"{Fore.WHITE}{asset:<{self.MAX_SYMBOL_LEN}} "
-                f"{Fore.RED if audit.totals[asset].total < 0 else Fore.WHITE}"
-                f"{self.format_quantity(audit.totals[asset].total):>25}"
+                f"{Fore.RED if audit_totals.total < 0 else Fore.WHITE}"
+                f"{self.format_quantity(audit_totals.total):>25}"
             )
 
     def _capital_gains(self, cgains: CalculateCapitalGains) -> None:
@@ -610,6 +632,19 @@ class ReportLog:
         if quantity:
             return f"{quantity.normalize():+0,f}"
         return ""
+
+    @staticmethod
+    def filter_audit_totals(pair: Tuple[AssetSymbol, AuditTotals], fiat_only: bool = False) -> bool:
+        asset, audit_totals = pair
+        if config.audit_hide_empty:
+            if not audit_totals.total and not audit_totals.transfers_mismatch:
+                return False
+
+        if fiat_only and asset not in config.fiat_list:
+            return False
+        if not fiat_only and asset in config.fiat_list:
+            return False
+        return True
 
 
 class ProgressSpinner:

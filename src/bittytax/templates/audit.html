@@ -29,15 +29,15 @@
         <th align="right">Balance</th>
         <th align="right">Transfers Mismatch</th>
     </tr>
-    {% for asset in audit.totals|sort if asset not in config.fiat_list %}
+    {% for asset, audit_totals in audit.totals.items()|sort|audittotalsfilter %}
         <tr>
             <td>{{asset}}</td>
-            {% if audit.totals[asset].total >= 0 %}
-                <td align="right">{{audit.totals[asset].total|quantityfilter}}</td>
+            {% if audit_totals.total >= 0 %}
+                <td align="right">{{audit_totals.total|quantityfilter}}</td>
             {% else %}
-                <td align="right" class="red-font">{{audit.totals[asset].total|quantityfilter}}</td>
+                <td align="right" class="red-font">{{audit_totals.total|quantityfilter}}</td>
             {% endif %}
-            <td align="right" class="red-font">{{audit.totals[asset].transfers_mismatch|mismatchfilter}}</td>
+            <td align="right" class="red-font">{{audit_totals.transfers_mismatch|mismatchfilter}}</td>
         </tr>
     {% endfor %}
 </table>
@@ -48,13 +48,13 @@
         <th align="right">Balance</th>
         <th align="right"></th>
     </tr>
-    {% for asset in audit.totals|sort if asset in config.fiat_list %}
+    {% for asset, audit_totals in audit.totals.items()|sort|audittotalsfilter(fiat_only=True) %}
         <tr>
             <td>{{asset}}</td>
-            {% if audit.totals[asset].total >= 0 %}
-                <td align="right">{{audit.totals[asset].total|quantityfilter}}</td>
+            {% if audit_totals.total >= 0 %}
+                <td align="right">{{audit_totals.total|quantityfilter}}</td>
             {% else %}
-                <td align="right" class="red-font">{{audit.totals[asset].total|quantityfilter}}</td>
+                <td align="right" class="red-font">{{audit_total.total|quantityfilter}}</td>
             {% endif %}
             <td align="right"></td>
         </tr>
