@@ -24,6 +24,28 @@ WALLET = "Coinbase"
 DUPLICATE = UnmappedType("Duplicate")
 
 
+def parse_coinbase_v4(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
+
+    spot_price_ccy = DataParser.convert_currency(
+        row_dict["Price at Transaction"],
+        row_dict["Price Currency"],
+        data_row.timestamp,
+    )
+    subtotal = Decimal(row_dict["Subtotal"]) if row_dict["Subtotal"] else None
+    total_ccy = DataParser.convert_currency(
+        row_dict["Total (inclusive of fees and/or spread)"],
+        row_dict["Price Currency"],
+        data_row.timestamp,
+    )
+    fees = abs(Decimal(row_dict["Fees and/or Spread"])) if row_dict["Fees and/or Spread"] else None
+
+    _do_parse_coinbase(data_row, parser, (spot_price_ccy, subtotal, total_ccy, fees))
+
+
 def parse_coinbase_v3(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
@@ -521,6 +543,45 @@ def parse_coinbase_transactions(
                 wallet=WALLET,
             )
 
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Coinbase",
+    [
+        "ID",  # Added
+        "Timestamp",
+        "Transaction Type",
+        "Asset",
+        "Quantity Transacted",
+        "Price Currency",
+        "Price at Transaction",
+        "Subtotal",
+        "Total (inclusive of fees and/or spread)",
+        "Fees and/or Spread",
+        "Notes",
+    ],
+    worksheet_name="Coinbase",
+    row_handler=parse_coinbase_v4,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Coinbase",
+    [
+        "Timestamp",
+        "Transaction Type",
+        "Asset",
+        "Quantity Transacted",
+        "Price Currency",  # Renamed
+        "Price at Transaction",  # Renamed
+        "Subtotal",
+        "Total (inclusive of fees and/or spread)",
+        "Fees and/or Spread",
+        "Notes",
+    ],
+    worksheet_name="Coinbase",
+    row_handler=parse_coinbase_v4,
+)
 
 DataParser(
     ParserType.EXCHANGE,
