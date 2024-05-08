@@ -54,7 +54,7 @@
             {% if audit_totals.total >= 0 %}
                 <td align="right">{{audit_totals.total|quantityfilter}}</td>
             {% else %}
-                <td align="right" class="red-font">{{audit_total.total|quantityfilter}}</td>
+                <td align="right" class="red-font">{{audit_totals.total|quantityfilter}}</td>
             {% endif %}
             <td align="right"></td>
         </tr>
