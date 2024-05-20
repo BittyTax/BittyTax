@@ -24,8 +24,8 @@ COINTRACKING_D_MAPPING = {
     "Reward/Bonus": TrType.AIRDROP,
     "Mining": TrType.MINING,
     "Airdrop": TrType.AIRDROP,
-    "Staking": TrType.STAKING,
-    "Masternode": TrType.STAKING,
+    "Staking": TrType.STAKING_REWARD,
+    "Masternode": TrType.STAKING_REWARD,
 }
 
 COINTRACKING_W_MAPPING = {

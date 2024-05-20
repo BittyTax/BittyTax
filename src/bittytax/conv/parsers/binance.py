@@ -409,7 +409,7 @@ def _parse_binance_statements_row(
         "BNB Vault Rewards",
     ):
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Change"]),
             buy_asset=row_dict["Coin"],

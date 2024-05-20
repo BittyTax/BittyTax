@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from ..datarow import DataRow
 
 STAKETAX_MAPPING = {
-    "STAKING": TrType.STAKING,
+    "STAKING": TrType.STAKING_REWARD,
     "AIRDROP": TrType.AIRDROP,
     "TRADE": TrType.TRADE,
     "SPEND": TrType.SPEND,

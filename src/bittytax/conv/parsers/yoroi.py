@@ -23,7 +23,7 @@ def parse_yoroi(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parse
 
     if row_dict["Type (Trade, IN or OUT)"] == "Deposit":
         if row_dict["Comment (optional)"].startswith("Staking Reward"):
-            t_type = TrType.STAKING
+            t_type = TrType.STAKING_REWARD
         else:
             t_type = TrType.DEPOSIT
 

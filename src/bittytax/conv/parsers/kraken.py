@@ -227,7 +227,7 @@ def _parse_kraken_ledgers_row(
     elif row_dict["type"] == "staking":
         if Decimal(row_dict["amount"]) > 0:
             data_row.t_record = TransactionOutRecord(
-                TrType.STAKING,
+                TrType.STAKING_REWARD,
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["amount"]),
                 buy_asset=_normalise_asset(row_dict["asset"]),

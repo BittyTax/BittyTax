@@ -43,7 +43,7 @@ def parse_adalite(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Par
         )
     elif row_dict["Type"] == "Reward awarded":
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Received amount"]),
             buy_asset=row_dict["Received currency"],

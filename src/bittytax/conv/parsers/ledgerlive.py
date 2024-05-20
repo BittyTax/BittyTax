@@ -83,7 +83,7 @@ def parse_ledger_live(
         )
     elif row_dict["Operation Type"] == "REWARD":
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Operation Amount"]),
             buy_asset=row_dict["Currency Ticker"],

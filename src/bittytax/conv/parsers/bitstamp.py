@@ -41,7 +41,7 @@ def parse_bitstamp_v2(
         )
     elif row_dict["Type"] == "Staking reward":
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=_normalise_asset(row_dict["Amount currency"]),
@@ -118,7 +118,7 @@ def parse_bitstamp_v1(
         )
     elif row_dict["Type"] == "Staking reward":
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Amount"].split(" ")[0]),
             buy_asset=row_dict["Amount"].split(" ")[1],

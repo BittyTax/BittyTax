@@ -221,7 +221,7 @@ def _do_parse_coinbase(
         "Staking Income",
     ):
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Quantity Transacted"]),
             buy_asset=row_dict["Asset"],

@@ -85,7 +85,7 @@ def parse_qt_wallet(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Pa
         )
     elif row_dict["Type"] == "Masternode Reward":
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=amount,
             buy_asset=symbol,
@@ -151,7 +151,7 @@ def parse_vericoin_qt_wallet(
         )
     elif row_dict["Type"] == "Stake":
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset="VRC",

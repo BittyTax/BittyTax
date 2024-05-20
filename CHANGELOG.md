@@ -109,6 +109,7 @@
 - Conversion tool: specifying a directory as the filename will recursively parse all files in all subdirectories
 - Accounting/Conversion tool: display output filenames with absolute paths.
 - Accounting tool: use stdout not stderr.
+- Conversion tool: parsers use Staking-Reward instead of Staking (deprecated).
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
