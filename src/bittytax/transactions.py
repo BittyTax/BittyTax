@@ -297,6 +297,7 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
 class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
     ACQUISITIONS = {
         TrType.MINING,
+        TrType.STAKING_REWARD,
         TrType.STAKING,
         TrType.INTEREST,
         TrType.DIVIDEND,

@@ -30,6 +30,7 @@ from . import (
     cryptocom,
     cryptopia,
     cryptsy,
+    defitaxes_us,
     electrum,
     etherscan,
     exodus,

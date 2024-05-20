@@ -67,6 +67,8 @@
 - Bitstamp parser: added new export format.
 - Accounting/Conversion/Price tool: output command line arguments in debug log.
 - Coinbase parser: added new export format.
+- Accounting tool: new transaction types added. Stake, Unstake and Staking-Reward (Staking has been deprecated).
+- Conversion tool: added new parser for DefiTaxes.us.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
