@@ -15,7 +15,7 @@ import xlsxwriter
 from colorama import Fore
 from typing_extensions import TypedDict
 
-from ..bt_types import BUY_TYPES, SELL_TYPES, TrType, UnmappedType
+from ..bt_types import BUY_TYPES, DEPRECATED_TYPES, SELL_TYPES, TrType, UnmappedType
 from ..config import config
 from ..constants import (
     EXCEL_PRECISION,
@@ -363,7 +363,10 @@ class Worksheet:
                 col_num,
                 row_num,
                 col_num,
-                {"validate": "list", "source": [t.value for t in BUY_TYPES]},
+                {
+                    "validate": "list",
+                    "source": [t.value for t in BUY_TYPES if t not in DEPRECATED_TYPES],
+                },
             )
         elif t_type in SELL_TYPES or t_record.sell_asset and not t_record.buy_asset:
             self.worksheet.data_validation(
@@ -371,7 +374,10 @@ class Worksheet:
                 col_num,
                 row_num,
                 col_num,
-                {"validate": "list", "source": [t.value for t in SELL_TYPES]},
+                {
+                    "validate": "list",
+                    "source": [t.value for t in SELL_TYPES if t not in DEPRECATED_TYPES],
+                },
             )
         if isinstance(t_type, TrType):
             self.worksheet.write_string(row_num, col_num, t_type.value)

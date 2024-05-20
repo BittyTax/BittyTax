@@ -177,6 +177,8 @@
 - Accounting tool: split tax rates for 2024/25. ([#429](https://github.com/BittyTax/BittyTax/issues/429))
 - Accounting tool: tax rates and allowance for 2025/26.
 - Accounting tool: new transaction type Margin-Fee-Rebate added. ([#415](https://github.com/BittyTax/BittyTax/issues/415))
+- Accounting tool: new transaction types added. Stake, Unstake and Staking-Reward (Staking has been deprecated).
+- Conversion tool: added new parser for DefiTaxes.us.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))

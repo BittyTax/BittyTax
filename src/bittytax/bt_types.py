@@ -24,8 +24,10 @@ class TaxRules(Enum):
 
 class TrType(Enum):
     DEPOSIT = "Deposit"
+    UNSTAKE = "Unstake"
     MINING = "Mining"
-    STAKING = "Staking"
+    STAKING_REWARD = "Staking-Reward"
+    STAKING = "Staking"  # Deprecated
     INTEREST = "Interest"
     DIVIDEND = "Dividend"
     INCOME = "Income"
@@ -39,6 +41,7 @@ class TrType(Enum):
     MARGIN_GAIN = "Margin-Gain"
     MARGIN_FEE_REBATE = "Margin-Fee-Rebate"
     WITHDRAWAL = "Withdrawal"
+    STAKE = "Stake"
     SPEND = "Spend"
     GIFT_SENT = "Gift-Sent"
     GIFT_SPOUSE = "Gift-Spouse"
@@ -83,7 +86,9 @@ TAX_RULES_UK_COMPANY = [
 
 BUY_TYPES = (
     TrType.DEPOSIT,
+    TrType.UNSTAKE,
     TrType.MINING,
+    TrType.STAKING_REWARD,
     TrType.STAKING,
     TrType.INTEREST,
     TrType.DIVIDEND,
@@ -102,6 +107,7 @@ BUY_TYPES = (
 
 SELL_TYPES = (
     TrType.WITHDRAWAL,
+    TrType.STAKE,
     TrType.SPEND,
     TrType.GIFT_SENT,
     TrType.GIFT_SPOUSE,
@@ -115,6 +121,7 @@ SELL_TYPES = (
 )
 
 TRANSFER_TYPES = (TrType.DEPOSIT, TrType.WITHDRAWAL)
+DEPRECATED_TYPES = (TrType.STAKING,)
 
 UnmappedType = NewType("UnmappedType", str)
 

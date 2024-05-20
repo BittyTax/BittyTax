@@ -39,6 +39,7 @@ from . import (
     cryptsy,
     deribit,
     easycrypto,
+    defitaxes_us,
     electrum,
     eternl,
     etherscan,
