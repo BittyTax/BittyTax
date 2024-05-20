@@ -226,7 +226,7 @@ def parse_ftx_staking(
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
 
     data_row.t_record = TransactionOutRecord(
-        TrType.STAKING,
+        TrType.STAKING_REWARD,
         data_row.timestamp,
         buy_quantity=Decimal(row_dict["Reward"]),
         buy_asset=row_dict["Coin"],

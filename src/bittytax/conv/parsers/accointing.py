@@ -25,11 +25,12 @@ ACCOINTING_D_MAPPING = {
     "income": TrType.INCOME,
     "internal": TrType.DEPOSIT,
     "lending_income": TrType.INTEREST,
-    "liquidity_pool": TrType.STAKING,
-    "master_node": TrType.STAKING,
+    "liquidity_pool": TrType.STAKING_REWARD,
+    "master_node": TrType.STAKING_REWARD,
     "mined": TrType.MINING,
     "staked": TrType.STAKING,
     "margin_gain": TrType.MARGIN_GAIN,
+    "staked": TrType.STAKING_REWARD,
 }
 
 ACCOINTING_W_MAPPING = {
