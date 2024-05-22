@@ -31,6 +31,7 @@ repr
 timestamp
 timezone
 txhash
+unstake
 xlsx
 xlsxwriter
 yaml
