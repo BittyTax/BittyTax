@@ -17,6 +17,7 @@ from ...constants import WARNING
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..datarow import TxRawPos
 from ..exceptions import (
+    DataFilenameError,
     DataRowError,
     MissingValueError,
     UnexpectedContentError,
@@ -58,6 +59,7 @@ def parse_defi_taxes(
 ) -> None:
     tx_ids: Dict[Chain, Dict[TxHash, List["DataRow"]]] = {}
     vaults: Dict[VaultId, Dict[AssetSymbol, VaultRecord]] = {}
+    my_addresses = []
 
     for dr in data_rows:
         chain = Chain(dr.row_dict["chain"])
@@ -69,6 +71,14 @@ def parse_defi_taxes(
             tx_ids[chain][tx_hash] = [dr]
         else:
             tx_ids[chain][tx_hash].append(dr)
+
+        # Try to identify addresses
+        if dr.row_dict["destination address"] == "network":
+            if dr.row_dict["source address"] not in my_addresses:
+                my_addresses.append(dr.row_dict["source address"])
+
+    if config.debug:
+        sys.stderr.write(f"{Fore.CYAN}conv: my addresses: {', '.join(my_addresses)}\n")
 
     for data_row in data_rows:
         if config.debug:
@@ -84,7 +94,9 @@ def parse_defi_taxes(
             continue
 
         try:
-            _parse_defi_taxes_row(data_rows, tx_ids, vaults, parser, data_row, kwargs["filename"])
+            _parse_defi_taxes_row(
+                data_rows, tx_ids, vaults, parser, data_row, my_addresses, kwargs["filename"]
+            )
         except DataRowError as e:
             data_row.failure = e
         except (ValueError, ArithmeticError) as e:
@@ -100,6 +112,7 @@ def _parse_defi_taxes_row(
     vaults: Dict[VaultId, Dict[AssetSymbol, VaultRecord]],
     parser: DataParser,
     data_row: "DataRow",
+    my_addresses: List[str],
     filename: str,
 ) -> None:
     row_dict = data_row.row_dict
@@ -115,11 +128,13 @@ def _parse_defi_taxes_row(
 
     if tx_hash:
         tx_rows = tx_ids[chain][tx_hash]
-        tx_ins, tx_outs, tx_fee = _get_ins_outs(tx_rows, data_row.timestamp, filename)
+        tx_ins, tx_outs, tx_fee = _get_ins_outs(tx_rows, data_row.timestamp, my_addresses, filename)
     else:
         # Must be a manual transaction
         tx_rows = [data_row]
-        tx_ins, tx_outs, tx_fee = _get_ins_outs([data_row], data_row.timestamp, filename)
+        tx_ins, tx_outs, tx_fee = _get_ins_outs(
+            [data_row], data_row.timestamp, my_addresses, filename
+        )
 
     if config.debug:
         _output_tx_rows(tx_ins, tx_outs, tx_fee)
@@ -819,7 +834,7 @@ def _next_free_row(tx_rows: List["DataRow"]) -> "DataRow":
 
 
 def _get_ins_outs(
-    tx_rows: List["DataRow"], timestamp: datetime, filename: str
+    tx_rows: List["DataRow"], timestamp: datetime, my_addresses: List[str], filename: str
 ) -> Tuple[List[TxRecord], List[TxRecord], Optional[TxRecord]]:
 
     tx_ins = []
@@ -829,6 +844,7 @@ def _get_ins_outs(
     for dr in tx_rows:
         dr.timestamp = timestamp
         row_dict = dr.row_dict
+        my_address = False
 
         rate = DataParser.convert_currency(row_dict["USD rate"], "USD", dr.timestamp)
         quantity = Decimal(row_dict["amount transfered"])
@@ -838,23 +854,23 @@ def _get_ins_outs(
         vault_id = VaultId(row_dict["vault id"])
 
         if row_dict["destination address"] == "network":
-            if dr.row_dict["source address"].lower() in filename.lower():
-                tx_fees.append(
-                    TxRecord(
-                        quantity,
-                        asset,
-                        value,
-                        classification,
-                        row_dict["source address"],
-                        vault_id,
-                        dr,
-                    )
+            tx_fees.append(
+                TxRecord(
+                    quantity,
+                    asset,
+                    value,
+                    classification,
+                    row_dict["source address"],
+                    vault_id,
+                    dr,
                 )
-            else:
-                raise ValueError("Fee source address unrecognised")
+            )
             continue
 
-        if dr.row_dict["destination address"].lower() in filename.lower():
+        if (
+            row_dict["destination address"] in my_addresses
+            or row_dict["destination address"].lower() in filename.lower()
+        ):
             tx_ins.append(
                 TxRecord(
                     quantity,
@@ -866,8 +882,12 @@ def _get_ins_outs(
                     dr,
                 )
             )
+            my_address = True
 
-        if dr.row_dict["source address"].lower() in filename.lower():
+        if (
+            row_dict["source address"] in my_addresses
+            or row_dict["source address"].lower() in filename.lower()
+        ):
             tx_outs.append(
                 TxRecord(
                     -abs(quantity),
@@ -879,6 +899,10 @@ def _get_ins_outs(
                     dr,
                 )
             )
+            my_address = True
+
+        if not my_address:
+            raise DataFilenameError(filename, f"{row_dict['chain']} address")
 
     if not tx_fees:
         tx_fee = None
