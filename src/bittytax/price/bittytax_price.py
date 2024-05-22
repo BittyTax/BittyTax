@@ -163,6 +163,7 @@ def main() -> None:
                         continue
 
                     output_ds_price(asset_data)
+                    price_ccy = None
                     if asset_data["quote"] == "BTC":
                         if btc is None:
                             if args.command == CMD_HISTORY:
@@ -173,12 +174,12 @@ def main() -> None:
                         if btc["price"] is not None:
                             price_ccy = btc["price"] * asset_data["price"]
                             output_ds_price(btc)
-                            price = True
                     else:
                         price_ccy = asset_data["price"]
-                        price = True
 
-                    output_price(symbol, price_ccy, args.quantity)
+                    if price_ccy is not None:
+                        output_price(symbol, price_ccy, args.quantity)
+                        price = True
 
                 if assets:
                     asset = True
