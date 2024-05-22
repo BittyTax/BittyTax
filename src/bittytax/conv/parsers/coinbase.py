@@ -245,20 +245,15 @@ def _do_parse_coinbase(
                 parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
             )
 
-        if currency == quote:
-            sell_quantity = subtotal
-            fee_quantity = fees
-        else:
+        if currency != quote:
             if parser.in_header_row_num is None:
                 raise RuntimeError("Missing in_header_row_num")
 
             sys.stderr.write(
                 f"{Fore.YELLOW}row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
-                f"{WARNING} {quote} amount is not available, you will need to add this manually\n"
+                f"{WARNING} {quote} amount is not availabe so will not balance, "
+                f"using {currency} instead\n"
             )
-            currency = quote
-            sell_quantity = None
-            fee_quantity = None
 
         if (
             config.coinbase_zero_fees_are_gifts
@@ -280,9 +275,9 @@ def _do_parse_coinbase(
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Quantity Transacted"]),
                 buy_asset=row_dict["Asset"],
-                sell_quantity=sell_quantity,
+                sell_quantity=subtotal,
                 sell_asset=currency,
-                fee_quantity=fee_quantity,
+                fee_quantity=fees,
                 fee_asset=currency,
                 wallet=WALLET,
             )
@@ -293,29 +288,24 @@ def _do_parse_coinbase(
                 parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
             )
 
-        if currency == quote:
-            buy_quantity = subtotal
-            fee_quantity = fees
-        else:
+        if currency != quote:
             if parser.in_header_row_num is None:
                 raise RuntimeError("Missing in_header_row_num")
 
             sys.stderr.write(
                 f"{Fore.YELLOW}row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
-                f"{WARNING} {quote} amount is not available, you will need to add this manually\n"
+                f"{WARNING} {quote} amount is not available so will not balance, "
+                f"using {currency} instead\n"
             )
-            currency = quote
-            buy_quantity = None
-            fee_quantity = None
 
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=buy_quantity,
+            buy_quantity=subtotal,
             buy_asset=currency,
             sell_quantity=Decimal(row_dict["Quantity Transacted"]),
             sell_asset=row_dict["Asset"],
-            fee_quantity=fee_quantity,
+            fee_quantity=fees,
             fee_asset=currency,
             wallet=WALLET,
         )
