@@ -366,6 +366,10 @@ class TransactionRow:
                 self.HEADER.index("Type"), "Type", self.row_dict["Type"]
             ) from e
 
+        buy_quantity = sell_quantity = fee_quantity = None
+        buy_asset = sell_asset = fee_asset = AssetSymbol("")
+        buy_value = sell_value = fee_value = None
+
         for pos, required in enumerate(self.TYPE_VALIDATION[t_type]):
             if pos == self.HEADER.index("Buy Quantity"):
                 buy_quantity = self.validate_quantity("Buy Quantity", required)

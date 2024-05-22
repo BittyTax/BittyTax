@@ -41,8 +41,6 @@ def parse_changetip(data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[P
             )
         else:
             raise UnknownUsernameError(kwargs["filename"], kwargs.get("worksheet", ""))
-    else:
-        return
 
 
 DataParser(

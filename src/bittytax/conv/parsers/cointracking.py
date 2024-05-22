@@ -46,6 +46,7 @@ def parse_cointracking(
         row_dict["Date"], dayfirst=config.date_is_day_first
     )
 
+    buy_value = sell_value = None
     currency = parser.args[0].group(1)
     if data_row.row[4] != "-":
         buy_value = DataParser.convert_currency(data_row.row[4], currency, data_row.timestamp)
