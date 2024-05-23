@@ -264,7 +264,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         if short_term.dates:
             sell_adjusted = copy.deepcopy(sell)
-            if not sell.proceeds:
+            if sell.proceeds is None:
                 raise RuntimeError("missing sell.proceeds")
 
             if sell.fee_value:
@@ -272,7 +272,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     PRECISION
                 ) - sell.fee_value.quantize(PRECISION)
 
-            if not sell_adjusted.proceeds:
+            if sell_adjusted.proceeds is None:
                 raise RuntimeError("missing sell_adjusted.proceeds")
 
             sell_adjusted.proceeds = sell_adjusted.proceeds * (short_term.quantity / sell.quantity)
@@ -300,7 +300,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         if long_term.dates:
             sell_adjusted = copy.deepcopy(sell)
-            if not sell.proceeds:
+            if sell.proceeds is None:
                 raise RuntimeError("missing sell.proceeds")
 
             if sell.fee_value:
@@ -308,7 +308,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     PRECISION
                 ) - sell.fee_value.quantize(PRECISION)
 
-            if not sell_adjusted.proceeds:
+            if sell_adjusted.proceeds is None:
                 raise RuntimeError("missing sell_adjusted.proceeds")
 
             sell_adjusted.proceeds = sell_adjusted.proceeds * (long_term.quantity / sell.quantity)
