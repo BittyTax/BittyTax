@@ -97,10 +97,10 @@ bsc_txns = DataParser(
     ParserType.EXPLORER,
     "BscScan (BSC Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        lambda c: c in ("DateTime", "DateTime (UTC)"),
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "From",
         "To",
         "ContractAddress",
@@ -112,7 +112,7 @@ bsc_txns = DataParser(
         "Historical $Price/BNB",
         "Status",
         "ErrCode",
-        "Method",
+        "Method",  # New field
     ],
     worksheet_name=WORKSHEET_NAME,
     row_handler=parse_bscscan,
@@ -122,10 +122,10 @@ DataParser(
     ParserType.EXPLORER,
     "BscScan (BSC Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        lambda c: c in ("DateTime", "DateTime (UTC)"),
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "From",
         "To",
         "ContractAddress",
@@ -137,7 +137,7 @@ DataParser(
         "Historical $Price/BNB",
         "Status",
         "ErrCode",
-        "Method",
+        "Method",  # New field
         "PrivateNote",
     ],
     worksheet_name=WORKSHEET_NAME,
@@ -197,10 +197,10 @@ bsc_int = DataParser(
     ParserType.EXPLORER,
     "BscScan (BSC Internal Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        lambda c: c in ("DateTime", "DateTime (UTC)"),
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "ParentTxFrom",
         "ParentTxTo",
         lambda c: c in ("ParentTxETH_Value", "ParentTxBNB_Value"),
@@ -223,10 +223,10 @@ DataParser(
     ParserType.EXPLORER,
     "BscScan (BSC Internal Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        lambda c: c in ("DateTime", "DateTime (UTC)"),
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "ParentTxFrom",
         "ParentTxTo",
         lambda c: c in ("ParentTxETH_Value", "ParentTxBNB_Value"),

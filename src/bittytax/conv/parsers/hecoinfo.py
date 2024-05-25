@@ -97,10 +97,10 @@ heco_txns = DataParser(
     ParserType.EXPLORER,
     "HecoInfo (HECO Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        "DateTime",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "From",
         "To",
         "ContractAddress",
@@ -112,6 +112,7 @@ heco_txns = DataParser(
         "Historical $Price/HT",
         "Status",
         "ErrCode",
+        "Method",  # New field
     ],
     worksheet_name=WORKSHEET_NAME,
     row_handler=parse_hecoinfo,
@@ -121,10 +122,10 @@ DataParser(
     ParserType.EXPLORER,
     "HecoInfo (HECO Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        "DateTime",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "From",
         "To",
         "ContractAddress",
@@ -136,6 +137,7 @@ DataParser(
         "Historical $Price/HT",
         "Status",
         "ErrCode",
+        "Method",  # New field
         "PrivateNote",
     ],
     worksheet_name=WORKSHEET_NAME,
@@ -161,7 +163,6 @@ DataParser(
         "Historical $Price/HT",
         "Status",
         "ErrCode",
-        "Method",
     ],
     worksheet_name=WORKSHEET_NAME,
     row_handler=parse_hecoinfo,
@@ -186,7 +187,6 @@ DataParser(
         "Historical $Price/HT",
         "Status",
         "ErrCode",
-        "Method",
         "PrivateNote",
     ],
     worksheet_name=WORKSHEET_NAME,
@@ -197,10 +197,10 @@ heco_int = DataParser(
     ParserType.EXPLORER,
     "HecoInfo (HECO Internal Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        "DateTime",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "ParentTxFrom",
         "ParentTxTo",
         "ParentTxETH_Value",
@@ -223,10 +223,10 @@ DataParser(
     ParserType.EXPLORER,
     "HecoInfo (HECO Internal Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        "DateTime",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "ParentTxFrom",
         "ParentTxTo",
         "ParentTxETH_Value",

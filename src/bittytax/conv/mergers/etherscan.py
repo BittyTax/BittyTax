@@ -53,10 +53,13 @@ def _do_merge_etherscan(
             if wallet not in tx_ids:
                 tx_ids[wallet] = {}
 
-            if dr.row_dict["Txhash"] not in tx_ids[wallet]:
-                tx_ids[wallet][dr.row_dict["Txhash"]] = []
+            if "Txhash" in dr.row_dict:
+                dr.row_dict["Transaction Hash"] = dr.row_dict["Txhash"]
 
-            tx_ids[wallet][dr.row_dict["Txhash"]].append(
+            if dr.row_dict["Transaction Hash"] not in tx_ids[wallet]:
+                tx_ids[wallet][dr.row_dict["Transaction Hash"]] = []
+
+            tx_ids[wallet][dr.row_dict["Transaction Hash"]].append(
                 MergeDataRow(dr, data_files[file_id], file_id)
             )
 
@@ -106,14 +109,21 @@ def _do_merge_etherscan(
                 _do_etherscan_multi_buy(t_ins, t_outs, t_fee)
             elif len(t_ins) > 1 and len(t_outs) > 1:
                 # Multi-sell to multi-buy trade not supported
-                sys.stderr.write(f"{WARNING} Merge failure for Txhash: {txn}\n")
+                sys.stderr.write(f"{WARNING} Merge failure for Transaction Hash: {txn}\n")
 
                 for mdr in wallet_tx_ids[txn]:
-                    mdr.data_row.failure = UnexpectedContentError(
-                        mdr.data_file.parser.in_header.index("Txhash"),
-                        "Txhash",
-                        mdr.data_row.row_dict["Txhash"],
-                    )
+                    if "Txhash" in mdr.data_row.row_dict:
+                        mdr.data_row.failure = UnexpectedContentError(
+                            mdr.data_file.parser.in_header.index("Txhash"),
+                            "Txhash",
+                            mdr.data_row.row_dict["Txhash"],
+                        )
+                    else:
+                        mdr.data_row.failure = UnexpectedContentError(
+                            mdr.data_file.parser.in_header.index("Transaction Hash"),
+                            "Transaction Hash",
+                            mdr.data_row.row_dict["Transaction Hash"],
+                        )
 
                     if mdr.data_file.parser.in_header_row_num is None:
                         raise RuntimeError("Missing in_header_row_num")
@@ -173,7 +183,7 @@ def _consolidate(tx_ids: List[MergeDataRow], file_ids: List[str]) -> None:
 
     for txn in list(tx_ids):
         if txn.data_file_id not in file_ids:
-            return
+            continue
 
         if not txn.data_row.t_record:
             continue
@@ -197,7 +207,7 @@ def _consolidate(tx_ids: List[MergeDataRow], file_ids: List[str]) -> None:
             txn.data_row.t_record.buy_quantity = txn.quantity
             txn.data_row.t_record.sell_asset = ""
             txn.data_row.t_record.sell_quantity = None
-        elif tx_assets[asset].quantity < 0:
+        elif txn.quantity < 0:
             txn.data_row.t_record.t_type = TrType.WITHDRAWAL
             txn.data_row.t_record.buy_asset = ""
             txn.data_row.t_record.buy_quantity = None
