@@ -110,10 +110,10 @@ matic_txns = DataParser(
     ParserType.EXPLORER,
     "PolygonScan (MATIC Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        "DateTime",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "From",
         "To",
         "ContractAddress",
@@ -135,10 +135,10 @@ DataParser(
     ParserType.EXPLORER,
     "PolygonScan (MATIC Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        "DateTime",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "From",
         "To",
         "ContractAddress",
@@ -161,10 +161,10 @@ matic_int = DataParser(
     ParserType.EXPLORER,
     "PolygonScan (MATIC Internal Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        "DateTime",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "ParentTxFrom",
         "ParentTxTo",
         "ParentTxETH_Value",
@@ -187,10 +187,10 @@ DataParser(
     ParserType.EXPLORER,
     "PolygonScan (MATIC Internal Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        "DateTime",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "ParentTxFrom",
         "ParentTxTo",
         "ParentTxETH_Value",

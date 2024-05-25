@@ -108,10 +108,10 @@ ftm_txns = DataParser(
     ParserType.EXPLORER,
     "FTMScan (FTM Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        "DateTime (UTC)",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "From",
         "To",
         "ContractAddress",
@@ -133,10 +133,10 @@ DataParser(
     ParserType.EXPLORER,
     "FTMScan (FTM Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        "DateTime (UTC)",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "From",
         "To",
         "ContractAddress",
@@ -159,10 +159,10 @@ ftm_int = DataParser(
     ParserType.EXPLORER,
     "FTMScan (FTM Internal Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        "DateTime (UTC)",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "ParentTxFrom",
         "ParentTxTo",
         "ParentTxFTM_Value",
@@ -185,10 +185,10 @@ DataParser(
     ParserType.EXPLORER,
     "FTMScan (FTM Internal Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        "DateTime (UTC)",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "ParentTxFrom",
         "ParentTxTo",
         "ParentTxFTM_Value",

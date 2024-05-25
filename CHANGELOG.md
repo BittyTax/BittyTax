@@ -71,6 +71,13 @@
 - Accounting tool: new transaction types added. Stake, Unstake and Staking-Reward (Staking has been deprecated).
 - Conversion tool: added new parser for DefiTaxes.us.
 - Conversion tool: allow parsers to specify a different worksheet
+- Etherscan parser: added new export formats.
+- BscScan parser: added new export formats.
+- FTMScan parser: added new export formats.
+- HecoInfo parser: added new export formats.
+- PolygonScan parser: added new export formats.
+- SnowTrace parser: added new export formats.
+- Etherscan merger: handle new export formats.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
