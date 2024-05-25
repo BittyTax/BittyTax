@@ -34,7 +34,7 @@ class ExportRecords:
         self.transaction_records = transaction_records
 
     @staticmethod
-    def get_output_filename() -> str:
+    def _get_output_filename() -> str:
         filepath = ExportRecords.DEFAULT_FILENAME + "." + ExportRecords.FILE_EXTENSION
 
         if not os.path.exists(filepath):
@@ -50,15 +50,15 @@ class ExportRecords:
         return new_fname
 
     def write_csv(self) -> None:
-        filename = self.get_output_filename()
+        filename = self._get_output_filename()
 
         with open(filename, "w", newline="", encoding="utf-8") as csv_file:
             writer = csv.writer(csv_file, lineterminator="\n")
-            self.write_rows(writer)
+            self._write_rows(writer)
 
         print(f"{Fore.WHITE}export file created: {Fore.YELLOW}{os.path.abspath(filename)}")
 
-    def write_rows(self, writer: "_csv._writer") -> None:
+    def _write_rows(self, writer: "_csv._writer") -> None:
         writer.writerow(self.OUT_HEADER)
 
         for tr in self.transaction_records:
