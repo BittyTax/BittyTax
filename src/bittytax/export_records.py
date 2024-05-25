@@ -11,7 +11,7 @@ from colorama import Fore
 from .record import TransactionRecord
 
 
-class ExportRecords:
+class ExportRecords:  # pylint: disable=too-few-public-methods
     DEFAULT_FILENAME = "BittyTax_Export"
     FILE_EXTENSION = "csv"
     OUT_HEADER = [
