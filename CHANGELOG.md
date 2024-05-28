@@ -122,6 +122,10 @@
 - Coinbase parser: advanced trade buy/sell in different currency, use local currency instead of requiring manual entry.
 - DeFiTaxes.us parser: output different worksheet for each wallet
 - StakeTax parser: output different worksheet for each wallet
+- Qt Wallet parser: get symbol via input if cryptoasset cannot be identified.
+- Qt Wallet parser: ask if unconfirmed transactions should be included.
+- Electrum parser: get symbol via input if cryptoasset cannot be identified.
+- Blockscout parser: get symbol via input if cryptoasset cannot be identified.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
