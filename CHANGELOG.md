@@ -112,6 +112,10 @@
 - Accounting/Conversion tool: display output filenames with absolute paths.
 - Accounting tool: use stdout not stderr.
 - Coinbase parser: advanced trade buy/sell in different currency, use local currency instead of requiring manual entry.
+- Qt Wallet parser: get symbol via input if cryptoasset cannot be identified.
+- Qt Wallet parser: ask if unconfirmed transactions should be included.
+- Electrum parser: get symbol via input if cryptoasset cannot be identified.
+- Blockscout parser: get symbol via input if cryptoasset cannot be identified.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.

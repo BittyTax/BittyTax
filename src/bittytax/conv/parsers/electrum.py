@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
+import sys
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from typing_extensions import Unpack
+from colorama import Fore
+from typing_extensions import List, Unpack
 
 from ...bt_types import TrType
 from ...config import config
+from ...constants import WARNING
 from ..dataparser import DataParser, ParserArgs, ParserType
-from ..exceptions import UnknownCryptoassetError
+from ..exceptions import DataRowError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -19,13 +22,44 @@ WALLET = "Electrum"
 
 
 def parse_electrum_v3(
-    data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
+    data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
+
+    symbol = kwargs["cryptoasset"]
+    if not symbol:
+        sys.stderr.write(f"{WARNING} Cryptoasset cannot be identified\n")
+        sys.stderr.write(f"{Fore.RESET}Enter symbol: ")
+        symbol = input()
+        if not symbol:
+            raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet", ""))
+
+    for data_row in data_rows:
+        if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
+            sys.stderr.write(
+                f"{Fore.YELLOW}conv: "
+                f" row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
+            )
+
+        if data_row.parsed:
+            continue
+
+        try:
+            _parse_electrum_row_v3(data_row, parser, symbol)
+        except DataRowError as e:
+            data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
+
+
+def _parse_electrum_row_v3(data_row: "DataRow", _parser: DataParser, symbol: str) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["timestamp"], tz=config.local_timezone)
-
-    if not kwargs["cryptoasset"]:
-        raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet", ""))
 
     value = Decimal(row_dict["value"].replace(",", ""))
     if value > 0:
@@ -33,15 +67,15 @@ def parse_electrum_v3(
             TrType.DEPOSIT,
             data_row.timestamp,
             buy_quantity=value,
-            buy_asset=kwargs["cryptoasset"],
-            wallet=WALLET,
+            buy_asset=symbol,
+            wallet=_get_wallet(symbol),
             note=row_dict["label"],
         )
     else:
         if row_dict["fee"]:
             sell_quantity = abs(value) - Decimal(row_dict["fee"])
             fee_quantity = Decimal(row_dict["fee"])
-            fee_asset = kwargs["cryptoasset"]
+            fee_asset = symbol
         else:
             sell_quantity = abs(value)
             fee_quantity = None
@@ -51,28 +85,63 @@ def parse_electrum_v3(
             TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=sell_quantity,
-            sell_asset=kwargs["cryptoasset"],
+            sell_asset=symbol,
             fee_quantity=fee_quantity,
             fee_asset=fee_asset,
-            wallet=WALLET,
+            wallet=_get_wallet(symbol),
             note=row_dict["label"],
         )
 
 
+def _get_wallet(symbol: str) -> str:
+    return f"{WALLET} ({symbol})"
+
+
 def parse_electrum_v2(
-    data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
+    data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
-    parse_electrum_v1(data_row, _parser, **kwargs)
+    parse_electrum_v1(data_rows, parser, **kwargs)
 
 
 def parse_electrum_v1(
-    data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
+    data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
+
+    symbol = kwargs["cryptoasset"]
+    if not symbol:
+        sys.stderr.write(f"{WARNING} Cryptoasset cannot be identified\n")
+        sys.stderr.write(f"{Fore.RESET}Enter symbol: ")
+        symbol = input()
+        if not symbol:
+            raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet", ""))
+
+    for data_row in data_rows:
+        if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
+            sys.stderr.write(
+                f"{Fore.YELLOW}conv: "
+                f" row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
+            )
+
+        if data_row.parsed:
+            continue
+
+        try:
+            _parse_electrum_row_v1(data_row, parser, symbol)
+        except DataRowError as e:
+            data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
+
+
+def _parse_electrum_row_v1(data_row: "DataRow", _parser: DataParser, symbol: str) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["timestamp"], tz=config.local_timezone)
-
-    if not kwargs["cryptoasset"]:
-        raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet", ""))
 
     value = Decimal(row_dict["value"].replace(",", ""))
     if value > 0:
@@ -80,8 +149,8 @@ def parse_electrum_v1(
             TrType.DEPOSIT,
             data_row.timestamp,
             buy_quantity=value,
-            buy_asset=kwargs["cryptoasset"],
-            wallet=WALLET,
+            buy_asset=symbol,
+            wallet=_get_wallet(symbol),
             note=row_dict["label"],
         )
     else:
@@ -89,8 +158,8 @@ def parse_electrum_v1(
             TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=abs(value),
-            sell_asset=kwargs["cryptoasset"],
-            wallet=WALLET,
+            sell_asset=symbol,
+            wallet=_get_wallet(symbol),
             note=row_dict["label"],
         )
 
@@ -109,7 +178,7 @@ DataParser(
         "timestamp",
     ],
     worksheet_name="Electrum",
-    row_handler=parse_electrum_v3,
+    all_handler=parse_electrum_v3,
 )
 
 DataParser(
@@ -118,7 +187,7 @@ DataParser(
     ["transaction_hash", "label", "value", "timestamp"],
     worksheet_name="Electrum",
     # Different handler name used to prevent data file consolidation
-    row_handler=parse_electrum_v2,
+    all_handler=parse_electrum_v2,
 )
 
 DataParser(
@@ -126,5 +195,5 @@ DataParser(
     "Electrum",
     ["transaction_hash", "label", "confirmations", "value", "timestamp"],
     worksheet_name="Electrum",
-    row_handler=parse_electrum_v1,
+    all_handler=parse_electrum_v1,
 )
