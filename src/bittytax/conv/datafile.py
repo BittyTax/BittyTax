@@ -2,6 +2,7 @@
 # (c) Nano Nano Ltd 2019
 
 import argparse
+import copy
 import csv
 import io
 import os
@@ -16,7 +17,7 @@ from typing_extensions import Unpack
 
 from ..config import config
 from ..constants import ERROR, WARNING
-from .dataparser import DataParser, ParserArgs, ParserType
+from .dataparser import ConsolidateType, DataParser, ParserArgs
 from .datarow import DataRow
 from .exceptions import DataFormatUnrecognised, DataRowError
 
@@ -29,7 +30,7 @@ class DataFile:
     data_files_ordered: List["DataFile"] = []
 
     def __init__(self, parser: DataParser, reader: Iterator[List[str]]) -> None:
-        self.parser = parser
+        self.parser = copy.copy(parser)
         self.data_rows = [
             DataRow(line_num + 1, row, parser.in_header, parser.worksheet_name)
             for line_num, row in enumerate(reader)
@@ -40,12 +41,26 @@ class DataFile:
         if not isinstance(other, DataFile):
             return NotImplemented
 
+        if self.parser.consolidate_type is ConsolidateType.HEADER_MATCH:
+            return (
+                self.parser.row_handler,
+                self.parser.all_handler,
+                tuple(self.parser.in_header),
+            ) == (
+                other.parser.row_handler,
+                other.parser.all_handler,
+                tuple(other.parser.in_header),
+            )
         return (self.parser.row_handler, self.parser.all_handler) == (
             other.parser.row_handler,
             other.parser.all_handler,
         )
 
     def __hash__(self) -> int:
+        if self.parser.consolidate_type is ConsolidateType.HEADER_MATCH:
+            return hash(
+                (self.parser.row_handler, self.parser.all_handler, tuple(self.parser.in_header))
+            )
         return hash((self.parser.row_handler, self.parser.all_handler))
 
     def __iadd__(self, other: "DataFile") -> "DataFile":
@@ -281,7 +296,10 @@ class DataFile:
 
     @classmethod
     def consolidate_datafiles(cls, data_file: "DataFile") -> None:
-        if data_file.parser.p_type != ParserType.GENERIC and data_file in cls.data_files:
+        if (
+            data_file.parser.consolidate_type is not ConsolidateType.NEVER
+            and data_file in cls.data_files
+        ):
             cls.data_files[data_file] += data_file
         else:
             cls.data_files[data_file] = data_file

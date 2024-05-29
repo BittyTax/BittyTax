@@ -12,7 +12,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ...constants import WARNING
-from ..dataparser import DataParser, ParserArgs, ParserType
+from ..dataparser import ConsolidateType, DataParser, ParserArgs, ParserType
 from ..datarow import TxRawPos
 from ..exceptions import DataRowError, UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
@@ -240,6 +240,7 @@ DataParser(
     ],
     worksheet_name="Qt Wallet",
     all_handler=parse_qt_wallet,
+    consolidate_type=ConsolidateType.HEADER_MATCH,
 )
 
 DataParser(
