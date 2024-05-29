@@ -11,7 +11,7 @@ from typing_extensions import List, Unpack
 from ...bt_types import TrType
 from ...config import config
 from ...constants import WARNING
-from ..dataparser import DataParser, ParserArgs, ParserType
+from ..dataparser import ConsolidateType, DataParser, ParserArgs, ParserType
 from ..exceptions import DataRowError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
 
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 WALLET = "Electrum"
 
 
-def parse_electrum_v3(
+def parse_electrum_v2(
     data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
 
@@ -47,7 +47,7 @@ def parse_electrum_v3(
             continue
 
         try:
-            _parse_electrum_row_v3(data_row, parser, symbol)
+            _parse_electrum_row_v2(data_row, parser, symbol)
         except DataRowError as e:
             data_row.failure = e
         except (ValueError, ArithmeticError) as e:
@@ -57,7 +57,7 @@ def parse_electrum_v3(
             data_row.failure = e
 
 
-def _parse_electrum_row_v3(data_row: "DataRow", _parser: DataParser, symbol: str) -> None:
+def _parse_electrum_row_v2(data_row: "DataRow", _parser: DataParser, symbol: str) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["timestamp"], tz=config.local_timezone)
 
@@ -95,12 +95,6 @@ def _parse_electrum_row_v3(data_row: "DataRow", _parser: DataParser, symbol: str
 
 def _get_wallet(symbol: str) -> str:
     return f"{WALLET} ({symbol})"
-
-
-def parse_electrum_v2(
-    data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
-) -> None:
-    parse_electrum_v1(data_rows, parser, **kwargs)
 
 
 def parse_electrum_v1(
@@ -178,7 +172,7 @@ DataParser(
         "timestamp",
     ],
     worksheet_name="Electrum",
-    all_handler=parse_electrum_v3,
+    all_handler=parse_electrum_v2,
 )
 
 DataParser(
@@ -186,8 +180,8 @@ DataParser(
     "Electrum",
     ["transaction_hash", "label", "value", "timestamp"],
     worksheet_name="Electrum",
-    # Different handler name used to prevent data file consolidation
-    all_handler=parse_electrum_v2,
+    all_handler=parse_electrum_v1,
+    consolidate_type=ConsolidateType.HEADER_MATCH,
 )
 
 DataParser(

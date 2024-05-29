@@ -4,7 +4,7 @@
 import sys
 from datetime import datetime, tzinfo
 from decimal import Decimal
-from enum import Enum
+from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
 import dateutil.parser
@@ -32,6 +32,12 @@ class ParserType(Enum):
     ACCOUNTING = "Accounting"
     SHARES = "Stocks & Shares"
     GENERIC = "Generic"
+
+
+class ConsolidateType(Enum):
+    NEVER = auto()
+    HEADER_MATCH = auto()
+    PARSER_MATCH = auto()  # Default
 
 
 class RowHandler(Protocol):  # pylint: disable=too-few-public-methods
@@ -95,6 +101,7 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         deprecated: Optional["DataParser"] = None,
         row_handler: Optional[Union[RowHandler, RowHandler2]] = None,
         all_handler: Optional[Union[AllHandler, AllHandler2]] = None,
+        consolidate_type: ConsolidateType = ConsolidateType.PARSER_MATCH,
     ):
         self.p_type = p_type
         self.name = name
@@ -105,6 +112,7 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         self.delimiter = delimiter
         self.row_handler = row_handler
         self.all_handler = all_handler
+        self.consolidate_type = consolidate_type
         self.args: List[Any] = []
         self.in_header: List[str] = []
         self.in_header_row_num: Optional[int] = None
