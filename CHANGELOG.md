@@ -79,6 +79,7 @@
 - SnowTrace parser: added new export formats.
 - Etherscan merger: handle new export formats.
 - Conversion tool: added ConsolidateType to DataParser to control data file consolidation.
+- Conversion tool: added parser and merge parser for CoinCorner.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -134,6 +135,7 @@
 - Qt Wallet parser: used ConsolidateType to prevent data file consolidation unless header matches.
 - TradeSatoshi parser: used ConsolidateType to prevent data file consolidation unless header matches.
 - Trezor parser: used ConsolidateType to prevent data file consolidation unless header matches.
+- Conversion tool: changed DataMerge to merge with only a single data parser, required for CoinCorner merge parser.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.

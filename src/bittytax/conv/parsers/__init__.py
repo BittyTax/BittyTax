@@ -21,6 +21,7 @@ from . import (
     circle,
     coinbase,
     coinbasepro,
+    coincorner,
     coinfloor,
     coinlist,
     coinmetro,

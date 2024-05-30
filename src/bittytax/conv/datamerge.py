@@ -51,18 +51,15 @@ class DataMerge:  # pylint: disable=too-few-public-methods
     def match_merge(cls, data_files: Dict["DataFile", "DataFile"]) -> None:
         for data_merge in cls.mergers:
             matched_data_files: Dict[FileId, "DataFile"] = {}
-
-            man_tot = len(
-                [
-                    p
-                    for p in data_merge.parsers
-                    if data_merge.parsers[p]["req"] == ParserRequired.MANDATORY
-                ]
-            )
-            man_cnt = 0
-            opt_cnt = 0
+            man_tot = opt_tot = 0
+            man_cnt = opt_cnt = 0
 
             for parser in data_merge.parsers:
+                if data_merge.parsers[parser]["req"] == ParserRequired.MANDATORY:
+                    man_tot += 1
+                elif data_merge.parsers[parser]["req"] == ParserRequired.OPTIONAL:
+                    opt_tot += 1
+
                 data_file = cls._match_datafile(data_files, data_merge.parsers[parser])
 
                 if data_file:
@@ -72,7 +69,7 @@ class DataMerge:  # pylint: disable=too-few-public-methods
                     elif data_merge.parsers[parser]["req"] == ParserRequired.OPTIONAL:
                         opt_cnt += 1
 
-            if man_cnt == 1 and opt_cnt > 0 or man_cnt > 1 and man_cnt == man_tot:
+            if man_cnt == man_tot and (opt_tot == 0 or opt_cnt > 0):
                 sys.stderr.write(f'{Fore.WHITE}merge: "{data_merge.name}"\n')
 
                 try:
