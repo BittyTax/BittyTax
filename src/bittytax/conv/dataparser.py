@@ -196,12 +196,12 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
             value_in_ccy = Decimal(value) * rate_ccy
 
             if config.debug:
-                print(
+                sys.stderr.write(
                     f"{Fore.YELLOW}price: {timestamp:%Y-%m-%d}, 1 {from_currency}="
                     f"{config.sym()}{rate_ccy:0,.2f} {config.ccy}, "
                     f"{Decimal(value).normalize():0,f} {from_currency}="
                     f"{Style.BRIGHT}{config.sym()}{value_in_ccy:0,.2f} "
-                    f"{config.ccy}{Style.NORMAL}"
+                    f"{config.ccy}{Style.NORMAL}\n"
                 )
 
             return value_in_ccy
