@@ -174,10 +174,10 @@ etherscan_txns = DataParser(
     ParserType.EXPLORER,
     "Etherscan (ETH Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        lambda c: c in ("DateTime", "DateTime (UTC)"),
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "From",
         "To",
         "ContractAddress",
@@ -189,7 +189,7 @@ etherscan_txns = DataParser(
         "Historical $Price/Eth",
         "Status",
         "ErrCode",
-        "Method",
+        "Method",  # New field
     ],
     worksheet_name="Etherscan",
     row_handler=parse_etherscan,
@@ -199,10 +199,10 @@ DataParser(
     ParserType.EXPLORER,
     "Etherscan (ETH Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        lambda c: c in ("DateTime", "DateTime (UTC)"),
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "From",
         "To",
         "ContractAddress",
@@ -214,7 +214,7 @@ DataParser(
         "Historical $Price/Eth",
         "Status",
         "ErrCode",
-        "Method",
+        "Method",  # New field
         "PrivateNote",
     ],
     worksheet_name="Etherscan",
@@ -274,10 +274,10 @@ etherscan_int = DataParser(
     ParserType.EXPLORER,
     "Etherscan (ETH Internal Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        lambda c: c in ("DateTime", "DateTime (UTC)"),
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "ParentTxFrom",
         "ParentTxTo",
         "ParentTxETH_Value",
@@ -300,10 +300,10 @@ DataParser(
     ParserType.EXPLORER,
     "Etherscan (ETH Internal Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        lambda c: c in ("DateTime", "DateTime (UTC)"),
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "ParentTxFrom",
         "ParentTxTo",
         "ParentTxETH_Value",
@@ -327,10 +327,10 @@ etherscan_tokens = DataParser(
     ParserType.EXPLORER,
     "Etherscan (Token Transfers ERC-20)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",  # New field
         "UnixTimestamp",
-        lambda c: c in ("DateTime", "DateTime (UTC)"),
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "From",
         "To",
         "TokenValue",  # Renamed
@@ -365,7 +365,7 @@ etherscan_nfts = DataParser(
     ParserType.EXPLORER,
     "Etherscan (NFT Transfers ERC-721 & ERC-1155)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
         "DateTime (UTC)",  # Renamed

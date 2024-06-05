@@ -7,6 +7,7 @@
 - Coinbase parser: fixed missing "Fee Quantity" when zero.
 - KuCoin parser: use UTC offset from Time header for timestamp.
 - Accounting/Conversion tool: catch exception when importing a Google Sheet.
+- Binance parser: use UTC offset from Date(UTC) header if present. ([#302](https://github.com/BittyTax/BittyTax/issues/302))
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
@@ -58,6 +59,20 @@
 - Kraken parser: added "adjustment" type.
 - Conversion tool: added parser for Gate.io exchange. ([#152](https://github.com/BittyTax/BittyTax/issues/152))
 - Crypto.com parser: added "finance.lockup.dpos_compound_interest.crypto_wallet" and finance.lockup.dpos_lock.crypto_wallet" transaction kinds. ([#356](https://github.com/BittyTax/BittyTax/issues/356))
+- Kraken parser: handle "/" in trading pair.
+- Binance parser: added "Token Swap - Redenomination/Rebranding" operation.
+- Bitstamp parser: added new export format.
+- Accounting/Conversion/Price tool: output command line arguments in debug log.
+- Coinbase parser: added new export format.
+- Etherscan parser: added new export formats.
+- BscScan parser: added new export formats.
+- FTMScan parser: added new export formats.
+- HecoInfo parser: added new export formats.
+- PolygonScan parser: added new export formats.
+- SnowTrace parser: added new export formats.
+- Etherscan merger: handle new export formats.
+- Conversion tool: added ConsolidateType to DataParser to control data file consolidation.
+- Conversion tool: added parser and merge parser for CoinCorner.
 - Blockchain.com parser: added new export format.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -96,8 +111,25 @@
 - SwissBorg parser: use Airdrop instead of Gift-Received.
 - Coinbase parser: reworked legacy multi-currency support.
 - CoinTracking parser: Lost/Stolen transactions now include sell value if available.
+- Conversion tool: specifying a directory as the filename will recursively parse all files in all subdirectories.
+- Accounting/Conversion tool: display output filenames with absolute paths.
+- Accounting tool: use stdout not stderr.
+- Coinbase parser: advanced trade buy/sell in different currency, use local currency instead of requiring manual entry.
+- Qt Wallet parser: get symbol via input if cryptoasset cannot be identified.
+- Qt Wallet parser: ask if unconfirmed transactions should be included.
+- Electrum parser: get symbol via input if cryptoasset cannot be identified.
+- Blockscout parser: get symbol via input if cryptoasset cannot be identified.
+- Bitfinex parser: used ConsolidateType to prevent data file consolidation unless header matches.
+- Coinbase Pro parser: used ConsolidateType to prevent data file consolidation unless header matches.
+- Electrum parser: used ConsolidateType to prevent data file consolidation unless header matches.
+- Generic parser: used ConsolidateType to prevent data file consolidation.
+- Qt Wallet parser: used ConsolidateType to prevent data file consolidation unless header matches.
+- TradeSatoshi parser: used ConsolidateType to prevent data file consolidation unless header matches.
+- Trezor parser: used ConsolidateType to prevent data file consolidation unless header matches.
+- Conversion tool: changed DataMerge to merge with only a single data parser, required for CoinCorner merge parser.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
+- Conversion tool: removed filename "is a directory" message.
 
 ## Version [0.5.2] (2023-12-22)
 Important:-

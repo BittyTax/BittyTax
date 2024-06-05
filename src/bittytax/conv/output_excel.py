@@ -2,6 +2,7 @@
 # (c) Nano Nano Ltd 2019
 
 import argparse
+import os
 import platform
 import re
 import sys
@@ -154,7 +155,10 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             worksheet.autofit()
 
         self.workbook.close()
-        sys.stderr.write(f"{Fore.WHITE}output EXCEL file created: {Fore.YELLOW}{self.filename}\n")
+        sys.stderr.write(
+            f"{Fore.WHITE}output EXCEL file created: "
+            f"{Fore.YELLOW}{os.path.abspath(self.filename)}\n"
+        )
 
 
 class Worksheet:

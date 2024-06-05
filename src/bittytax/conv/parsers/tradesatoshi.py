@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from typing_extensions import Unpack
 
 from ...bt_types import TrType
-from ..dataparser import DataParser, ParserArgs, ParserType
+from ..dataparser import ConsolidateType, DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -19,13 +19,7 @@ WALLET = "TradeSatoshi"
 PRECISION = Decimal("0.00000000")
 
 
-def parse_tradesatoshi_deposits_v2(
-    data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
-) -> None:
-    parse_tradesatoshi_deposits_v1(data_row, _parser, **kwargs)
-
-
-def parse_tradesatoshi_deposits_v1(
+def parse_tradesatoshi_deposits(
     data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
@@ -115,7 +109,8 @@ DataParser(
     "TradeSatoshi Deposits",
     ["TimeStamp", "Currency", "Symbol", "Amount", "Confirmation", "TxId"],
     worksheet_name="TradeSatoshi D",
-    row_handler=parse_tradesatoshi_deposits_v2,
+    row_handler=parse_tradesatoshi_deposits,
+    consolidate_type=ConsolidateType.HEADER_MATCH,
 )
 
 DataParser(
@@ -132,7 +127,7 @@ DataParser(
         "TimeStamp",
     ],
     worksheet_name="TradeSatoshi D",
-    row_handler=parse_tradesatoshi_deposits_v1,
+    row_handler=parse_tradesatoshi_deposits,
 )
 
 DataParser(

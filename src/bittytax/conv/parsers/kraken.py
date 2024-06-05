@@ -12,12 +12,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
-from ..exceptions import (
-    DataRowError,
-    UnexpectedContentError,
-    UnexpectedTradingPairError,
-    UnexpectedTypeError,
-)
+from ..exceptions import DataRowError, UnexpectedTradingPairError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -272,12 +267,6 @@ def _parse_kraken_ledgers_row(
                 wallet=WALLET,
             )
     elif row_dict["type"] == "transfer":
-        if len(_get_ref_ids(ref_ids, row_dict["refid"], ("transfer",))) > 1:
-            # Multiple transfer rows is a rebase? Not currently supported
-            raise UnexpectedContentError(
-                parser.in_header.index("refid"), "refid", row_dict["refid"]
-            )
-
         if row_dict["subtype"] == "":
             if Decimal(row_dict["amount"]) > 0:
                 # Fork or Airdrop
@@ -302,6 +291,7 @@ def _parse_kraken_ledgers_row(
             "stakingtospot",
             "spotfromstaking",
             "stakingfromspot",
+            "spottofutures",
             "spotfromfutures",
         ):
             # Skip internal transfers
@@ -433,6 +423,10 @@ def parse_kraken_trades(
 
 
 def _split_trading_pair(trading_pair: str) -> Tuple[Optional[str], Optional[str]]:
+    if "/" in trading_pair:
+        base_asset, quote_asset = trading_pair.split("/")
+        return base_asset, quote_asset
+
     if trading_pair in TRADINGPAIR_TO_QUOTE_ASSET:
         quote_asset = TRADINGPAIR_TO_QUOTE_ASSET[trading_pair]
         base_asset = trading_pair[: -len(quote_asset)]

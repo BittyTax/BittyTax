@@ -98,7 +98,9 @@ class ReportPdf:
                 status = pisa.CreatePDF(html, dest=pdf_file)
 
         if not status.err:
-            print(f"{Fore.WHITE}PDF tax report created: {Fore.YELLOW}{self.filename}")
+            print(
+                f"{Fore.WHITE}PDF tax report created: {Fore.YELLOW}{os.path.abspath(self.filename)}"
+            )
         else:
             print(f"{ERROR} Failed to create PDF tax report")
 

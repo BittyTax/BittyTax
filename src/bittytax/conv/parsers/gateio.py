@@ -60,7 +60,7 @@ def _parse_gateio_row(
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["time"])
 
-    if row_dict["action_desc"] == "Deposits":
+    if row_dict["action_desc"] in ("Deposits", "Deposit"):
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -68,7 +68,7 @@ def _parse_gateio_row(
             buy_asset=row_dict["type"],
             wallet=WALLET,
         )
-    elif row_dict["action_desc"] == "Withdrawals":
+    elif row_dict["action_desc"] in ("Withdrawals", "withdraw"):
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -84,7 +84,7 @@ def _parse_gateio_row(
             buy_asset=row_dict["type"],
             wallet=WALLET,
         )
-    elif row_dict["action_desc"] == "Airdrop":
+    elif row_dict["action_desc"] in ("Airdrop", "Airdrop bonus"):
         if Decimal(row_dict["change_amount"]) > 0:
             data_row.t_record = TransactionOutRecord(
                 TrType.AIRDROP,
@@ -101,7 +101,7 @@ def _parse_gateio_row(
                 sell_asset=row_dict["type"],
                 wallet=WALLET,
             )
-    elif row_dict["action_desc"] == "HODL Interest":
+    elif row_dict["action_desc"] in ("HODL Interest", "Interest Income"):
         data_row.t_record = TransactionOutRecord(
             TrType.INTEREST,
             data_row.timestamp,
@@ -112,7 +112,13 @@ def _parse_gateio_row(
     elif row_dict["action_desc"] in ("Dust Swap-Small Balances Deducted", "Dust Swap-GT Added"):
         tx_rows = [dr for dr in tx_ids[row_dict["action_data"]] if not dr.parsed]
         _make_trade(tx_rows)
-    elif row_dict["action_desc"] in ("Order Placed", "Order Filled", "Trading Fees"):
+    elif row_dict["action_desc"] in (
+        "Order Placed",
+        "Order Filled",
+        "Order Fullfilled",
+        "Trading Fees",
+        "Trade Fee",
+    ):
         tx_rows = [dr for dr in tx_ids[row_dict["action_data"]] if not dr.parsed]
         _make_trade_with_fee(tx_rows)
     else:
@@ -184,7 +190,7 @@ def _make_trade_with_fee(tx_rows: List["DataRow"]) -> None:
                 data_row.parsed = True
 
         if Decimal(row_dict["change_amount"]) <= 0:
-            if row_dict["action_desc"] == "Trading Fees":
+            if row_dict["action_desc"] in ("Trading Fees", "Trade Fee"):
                 if fee_quantity is None:
                     fee_quantity = abs(Decimal(row_dict["change_amount"]))
                     fee_asset = row_dict["type"]

@@ -503,13 +503,17 @@ class TransactionRow:
             # Skip empty rows
             return
 
-        buy = sell = fee = None
         try:
             t_type = TrType(self.row_dict["Type"])
         except ValueError as e:
             raise UnexpectedTransactionTypeError(
                 self.HEADER.index("Type"), "Type", self.row_dict["Type"]
             ) from e
+
+        buy_quantity = sell_quantity = fee_quantity = None
+        buy_asset = sell_asset = fee_asset = AssetSymbol("")
+        buy_value = sell_value = fee_value = None
+        buy = sell = fee = None
 
         for pos, required in enumerate(self.TYPE_VALIDATION[t_type]):
             if pos == self.HEADER.index("Buy Quantity"):

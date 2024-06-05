@@ -99,6 +99,57 @@ avax_txns = DataParser(
     ParserType.EXPLORER,
     "SnowTrace (AVAX Transactions)",
     [
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
+        "Blockno",
+        "UnixTimestamp",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
+        "From",
+        "To",
+        "ContractAddress",
+        "Value_IN(AVAX)",
+        "Value_OUT(AVAX)",
+        None,
+        "TxnFee(AVAX)",
+        "TxnFee(USD)",
+        "Historical $Price/AVAX",
+        "Status",
+        "ErrCode",
+        "Method",  # New field
+    ],
+    worksheet_name=WORKSHEET_NAME,
+    row_handler=parse_snowtrace,
+)
+
+DataParser(
+    ParserType.EXPLORER,
+    "SnowTrace (AVAX Transactions)",
+    [
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
+        "Txhash",
+        "Blockno",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
+        "From",
+        "To",
+        "ContractAddress",
+        "Value_IN(AVAX)",
+        "Value_OUT(AVAX)",
+        None,
+        "TxnFee(AVAX)",
+        "TxnFee(USD)",
+        "Historical $Price/AVAX",
+        "Status",
+        "ErrCode",
+        "Method",  # New field
+        "PrivateNote",
+    ],
+    worksheet_name=WORKSHEET_NAME,
+    row_handler=parse_snowtrace,
+)
+
+DataParser(
+    ParserType.EXPLORER,
+    "SnowTrace (AVAX Transactions)",
+    [
         "Txhash",
         "Blockno",
         "UnixTimestamp",
@@ -148,10 +199,10 @@ avax_int = DataParser(
     ParserType.EXPLORER,
     "SnowTrace (AVAX Internal Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        "DateTime",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "ParentTxFrom",
         "ParentTxTo",
         "ParentTxETH_Value",
@@ -174,10 +225,10 @@ DataParser(
     ParserType.EXPLORER,
     "SnowTrace (AVAX Internal Transactions)",
     [
-        "Txhash",
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
         "Blockno",
         "UnixTimestamp",
-        "DateTime",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "ParentTxFrom",
         "ParentTxTo",
         "ParentTxETH_Value",

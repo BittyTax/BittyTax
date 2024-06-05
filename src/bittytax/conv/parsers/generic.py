@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from typing_extensions import Unpack
 
 from ...bt_types import TrType
-from ..dataparser import DataParser, ParserArgs, ParserType
+from ..dataparser import ConsolidateType, DataParser, ParserArgs, ParserType
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 from ..output_csv import OutputBase
@@ -108,4 +108,5 @@ DataParser(
     ],
     worksheet_name="Generic",
     row_handler=parse_generic,
+    consolidate_type=ConsolidateType.NEVER,
 )

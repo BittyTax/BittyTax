@@ -112,17 +112,21 @@ def main() -> None:
         sys.stderr.write(
             f"{Fore.GREEN}system: {platform.system()}, release: {platform.release()}\n"
         )
+        for arg in vars(args):
+            sys.stderr.write(f"{Fore.GREEN}args: {arg}: {getattr(args, arg)}\n")
         config.output_config(sys.stderr)
 
     file_hashes = set()
     for filename in args.filename:
+        if os.path.isdir(filename):
+            filename = os.path.join(filename, "**", "*")
+
         pathnames = glob.glob(filename, recursive=True)
         if not pathnames:
             pathnames = [filename]
 
         for pathname in pathnames:
             if os.path.isdir(pathname):
-                sys.stderr.write(_file_msg(pathname, None, msg="is a directory"))
                 continue
 
             try:

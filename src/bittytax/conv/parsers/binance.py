@@ -39,6 +39,7 @@ QUOTE_ASSETS = [
     "BTC",
     "BUSD",
     "BVND",
+    "CZK",
     "DAI",
     "DOGE",
     "DOT",
@@ -49,6 +50,7 @@ QUOTE_ASSETS = [
     "GYEN",
     "IDRT",
     "JPY",
+    "MXN",
     "NGN",
     "PAX",
     "PLN",
@@ -78,6 +80,7 @@ BASE_ASSETS = [
 
 TRADINGPAIR_TO_QUOTE_ASSET = {
     "ADAEUR": "EUR",
+    "ENAEUR": "EUR",
     "GALAEUR": "EUR",
     "LUNAEUR": "EUR",
     "THETAEUR": "EUR",
@@ -247,10 +250,17 @@ def parse_binance_deposits_withdrawals_crypto(
 
 
 def parse_binance_deposits_withdrawals_cash(
-    data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Date(UTC)"])
+
+    timestamp_hdr = parser.args[0].group(1)
+    utc_offset = parser.args[0].group(2)
+
+    if utc_offset == "UTCnull":
+        utc_offset = "UTC"
+
+    data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
 
     if row_dict["Status"] != "Successful":
         return
@@ -348,7 +358,7 @@ def _parse_binance_statements_row(
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
         )
-    elif row_dict["Operation"] == "Distribution":
+    elif row_dict["Operation"] in ("Distribution", "Token Swap - Redenomination/Rebranding"):
         if Decimal(row_dict["Change"]) > 0:
             data_row.t_record = TransactionOutRecord(
                 TrType.AIRDROP,
@@ -783,7 +793,7 @@ DataParser(
     ParserType.EXCHANGE,
     "Binance Deposits/Withdrawals",
     [
-        "Date(UTC)",
+        lambda c: re.match(r"(^Date\((UTC|UTCnull|UTC[-+]\d{1,2})\))", c),
         "Coin",
         "Amount",
         "Status",

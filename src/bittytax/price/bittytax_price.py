@@ -143,6 +143,8 @@ def main() -> None:
         print(f"{Fore.YELLOW}{parser.prog} v{__version__}")
         print(f"{Fore.GREEN}python: v{platform.python_version()}")
         print(f"{Fore.GREEN}system: {platform.system()}, release: {platform.release()}")
+        for arg in vars(args):
+            print(f"{Fore.GREEN}args: {arg}: {getattr(args, arg)}")
         config.output_config(sys.stdout)
 
     if args.command in (CMD_LATEST, CMD_HISTORY):
@@ -163,6 +165,7 @@ def main() -> None:
                         continue
 
                     output_ds_price(asset_data)
+                    price_ccy = None
                     if asset_data["quote"] == "BTC":
                         if btc is None:
                             if args.command == CMD_HISTORY:
@@ -173,12 +176,12 @@ def main() -> None:
                         if btc["price"] is not None:
                             price_ccy = btc["price"] * asset_data["price"]
                             output_ds_price(btc)
-                            price = True
                     else:
                         price_ccy = asset_data["price"]
-                        price = True
 
-                    output_price(symbol, price_ccy, args.quantity)
+                    if price_ccy is not None:
+                        output_price(symbol, price_ccy, args.quantity)
+                        price = True
 
                 if assets:
                     asset = True

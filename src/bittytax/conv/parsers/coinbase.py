@@ -23,6 +23,28 @@ WALLET = "Coinbase"
 DUPLICATE = UnmappedType("Duplicate")
 
 
+def parse_coinbase_v4(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
+
+    spot_price_ccy = DataParser.convert_currency(
+        row_dict["Price at Transaction"],
+        row_dict["Price Currency"],
+        data_row.timestamp,
+    )
+    subtotal = Decimal(row_dict["Subtotal"]) if row_dict["Subtotal"] else None
+    total_ccy = DataParser.convert_currency(
+        row_dict["Total (inclusive of fees and/or spread)"],
+        row_dict["Price Currency"],
+        data_row.timestamp,
+    )
+    fees = abs(Decimal(row_dict["Fees and/or Spread"])) if row_dict["Fees and/or Spread"] else None
+
+    _do_parse_coinbase(data_row, parser, (spot_price_ccy, subtotal, total_ccy, fees))
+
+
 def parse_coinbase_v3(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
@@ -220,20 +242,15 @@ def _do_parse_coinbase(
                 parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
             )
 
-        if currency == quote:
-            sell_quantity = subtotal
-            fee_quantity = fees
-        else:
+        if currency != quote:
             if parser.in_header_row_num is None:
                 raise RuntimeError("Missing in_header_row_num")
 
             sys.stderr.write(
                 f"{Fore.YELLOW}row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
-                f"{WARNING} {quote} amount is not available, you will need to add this manually\n"
+                f"{WARNING} {quote} amount is not availabe so will not balance, "
+                f"using {currency} instead\n"
             )
-            currency = quote
-            sell_quantity = None
-            fee_quantity = None
 
         if (
             config.coinbase_zero_fees_are_gifts
@@ -255,9 +272,9 @@ def _do_parse_coinbase(
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Quantity Transacted"]),
                 buy_asset=row_dict["Asset"],
-                sell_quantity=sell_quantity,
+                sell_quantity=subtotal,
                 sell_asset=currency,
-                fee_quantity=fee_quantity,
+                fee_quantity=fees,
                 fee_asset=currency,
                 wallet=WALLET,
             )
@@ -268,29 +285,24 @@ def _do_parse_coinbase(
                 parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
             )
 
-        if currency == quote:
-            buy_quantity = subtotal
-            fee_quantity = fees
-        else:
+        if currency != quote:
             if parser.in_header_row_num is None:
                 raise RuntimeError("Missing in_header_row_num")
 
             sys.stderr.write(
                 f"{Fore.YELLOW}row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
-                f"{WARNING} {quote} amount is not available, you will need to add this manually\n"
+                f"{WARNING} {quote} amount is not available so will not balance, "
+                f"using {currency} instead\n"
             )
-            currency = quote
-            buy_quantity = None
-            fee_quantity = None
 
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=buy_quantity,
+            buy_quantity=subtotal,
             buy_asset=currency,
             sell_quantity=Decimal(row_dict["Quantity Transacted"]),
             sell_asset=row_dict["Asset"],
-            fee_quantity=fee_quantity,
+            fee_quantity=fees,
             fee_asset=currency,
             wallet=WALLET,
         )
@@ -518,6 +530,45 @@ def parse_coinbase_transactions(
                 wallet=WALLET,
             )
 
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Coinbase",
+    [
+        "ID",  # Added
+        "Timestamp",
+        "Transaction Type",
+        "Asset",
+        "Quantity Transacted",
+        "Price Currency",
+        "Price at Transaction",
+        "Subtotal",
+        "Total (inclusive of fees and/or spread)",
+        "Fees and/or Spread",
+        "Notes",
+    ],
+    worksheet_name="Coinbase",
+    row_handler=parse_coinbase_v4,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Coinbase",
+    [
+        "Timestamp",
+        "Transaction Type",
+        "Asset",
+        "Quantity Transacted",
+        "Price Currency",  # Renamed
+        "Price at Transaction",  # Renamed
+        "Subtotal",
+        "Total (inclusive of fees and/or spread)",
+        "Fees and/or Spread",
+        "Notes",
+    ],
+    worksheet_name="Coinbase",
+    row_handler=parse_coinbase_v4,
+)
 
 DataParser(
     ParserType.EXCHANGE,
