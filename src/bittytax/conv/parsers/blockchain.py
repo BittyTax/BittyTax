@@ -3,7 +3,7 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 from typing_extensions import Unpack
 
@@ -76,6 +76,8 @@ def _get_timestamp(date_str: str, time_str: str) -> datetime:
     # The first happens when the asset is BTC and the second happens when the
     # asset is ETH. Not sure about other assets.
     # Handle both cases.
+
+    timestamp: Union[int, str]
 
     if time_str.isdigit():
         timestamp = int(time_str)
