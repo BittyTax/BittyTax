@@ -4,7 +4,6 @@
 import copy
 import sys
 from dataclasses import dataclass
-from datetime import datetime
 from decimal import Decimal, getcontext
 from typing import TYPE_CHECKING, Dict, List, NewType, Optional, Tuple
 
@@ -72,6 +71,13 @@ def parse_defi_taxes(
         else:
             tx_ids[chain][tx_hash].append(dr)
 
+        dr.timestamp = DataParser.parse_timestamp(int(dr.row_dict["timestamp"]))
+        dr.tx_raw = TxRawPos(
+            parser.in_header.index("transaction hash"),
+            parser.in_header.index("source address"),
+            parser.in_header.index("destination address"),
+        )
+
         # Try to identify addresses
         if dr.row_dict["destination address"] == "network":
             if dr.row_dict["source address"] not in my_addresses:
@@ -116,25 +122,17 @@ def _parse_defi_taxes_row(
     filename: str,
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(int(row_dict["timestamp"]))
-    data_row.tx_raw = TxRawPos(
-        parser.in_header.index("transaction hash"),
-        parser.in_header.index("source address"),
-        parser.in_header.index("destination address"),
-    )
 
     chain = Chain(row_dict["chain"])
     tx_hash = TxHash(row_dict["transaction hash"])
 
     if tx_hash:
         tx_rows = tx_ids[chain][tx_hash]
-        tx_ins, tx_outs, tx_fee = _get_ins_outs(tx_rows, data_row.timestamp, my_addresses, filename)
+        tx_ins, tx_outs, tx_fee = _get_ins_outs(tx_rows, my_addresses, filename)
     else:
         # Must be a manual transaction
         tx_rows = [data_row]
-        tx_ins, tx_outs, tx_fee = _get_ins_outs(
-            [data_row], data_row.timestamp, my_addresses, filename
-        )
+        tx_ins, tx_outs, tx_fee = _get_ins_outs([data_row], my_addresses, filename)
 
     if config.debug:
         _output_tx_rows(tx_ins, tx_outs, tx_fee)
@@ -834,7 +832,7 @@ def _next_free_row(tx_rows: List["DataRow"]) -> "DataRow":
 
 
 def _get_ins_outs(
-    tx_rows: List["DataRow"], timestamp: datetime, my_addresses: List[str], filename: str
+    tx_rows: List["DataRow"], my_addresses: List[str], filename: str
 ) -> Tuple[List[TxRecord], List[TxRecord], Optional[TxRecord]]:
 
     tx_ins = []
@@ -842,7 +840,6 @@ def _get_ins_outs(
     tx_fees = []
 
     for dr in tx_rows:
-        dr.timestamp = timestamp
         row_dict = dr.row_dict
         my_address = False
 
