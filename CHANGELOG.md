@@ -73,6 +73,7 @@
 - Etherscan merger: handle new export formats.
 - Conversion tool: added ConsolidateType to DataParser to control data file consolidation.
 - Conversion tool: added parser and merge parser for CoinCorner.
+- Blockchain.com parser: added new export format.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
