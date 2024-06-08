@@ -31,7 +31,8 @@ class DataFile:
     def __init__(self, parser: DataParser, reader: Iterator[List[str]]) -> None:
         self.parser = parser
         self.data_rows = [
-            DataRow(line_num + 1, row, parser.in_header) for line_num, row in enumerate(reader)
+            DataRow(line_num + 1, row, parser.in_header, parser.worksheet_name)
+            for line_num, row in enumerate(reader)
         ]
         self.failures: List[DataRow] = []
 

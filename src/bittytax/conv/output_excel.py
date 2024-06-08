@@ -152,21 +152,32 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
 
     def write_excel(self) -> None:
         data_files = sorted(self.data_files, key=lambda df: df.parser.worksheet_name, reverse=False)
+
         for data_file in data_files:
-            worksheet = Worksheet(self, data_file)
+            worksheets = {}
+            worksheet_names = {dr.worksheet_name for dr in data_file.data_rows}
 
-            data_rows = sorted(data_file.data_rows, key=lambda dr: dr.timestamp, reverse=False)
-            for i, data_row in enumerate(data_rows):
-                worksheet.add_row(data_row, i + 1)
+            if worksheet_names:
+                for ws_name in sorted(worksheet_names):
+                    worksheets[ws_name] = Worksheet(
+                        self, ws_name, data_file.parser.in_header, data_file.data_rows
+                    )
 
-            if data_rows:
-                worksheet.make_table(len(data_rows), data_file.parser.worksheet_name)
+                data_rows = sorted(data_file.data_rows, key=lambda dr: dr.timestamp, reverse=False)
+                for dr in data_rows:
+                    worksheet = worksheets[dr.worksheet_name]
+                    worksheet.add_row(dr)
+
+                for ws_name in worksheet_names:
+                    worksheets[ws_name].make_table()
+                    worksheets[ws_name].autofit()
             else:
-                # Just add headings
-                for i, columns in enumerate(worksheet.columns):
-                    worksheet.worksheet.write(0, i, columns["header"], columns["header_format"])
-
-            worksheet.autofit()
+                # No rows, just add worksheet with headings
+                worksheet = Worksheet(
+                    self, data_file.parser.worksheet_name, data_file.parser.in_header, []
+                )
+                worksheet.add_headings()
+                worksheet.autofit()
 
         self.workbook.close()
         sys.stderr.write(
@@ -182,14 +193,20 @@ class Worksheet:
     sheet_names: Dict[str, int] = {}
     table_names: Dict[str, int] = {}
 
-    def __init__(self, output: OutputExcel, data_file: DataFile) -> None:
+    def __init__(
+        self,
+        output: OutputExcel,
+        worksheet_name: str,
+        in_header: List[str],
+        data_rows: List[DataRow],
+    ) -> None:
         self.output = output
-        self.worksheet = output.workbook.add_worksheet(
-            self._sheet_name(data_file.parser.worksheet_name)
-        )
+        self.worksheet = output.workbook.add_worksheet(self._sheet_name(worksheet_name))
+        self.worksheet_name = worksheet_name
         self.col_width: Dict[int, int] = {}
-        self.columns = self._make_columns(data_file.parser.in_header)
-        self.microseconds, self.milliseconds = self._is_microsecond_timestamp(data_file.data_rows)
+        self.columns = self._make_columns(in_header)
+        self.row_num = 1
+        self.microseconds, self.milliseconds = self._is_microsecond_timestamp(data_rows)
 
         self.worksheet.freeze_panes(1, len(self.output.BITTYTAX_OUT_HEADER))
 
@@ -212,9 +229,9 @@ class Worksheet:
 
         return sheet_name
 
-    def _table_name(self, parser_name: str) -> str:
+    def _table_name(self) -> str:
         # Remove characters which are not allowed
-        name = parser_name.replace(" ", "_")
+        name = self.worksheet_name.replace(" ", "_")
         name = re.sub(r"[^a-zA-Z0-9\._]", "", name)
 
         if name.lower() not in self.table_names:
@@ -268,24 +285,24 @@ class Worksheet:
 
         return milliseconds, microseconds
 
-    def add_row(self, data_row: DataRow, row_num: int) -> None:
-        self.worksheet.set_row(row_num, None, self.output.format_out_data)
+    def add_row(self, data_row: DataRow) -> None:
+        self.worksheet.set_row(self.row_num, None, self.output.format_out_data)
 
         # Add transaction record
         if data_row.t_record:
-            self._xl_type(data_row.t_record.t_type, row_num, 0, data_row.t_record)
-            self._xl_quantity(data_row.t_record.buy_quantity, row_num, 1)
-            self._xl_asset(data_row.t_record.buy_asset, row_num, 2)
-            self._xl_value(data_row.t_record.buy_value, row_num, 3)
-            self._xl_quantity(data_row.t_record.sell_quantity, row_num, 4)
-            self._xl_asset(data_row.t_record.sell_asset, row_num, 5)
-            self._xl_value(data_row.t_record.sell_value, row_num, 6)
-            self._xl_quantity(data_row.t_record.fee_quantity, row_num, 7)
-            self._xl_asset(data_row.t_record.fee_asset, row_num, 8)
-            self._xl_value(data_row.t_record.fee_value, row_num, 9)
-            self._xl_wallet(data_row.t_record.wallet, row_num, 10)
-            self._xl_timestamp(data_row.t_record.timestamp, row_num, 11)
-            self._xl_note(data_row.t_record.note, row_num, 12)
+            self._xl_type(data_row.t_record.t_type, self.row_num, 0, data_row.t_record)
+            self._xl_quantity(data_row.t_record.buy_quantity, self.row_num, 1)
+            self._xl_asset(data_row.t_record.buy_asset, self.row_num, 2)
+            self._xl_value(data_row.t_record.buy_value, self.row_num, 3)
+            self._xl_quantity(data_row.t_record.sell_quantity, self.row_num, 4)
+            self._xl_asset(data_row.t_record.sell_asset, self.row_num, 5)
+            self._xl_value(data_row.t_record.sell_value, self.row_num, 6)
+            self._xl_quantity(data_row.t_record.fee_quantity, self.row_num, 7)
+            self._xl_asset(data_row.t_record.fee_asset, self.row_num, 8)
+            self._xl_value(data_row.t_record.fee_value, self.row_num, 9)
+            self._xl_wallet(data_row.t_record.wallet, self.row_num, 10)
+            self._xl_timestamp(data_row.t_record.timestamp, self.row_num, 11)
+            self._xl_note(data_row.t_record.note, self.row_num, 12)
 
         # Add original data
         for col_num, col_data in enumerate(data_row.row):
@@ -310,13 +327,15 @@ class Worksheet:
                 cell_format = self.output.format_in_data
 
             self.worksheet.write(
-                row_num,
+                self.row_num,
                 len(self.output.BITTYTAX_OUT_HEADER) + col_num,
                 col_data,
                 cell_format,
             )
 
             self._autofit_calc(len(self.output.BITTYTAX_OUT_HEADER) + col_num, len(col_data))
+
+        self.row_num += 1
 
     def _xl_type(
         self,
@@ -464,16 +483,20 @@ class Worksheet:
         for col_num, col_width in self.col_width.items():
             self.worksheet.set_column(col_num, col_num, col_width)
 
-    def make_table(self, rows: int, parser_name: str) -> None:
+    def make_table(self) -> None:
         self.worksheet.add_table(
             0,
             0,
-            rows,
+            self.row_num - 1,
             len(self.columns) - 1,
             {
                 "autofilter": False,
                 "style": "Table Style Medium 13",
                 "columns": self.columns,
-                "name": self._table_name(parser_name),
+                "name": self._table_name(),
             },
         )
+
+    def add_headings(self) -> None:
+        for i, columns in enumerate(self.columns):
+            self.worksheet.write(0, i, columns["header"], columns["header_format"])

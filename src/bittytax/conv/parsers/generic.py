@@ -85,6 +85,7 @@ def parse_generic(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Par
     del data_row.row[0 : len(OutputBase.BITTYTAX_OUT_HEADER)]
 
     parser.worksheet_name = row_dict["Wallet"]
+    data_row.worksheet_name = row_dict["Wallet"]
 
 
 DataParser(

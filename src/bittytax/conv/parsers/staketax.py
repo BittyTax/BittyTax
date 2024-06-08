@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2023
 
-import json
 from decimal import Decimal
 from typing import TYPE_CHECKING, Union
 
@@ -16,6 +15,8 @@ from ..output_csv import OutputBase
 
 if TYPE_CHECKING:
     from ..datarow import DataRow
+
+WORKSHEET_NAME = "StakeTax"
 
 STAKETAX_MAPPING = {
     "STAKING": TrType.STAKING_REWARD,
@@ -77,6 +78,8 @@ def parse_staketax_default(
     else:
         sell_asset = row_dict["sent_currency"]
 
+    wallet = _get_wallet(row_dict["exchange"], row_dict["wallet_address"])
+
     data_row.t_record = TransactionOutRecord(
         t_type,
         data_row.timestamp,
@@ -86,13 +89,10 @@ def parse_staketax_default(
         sell_asset=sell_asset,
         fee_quantity=fee_quantity,
         fee_asset=row_dict["fee_currency"],
-        wallet=_get_wallet(row_dict["exchange"], row_dict["wallet_address"]),
+        wallet=wallet,
         note=row_dict["comment"],
     )
-
-    parser.worksheet_name = (
-        "StakeTax " + row_dict["exchange"].replace("_blockchain", "").capitalize()
-    )
+    data_row.worksheet_name = f"{WORKSHEET_NAME} {wallet}"
 
 
 def _get_wallet(exchange: str, wallet_address: str) -> str:
@@ -138,6 +138,7 @@ def parse_staketax_bittytax(
         wallet=row_dict["Wallet"],
         note=row_dict["Note"],
     )
+    data_row.worksheet_name = f'{WORKSHEET_NAME} {row_dict["Wallet"]}'
 
     # Remove TR headers and data
     if len(parser.in_header) > len(OutputBase.BITTYTAX_OUT_HEADER):
@@ -145,8 +146,6 @@ def parse_staketax_bittytax(
     del data_row.row[0 : len(OutputBase.BITTYTAX_OUT_HEADER)]
 
     data_row.tx_raw = TxRawPos(parser.in_header.index("Tx ID"))
-    raw = json.loads(row_dict["Raw Data"])
-    parser.worksheet_name = "StakeTax " + raw["exchange"].replace("_blockchain", "").capitalize()
 
 
 DataParser(
@@ -167,7 +166,7 @@ DataParser(
         "exchange",
         "wallet_address",
     ],
-    worksheet_name="StakeTax",
+    worksheet_name=WORKSHEET_NAME,
     row_handler=parse_staketax_default,
 )
 
@@ -192,6 +191,6 @@ DataParser(
         "URL",
         "Raw Data",
     ],
-    worksheet_name="StakeTax",
+    worksheet_name=WORKSHEET_NAME,
     row_handler=parse_staketax_bittytax,
 )

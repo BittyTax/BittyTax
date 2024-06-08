@@ -21,7 +21,7 @@ def merge_hecoinfo(data_files: Dict[FileId, "DataFile"]) -> bool:
     merge = _do_merge_etherscan(data_files, STAKE_ADDRESSES)
 
     if merge:
-        # Change Etherscan parsers to HECO
+        # Change Etherscan wallet/worksheet name to HecoInfo
         if TOKENS in data_files:
             data_files[TOKENS].parser.worksheet_name = WORKSHEET_NAME
             for data_row in data_files[TOKENS].data_rows:
@@ -29,12 +29,16 @@ def merge_hecoinfo(data_files: Dict[FileId, "DataFile"]) -> bool:
                     address = data_row.t_record.wallet[-abs(TransactionOutRecord.WALLET_ADDR_LEN) :]
                     data_row.t_record.wallet = f"{WALLET}-{address}"
 
+                data_row.worksheet_name = WORKSHEET_NAME
+
         if NFTS in data_files:
             data_files[NFTS].parser.worksheet_name = WORKSHEET_NAME
             for data_row in data_files[NFTS].data_rows:
                 if data_row.t_record:
                     address = data_row.t_record.wallet[-abs(TransactionOutRecord.WALLET_ADDR_LEN) :]
                     data_row.t_record.wallet = f"{WALLET}-{address}"
+
+                data_row.worksheet_name = WORKSHEET_NAME
 
     return merge
 

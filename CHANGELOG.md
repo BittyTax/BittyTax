@@ -69,6 +69,7 @@
 - Coinbase parser: added new export format.
 - Accounting tool: new transaction types added. Stake, Unstake and Staking-Reward (Staking has been deprecated).
 - Conversion tool: added new parser for DefiTaxes.us.
+- Conversion tool: allow parsers to specify a different worksheet
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -111,6 +112,8 @@
 - Accounting tool: use stdout not stderr.
 - Conversion tool: parsers use Staking-Reward instead of Staking (deprecated).
 - Coinbase parser: advanced trade buy/sell in different currency, use local currency instead of requiring manual entry.
+- DeFiTaxes.us parser: output different worksheet for each wallet
+- StakeTax parser: output different worksheet for each wallet
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
