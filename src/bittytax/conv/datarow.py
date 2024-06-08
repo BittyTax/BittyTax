@@ -25,12 +25,15 @@ class TxRawPos:
 
 
 class DataRow:
-    def __init__(self, line_num: int, row: List[str], in_header: List[str]) -> None:
+    def __init__(
+        self, line_num: int, row: List[str], in_header: List[str], worksheet_name: str
+    ) -> None:
         self.line_num = line_num
         self.row = row
         self.row_dict = dict(zip(in_header, row))
         self.timestamp = DEFAULT_TIMESTAMP
         self.t_record: Optional[TransactionOutRecord] = None
+        self.worksheet_name = worksheet_name
         self.tx_raw: Optional[TxRawPos] = None
         self.parsed = False
         self.failure: Optional[Exception] = None

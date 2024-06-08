@@ -179,6 +179,7 @@
 - Accounting tool: new transaction type Margin-Fee-Rebate added. ([#415](https://github.com/BittyTax/BittyTax/issues/415))
 - Accounting tool: new transaction types added. Stake, Unstake and Staking-Reward (Staking has been deprecated).
 - Conversion tool: added new parser for DefiTaxes.us.
+- Conversion tool: allow parsers to specify a different worksheet
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -261,6 +262,8 @@
 - KuCoin parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
 - Accounting tool: increased precision for Decimals from 28 to 30 digits.
 - Conversion tool: parsers use Staking-Reward instead of Staking (deprecated).
+- DeFiTaxes.us parser: output different worksheet for each wallet
+- StakeTax parser: output different worksheet for each wallet
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.

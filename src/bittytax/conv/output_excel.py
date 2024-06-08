@@ -170,7 +170,67 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             }
         )
 
-    def sheet_name(self, parser_name: str) -> str:
+    def write_excel(self) -> None:
+        data_files = sorted(self.data_files, key=lambda df: df.parser.worksheet_name, reverse=False)
+
+        for data_file in data_files:
+            worksheets = {}
+            worksheet_names = {dr.worksheet_name for dr in data_file.data_rows}
+
+            if worksheet_names:
+                for ws_name in sorted(worksheet_names):
+                    worksheets[ws_name] = Worksheet(
+                        self, ws_name, data_file.parser.in_header, data_file.data_rows
+                    )
+
+                data_rows = sorted(data_file.data_rows, key=lambda dr: dr.timestamp, reverse=False)
+                for dr in data_rows:
+                    worksheet = worksheets[dr.worksheet_name]
+                    worksheet.add_row(dr)
+
+                for ws_name in worksheet_names:
+                    worksheets[ws_name].make_table()
+                    worksheets[ws_name].autofit()
+            else:
+                # No rows, just add worksheet with headings
+                worksheet = Worksheet(
+                    self, data_file.parser.worksheet_name, data_file.parser.in_header, []
+                )
+                worksheet.add_headings()
+                worksheet.autofit()
+
+        self.workbook.close()
+        sys.stderr.write(
+            f"{Fore.WHITE}output EXCEL file created: "
+            f"{Fore.YELLOW}{os.path.abspath(self.filename)}\n"
+        )
+
+
+class Worksheet:
+    SHEETNAME_MAX_LEN = 31
+    MAX_COL_WIDTH = 30
+
+    sheet_names: Dict[str, int] = {}
+    table_names: Dict[str, int] = {}
+
+    def __init__(
+        self,
+        output: OutputExcel,
+        worksheet_name: str,
+        in_header: List[str],
+        data_rows: List[DataRow],
+    ) -> None:
+        self.output = output
+        self.worksheet = output.workbook.add_worksheet(self._sheet_name(worksheet_name))
+        self.worksheet_name = worksheet_name
+        self.col_width: Dict[int, int] = {}
+        self.columns = self._make_columns(in_header)
+        self.row_num = 1
+        self.microseconds, self.milliseconds = self._is_microsecond_timestamp(data_rows)
+
+        self.worksheet.freeze_panes(1, len(self.output.BITTYTAX_OUT_HEADER))
+
+    def _sheet_name(self, parser_name: str) -> str:
         # Remove special characters
         name = re.sub(r"[/\\\?\*\[\]:]", "", parser_name)
         name = name[: self.SHEETNAME_MAX_LEN] if len(name) > self.SHEETNAME_MAX_LEN else name
@@ -189,9 +249,9 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
 
         return sheet_name
 
-    def table_name(self, parser_name: str) -> str:
+    def _table_name(self) -> str:
         # Remove characters which are not allowed
-        name = parser_name.replace(" ", "_")
+        name = self.worksheet_name.replace(" ", "_")
         name = re.sub(r"[^a-zA-Z0-9\._]", "", name)
 
         if name.lower() not in self.table_names:
@@ -492,7 +552,7 @@ class Worksheet:
             },
         )
 
-    def make_table(self, parser_name: str) -> None:
+    def make_table(self) -> None:
         self.worksheet.add_table(
             0,
             0,
@@ -502,6 +562,10 @@ class Worksheet:
                 "autofilter": False,
                 "style": "Table Style Medium 13",
                 "columns": self.columns,
-                "name": self.output.table_name(parser_name),
+                "name": self._table_name(),
             },
         )
+
+    def add_headings(self) -> None:
+        for i, columns in enumerate(self.columns):
+            self.worksheet.write(0, i, columns["header"], columns["header_format"])

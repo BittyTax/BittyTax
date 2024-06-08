@@ -29,6 +29,8 @@ if TYPE_CHECKING:
 
 PRECISION = Decimal("0." + "0" * 18)
 
+WORKSHEET_NAME = "DeFi Taxes"
+
 Chain = NewType("Chain", str)
 TxHash = NewType("TxHash", str)
 VaultId = NewType("VaultId", str)
@@ -43,6 +45,7 @@ class TxRecord:
     value: Optional[Decimal]
     classification: str
     address: str
+    chain: Chain
     vault_id: VaultId
     data_row: "DataRow"
 
@@ -177,7 +180,7 @@ def _make_t_record(
             fee_quantity=tx_fee.quantity,
             fee_asset=tx_fee.asset,
             fee_value=tx_fee.value,
-            wallet=_get_wallet(tx_fee.data_row.row_dict["chain"], tx_fee.address),
+            wallet=_get_wallet(tx_fee.chain, tx_fee.address),
             note=_get_note(tx_fee.data_row),
         )
     elif len(tx_ins) == 1 and not tx_outs:
@@ -279,7 +282,7 @@ def _make_t_record(
                     buy_quantity=tx_in.quantity,
                     buy_asset=tx_in.asset,
                     buy_value=tx_in.value,
-                    wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+                    wallet=_get_wallet(tx_in.chain, tx_in.address),
                     note=_get_note(tx_in.data_row),
                 )
             elif tx_in.classification.startswith(
@@ -305,7 +308,7 @@ def _make_t_record(
                         buy_quantity=tx_in.quantity,
                         buy_asset=tx_in.asset,
                         buy_value=tx_in.value,
-                        wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+                        wallet=_get_wallet(tx_in.chain, tx_in.address),
                         note=_get_note(tx_in.data_row),
                     )
             else:
@@ -323,7 +326,7 @@ def _make_t_record(
                     sell_quantity=abs(tx_out.quantity),
                     sell_asset=tx_out.asset,
                     sell_value=abs(tx_out.value) if tx_out.value else None,
-                    wallet=_get_wallet(tx_out.data_row.row_dict["chain"], tx_out.address),
+                    wallet=_get_wallet(tx_out.chain, tx_out.address),
                     note=_get_note(tx_out.data_row),
                 )
             elif tx_out.classification.startswith("stake"):
@@ -333,7 +336,7 @@ def _make_t_record(
                     sell_quantity=abs(tx_out.quantity),
                     sell_asset=tx_out.asset,
                     sell_value=abs(tx_out.value) if tx_out.value else None,
-                    wallet=_get_wallet(tx_out.data_row.row_dict["chain"], tx_out.address),
+                    wallet=_get_wallet(tx_out.chain, tx_out.address),
                     note=_get_note(tx_out.data_row),
                 )
                 try:
@@ -391,7 +394,7 @@ def _make_t_record(
                 buy_quantity=tx_in.quantity,
                 buy_asset=tx_in.asset,
                 buy_value=tx_in.value,
-                wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+                wallet=_get_wallet(tx_in.chain, tx_in.address),
                 note=_get_note(tx_in.data_row),
             )
         for tx_out in tx_outs:
@@ -401,7 +404,7 @@ def _make_t_record(
                 sell_quantity=abs(tx_out.quantity),
                 sell_asset=tx_out.asset,
                 sell_value=abs(tx_out.value) if tx_out.value else None,
-                wallet=_get_wallet(tx_out.data_row.row_dict["chain"], tx_out.address),
+                wallet=_get_wallet(tx_out.chain, tx_out.address),
                 note=_get_note(tx_out.data_row),
             )
         _do_fee_split(tx_fee, tx_rows)
@@ -420,7 +423,7 @@ def _make_buy(t_type: TrType, tx_in: TxRecord, tx_fee: Optional[TxRecord]) -> Tr
         fee_quantity=tx_fee.quantity if tx_fee else None,
         fee_asset=tx_fee.asset if tx_fee else "",
         fee_value=tx_fee.value if tx_fee else None,
-        wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+        wallet=_get_wallet(tx_in.chain, tx_in.address),
         note=_get_note(tx_in.data_row),
     )
 
@@ -437,7 +440,7 @@ def _make_sell(
         fee_quantity=tx_fee.quantity if tx_fee else None,
         fee_asset=tx_fee.asset if tx_fee else "",
         fee_value=tx_fee.value if tx_fee else None,
-        wallet=_get_wallet(tx_out.data_row.row_dict["chain"], tx_out.address),
+        wallet=_get_wallet(tx_out.chain, tx_out.address),
         note=_get_note(tx_out.data_row),
     )
 
@@ -457,7 +460,7 @@ def _make_trade(
         fee_quantity=tx_fee.quantity if tx_fee else None,
         fee_asset=tx_fee.asset if tx_fee else "",
         fee_value=tx_fee.value if tx_fee else None,
-        wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+        wallet=_get_wallet(tx_in.chain, tx_in.address),
         note=_get_note(tx_in.data_row),
     )
 
@@ -474,18 +477,21 @@ def _make_transfer(
         fee_quantity=tx_fee.quantity if tx_fee else None,
         fee_asset=tx_fee.asset if tx_fee else "",
         fee_value=tx_fee.value if tx_fee else None,
-        wallet=_get_wallet(tx_out.data_row.row_dict["chain"], tx_out.address),
+        wallet=_get_wallet(tx_out.chain, tx_out.address),
         note=_get_note(tx_out.data_row),
     )
-    _next_free_row(tx_rows).t_record = TransactionOutRecord(
+
+    next_row = _next_free_row(tx_rows)
+    next_row.t_record = TransactionOutRecord(
         TrType.DEPOSIT,
         tx_in.data_row.timestamp,
         buy_quantity=tx_in.quantity,
         buy_asset=tx_in.asset,
         buy_value=tx_in.value,
-        wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+        wallet=_get_wallet(tx_in.chain, tx_in.address),
         note=_get_note(tx_in.data_row),
     )
+    next_row.worksheet_name = _get_worksheet_name(tx_in.chain, tx_in.address)
 
 
 def _make_multi_sell(tx_in: TxRecord, tx_outs: List[TxRecord], tx_rows: List["DataRow"]) -> None:
@@ -522,7 +528,7 @@ def _make_multi_sell(tx_in: TxRecord, tx_outs: List[TxRecord], tx_rows: List["Da
             sell_quantity=abs(tx_out.quantity),
             sell_asset=tx_out.asset,
             sell_value=abs(tx_out.value) if tx_out.value else None,
-            wallet=_get_wallet(tx_out.data_row.row_dict["chain"], tx_out.address),
+            wallet=_get_wallet(tx_out.chain, tx_out.address),
             note=_get_note(tx_out.data_row),
         )
 
@@ -561,7 +567,7 @@ def _make_multi_buy(tx_out: TxRecord, tx_ins: List[TxRecord], tx_rows: List["Dat
             sell_quantity=split_sell_quantity,
             sell_asset=sell_asset,
             sell_value=split_sell_value,
-            wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+            wallet=_get_wallet(tx_in.chain, tx_in.address),
             note=_get_note(tx_in.data_row),
         )
 
@@ -631,7 +637,7 @@ def _do_unstake(
         buy_quantity=quantity,
         buy_asset=asset,
         buy_value=quantity * rate if rate else None,
-        wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+        wallet=_get_wallet(tx_in.chain, tx_in.address),
         note=_get_note(tx_in.data_row),
     )
 
@@ -642,7 +648,7 @@ def _do_unstake(
             buy_quantity=staking_reward,
             buy_asset=asset,
             buy_value=staking_reward * rate if rate else None,
-            wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+            wallet=_get_wallet(tx_in.chain, tx_in.address),
             note=_get_note(tx_in.data_row),
         )
 
@@ -657,7 +663,7 @@ def _do_unstake(
                     buy_quantity=vault_record.quantity,
                     buy_asset=asset,
                     buy_value=Decimal(0),
-                    wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+                    wallet=_get_wallet(tx_in.chain, tx_in.address),
                     note=_get_note(tx_in.data_row),
                 )
                 _next_free_row(tx_rows).t_record = TransactionOutRecord(
@@ -666,7 +672,7 @@ def _do_unstake(
                     sell_quantity=vault_record.quantity,
                     sell_asset=asset,
                     sell_value=Decimal(0),
-                    wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+                    wallet=_get_wallet(tx_in.chain, tx_in.address),
                     note=_get_note(tx_in.data_row),
                 )
                 sys.stderr.write(
@@ -716,7 +722,7 @@ def _do_bridge_out(
             buy_quantity=vaults[vault_id][asset].quantity,
             buy_asset=asset,
             buy_value=vaults[vault_id][asset].value,
-            wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+            wallet=_get_wallet(tx_in.chain, tx_in.address),
             note=_get_note(tx_in.data_row),
         )
 
@@ -737,7 +743,7 @@ def _do_bridge_out(
                 sell_quantity=vaults[vault_id][asset].quantity,
                 sell_asset=asset,
                 sell_value=Decimal(0),
-                wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+                wallet=_get_wallet(tx_in.chain, tx_in.address),
                 note=_get_note(tx_in.data_row),
             )
         elif vaults[vault_id][asset].quantity < 0:
@@ -751,7 +757,7 @@ def _do_bridge_out(
                 buy_quantity=abs(vaults[vault_id][asset].quantity),
                 buy_asset=asset,
                 buy_value=abs(vaults[vault_id][asset].quantity) * rate if rate else None,
-                wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+                wallet=_get_wallet(tx_in.chain, tx_in.address),
                 note=_get_note(tx_in.data_row),
             )
     else:
@@ -772,7 +778,7 @@ def _do_bridge_out(
             buy_quantity=vaults[vault_id][vault_assets[0]].quantity,
             buy_asset=vault_assets[0],
             buy_value=vaults[vault_id][vault_assets[0]].value,
-            wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+            wallet=_get_wallet(tx_in.chain, tx_in.address),
             note=_get_note(tx_in.data_row),
         )
 
@@ -785,7 +791,7 @@ def _do_bridge_out(
             sell_quantity=vaults[vault_id][vault_assets[0]].quantity,
             sell_asset=vault_assets[0],
             sell_value=vaults[vault_id][vault_assets[0]].value,
-            wallet=_get_wallet(tx_in.data_row.row_dict["chain"], tx_in.address),
+            wallet=_get_wallet(tx_in.chain, tx_in.address),
             note=_get_note(tx_in.data_row),
         )
 
@@ -849,6 +855,7 @@ def _get_ins_outs(
         value = quantity * rate if rate else None
         classification = row_dict["classification"]
         vault_id = VaultId(row_dict["vault id"])
+        chain = Chain(row_dict["chain"])
 
         if row_dict["destination address"] == "network":
             tx_fees.append(
@@ -858,10 +865,12 @@ def _get_ins_outs(
                     value,
                     classification,
                     row_dict["source address"],
+                    chain,
                     vault_id,
                     dr,
                 )
             )
+            dr.worksheet_name = _get_worksheet_name(chain, row_dict["source address"])
             continue
 
         if (
@@ -875,10 +884,12 @@ def _get_ins_outs(
                     value,
                     classification,
                     row_dict["destination address"],
+                    chain,
                     vault_id,
                     dr,
                 )
             )
+            dr.worksheet_name = _get_worksheet_name(chain, row_dict["destination address"])
             my_address = True
 
         if (
@@ -892,10 +903,12 @@ def _get_ins_outs(
                     -abs(value) if value else None,
                     classification,
                     row_dict["source address"],
+                    chain,
                     vault_id,
                     dr,
                 )
             )
+            dr.worksheet_name = _get_worksheet_name(chain, row_dict["source address"])
             my_address = True
 
         if not my_address:
@@ -1009,6 +1022,11 @@ def _get_wallet(chain: str, address: str) -> str:
     return f"{chain}-{address.lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN]}"
 
 
+def _get_worksheet_name(chain: str, address: str) -> str:
+    wallet = _get_wallet(chain, address)
+    return f"{WORKSHEET_NAME} {wallet}"
+
+
 def _get_note(data_row: "DataRow") -> str:
     classification = data_row.row_dict["classification"]
     operation = data_row.row_dict["operation (decoded hex signature)"]
@@ -1055,6 +1073,6 @@ DataParser(
         "vault id",
         "USD rate",
     ],
-    worksheet_name="DeFi Taxes",
+    worksheet_name=WORKSHEET_NAME,
     all_handler=parse_defi_taxes,
 )
