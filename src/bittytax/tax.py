@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
+import requests
 from colorama import Fore
 from dateutil.relativedelta import relativedelta
 from tqdm import tqdm
@@ -464,9 +465,18 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             disable=bool(config.debug or not sys.stdout.isatty()),
         ):
             if self.holdings[h].quantity > 0 or config.show_empty_wallets:
-                value, name, _ = value_asset.get_current_value(
-                    self.holdings[h].asset, self.holdings[h].quantity
-                )
+                try:
+                    value, name, _ = value_asset.get_current_value(
+                        self.holdings[h].asset, self.holdings[h].quantity
+                    )
+                except requests.exceptions.HTTPError as e:
+                    tqdm.write(
+                        f"{WARNING} Skipping valuation of {self.holdings[h].asset} "
+                        f"due to API failure ({e.response.status_code})"
+                    )
+                    value = None
+                    name = AssetName("")
+
                 value = value.quantize(PRECISION) if value is not None else None
                 cost = (self.holdings[h].cost + self.holdings[h].fees).quantize(PRECISION)
 
