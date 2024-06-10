@@ -33,9 +33,14 @@ TOKENS = FileId("token")
 NFTS = FileId("nft")
 INTERNAL_TXNS = FileId("int")
 
+STAKE_ADDRESSES = [
+    "0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82",  # PancakeSwap (BNB)
+    "0x5fad6fbba4bba686ba9b8052cf0bd51699f38b93",  # MakiSwap (HT)
+]
+
 
 def merge_etherscan(data_files: Dict[FileId, "DataFile"]) -> bool:
-    return _do_merge_etherscan(data_files, [])
+    return _do_merge_etherscan(data_files, STAKE_ADDRESSES)
 
 
 def _do_merge_etherscan(
@@ -49,7 +54,7 @@ def _do_merge_etherscan(
             if not dr.t_record:
                 continue
 
-            wallet = dr.t_record.wallet[-abs(TransactionOutRecord.WALLET_ADDR_LEN) :]
+            wallet = dr.t_record.wallet
             if wallet not in tx_ids:
                 tx_ids[wallet] = {}
 
