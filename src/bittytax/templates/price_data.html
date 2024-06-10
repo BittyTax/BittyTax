@@ -13,7 +13,7 @@
             {% for date in price_report[tax_year][asset]|sort %}
                 {% if price_report[tax_year][asset][date]['price_ccy'] != none %}
                     <tr>
-                        <td>1 {{asset}} ({{price_report[tax_year][asset][date]['name']|nowrapfilter}})</td>
+                        <td>1 {{asset}} ({{price_report[tax_year][asset][date]['name']}})</td>
                         <td><a href="{{price_report[tax_year][asset][date]['url']}}">{{price_report[tax_year][asset][date]['data_source']}}</a></td>
                         <td>{{date|datefilter}}</td>
                         <td align="right">{{price_report[tax_year][asset][date]['price_ccy']|valuefilter}}</td>

@@ -9,7 +9,7 @@
         </tr>
         {% for asset in audit.wallets[wallet]|sort %}
             <tr>
-                <td>{{wallet|nowrapfilter}}</td>
+                <td>{{wallet}}</td>
                 <td>{{asset}}</td>
                 {% if audit.wallets[wallet][asset] >= 0 %}
                     <td align="right">{{audit.wallets[wallet][asset]|quantityfilter}}</td>
