@@ -128,6 +128,7 @@
 - Trezor parser: used ConsolidateType to prevent data file consolidation unless header matches.
 - Conversion tool: changed DataMerge to merge with only a single data parser, required for CoinCorner merge parser.
 - Accounting tool: skip valuation of asset in holdings report if API fails.
+- Accounting tool: removed nowrapfilter from PDF report templates.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
