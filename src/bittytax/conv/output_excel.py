@@ -13,7 +13,6 @@ from typing import Dict, List, Optional, Tuple, Union
 import xlsxwriter
 from colorama import Fore
 from typing_extensions import TypedDict
-from xlsxwriter.utility import xl_rowcol_to_cell
 
 from ..bt_types import BUY_TYPES, DEPRECATED_TYPES, SELL_TYPES, TrType, UnmappedType
 from ..config import config
@@ -407,7 +406,7 @@ class Worksheet:
                 self.worksheet.write_number(
                     row_num, col_num, quantity.normalize(), self.output.format_num_float
                 )
-                cell = xl_rowcol_to_cell(row_num, col_num)
+                cell = xlsxwriter.utility.xl_rowcol_to_cell(row_num, col_num)
 
                 if not config.large_data:
                     # Lots of conditional formatting can slow down Excel

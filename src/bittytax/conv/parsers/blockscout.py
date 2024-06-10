@@ -25,7 +25,6 @@ WALLET = "Blockscout"
 def parse_blockscout(
     data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
-
     symbol = kwargs["cryptoasset"]
     if not symbol:
         sys.stderr.write(f"{WARNING} Cryptoasset cannot be identified\n")
