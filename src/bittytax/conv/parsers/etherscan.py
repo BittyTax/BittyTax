@@ -54,6 +54,7 @@ def parse_etherscan(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
                 wallet=_get_wallet(fee_asset, row_dict["To"]),
                 note=_get_note(row_dict),
             )
+        data_row.worksheet_name = _get_worksheet_name(parser, fee_asset, row_dict["To"])
     elif Decimal(row_dict[value_out_hdr]) > 0:
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
@@ -65,6 +66,7 @@ def parse_etherscan(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
             wallet=_get_wallet(fee_asset, row_dict["From"]),
             note=_get_note(row_dict),
         )
+        data_row.worksheet_name = _get_worksheet_name(parser, fee_asset, row_dict["From"])
     else:
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
@@ -76,10 +78,16 @@ def parse_etherscan(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
             wallet=_get_wallet(fee_asset, row_dict["From"]),
             note=_get_note(row_dict),
         )
+        data_row.worksheet_name = _get_worksheet_name(parser, fee_asset, row_dict["From"])
 
 
 def _get_wallet(chain: str, address: str) -> str:
     return f"{chain}-{address.lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN]}"
+
+
+def _get_worksheet_name(parser: DataParser, chain: str, address: str) -> str:
+    wallet = _get_wallet(chain, address)
+    return f"{parser.worksheet_name} {wallet}"
 
 
 def _get_note(row_dict: Dict[str, str]) -> str:
@@ -125,6 +133,7 @@ def parse_etherscan_internal(
             buy_asset=buy_asset,
             wallet=_get_wallet(buy_asset, row_dict["TxTo"]),
         )
+        data_row.worksheet_name = _get_worksheet_name(parser, buy_asset, row_dict["TxTo"])
     elif Decimal(row_dict[value_out_hdr]) > 0:
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
@@ -133,6 +142,7 @@ def parse_etherscan_internal(
             sell_asset=sell_asset,
             wallet=_get_wallet(sell_asset, row_dict["From"]),
         )
+        data_row.worksheet_name = _get_worksheet_name(parser, sell_asset, row_dict["From"])
 
 
 def parse_etherscan_tokens(
@@ -171,7 +181,7 @@ def parse_etherscan_tokens(
 
 
 def _parse_etherscan_tokens_row(
-    data_row: "DataRow", _parser: DataParser, symbol: str, **kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, symbol: str, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
@@ -199,6 +209,7 @@ def _parse_etherscan_tokens_row(
             buy_asset=asset,
             wallet=_get_wallet(symbol, row_dict["To"]),
         )
+        data_row.worksheet_name = _get_worksheet_name(parser, symbol, row_dict["To"])
     elif row_dict["From"].lower() in kwargs["filename"].lower():
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
@@ -207,6 +218,7 @@ def _parse_etherscan_tokens_row(
             sell_asset=asset,
             wallet=_get_wallet(symbol, row_dict["From"]),
         )
+        data_row.worksheet_name = _get_worksheet_name(parser, symbol, row_dict["From"])
     else:
         raise DataFilenameError(kwargs["filename"], "Ethereum address")
 
@@ -247,7 +259,7 @@ def parse_etherscan_nfts(
 
 
 def _parse_etherscan_nfts_row(
-    data_row: "DataRow", _parser: DataParser, symbol: str, **kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, symbol: str, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
@@ -268,6 +280,7 @@ def _parse_etherscan_nfts_row(
             buy_asset=f'{row_dict["TokenName"]} #{row_dict["Token ID"]}',
             wallet=_get_wallet(symbol, row_dict["To"]),
         )
+        data_row.worksheet_name = _get_worksheet_name(parser, symbol, row_dict["To"])
     elif row_dict["From"].lower() in kwargs["filename"].lower():
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
@@ -276,6 +289,7 @@ def _parse_etherscan_nfts_row(
             sell_asset=f'{row_dict["TokenName"]} #{row_dict["Token ID"]}',
             wallet=_get_wallet(symbol, row_dict["From"]),
         )
+        data_row.worksheet_name = _get_worksheet_name(parser, symbol, row_dict["From"])
     else:
         raise DataFilenameError(kwargs["filename"], "Ethereum address")
 
@@ -402,7 +416,7 @@ etherscan_int = DataParser(
         "ErrCode",
         "Type",
     ],
-    worksheet_name="Etherscan",
+    worksheet_name="Etherscan Int.",
     row_handler=parse_etherscan_internal,
 )
 
@@ -429,7 +443,7 @@ DataParser(
         "Type",
         "PrivateNote",
     ],
-    worksheet_name="Etherscan",
+    worksheet_name="Etherscan Int.",
     row_handler=parse_etherscan_internal,
 )
 
@@ -449,7 +463,7 @@ etherscan_tokens = DataParser(
         "TokenName",
         "TokenSymbol",
     ],
-    worksheet_name="Etherscan",
+    worksheet_name="Etherscan Tokens",
     all_handler=parse_etherscan_tokens,
 )
 
@@ -467,7 +481,7 @@ DataParser(
         "TokenName",
         "TokenSymbol",
     ],
-    worksheet_name="Etherscan",
+    worksheet_name="Etherscan Tokens",
     all_handler=parse_etherscan_tokens,
 )
 
@@ -489,7 +503,7 @@ etherscan_nfts = DataParser(
         "Type",  # New field
         "Quantity",  # New field
     ],
-    worksheet_name="Etherscan",
+    worksheet_name="Etherscan NFTs",
     all_handler=parse_etherscan_nfts,
 )
 
@@ -508,7 +522,7 @@ DataParser(
         "TokenName",
         "TokenSymbol",
     ],
-    worksheet_name="Etherscan",
+    worksheet_name="Etherscan NFTs",
     all_handler=parse_etherscan_nfts,
 )
 
@@ -526,6 +540,6 @@ DataParser(
         "TokenName",
         "TokenSymbol",
     ],
-    worksheet_name="Etherscan",
+    worksheet_name="Etherscan NFTs",
     all_handler=parse_etherscan_nfts,
 )
