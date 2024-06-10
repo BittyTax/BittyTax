@@ -129,9 +129,15 @@
 - Conversion tool: changed DataMerge to merge with only a single data parser, required for CoinCorner merge parser.
 - Accounting tool: skip valuation of asset in holdings report if API fails.
 - Accounting tool: removed nowrapfilter from PDF report templates.
+- Etherscan parser/merger: made generic so will support any Etherscan clone.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
+- BscScan parser/merger: removed, replaced by generic Etherscan parser/merger.
+- FTMScan parser/merger: removed, replaced by generic Etherscan parser/merger.
+- HecoInfo parser/merger: removed, replaced by generic Etherscan parser/merger.
+- PolygonScan parser/merger: removed, replaced by generic Etherscan parser/merger.
+- SnowTrace parser/merger: removed, replaced by generic Etherscan parser/merger.
 
 ## Version [0.5.2] (2023-12-22)
 Important:-
