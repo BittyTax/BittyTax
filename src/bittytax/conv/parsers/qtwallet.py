@@ -25,7 +25,6 @@ WALLET = "Qt Wallet"
 def parse_qt_wallet(
     data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
-
     if parser.args:
         amount_hdr = parser.args[0].group(1)
     else:
