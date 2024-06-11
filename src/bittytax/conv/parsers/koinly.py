@@ -135,6 +135,7 @@ def _parse_koinly_row(
             sell_asset=row_dict["Sent Currency"],
             fee_quantity=fee_quantity,
             fee_asset=row_dict["Fee Currency"],
+            fee_value=fee_value,
             wallet=row_dict["Sending Wallet"],
             note=row_dict["Description"],
         )
