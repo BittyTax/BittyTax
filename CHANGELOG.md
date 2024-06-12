@@ -75,6 +75,7 @@
 - Conversion tool: added parser and merge parser for CoinCorner.
 - Blockchain.com parser: added new export format.
 - Conversion tool: added parser for BitcoinTaxes accounting data.
+- Conversion tool: added parser for Kinesis exchange.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
