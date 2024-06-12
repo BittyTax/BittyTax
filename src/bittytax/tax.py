@@ -402,7 +402,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 t.quantity, Decimal(0), Decimal(0), t.t_type is TrType.WITHDRAWAL
             )
         else:
-            RuntimeError("Unmatched disposal in holdings")
+            raise RuntimeError("Unmatched disposal in holdings")
 
     def process_income(self) -> None:
         if config.debug:
