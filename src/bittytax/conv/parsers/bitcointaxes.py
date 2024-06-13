@@ -103,7 +103,7 @@ def _parse_bitcointaxes_trades_row(
         data_row.t_record = TransactionOutRecord(
             BITCOINTAXES_ACTION_MAPPING[row_dict["Action"]],
             data_row.timestamp,
-            buy_quantity=Decimal(row_dict["Total"]),
+            buy_quantity=abs(Decimal(row_dict["Total"])),
             buy_asset=row_dict["Currency"],
             sell_quantity=Decimal(row_dict["Volume"]),
             sell_asset=row_dict["Symbol"],
