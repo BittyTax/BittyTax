@@ -277,6 +277,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     PRECISION
                 ) - sell.fee_value.quantize(PRECISION)
 
+                if sell_adjusted.proceeds < 0:
+                    sell_adjusted.proceeds = Decimal(0)
+
             if sell_adjusted.proceeds is None:
                 raise RuntimeError("Missing sell_adjusted.proceeds")
 
@@ -312,6 +315,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 sell_adjusted.proceeds = sell.proceeds.quantize(
                     PRECISION
                 ) - sell.fee_value.quantize(PRECISION)
+
+                if sell_adjusted.proceeds < 0:
+                    sell_adjusted.proceeds = Decimal(0)
 
             if sell_adjusted.proceeds is None:
                 raise RuntimeError("Missing sell_adjusted.proceeds")
