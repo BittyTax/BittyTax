@@ -294,6 +294,63 @@ def _parse_etherscan_nfts_row(
         raise DataFilenameError(kwargs["filename"], "Ethereum address")
 
 
+DataParser(
+    ParserType.EXPLORER,
+    "Etherscan (Transactions)",
+    [
+        "Transaction Hash",
+        "Blockno",
+        "UnixTimestamp",
+        "DateTime (UTC)",
+        "From",
+        "To",
+        "ContractAddress",
+        lambda c: re.match(r"(Value_IN\((\w+)\)?)", c),
+        lambda c: re.match(r"(Value_OUT\((\w+)\)?)", c),
+        None,
+        lambda c: re.match(r"(TxnFee\((\w+)\)?)", c),
+        "TxnFee(USD)",
+        lambda c: re.match(r"Historical \$Price\/(\w+)", c),
+        "Status",
+        "ErrCode",
+        "Method",
+        "ChainId",  # Snowtrace field
+        "Chain",  # Snowtrace field
+        "Value(ETH)",  # Snowtrace field
+    ],
+    worksheet_name="Etherscan",
+    row_handler=parse_etherscan,
+)
+
+DataParser(
+    ParserType.EXPLORER,
+    "Etherscan (Transactions)",
+    [
+        "Transaction Hash",
+        "Blockno",
+        "UnixTimestamp",
+        "DateTime (UTC)",
+        "From",
+        "To",
+        "ContractAddress",
+        lambda c: re.match(r"(Value_IN\((\w+)\)?)", c),
+        lambda c: re.match(r"(Value_OUT\((\w+)\)?)", c),
+        None,
+        lambda c: re.match(r"(TxnFee\((\w+)\)?)", c),
+        "TxnFee(USD)",
+        lambda c: re.match(r"Historical \$Price\/(\w+)", c),
+        "Status",
+        "ErrCode",
+        "Method",
+        "ChainId",  # Snowtrace field
+        "Chain",  # Snowtrace field
+        "Value(ETH)",  # Snowtrace field
+        "PrivateNote",
+    ],
+    worksheet_name="Etherscan",
+    row_handler=parse_etherscan,
+)
+
 etherscan_txns = DataParser(
     ParserType.EXPLORER,
     "Etherscan (Transactions)",

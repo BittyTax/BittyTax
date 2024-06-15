@@ -83,6 +83,7 @@
 - Blockchain.com parser: added new export format.
 - Conversion tool: added parser for BitcoinTaxes accounting data.
 - Conversion tool: added parser for Kinesis exchange.
+- Etherscan parser: added new SnowTrace export format.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
