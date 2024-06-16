@@ -143,6 +143,7 @@
 - Accounting tool: skip valuation of asset in holdings report if API fails.
 - Accounting tool: removed nowrapfilter from PDF report templates.
 - Etherscan parser/merger: made generic so will support any Etherscan clone.
+- Accounting tool: Lost transactions can now include an optional fee.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
