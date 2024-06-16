@@ -429,9 +429,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
 
     def all_transactions(self) -> Iterator[Union[Buy, Sell]]:
-        # Ordered so transfers appear before the fee spend in the log
         return itertools.chain(
-            self.other_transactions, *self.buys_ordered.values(), self.sells_ordered
+            *self.buys_ordered.values(), self.sells_ordered, self.other_transactions
         )
 
     def calculate_capital_gains(self, tax_year: Year) -> "CalculateCapitalGains":

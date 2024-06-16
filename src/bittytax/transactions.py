@@ -273,13 +273,13 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TransactionBase):
             return NotImplemented
-        return (self.asset, self.timestamp) == (other.asset, other.timestamp)
+        return (self.asset, self.timestamp, self.tid) == (other.asset, other.timestamp, other.tid)
 
     def __ne__(self, other: object) -> bool:
         return not self == other
 
     def __lt__(self, other: "TransactionBase") -> bool:
-        return (self.asset, self.timestamp) < (other.asset, other.timestamp)
+        return (self.asset, self.timestamp, self.tid) < (other.asset, other.timestamp, other.tid)
 
     def __deepcopy__(self, memo: Dict[int, object]) -> "TransactionBase":
         cls = self.__class__
