@@ -470,9 +470,9 @@ class TransactionRow:
             sell_quantity=FieldRequired.MANDATORY,
             sell_asset=FieldRequired.MANDATORY,
             sell_value=FieldRequired.OPTIONAL,
-            fee_quantity=FieldRequired.NOT_REQUIRED,
-            fee_asset=FieldRequired.NOT_REQUIRED,
-            fee_value=FieldRequired.NOT_REQUIRED,
+            fee_quantity=FieldRequired.OPTIONAL,
+            fee_asset=FieldRequired.OPTIONAL,
+            fee_value=FieldRequired.OPTIONAL,
         ),
         TrType.TRADE: FieldValidation(
             t_type=FieldRequired.MANDATORY,

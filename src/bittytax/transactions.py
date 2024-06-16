@@ -40,26 +40,35 @@ class TransactionHistory:
             # Attribute the fee value (allowable cost) to the buy, the sell or both
             if tr.fee and tr.fee.disposal and tr.fee.proceeds:
                 if tr.buy and tr.buy.acquisition and tr.sell and tr.sell.disposal:
-                    if tr.buy.asset in config.fiat_list:
-                        tr.sell.fee_value = tr.fee.proceeds
-                        tr.sell.fee_fixed = tr.fee.proceeds_fixed
-                    elif tr.sell.asset in config.fiat_list:
-                        tr.buy.fee_value = tr.fee.proceeds
-                        tr.buy.fee_fixed = tr.fee.proceeds_fixed
-                    else:
-                        # Crypto-to-crypto trades
-                        if config.trade_allowable_cost_type == config.TRADE_ALLOWABLE_COST_BUY:
-                            tr.buy.fee_value = tr.fee.proceeds
-                            tr.buy.fee_fixed = tr.fee.proceeds_fixed
-                        elif config.trade_allowable_cost_type == config.TRADE_ALLOWABLE_COST_SELL:
+                    if tr.t_type is TrType.TRADE:
+                        if tr.buy.asset in config.fiat_list:
                             tr.sell.fee_value = tr.fee.proceeds
                             tr.sell.fee_fixed = tr.fee.proceeds_fixed
-                        else:
-                            # Split fee between both
-                            tr.buy.fee_value = tr.fee.proceeds / 2
+                        elif tr.sell.asset in config.fiat_list:
+                            tr.buy.fee_value = tr.fee.proceeds
                             tr.buy.fee_fixed = tr.fee.proceeds_fixed
-                            tr.sell.fee_value = tr.fee.proceeds - tr.buy.fee_value
-                            tr.sell.fee_fixed = tr.fee.proceeds_fixed
+                        else:
+                            # Crypto-to-crypto trades
+                            if config.trade_allowable_cost_type == config.TRADE_ALLOWABLE_COST_BUY:
+                                tr.buy.fee_value = tr.fee.proceeds
+                                tr.buy.fee_fixed = tr.fee.proceeds_fixed
+                            elif (
+                                config.trade_allowable_cost_type == config.TRADE_ALLOWABLE_COST_SELL
+                            ):
+                                tr.sell.fee_value = tr.fee.proceeds
+                                tr.sell.fee_fixed = tr.fee.proceeds_fixed
+                            else:
+                                # Split fee between both
+                                tr.buy.fee_value = tr.fee.proceeds / 2
+                                tr.buy.fee_fixed = tr.fee.proceeds_fixed
+                                tr.sell.fee_value = tr.fee.proceeds - tr.buy.fee_value
+                                tr.sell.fee_fixed = tr.fee.proceeds_fixed
+                    elif tr.t_type is TrType.LOST:
+                        # Assign fee to the disposal
+                        tr.sell.fee_value = tr.fee.proceeds
+                        tr.sell.fee_fixed = tr.fee.proceeds_fixed
+                    else:
+                        raise RuntimeError("Unexpected tr.t_type")
                 elif tr.buy and tr.buy.acquisition:
                     tr.buy.fee_value = tr.fee.proceeds
                     tr.buy.fee_fixed = tr.fee.proceeds_fixed
@@ -84,25 +93,31 @@ class TransactionHistory:
                     self.transactions.append(tr.sell)
                     if config.debug:
                         print(f"{Fore.GREEN}split:   {tr.sell}")
+
+                if tr.fee and tr.fee.quantity:
+                    tr.fee.set_tid()
+                    self.transactions.append(tr.fee)
+                    if config.debug:
+                        print(f"{Fore.GREEN}split:   {tr.fee}")
             else:
-                # Special case for LOST sell must be before buy-back
+                # Special case for LOST, sell and fee must be before buy-back
                 if tr.sell and (tr.sell.quantity or tr.sell.fee_value):
                     tr.sell.set_tid()
                     self.transactions.append(tr.sell)
                     if config.debug:
                         print(f"{Fore.GREEN}split:   {tr.sell}")
 
+                if tr.fee and tr.fee.quantity:
+                    tr.fee.set_tid()
+                    self.transactions.append(tr.fee)
+                    if config.debug:
+                        print(f"{Fore.GREEN}split:   {tr.fee}")
+
                 if tr.buy and (tr.buy.quantity or tr.buy.fee_value):
                     tr.buy.set_tid()
                     self.transactions.append(tr.buy)
                     if config.debug:
                         print(f"{Fore.GREEN}split:   {tr.buy}")
-
-            if tr.fee and tr.fee.quantity:
-                tr.fee.set_tid()
-                self.transactions.append(tr.fee)
-                if config.debug:
-                    print(f"{Fore.GREEN}split:   {tr.fee}")
 
         if config.debug:
             print(f"{Fore.CYAN}split: total transactions={len(self.transactions)}")
@@ -283,13 +298,13 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TransactionBase):
             return NotImplemented
-        return (self.asset, self.timestamp) == (other.asset, other.timestamp)
+        return (self.asset, self.timestamp, self.tid) == (other.asset, other.timestamp, other.tid)
 
     def __ne__(self, other: object) -> bool:
         return not self == other
 
     def __lt__(self, other: "TransactionBase") -> bool:
-        return (self.asset, self.timestamp) < (other.asset, other.timestamp)
+        return (self.asset, self.timestamp, self.tid) < (other.asset, other.timestamp, other.tid)
 
     def __deepcopy__(self, memo: Dict[int, object]) -> "TransactionBase":
         cls = self.__class__
