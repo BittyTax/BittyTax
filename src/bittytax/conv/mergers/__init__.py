@@ -1,1 +1,1 @@
-from . import coincorner, etherscan
+from . import coincorner, etherscan, snowtrace
