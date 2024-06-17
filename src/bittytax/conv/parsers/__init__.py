@@ -60,6 +60,7 @@ from . import (
     poloniex,
     qtrade,
     qtwallet,
+    snowtrace,
     staketax,
     subscan,
     swissborg,

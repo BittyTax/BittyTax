@@ -9,250 +9,189 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..datarow import TxRawPos
+from ..exceptions import DataFilenameError
 from ..out_record import TransactionOutRecord
 from .etherscan import _get_note
 
 if TYPE_CHECKING:
     from ..datarow import DataRow
 
-WALLET = "Avalanche chain"
-WORKSHEET_NAME = "SnowTrace"
+WALLET = "AVAX"
 
 
 def parse_snowtrace(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
     data_row.tx_raw = TxRawPos(
-        parser.in_header.index("Txhash"),
+        parser.in_header.index("Transaction Hash"),
         parser.in_header.index("From"),
         parser.in_header.index("To"),
     )
 
     if row_dict["Status"] != "":
         # Failed transactions should not have a Value_OUT
-        row_dict["Value_OUT(AVAX)"] = "0"
+        row_dict["Value_OUT(ETH)"] = "0"
 
-    if Decimal(row_dict["Value_IN(AVAX)"]) > 0:
+    if Decimal(row_dict["Value_IN(ETH)"]) > 0:
         if row_dict["Status"] == "":
             data_row.t_record = TransactionOutRecord(
                 TrType.DEPOSIT,
                 data_row.timestamp,
-                buy_quantity=Decimal(row_dict["Value_IN(AVAX)"]),
+                buy_quantity=Decimal(row_dict["Value_IN(ETH)"]),
                 buy_asset="AVAX",
                 wallet=_get_wallet(row_dict["To"]),
                 note=_get_note(row_dict),
             )
-    elif Decimal(row_dict["Value_OUT(AVAX)"]) > 0:
+        data_row.worksheet_name = _get_worksheet_name(parser, row_dict["To"])
+    elif Decimal(row_dict["Value_OUT(ETH)"]) > 0:
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=Decimal(row_dict["Value_OUT(AVAX)"]),
+            sell_quantity=Decimal(row_dict["Value_OUT(ETH)"]),
             sell_asset="AVAX",
-            fee_quantity=Decimal(row_dict["TxnFee(AVAX)"]),
+            fee_quantity=Decimal(row_dict["TxnFee(ETH)"]),
             fee_asset="AVAX",
             wallet=_get_wallet(row_dict["From"]),
             note=_get_note(row_dict),
         )
+        data_row.worksheet_name = _get_worksheet_name(parser, row_dict["From"])
     else:
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
             data_row.timestamp,
-            sell_quantity=Decimal(row_dict["Value_OUT(AVAX)"]),
+            sell_quantity=Decimal(row_dict["Value_OUT(ETH)"]),
             sell_asset="AVAX",
-            fee_quantity=Decimal(row_dict["TxnFee(AVAX)"]),
+            fee_quantity=Decimal(row_dict["TxnFee(ETH)"]),
             fee_asset="AVAX",
             wallet=_get_wallet(row_dict["From"]),
             note=_get_note(row_dict),
         )
+        data_row.worksheet_name = _get_worksheet_name(parser, row_dict["From"])
 
 
 def _get_wallet(address: str) -> str:
     return f"{WALLET}-{address.lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN]}"
 
 
-def parse_snowtrace_internal(
-    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+def _get_worksheet_name(parser: DataParser, address: str) -> str:
+    wallet = _get_wallet(address)
+    return f"{parser.worksheet_name} {wallet}"
+
+
+def parse_snowtrace_tokens(
+    data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    data_row.timestamp = DataParser.parse_timestamp(int(row_dict["block_unix_timestamp"]) / 1000)
+    row_dict["Transaction Hash"] = row_dict["tx_hash"]
     data_row.tx_raw = TxRawPos(
-        parser.in_header.index("Txhash"),
-        parser.in_header.index("From"),
-        parser.in_header.index("TxTo"),
+        parser.in_header.index("tx_hash"),
+        parser.in_header.index("from"),
+        parser.in_header.index("to"),
     )
 
-    # Failed internal transaction
-    if row_dict["Status"] != "0":
-        return
+    if row_dict["token_symbol"].endswith("-LP"):
+        asset = row_dict["token_symbol"] + "-" + row_dict["ContractAddress"][0:10]
+    else:
+        asset = row_dict["token_symbol"]
 
-    if Decimal(row_dict["Value_IN(AVAX)"]) > 0:
+    quantity = Decimal(row_dict["token_value"].replace(",", ""))
+
+    if row_dict["to"].lower() in kwargs["filename"].lower():
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
-            buy_quantity=Decimal(row_dict["Value_IN(AVAX)"]),
-            buy_asset="AVAX",
-            wallet=_get_wallet(row_dict["TxTo"]),
+            buy_quantity=quantity,
+            buy_asset=asset,
+            wallet=_get_wallet(row_dict["to"]),
         )
-    elif Decimal(row_dict["Value_OUT(AVAX)"]) > 0:
+        data_row.worksheet_name = _get_worksheet_name(parser, row_dict["to"])
+    elif row_dict["from"].lower() in kwargs["filename"].lower():
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=Decimal(row_dict["Value_OUT(AVAX)"]),
-            sell_asset="AVAX",
-            wallet=_get_wallet(row_dict["From"]),
+            sell_quantity=quantity,
+            sell_asset=asset,
+            wallet=_get_wallet(row_dict["from"]),
         )
+        data_row.worksheet_name = _get_worksheet_name(parser, row_dict["from"])
+    else:
+        raise DataFilenameError(kwargs["filename"], "Ethereum address")
 
 
-# Token and NFT transactions have the same header as Etherscan
 avax_txns = DataParser(
     ParserType.EXPLORER,
-    "SnowTrace (AVAX Transactions)",
+    "Snowtrace (Transactions)",
     [
-        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
+        "Transaction Hash",
         "Blockno",
         "UnixTimestamp",
-        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
+        "DateTime (UTC)",
         "From",
         "To",
         "ContractAddress",
-        "Value_IN(AVAX)",
-        "Value_OUT(AVAX)",
-        None,
-        "TxnFee(AVAX)",
+        "Value_IN(ETH)",
+        "Value_OUT(ETH)",
+        "CurrentValue/Eth",
+        "TxnFee(ETH)",
         "TxnFee(USD)",
-        "Historical $Price/AVAX",
+        "Historical $Price/Eth",
         "Status",
         "ErrCode",
-        "Method",  # New field
+        "Method",
+        "ChainId",
+        "Chain",
+        "Value(ETH)",
     ],
-    worksheet_name=WORKSHEET_NAME,
+    worksheet_name="Snowtrace",
     row_handler=parse_snowtrace,
 )
 
 DataParser(
     ParserType.EXPLORER,
-    "SnowTrace (AVAX Transactions)",
+    "Snowtrace (Transactions)",
     [
-        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
-        "Txhash",
+        "Transaction Hash",
         "Blockno",
-        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
+        "UnixTimestamp",
+        "DateTime (UTC)",
         "From",
         "To",
         "ContractAddress",
-        "Value_IN(AVAX)",
-        "Value_OUT(AVAX)",
-        None,
-        "TxnFee(AVAX)",
+        "Value_IN(ETH)",
+        "Value_OUT(ETH)",
+        "CurrentValue/Eth",
+        "TxnFee(ETH)",
         "TxnFee(USD)",
-        "Historical $Price/AVAX",
+        "Historical $Price/Eth",
         "Status",
         "ErrCode",
-        "Method",  # New field
+        "Method",
+        "ChainId",
+        "Chain",
+        "Value(ETH)",
         "PrivateNote",
     ],
-    worksheet_name=WORKSHEET_NAME,
+    worksheet_name="Snowtrace",
     row_handler=parse_snowtrace,
 )
 
-DataParser(
+avax_tokens = DataParser(
     ParserType.EXPLORER,
-    "SnowTrace (AVAX Transactions)",
+    "Snowtrace (Token Transfers ERC-20)",
     [
-        "Txhash",
-        "Blockno",
-        "UnixTimestamp",
-        "DateTime",
-        "From",
-        "To",
-        "ContractAddress",
-        "Value_IN(AVAX)",
-        "Value_OUT(AVAX)",
-        None,
-        "TxnFee(AVAX)",
-        "TxnFee(USD)",
-        "Historical $Price/AVAX",
-        "Status",
-        "ErrCode",
+        "chain_id",
+        "tx_hash",
+        "block_number",
+        "block_unix_timestamp",
+        "block_datetime",
+        "from",
+        "to",
+        "token_value",
+        "token_address",
+        "token_name",
+        "token_symbol",
     ],
-    worksheet_name=WORKSHEET_NAME,
-    row_handler=parse_snowtrace,
-)
-
-DataParser(
-    ParserType.EXPLORER,
-    "SnowTrace (AVAX Transactions)",
-    [
-        "Txhash",
-        "Blockno",
-        "UnixTimestamp",
-        "DateTime",
-        "From",
-        "To",
-        "ContractAddress",
-        "Value_IN(AVAX)",
-        "Value_OUT(AVAX)",
-        None,
-        "TxnFee(AVAX)",
-        "TxnFee(USD)",
-        "Historical $Price/AVAX",
-        "Status",
-        "ErrCode",
-        "PrivateNote",
-    ],
-    worksheet_name=WORKSHEET_NAME,
-    row_handler=parse_snowtrace,
-)
-
-avax_int = DataParser(
-    ParserType.EXPLORER,
-    "SnowTrace (AVAX Internal Transactions)",
-    [
-        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
-        "Blockno",
-        "UnixTimestamp",
-        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
-        "ParentTxFrom",
-        "ParentTxTo",
-        "ParentTxETH_Value",
-        "From",
-        "TxTo",
-        "ContractAddress",
-        "Value_IN(AVAX)",
-        "Value_OUT(AVAX)",
-        None,
-        "Historical $Price/AVAX",
-        "Status",
-        "ErrCode",
-        "Type",
-    ],
-    worksheet_name=WORKSHEET_NAME,
-    row_handler=parse_snowtrace_internal,
-)
-
-DataParser(
-    ParserType.EXPLORER,
-    "SnowTrace (AVAX Internal Transactions)",
-    [
-        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
-        "Blockno",
-        "UnixTimestamp",
-        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
-        "ParentTxFrom",
-        "ParentTxTo",
-        "ParentTxETH_Value",
-        "From",
-        "TxTo",
-        "ContractAddress",
-        "Value_IN(AVAX)",
-        "Value_OUT(AVAX)",
-        None,
-        "Historical $Price/AVAX",
-        "Status",
-        "ErrCode",
-        "Type",
-        "PrivateNote",
-    ],
-    worksheet_name=WORKSHEET_NAME,
-    row_handler=parse_snowtrace_internal,
+    worksheet_name="Snowtrace Tokens",
+    row_handler=parse_snowtrace_tokens,
 )
