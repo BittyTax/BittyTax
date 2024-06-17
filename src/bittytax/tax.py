@@ -16,7 +16,7 @@ from dateutil.relativedelta import relativedelta
 from tqdm import tqdm
 from typing_extensions import NotRequired, TypedDict
 
-from .bt_types import AssetName, AssetSymbol, Date, DisposalType, Note, TrType, Year
+from .bt_types import TRANSFER_TYPES, AssetName, AssetSymbol, Date, DisposalType, Note, TrType, Year
 from .config import config
 from .constants import TAX_RULES_UK_COMPANY, WARNING
 from .holdings import Holdings
@@ -110,8 +110,6 @@ class BuyAccumulator:
 
 
 class TaxCalculator:  # pylint: disable=too-many-instance-attributes
-    TRANSFER_TYPES = (TrType.DEPOSIT, TrType.WITHDRAWAL)
-
     INCOME_TYPES = (
         TrType.MINING,
         TrType.STAKING,
@@ -372,7 +370,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     print(f"{Fore.BLUE}holdings: //{t} <- matched")
                 continue
 
-            if not config.transfers_include and t.t_type in self.TRANSFER_TYPES:
+            if not config.transfers_include and t.t_type in TRANSFER_TYPES:
                 if config.debug:
                     print(f"{Fore.BLUE}holdings: //{t} <- transfer")
                 continue

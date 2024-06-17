@@ -40,6 +40,7 @@ class Config:
         "crypto_list": CRYPTO_LIST,
         "trade_asset_type": TRADE_ASSET_TYPE_PRIORITY,
         "trade_allowable_cost_type": TRADE_ASSET_TYPE_BUY,
+        "transaction_fee_allowable_cost": False,
         "audit_hide_empty": False,
         "show_empty_wallets": False,
         "transfers_include": False,
