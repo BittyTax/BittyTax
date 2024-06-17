@@ -13,7 +13,7 @@ from colorama import Fore
 from tqdm import tqdm
 from typing_extensions import NotRequired, TypedDict
 
-from .bt_types import AssetName, AssetSymbol, Date, FixedValue, TrType, Year
+from .bt_types import TRANSFER_TYPES, AssetName, AssetSymbol, Date, FixedValue, TrType, Year
 from .config import config
 from .constants import TAX_RULES_UK_COMPANY, WARNING
 from .holdings import Holdings
@@ -104,8 +104,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
     DISPOSAL_SECTION_104 = "Section 104"
     DISPOSAL_UNPOOLED = "Unpooled"
     DISPOSAL_NO_GAIN_NO_LOSS = "No Gain/No Loss"
-
-    TRANSFER_TYPES = (TrType.DEPOSIT, TrType.WITHDRAWAL)
 
     INCOME_TYPES = (
         TrType.MINING,
@@ -381,7 +379,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     print(f"{Fore.BLUE}section104: //{t} <- matched")
                 continue
 
-            if not config.transfers_include and t.t_type in self.TRANSFER_TYPES:
+            if not config.transfers_include and t.t_type in TRANSFER_TYPES:
                 if config.debug:
                     print(f"{Fore.BLUE}section104: //{t} <- transfer")
                 continue

@@ -15,7 +15,7 @@ from openpyxl import load_workbook
 from openpyxl.cell.cell import Cell
 from tqdm import tqdm, trange
 
-from .bt_types import AssetSymbol, Note, Timestamp, TrType, Wallet
+from .bt_types import TRANSFER_TYPES, AssetSymbol, Note, Timestamp, TrType, Wallet
 from .config import config
 from .constants import ERROR, TZ_UTC
 from .exceptions import (
@@ -488,8 +488,6 @@ class TransactionRow:
         ),
     }
 
-    TRANSFER_TYPES = (TrType.DEPOSIT, TrType.WITHDRAWAL)
-
     def __init__(self, row: List[str], row_num: int, worksheet_name: Optional[str] = None):
         self.row = row
         self.row_dict = dict(zip(self.HEADER, row))
@@ -580,7 +578,7 @@ class TransactionRow:
             fee = Sell(TrType.SPEND, fee_quantity, fee_asset, fee_value)
 
             # Transfers fees are a special case
-            if t_type in self.TRANSFER_TYPES:
+            if t_type in TRANSFER_TYPES:
                 if config.transfers_include:
                     # Not a disposal, fees removed from the pool at zero cost
                     fee.disposal = False

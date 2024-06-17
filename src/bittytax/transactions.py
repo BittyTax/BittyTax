@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from colorama import Fore, Style
 from tqdm import tqdm
 
-from .bt_types import AssetSymbol, Date, FixedValue, Note, Timestamp, TrType, Wallet
+from .bt_types import TRANSFER_TYPES, AssetSymbol, Date, FixedValue, Note, Timestamp, TrType, Wallet
 from .config import config
 from .price.valueasset import ValueAsset
 from .record import TransactionRecord
@@ -64,22 +64,26 @@ class TransactionHistory:
                                 tr.sell.fee_value = tr.fee.proceeds - tr.buy.fee_value
                                 tr.sell.fee_fixed = tr.fee.proceeds_fixed
                     elif tr.t_type is TrType.LOST:
-                        # Assign fee to the disposal
+                        if config.transaction_fee_allowable_cost:
+                            # Assign fee to the disposal
+                            tr.sell.fee_value = tr.fee.proceeds
+                            tr.sell.fee_fixed = tr.fee.proceeds_fixed
+                    else:
+                        raise RuntimeError(f"Unexpected tr.t_type: {tr.t_type}")
+                elif tr.buy and tr.buy.acquisition:
+                    if config.transaction_fee_allowable_cost:
+                        tr.buy.fee_value = tr.fee.proceeds
+                        tr.buy.fee_fixed = tr.fee.proceeds_fixed
+                elif tr.sell and tr.sell.disposal:
+                    if config.transaction_fee_allowable_cost:
                         tr.sell.fee_value = tr.fee.proceeds
                         tr.sell.fee_fixed = tr.fee.proceeds_fixed
-                    else:
-                        raise RuntimeError("Unexpected tr.t_type")
-                elif tr.buy and tr.buy.acquisition:
-                    tr.buy.fee_value = tr.fee.proceeds
-                    tr.buy.fee_fixed = tr.fee.proceeds_fixed
-                elif tr.sell and tr.sell.disposal:
-                    tr.sell.fee_value = tr.fee.proceeds
-                    tr.sell.fee_fixed = tr.fee.proceeds_fixed
                 else:
                     # Special case for transfer fees
-                    if config.transfer_fee_allowable_cost:
-                        tr.fee.fee_value = tr.fee.proceeds
-                        tr.fee.fee_fixed = tr.fee.proceeds_fixed
+                    if tr.t_type in TRANSFER_TYPES:
+                        if config.transfer_fee_allowable_cost:
+                            tr.fee.fee_value = tr.fee.proceeds
+                            tr.fee.fee_fixed = tr.fee.proceeds_fixed
 
             if tr.t_type is not TrType.LOST:
                 if tr.buy and (tr.buy.quantity or tr.buy.fee_value):

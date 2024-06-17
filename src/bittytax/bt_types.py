@@ -54,6 +54,8 @@ SELL_TYPES = (
     TrType.TRADE,
 )
 
+TRANSFER_TYPES = (TrType.DEPOSIT, TrType.WITHDRAWAL)
+
 UnmappedType = NewType("UnmappedType", str)
 
 AssetSymbol = NewType("AssetSymbol", str)
