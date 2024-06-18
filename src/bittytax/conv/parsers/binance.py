@@ -321,7 +321,7 @@ def _parse_binance_statements_row(
 ) -> None:
     row_dict = data_row.row_dict
 
-    if row_dict["Account"] in ("USDT-Futures", "USD-MFutures", "USD-M Futures"):
+    if row_dict["Account"] in ("USDT-Futures", "USD-MFutures", "USD-M Futures", "Coin-M Futures"):
         _parse_binance_statements_futures_row(parser, data_row)
         return
 
@@ -574,6 +574,7 @@ def _parse_binance_statements_futures_row(parser: DataParser, data_row: "DataRow
         "transfer_out",
         "transfer_in",
         "Transfer Between Spot Account and UM Futures Account",
+        "Transfer Between Spot Account and CM Futures Account",
         "Transfer Between Main Account/Futures and Margin Account",
     ):
         # Skip not taxable events
