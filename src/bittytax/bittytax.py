@@ -187,8 +187,7 @@ def main() -> None:
                     if input(f"{Fore.RESET}Do you want to continue? [y/N] ") != "y":
                         parser.exit()
 
-            if not args.summary_only:
-                tax.process_income()
+            tax.process_income()
 
             _do_each_tax_year(tax, args.tax_year, args.summary_only, value_asset)
 
@@ -319,11 +318,8 @@ def _do_each_tax_year(
         print(f"{Fore.CYAN}calculating tax year {config.format_tax_year(tax_year)}")
 
         calc_cgt = tax.calculate_capital_gains(tax_year)
-        if summary_only:
-            tax.tax_report[tax_year] = {"CapitalGains": calc_cgt}
-        else:
-            calc_income = tax.calculate_income(tax_year)
-            tax.tax_report[tax_year] = {"CapitalGains": calc_cgt, "Income": calc_income}
+        calc_income = tax.calculate_income(tax_year)
+        tax.tax_report[tax_year] = {"CapitalGains": calc_cgt, "Income": calc_income}
     else:
         # Calculate for all years
         for year in sorted(tax.tax_events):
@@ -331,11 +327,8 @@ def _do_each_tax_year(
 
             if year in CCG.CG_DATA_INDIVIDUAL:
                 calc_cgt = tax.calculate_capital_gains(year)
-                if summary_only:
-                    tax.tax_report[year] = {"CapitalGains": calc_cgt}
-                else:
-                    calc_income = tax.calculate_income(year)
-                    tax.tax_report[year] = {"CapitalGains": calc_cgt, "Income": calc_income}
+                calc_income = tax.calculate_income(year)
+                tax.tax_report[year] = {"CapitalGains": calc_cgt, "Income": calc_income}
             else:
                 print(f"{WARNING} Tax year {year} is not supported")
 

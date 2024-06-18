@@ -84,7 +84,17 @@ class ReportPdf:
                 }
             )
         elif args.summary_only:
-            raise RuntimeError("To be implemented")
+            template = self.env.get_template(self.TAX_SUMMARY_TEMPLATE)
+            html = template.render(
+                {
+                    "date": datetime.datetime.now(),
+                    "author": f"{progname} v{__version__}",
+                    "config": config,
+                    "args": args,
+                    "tax_report": tax_report,
+                    "price_report": price_report,
+                }
+            )
         else:
             template = self.env.get_template(self.TAX_FULL_TEMPLATE)
             html = template.render(
