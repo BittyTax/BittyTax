@@ -183,7 +183,7 @@ def _do_parse_coinbase(
                 buy_value=buy_value,
                 wallet=WALLET,
             )
-        elif "Coinbase Earn" in row_dict["Notes"]:
+        elif "Coinbase Earn" in row_dict["Notes"] or "Coinbase Rewards" in row_dict["Notes"]:
             data_row.t_record = TransactionOutRecord(
                 TrType.INCOME,
                 data_row.timestamp,
