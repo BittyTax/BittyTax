@@ -112,6 +112,7 @@ class BuyAccumulator:
 class TaxCalculator:  # pylint: disable=too-many-instance-attributes
     INCOME_TYPES = (
         TrType.MINING,
+        TrType.STAKING_REWARD,
         TrType.STAKING,
         TrType.DIVIDEND,
         TrType.INTEREST,
