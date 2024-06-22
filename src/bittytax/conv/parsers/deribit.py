@@ -156,7 +156,7 @@ def _parse_deribit_row(
 
         # Accumulate funding fees
         funding_fee = Decimal(row_dict["Funding"])
-        if funding_fee > 0:
+        if funding_fee != 0:
             positions[instrument].funding_fees += funding_fee
             balance -= funding_fee
 
@@ -168,7 +168,6 @@ def _parse_deribit_row(
 
         # Accumulate unrealised profit and loss
         unrealised_pnl = Decimal(row_dict["Cash Flow"]) + funding_fee
-
         positions[instrument].unrealised_pnl += unrealised_pnl
         balance += unrealised_pnl
 
