@@ -78,6 +78,7 @@
 - Conversion tool: added parser for Kinesis exchange.
 - Snowtrace parser: added new Snowtrace export format.
 - Config: added transaction_fee_allowable_cost parameter.
+- Ledger Live parser: new data file format added.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
