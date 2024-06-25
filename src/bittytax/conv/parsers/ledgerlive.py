@@ -32,6 +32,9 @@ def parse_ledger_live(
         ),
     )
 
+    if "Status" in row_dict and row_dict["Status"] != "Confirmed":
+        return
+
     if row_dict["Operation Fees"]:
         fee_quantity = Decimal(row_dict["Operation Fees"])
         fee_asset = row_dict["Currency Ticker"]
@@ -99,6 +102,27 @@ def parse_ledger_live(
             row_dict["Operation Type"],
         )
 
+
+DataParser(
+    ParserType.WALLET,
+    "Ledger Live",
+    [
+        "Operation Date",
+        "Status",
+        "Currency Ticker",
+        "Operation Type",
+        "Operation Amount",
+        "Operation Fees",
+        "Operation Hash",
+        "Account Name",
+        "Account xpub",
+        "Countervalue Ticker",
+        "Countervalue at Operation Date",
+        "Countervalue at CSV Export",
+    ],
+    worksheet_name="Ledger",
+    row_handler=parse_ledger_live,
+)
 
 DataParser(
     ParserType.WALLET,
