@@ -53,6 +53,7 @@ from . import (
     ledgerlive,
     liquid,
     mercatox,
+    mymonero,
     nault,
     nexo,
     okx,
