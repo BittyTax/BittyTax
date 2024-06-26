@@ -33,6 +33,7 @@ from . import (
     cryptsy,
     defitaxes_us,
     electrum,
+    eternl,
     etherscan,
     exodus,
     ftx,
