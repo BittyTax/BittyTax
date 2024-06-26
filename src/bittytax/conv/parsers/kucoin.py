@@ -249,6 +249,7 @@ def parse_kucoin_withdrawals(
         sell_quantity=Decimal(row_dict["Amount"]),
         sell_asset=row_dict["Coin"],
         wallet=WALLET,
+        note=row_dict["Remark"],
     )
 
 
@@ -274,6 +275,7 @@ def parse_kucoin_deposits_withdrawals_v2(
             fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Coin"],
             wallet=WALLET,
+            note=row_dict["Remarks"],
         )
     else:
         data_row.t_record = TransactionOutRecord(
