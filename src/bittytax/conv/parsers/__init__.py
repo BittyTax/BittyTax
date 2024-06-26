@@ -32,6 +32,7 @@ from . import (
     cryptopia,
     cryptsy,
     electrum,
+    eternl,
     etherscan,
     exodus,
     ftx,

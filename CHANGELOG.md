@@ -82,6 +82,7 @@
 - Config: added transaction_fee_allowable_cost parameter.
 - Ledger Live parser: new data file format added.
 - Exodus parser: added "deposit (failed)" type.
+- Conversion tool: added new parser for Eternl wallet.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
