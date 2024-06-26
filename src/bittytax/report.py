@@ -27,8 +27,11 @@ from .version import __version__
 
 
 class ReportPdf:
-    DEFAULT_FILENAME = "BittyTax_Report"
+    AUDIT_FILENAME = "BittyTax_Audit_Report"
+    TAX_SUMMARY_FILENAME = "BittyTax_Summary_Report"
+    TAX_FULL_FILENAME = "BittyTax_Report"
     FILE_EXTENSION = "pdf"
+
     AUDIT_TEMPLATE = "audit_report.html"
     TAX_SUMMARY_TEMPLATE = "tax_summary_report.html"
     TAX_FULL_TEMPLATE = "tax_full_report.html"
@@ -43,7 +46,6 @@ class ReportPdf:
         holdings_report: Optional[HoldingsReportRecord] = None,
     ) -> None:
         self.env = jinja2.Environment(loader=jinja2.PackageLoader("bittytax", "templates"))
-        self.filename = self.get_output_filename(args.output_filename, self.FILE_EXTENSION)
 
         self.env.filters["datefilter"] = self.datefilter
         self.env.filters["datefilter2"] = self.datefilter2
@@ -57,6 +59,7 @@ class ReportPdf:
         self.env.globals["TEMPLATE_PATH"] = pkg_resources.resource_filename(__name__, "templates")
 
         if args.audit_only:
+            filename = self.get_output_filename(args.output_filename, self.AUDIT_FILENAME)
             template = self.env.get_template(self.AUDIT_TEMPLATE)
             html = template.render(
                 {
@@ -68,6 +71,7 @@ class ReportPdf:
                 }
             )
         elif args.summary_only:
+            filename = self.get_output_filename(args.output_filename, self.TAX_SUMMARY_FILENAME)
             template = self.env.get_template(self.TAX_SUMMARY_TEMPLATE)
             html = template.render(
                 {
@@ -79,6 +83,7 @@ class ReportPdf:
                 }
             )
         else:
+            filename = self.get_output_filename(args.output_filename, self.TAX_FULL_FILENAME)
             template = self.env.get_template(self.TAX_FULL_TEMPLATE)
             html = template.render(
                 {
@@ -94,13 +99,11 @@ class ReportPdf:
             )
 
         with ProgressSpinner():
-            with open(self.filename, "w+b") as pdf_file:
+            with open(filename, "w+b") as pdf_file:
                 status = pisa.CreatePDF(html, dest=pdf_file)
 
         if not status.err:
-            print(
-                f"{Fore.WHITE}PDF tax report created: {Fore.YELLOW}{os.path.abspath(self.filename)}"
-            )
+            print(f"{Fore.WHITE}PDF tax report created: {Fore.YELLOW}{os.path.abspath(filename)}")
         else:
             print(f"{ERROR} Failed to create PDF tax report")
 
@@ -147,13 +150,13 @@ class ReportPdf:
         return text[: max_len - dots] + "." * dots if len(text) > max_len else text
 
     @staticmethod
-    def get_output_filename(filename: str, extension_type: str) -> str:
+    def get_output_filename(filename: str, default_filename: str) -> str:
         if filename:
             filepath, file_extension = os.path.splitext(filename)
-            if file_extension != extension_type:
-                filepath = filepath + "." + extension_type
+            if file_extension != ReportPdf.FILE_EXTENSION:
+                filepath = filepath + "." + ReportPdf.FILE_EXTENSION
         else:
-            filepath = ReportPdf.DEFAULT_FILENAME + "." + extension_type
+            filepath = default_filename + "." + ReportPdf.FILE_EXTENSION
 
         if not os.path.exists(filepath):
             return filepath
