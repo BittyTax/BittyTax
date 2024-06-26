@@ -58,6 +58,9 @@ def parse_exodus_v2(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
             wallet=WALLET,
             note=row_dict["PERSONALNOTE"],
         )
+    elif row_dict["TYPE"] == "deposit (failed)":
+        # Skip failures
+        return
     elif row_dict["TYPE"] == "withdrawal":
         sell_quantity, sell_asset = _split_asset(row_dict["COINAMOUNT"])
 
@@ -105,6 +108,9 @@ def parse_exodus_v1(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
             wallet=WALLET,
             note=row_dict["PERSONALNOTE"],
         )
+    elif row_dict["TYPE"] == "deposit (failed)":
+        # Skip failures
+        return
     elif row_dict["TYPE"] == "withdrawal":
         data_row.tx_raw = TxRawPos(
             parser.in_header.index("OUTTXID"), tx_dest_pos=parser.in_header.index("TOADDRESS")

@@ -1,4 +1,4 @@
-# Change Log
+ Change Log
 ## [Unreleased]
 ### Fixed
 - Coinbase parser: fixed regex to handle whole numbers, and a single digit after the decimal point.
@@ -88,6 +88,7 @@
 - Snowtrace parser: added new Snowtrace export format.
 - Config: added transaction_fee_allowable_cost parameter.
 - Ledger Live parser: new data file format added.
+- Exodus parser: added "deposit (failed)" type.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
