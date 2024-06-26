@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -16,9 +17,10 @@ if TYPE_CHECKING:
 WALLET = "MyMonero"
 
 
-def parse_mymonero(data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
+def parse_mymonero(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["date"])
+    data_row.tx_raw = TxRawPos(parser.in_header.index("tx id"))
     symbol = "XMR"
 
     if row_dict["status"] != "CONFIRMED":
