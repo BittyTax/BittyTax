@@ -311,6 +311,7 @@ The `Lost` transaction type was incorrectly performing the buy-back before the s
 - Coinbase Pro parser: deprecated Fills parser.
 - Koinly parser: allow unsupported types.
 - Config: error and exit if config load fails.
+- KuCoin parser: add note for withdrawals from Remark field.
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-
