@@ -409,7 +409,7 @@ class Worksheet:
                 self.worksheet.write_string(
                     row_num,
                     col_num,
-                    f"{quantity.normalize():0f}",
+                    f"{quantity.normalize():0,f}",
                     self.output.format_num_string,
                 )
             else:
