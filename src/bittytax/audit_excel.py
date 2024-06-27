@@ -227,7 +227,7 @@ class Worksheet:
             else:
                 wb_format = self.output.format_num_string_unsigned
 
-            self.worksheet.write_string(row_num, col_num, f"{balance.normalize():0f}", wb_format)
+            self.worksheet.write_string(row_num, col_num, f"{balance.normalize():0,f}", wb_format)
         else:
             if balance < 0:
                 wb_format = self.output.format_num_float_unsigned_red
@@ -257,9 +257,9 @@ class Worksheet:
         if change is not None:
             if len(change.normalize().as_tuple().digits) > self.output.EXCEL_PRECISION:
                 if change > 0:
-                    change_str = f"+{change.normalize():0f}"
+                    change_str = f"+{change.normalize():0,f}"
                 else:
-                    change_str = f"{change.normalize():0f}"
+                    change_str = f"{change.normalize():0,f}"
 
                 self.worksheet.write_string(
                     row_num,
