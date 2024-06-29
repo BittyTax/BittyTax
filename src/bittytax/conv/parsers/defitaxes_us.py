@@ -75,6 +75,11 @@ def parse_defi_taxes(
             tx_ids[chain][tx_hash].append(dr)
 
         dr.timestamp = DataParser.parse_timestamp(int(dr.row_dict["timestamp"]))
+        dr.tx_raw = TxRawPos(
+            parser.in_header.index("transaction hash"),
+            parser.in_header.index("source address"),
+            parser.in_header.index("destination address"),
+        )
 
         # Try to identify addresses
         if dr.row_dict["destination address"] == "network":
@@ -126,11 +131,11 @@ def _parse_defi_taxes_row(
 
     if tx_hash:
         tx_rows = tx_ids[chain][tx_hash]
-        tx_ins, tx_outs, tx_fee = _get_ins_outs(tx_rows, parser, my_addresses, filename)
+        tx_ins, tx_outs, tx_fee = _get_ins_outs(tx_rows, my_addresses, filename)
     else:
         # Must be a manual transaction
         tx_rows = [data_row]
-        tx_ins, tx_outs, tx_fee = _get_ins_outs([data_row], parser, my_addresses, filename)
+        tx_ins, tx_outs, tx_fee = _get_ins_outs([data_row], my_addresses, filename)
 
     if config.debug:
         _output_tx_rows(tx_ins, tx_outs, tx_fee)
@@ -262,7 +267,7 @@ def _make_t_record(
                 raise MissingValueError(parser.in_header.index("vault id"), "vault id", "") from e
 
         elif tx_in.classification == "interaction between your accounts":
-            _make_transfer(tx_in, tx_out, tx_fee, tx_rows, parser)
+            _make_transfer(tx_in, tx_out, tx_fee, tx_rows)
         else:
             raise UnexpectedTypeError(
                 parser.in_header.index("classification"), "classification", tx_in.classification
@@ -465,7 +470,6 @@ def _make_transfer(
     tx_out: TxRecord,
     tx_fee: Optional[TxRecord],
     tx_rows: List["DataRow"],
-    parser: DataParser,
 ) -> None:
     _next_free_row(tx_rows).t_record = TransactionOutRecord(
         TrType.WITHDRAWAL,
@@ -481,11 +485,6 @@ def _make_transfer(
     )
 
     next_row = _next_free_row(tx_rows)
-    next_row.tx_raw = TxRawPos(
-        parser.in_header.index("transaction hash"),
-        parser.in_header.index("destination address"),
-        parser.in_header.index("source address"),
-    )
     next_row.t_record = TransactionOutRecord(
         TrType.DEPOSIT,
         tx_in.data_row.timestamp,
@@ -842,9 +841,8 @@ def _next_free_row(tx_rows: List["DataRow"]) -> "DataRow":
 
 
 def _get_ins_outs(
-    tx_rows: List["DataRow"], parser: DataParser, my_addresses: List[str], filename: str
+    tx_rows: List["DataRow"], my_addresses: List[str], filename: str
 ) -> Tuple[List[TxRecord], List[TxRecord], Optional[TxRecord]]:
-
     tx_ins = []
     tx_outs = []
     tx_fees = []
@@ -862,11 +860,6 @@ def _get_ins_outs(
         chain = Chain(row_dict["chain"])
 
         if row_dict["destination address"] == "network":
-            dr.tx_raw = TxRawPos(
-                parser.in_header.index("transaction hash"),
-                parser.in_header.index("source address"),
-                parser.in_header.index("destination address"),
-            )
             tx_fees.append(
                 TxRecord(
                     quantity,
@@ -886,11 +879,6 @@ def _get_ins_outs(
             row_dict["destination address"] in my_addresses
             or row_dict["destination address"].lower() in filename.lower()
         ):
-            dr.tx_raw = TxRawPos(
-                parser.in_header.index("transaction hash"),
-                parser.in_header.index("destination address"),
-                parser.in_header.index("source address"),
-            )
             tx_ins.append(
                 TxRecord(
                     quantity,
@@ -910,11 +898,6 @@ def _get_ins_outs(
             row_dict["source address"] in my_addresses
             or row_dict["source address"].lower() in filename.lower()
         ):
-            dr.tx_raw = TxRawPos(
-                parser.in_header.index("transaction hash"),
-                parser.in_header.index("source address"),
-                parser.in_header.index("destination address"),
-            )
             tx_outs.append(
                 TxRecord(
                     -abs(quantity),
