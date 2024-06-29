@@ -25,7 +25,7 @@ def parse_ledger_live(
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Operation Date"])
     data_row.tx_raw = TxRawPos(
         parser.in_header.index("Operation Hash"),
-        tx_src_pos=(
+        tx_dest_pos=(
             parser.in_header.index("Account xpub")
             if "Account xpub" in parser.in_header
             else parser.in_header.index("Account id")

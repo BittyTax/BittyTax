@@ -85,7 +85,7 @@ def _parse_gemini_row(parser: DataParser, data_row: "DataRow") -> None:
         if row_dict["Type"] == "Credit":
             data_row.tx_raw = TxRawPos(
                 parser.in_header.index("Tx Hash"),
-                tx_src_pos=parser.in_header.index("Deposit Destination"),
+                tx_dest_pos=parser.in_header.index("Deposit Destination"),
             )
             data_row.t_record = TransactionOutRecord(
                 TrType.DEPOSIT,
@@ -99,7 +99,7 @@ def _parse_gemini_row(parser: DataParser, data_row: "DataRow") -> None:
         else:
             data_row.tx_raw = TxRawPos(
                 parser.in_header.index("Tx Hash"),
-                tx_src_pos=parser.in_header.index("Withdrawal Destination"),
+                tx_dest_pos=parser.in_header.index("Withdrawal Destination"),
             )
             data_row.t_record = TransactionOutRecord(
                 TrType.WITHDRAWAL,

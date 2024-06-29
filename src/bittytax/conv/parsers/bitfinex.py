@@ -71,15 +71,15 @@ def parse_bitfinex_deposits_withdrawals(
     data_row.timestamp = DataParser.parse_timestamp(
         row_dict["DATE"], dayfirst=config.date_is_day_first
     )
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("TRANSACTION ID"),
+        tx_dest_pos=parser.in_header.index("DESCRIPTION"),
+    )
 
     if row_dict["STATUS"] != "COMPLETED":
         return
 
     if Decimal(row_dict["AMOUNT"]) > 0:
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("TRANSACTION ID"),
-            tx_src_pos=parser.in_header.index("DESCRIPTION"),
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -90,10 +90,6 @@ def parse_bitfinex_deposits_withdrawals(
             wallet=WALLET,
         )
     else:
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("TRANSACTION ID"),
-            tx_dest_pos=parser.in_header.index("DESCRIPTION"),
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,

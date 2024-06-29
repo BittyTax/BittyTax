@@ -194,7 +194,6 @@ def _do_parse_coinbase(
             )
         else:
             # Crypto deposit
-            data_row.tx_raw = TxRawPos(tx_src_pos=parser.in_header.index("Notes"))
             data_row.t_record = TransactionOutRecord(
                 TrType.DEPOSIT,
                 data_row.timestamp,

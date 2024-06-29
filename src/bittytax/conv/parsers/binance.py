@@ -222,14 +222,14 @@ def parse_binance_deposits_withdrawals_crypto(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(data_row.row[0])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("TXID"), tx_dest_pos=parser.in_header.index("Address")
+    )
 
     if row_dict["Status"] != "Completed":
         return
 
     if "deposit" in kwargs["filename"].lower():
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("TXID"), tx_src_pos=parser.in_header.index("Address")
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -240,9 +240,6 @@ def parse_binance_deposits_withdrawals_crypto(
             wallet=WALLET,
         )
     elif "withdraw" in kwargs["filename"].lower():
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("TXID"), tx_dest_pos=parser.in_header.index("Address")
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,

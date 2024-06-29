@@ -83,7 +83,7 @@ def parse_poloniex_deposits_withdrawals(
             wallet=WALLET,
         )
     else:
-        data_row.tx_raw = TxRawPos(tx_src_pos=parser.in_header.index("Address"))
+        data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Address"))
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,

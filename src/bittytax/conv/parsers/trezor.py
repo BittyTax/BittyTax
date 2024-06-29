@@ -24,6 +24,9 @@ def parse_trezor(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Parse
     data_row.timestamp = DataParser.parse_timestamp(
         row_dict["Date"] + "T" + row_dict["Time"], tz="GMT+1"
     )
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("TX id"), tx_dest_pos=parser.in_header.index("Address")
+    )
 
     if not kwargs["cryptoasset"]:
         match = re.match(r".+_(\w{3,4})\.csv$", kwargs["filename"])
@@ -36,9 +39,6 @@ def parse_trezor(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Parse
         symbol = kwargs["cryptoasset"]
 
     if row_dict["TX type"] == "IN":
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("TX id"), tx_src_pos=parser.in_header.index("Address")
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -50,9 +50,6 @@ def parse_trezor(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Parse
             note=row_dict.get("Address Label", ""),
         )
     elif row_dict["TX type"] == "OUT":
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("TX id"), tx_dest_pos=parser.in_header.index("Address")
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -64,7 +61,6 @@ def parse_trezor(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Parse
             note=row_dict.get("Address Label", ""),
         )
     elif row_dict["TX type"] == "SELF":
-        data_row.tx_raw = TxRawPos(parser.in_header.index("TX id"))
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,

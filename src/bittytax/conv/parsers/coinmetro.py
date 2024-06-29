@@ -58,7 +58,7 @@ def _parse_coinmetro_row(
     if "Deposit" in row_dict["Description"]:
         data_row.tx_raw = TxRawPos(
             parser.in_header.index("Transaction Hash"),
-            tx_src_pos=parser.in_header.index("Address") if not "n/a" else None,
+            tx_dest_pos=parser.in_header.index("Address") if not "n/a" else None,
         )
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
