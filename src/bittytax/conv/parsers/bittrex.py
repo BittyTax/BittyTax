@@ -124,7 +124,7 @@ def parse_bittrex_deposits_v2(
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["LastUpdatedDate"])
     data_row.tx_raw = TxRawPos(
-        parser.in_header.index("TxId"), tx_src_pos=parser.in_header.index("CryptoAddress")
+        parser.in_header.index("TxId"), tx_dest_pos=parser.in_header.index("CryptoAddress")
     )
 
     if "State" in row_dict and row_dict["State"] != "CONFIRMED":
@@ -145,7 +145,7 @@ def parse_bittrex_deposits_v1(
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["LastUpdated"])
     data_row.tx_raw = TxRawPos(
-        parser.in_header.index("TxId"), tx_src_pos=parser.in_header.index("CryptoAddress")
+        parser.in_header.index("TxId"), tx_dest_pos=parser.in_header.index("CryptoAddress")
     )
 
     data_row.t_record = TransactionOutRecord(

@@ -25,6 +25,9 @@ def parse_volt(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
     data_row.timestamp = DataParser.parse_timestamp(
         row_dict["time"], tz=config.local_timezone, dayfirst=config.date_is_day_first
     )
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("txid"), tx_dest_pos=parser.in_header.index("address")
+    )
 
     amount, symbol = _get_amount(row_dict["amount"].replace(",", ""))
     if amount is None or symbol is None:
@@ -38,9 +41,6 @@ def parse_volt(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         fee_asset = ""
 
     if row_dict["status"] == "Received":
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("txid"), tx_src_pos=parser.in_header.index("address")
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -51,9 +51,6 @@ def parse_volt(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             wallet=WALLET,
         )
     elif row_dict["status"] == "OUT":
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("txid"), tx_dest_pos=parser.in_header.index("address")
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,

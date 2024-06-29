@@ -62,13 +62,12 @@ def parse_coinfloor_deposits_withdrawals(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date & Time"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Transaction Hash"),
+        tx_dest_pos=parser.in_header.index("Address"),
+    )
 
     if row_dict["Type"] == "Deposit":
-        if "Transaction Hash" in row_dict:
-            data_row.tx_raw = TxRawPos(
-                parser.in_header.index("Transaction Hash"),
-                tx_src_pos=parser.in_header.index("Address"),
-            )
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -77,11 +76,6 @@ def parse_coinfloor_deposits_withdrawals(
             wallet=WALLET,
         )
     elif row_dict["Type"] == "Withdrawal":
-        if "Transaction Hash" in row_dict:
-            data_row.tx_raw = TxRawPos(
-                parser.in_header.index("Transaction Hash"),
-                tx_dest_pos=parser.in_header.index("Address"),
-            )
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,

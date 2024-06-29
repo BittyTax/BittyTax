@@ -24,8 +24,13 @@ if TYPE_CHECKING:
 def parse_etherscan(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    if "Txhash" in row_dict:
+        tx_hash_pos = parser.in_header.index("Txhash")
+    else:
+        tx_hash_pos = parser.in_header.index("Transaction Hash")
+
     data_row.tx_raw = TxRawPos(
-        parser.in_header.index("Txhash"),
+        tx_hash_pos,
         parser.in_header.index("From"),
         parser.in_header.index("To"),
     )
@@ -99,8 +104,13 @@ def parse_etherscan_internal(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    if "Txhash" in row_dict:
+        tx_hash_pos = parser.in_header.index("Txhash")
+    else:
+        tx_hash_pos = parser.in_header.index("Transaction Hash")
+
     data_row.tx_raw = TxRawPos(
-        parser.in_header.index("Txhash"),
+        tx_hash_pos,
         parser.in_header.index("From"),
         parser.in_header.index("TxTo"),
     )
@@ -175,8 +185,13 @@ def _parse_etherscan_tokens_row(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    if "Txhash" in row_dict:
+        tx_hash_pos = parser.in_header.index("Txhash")
+    else:
+        tx_hash_pos = parser.in_header.index("Transaction Hash")
+
     data_row.tx_raw = TxRawPos(
-        parser.in_header.index("Txhash"),
+        tx_hash_pos,
         parser.in_header.index("From"),
         parser.in_header.index("To"),
     )
@@ -251,8 +266,13 @@ def _parse_etherscan_nfts_row(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
+    if "Txhash" in row_dict:
+        tx_hash_pos = parser.in_header.index("Txhash")
+    else:
+        tx_hash_pos = parser.in_header.index("Transaction Hash")
+
     data_row.tx_raw = TxRawPos(
-        parser.in_header.index("Txhash"),
+        tx_hash_pos,
         parser.in_header.index("From"),
         parser.in_header.index("To"),
     )

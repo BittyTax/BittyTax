@@ -23,15 +23,15 @@ def parse_bittylicious(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["startedTime"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("transactionID"),
+        tx_dest_pos=parser.in_header.index("coinAddress"),
+    )
 
     if row_dict["status"] != "RECEIVED":
         return
 
     if row_dict["direction"] == "BUY":
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("transactionID"),
-            tx_src_pos=parser.in_header.index("coinAddress"),
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
@@ -42,10 +42,6 @@ def parse_bittylicious(
             wallet=WALLET,
         )
     elif row_dict["direction"] == "SELL":
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("transactionID"),
-            tx_dest_pos=parser.in_header.index("coinAddress"),
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,

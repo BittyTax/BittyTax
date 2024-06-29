@@ -78,17 +78,11 @@ def _parse_qt_wallet_row(
 ) -> Tuple[str, bool]:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], tz=config.local_timezone)
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("ID"), tx_dest_pos=parser.in_header.index("Address")
+    )
 
     amount, amount_symbol = _get_amount(row_dict[amount_hdr])
-
-    if amount > 0:
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("ID"), tx_src_pos=parser.in_header.index("Address")
-        )
-    else:
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("ID"), tx_dest_pos=parser.in_header.index("Address")
-        )
 
     if amount_symbol:
         # Amount has symbol

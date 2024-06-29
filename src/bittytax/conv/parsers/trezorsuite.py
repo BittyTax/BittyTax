@@ -25,11 +25,11 @@ def parse_trezor_suite_v2(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["Timestamp"]))
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Transaction ID"), tx_dest_pos=parser.in_header.index("Address")
+    )
 
     if row_dict["Type"] == "RECV":
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("Transaction ID"), tx_src_pos=parser.in_header.index("Address")
-        )
         # Workaround: we have to ignore the fee as fee is for the sender
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
@@ -40,9 +40,6 @@ def parse_trezor_suite_v2(
             note=row_dict["Label"],
         )
     elif row_dict["Type"] == "SENT":
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("Transaction ID"), tx_dest_pos=parser.in_header.index("Address")
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -54,7 +51,6 @@ def parse_trezor_suite_v2(
             note=row_dict["Label"],
         )
     elif row_dict["Type"] == "SELF":
-        data_row.tx_raw = TxRawPos(parser.in_header.index("Transaction ID"))
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -71,9 +67,6 @@ def parse_trezor_suite_v2(
         else:
             note = "Failure"
 
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("Transaction ID"), tx_dest_pos=parser.in_header.index("Address")
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
             data_row.timestamp,
@@ -99,6 +92,10 @@ def parse_trezor_suite_v1(
     else:
         data_row.timestamp = DataParser.parse_timestamp(int(row_dict["Timestamp"]))
 
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Transaction ID"), tx_dest_pos=parser.in_header.index("Addresses")
+    )
+
     if not kwargs["cryptoasset"]:
         match = re.match(r".+-(\w{3,4})-.*", kwargs["filename"])
 
@@ -110,9 +107,6 @@ def parse_trezor_suite_v1(
         symbol = kwargs["cryptoasset"]
 
     if row_dict["Type"] == "RECV":
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("Transaction ID"), tx_src_pos=parser.in_header.index("Addresses")
-        )
         # Workaround: we have to ignore the fee as fee is for the sender
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
@@ -122,10 +116,6 @@ def parse_trezor_suite_v1(
             wallet=WALLET,
         )
     elif row_dict["Type"] == "SENT":
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("Transaction ID"),
-            tx_dest_pos=parser.in_header.index("Addresses"),
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -136,7 +126,6 @@ def parse_trezor_suite_v1(
             wallet=WALLET,
         )
     elif row_dict["Type"] == "SELF":
-        data_row.tx_raw = TxRawPos(parser.in_header.index("Transaction ID"))
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -147,10 +136,6 @@ def parse_trezor_suite_v1(
             wallet=WALLET,
         )
     elif row_dict["Type"] == "FAILED":
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("Transaction ID"),
-            tx_dest_pos=parser.in_header.index("Addresses"),
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
             data_row.timestamp,

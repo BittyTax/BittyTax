@@ -25,8 +25,8 @@ def parse_helium_fairspot(
     data_row.timestamp = DataParser.parse_timestamp(row_dict["date"])
     data_row.tx_raw = TxRawPos(
         parser.in_header.index("transaction_hash"),
-        parser.in_header.index("payer"),
         parser.in_header.index("payee"),
+        parser.in_header.index("payer"),
     )
     amount_ccy = DataParser.convert_currency(row_dict["usd_amount"], "USD", data_row.timestamp)
     fee_ccy = DataParser.convert_currency(row_dict["usd_fee"], "USD", data_row.timestamp)

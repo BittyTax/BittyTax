@@ -20,11 +20,11 @@ WALLET = "Coinomi"
 def parse_coinomi(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time(ISO8601-UTC)"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("TransactionID"), tx_dest_pos=parser.in_header.index("Address")
+    )
 
     if Decimal(row_dict["Value"]) > 0:
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("TransactionID"), tx_src_pos=parser.in_header.index("Address")
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -34,9 +34,6 @@ def parse_coinomi(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Par
             note=row_dict["AddressName"],
         )
     else:
-        data_row.tx_raw = TxRawPos(
-            parser.in_header.index("TransactionID"), tx_dest_pos=parser.in_header.index("Address")
-        )
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
