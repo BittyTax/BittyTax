@@ -1,4 +1,4 @@
-# w -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2023
 
 import copy
