@@ -133,7 +133,7 @@ DataParser(
         "classification",
         "walletName",
         "walletProvider",
-        "providerId",  # New field
+        "providerId",
         "txId",
         "primaryAddress",
         "otherAddress",
@@ -147,6 +147,41 @@ DataParser(
         "comments",
         "fiatValueOverwrite",  # New field
         "feeFiatValueOverwrite",  # New field
+    ],
+    worksheet_name="Accointing",
+    row_handler=parse_accointing,
+)
+
+DataParser(
+    ParserType.ACCOUNTING,
+    "Accointing",
+    [
+        "timeExecuted",
+        "type",
+        "boughtQuantity",
+        "boughtCurrency",
+        "boughtCurrencyId",
+        "soldQuantity",
+        "soldCurrency",
+        "soldCurrencyId",
+        "feeQuantity",
+        "feeCurrency",
+        "feeCurrencyId",
+        "classification",
+        "walletName",
+        "walletProvider",
+        "providerId",  # New field
+        "txId",
+        "primaryAddress",
+        "otherAddress",
+        "temporaryCurrencyName",
+        "temporaryFeeCurrencyName",
+        "temporaryBoughtCurrencyTicker",
+        "temporarySoldCurrencyTicker",
+        "temporaryFeeCurrencyTicker",
+        "id",
+        "associatedTransferId",
+        "comments",
     ],
     worksheet_name="Accointing",
     row_handler=parse_accointing,
