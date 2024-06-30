@@ -9,6 +9,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -21,6 +22,7 @@ WALLET = "Eternl"
 def parse_eternl(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], tz=config.local_timezone)
+    data_row.tx_raw = TxRawPos(parser.in_header.index("TxHash"))
 
     if row_dict["TxType"] == "Received Funds":
         data_row.t_record = TransactionOutRecord(
