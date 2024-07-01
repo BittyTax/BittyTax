@@ -35,7 +35,7 @@ class Column(TypedDict):  # pylint: disable=too-few-public-methods
 
 
 class AuditLogExcel:  # pylint: disable=too-few-public-methods, too-many-instance-attributes
-    DEFAULT_FILENAME = "BittyTax_Audit"
+    DEFAULT_FILENAME = "BittyTax_Audit_Log"
     FILE_EXTENSION = "xlsx"
     AUDIT_HEADER = [
         "Asset",
