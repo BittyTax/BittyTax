@@ -13,7 +13,16 @@ from colorama import Fore
 from tqdm import tqdm
 from typing_extensions import NotRequired, TypedDict
 
-from .bt_types import TRANSFER_TYPES, AssetName, AssetSymbol, Date, FixedValue, TrType, Year
+from .bt_types import (
+    TRANSFER_TYPES,
+    AssetName,
+    AssetSymbol,
+    Date,
+    DisposalType,
+    FixedValue,
+    TrType,
+    Year,
+)
 from .config import config
 from .constants import TAX_RULES_UK_COMPANY, WARNING
 from .holdings import Holdings
@@ -98,13 +107,6 @@ class IncomeReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
 
 
 class TaxCalculator:  # pylint: disable=too-many-instance-attributes
-    DISPOSAL_SAME_DAY = "Same Day"
-    DISPOSAL_TEN_DAY = "Ten Day"
-    DISPOSAL_BED_AND_BREAKFAST = "Bed & Breakfast"
-    DISPOSAL_SECTION_104 = "Section 104"
-    DISPOSAL_UNPOOLED = "Unpooled"
-    DISPOSAL_NO_GAIN_NO_LOSS = "No Gain/No Loss"
-
     INCOME_TYPES = (
         TrType.MINING,
         TrType.STAKING,
@@ -183,19 +185,19 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         if config.debug:
             print(f"{Fore.CYAN}pool: total transactions={len(self.all_transactions())}")
 
-    def match_buyback(self, rule: str) -> None:
+    def match_buyback(self, rule: DisposalType) -> None:
         sell_index = buy_index = 0
 
         if not self.buys_ordered:
             return
 
         if config.debug:
-            print(f"{Fore.CYAN}match {rule.lower()} transactions")
+            print(f"{Fore.CYAN}match {rule.value.lower()} transactions")
 
         pbar = tqdm(
             total=len(self.sells_ordered),
             unit="t",
-            desc=f"{Fore.CYAN}match {rule.lower()} transactions{Fore.GREEN}",
+            desc=f"{Fore.CYAN}match {rule.value.lower()} transactions{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         )
 
@@ -265,19 +267,19 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         if config.debug:
             print(f"{Fore.CYAN}match: total transactions={len(self.all_transactions())}")
 
-    def match_sell(self, rule: str) -> None:
+    def match_sell(self, rule: DisposalType) -> None:
         buy_index = sell_index = 0
 
         if not self.sells_ordered:
             return
 
         if config.debug:
-            print(f"{Fore.CYAN}match {rule.lower()} transactions")
+            print(f"{Fore.CYAN}match {rule.value.lower()} transactions")
 
         pbar = tqdm(
             total=len(self.buys_ordered),
             unit="t",
-            desc=f"{Fore.CYAN}match {rule.lower()} transactions{Fore.GREEN}",
+            desc=f"{Fore.CYAN}match {rule.value.lower()} transactions{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         )
 
@@ -347,17 +349,15 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         if config.debug:
             print(f"{Fore.CYAN}match: total transactions={len(self.all_transactions())}")
 
-    def _rule_match(self, b_date: Date, s_date: Date, rule: str) -> bool:
-        if rule == self.DISPOSAL_SAME_DAY:
+    def _rule_match(self, b_date: Date, s_date: Date, rule: DisposalType) -> bool:
+        if rule == DisposalType.SAME_DAY:
             return b_date == s_date
-        if rule == self.DISPOSAL_TEN_DAY:
+        if rule == DisposalType.TEN_DAY:
             # 10 days between buy and sell
             return b_date < s_date <= b_date + datetime.timedelta(days=10)
-        if rule == self.DISPOSAL_BED_AND_BREAKFAST:
+        if rule == DisposalType.BED_AND_BREAKFAST:
             # 30 days between sell and buy-back
             return s_date < b_date <= s_date + datetime.timedelta(days=30)
-        if not rule:
-            return True
 
         raise RuntimeError("Unexpected rule")
 
@@ -431,11 +431,11 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     fees + (t.fee_value or Decimal(0))
                 ).quantize(PRECISION)
                 t.proceeds_fixed = FixedValue(True)
-                disposal_type = self.DISPOSAL_NO_GAIN_NO_LOSS
+                disposal_type = DisposalType.NO_GAIN_NO_LOSS
             elif t.is_nft():
-                disposal_type = self.DISPOSAL_UNPOOLED
+                disposal_type = DisposalType.UNPOOLED
             else:
-                disposal_type = self.DISPOSAL_SECTION_104
+                disposal_type = DisposalType.SECTION_104
 
             tax_event = TaxEventCapitalGains(
                 disposal_type,
@@ -583,7 +583,7 @@ class TaxEvent:
 
 class TaxEventCapitalGains(TaxEvent):
     def __init__(
-        self, disposal_type: str, b: Optional[Buy], s: Sell, cost: Decimal, fees: Decimal
+        self, disposal_type: DisposalType, b: Optional[Buy], s: Sell, cost: Decimal, fees: Decimal
     ) -> None:
         super().__init__(s.date(), s.asset)
 
@@ -599,17 +599,14 @@ class TaxEventCapitalGains(TaxEvent):
         self.acquisition_date = b.date() if b else None
 
     def format_disposal(self) -> str:
-        if self.disposal_type in (
-            TaxCalculator.DISPOSAL_BED_AND_BREAKFAST,
-            TaxCalculator.DISPOSAL_TEN_DAY,
-        ):
-            return f"{self.disposal_type} ({self.acquisition_date:%d/%m/%Y})"
+        if self.disposal_type in (DisposalType.BED_AND_BREAKFAST, DisposalType.TEN_DAY):
+            return f"{self.disposal_type.value} ({self.acquisition_date:%d/%m/%Y})"
 
-        return self.disposal_type
+        return self.disposal_type.value
 
     def __str__(self) -> str:
         return (
-            f"Disposal({self.disposal_type.lower()}) gain="
+            f"Disposal({self.disposal_type.value.lower()}) gain="
             f"{config.sym()}{self.gain:0,.2f} "
             f"(proceeds={config.sym()}{self.proceeds:0,.2f} - cost="
             f"{config.sym()}{self.cost:0,.2f} - fees="

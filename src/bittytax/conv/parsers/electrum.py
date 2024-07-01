@@ -101,7 +101,6 @@ def _get_wallet(symbol: str) -> str:
 def parse_electrum_v1(
     data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
-
     symbol = kwargs["cryptoasset"]
     if not symbol:
         sys.stderr.write(f"{WARNING} Cryptoasset cannot be identified\n")

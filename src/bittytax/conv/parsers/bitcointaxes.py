@@ -20,7 +20,9 @@ if TYPE_CHECKING:
 
 WALLET = "BitcoinTaxes"
 
-BITCOINTAX_MAPPING = {
+BITCOINTAXES_ACTION_MAPPING = {
+    "BUY": TrType.TRADE,
+    "SELL": TrType.TRADE,
     "SPEND": TrType.SPEND,
     "DONATION": TrType.CHARITY_SENT,
     "GIFT": TrType.GIFT_SENT,
@@ -85,7 +87,7 @@ def _parse_bitcointaxes_trades_row(
 
     if row_dict["Action"] == "BUY":
         data_row.t_record = TransactionOutRecord(
-            TrType.TRADE,
+            BITCOINTAXES_ACTION_MAPPING[row_dict["Action"]],
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Volume"]),
             buy_asset=row_dict["Symbol"],
@@ -98,7 +100,7 @@ def _parse_bitcointaxes_trades_row(
         )
     elif row_dict["Action"] == "SELL":
         data_row.t_record = TransactionOutRecord(
-            TrType.TRADE,
+            BITCOINTAXES_ACTION_MAPPING[row_dict["Action"]],
             data_row.timestamp,
             buy_quantity=abs(Decimal(row_dict["Total"])),
             buy_asset=row_dict["Currency"],
@@ -122,7 +124,7 @@ def parse_bitcointaxes_income_spending(
 
     if row_dict["Action"] in ("SPEND", "DONATION", "GIFT", "STOLEN", "LOST"):
         data_row.t_record = TransactionOutRecord(
-            BITCOINTAX_MAPPING[row_dict["Action"]],
+            BITCOINTAXES_ACTION_MAPPING[row_dict["Action"]],
             data_row.timestamp,
             sell_quantity=Decimal(row_dict["Volume"]),
             sell_asset=row_dict["Symbol"],
@@ -136,7 +138,7 @@ def parse_bitcointaxes_income_spending(
         )
     elif row_dict["Action"] in ("INCOME", "MINING", "GIFTIN"):
         data_row.t_record = TransactionOutRecord(
-            BITCOINTAX_MAPPING[row_dict["Action"]],
+            BITCOINTAXES_ACTION_MAPPING[row_dict["Action"]],
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Volume"]),
             buy_asset=row_dict["Symbol"],

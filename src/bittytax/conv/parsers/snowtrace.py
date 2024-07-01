@@ -23,7 +23,7 @@ def parse_snowtrace(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
     data_row.tx_raw = TxRawPos(
-        parser.in_header.index("Txhash"),
+        parser.in_header.index("Transaction Hash"),
         parser.in_header.index("From"),
         parser.in_header.index("To"),
     )

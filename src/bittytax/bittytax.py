@@ -14,7 +14,7 @@ from colorama import Fore
 
 from .audit import AuditRecords
 from .audit_excel import AuditLogExcel
-from .bt_types import AssetSymbol, Year
+from .bt_types import AssetSymbol, DisposalType, Year
 from .config import config
 from .constants import ERROR, TAX_RULES_UK_COMPANY, TAX_RULES_UK_INDIVIDUAL, WARNING
 from .exceptions import ImportFailureError
@@ -216,12 +216,12 @@ def _do_tax(
 
     tax = TaxCalculator(transaction_history.transactions, tax_rules)
     tax.pool_same_day()
-    tax.match_sell(tax.DISPOSAL_SAME_DAY)
+    tax.match_sell(DisposalType.SAME_DAY)
 
     if tax_rules == TAX_RULES_UK_INDIVIDUAL:
-        tax.match_buyback(tax.DISPOSAL_BED_AND_BREAKFAST)
+        tax.match_buyback(DisposalType.BED_AND_BREAKFAST)
     elif tax_rules in TAX_RULES_UK_COMPANY:
-        tax.match_sell(tax.DISPOSAL_TEN_DAY)
+        tax.match_sell(DisposalType.TEN_DAY)
 
     tax.process_section104(skip_integrity_check)
     return tax, value_asset
