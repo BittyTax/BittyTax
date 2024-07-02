@@ -31,6 +31,7 @@ from . import (
     cryptocom,
     cryptopia,
     cryptsy,
+    easycrypto,
     electrum,
     eternl,
     etherscan,
