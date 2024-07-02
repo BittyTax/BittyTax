@@ -10,6 +10,7 @@
 - Binance parser: use UTC offset from Date(UTC) header if present. ([#302](https://github.com/BittyTax/BittyTax/issues/302))
 - Accounting tool: fix overlapping table data in PDF report.
 - Trezor Suite parser: fee can be optional.
+- Accounting tool: correct table formatting for Income in PDF report.
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.

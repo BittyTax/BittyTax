@@ -2,7 +2,7 @@
 {% set income = tax_report[tax_year]['Income'] %}
 {% for asset in income.assets|sort %}
     {% set asset_totals = namespace(events=0, quantity=0, amount=0, fees=0) %}
-    <table repeat="1" width="100%">
+    <table repeat="1" width="100%" class="asset-table">
         <tr>
             <th align="left">Asset</th>
             <th align="left">Date</th>
@@ -41,7 +41,7 @@
     </table>
     <br>
 {% endfor %}
-<table repeat="1" width="100%">
+<table repeat="1" width="100%" class="asset-table">
     <tr>
         <th align="left">Income Type</th>
         <th></th>
