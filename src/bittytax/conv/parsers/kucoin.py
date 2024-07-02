@@ -232,6 +232,8 @@ def parse_kucoin_deposits(
         data_row.timestamp,
         buy_quantity=Decimal(row_dict["Amount"]),
         buy_asset=row_dict["Coin"],
+        fee_quantity=Decimal(row_dict["Fee"]) if "Fee" in row_dict else None,
+        fee_asset=row_dict["Coin"] if "Fee" in row_dict else "",
         wallet=WALLET,
     )
 
@@ -241,7 +243,10 @@ def parse_kucoin_withdrawals(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"], tz="Asia/Singapore")
-    data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Wallet Address"))
+    if "Wallet Address" in row_dict:
+        data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Wallet Address"))
+    else:
+        data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Wallet Address/Account"))
 
     data_row.t_record = TransactionOutRecord(
         TrType.WITHDRAWAL,
@@ -420,11 +425,26 @@ DataParser(
 DataParser(
     ParserType.EXCHANGE,
     "KuCoin Deposits",
+    ["Time", "Coin", "Network", "Amount", "Type", "Remark", "Fee"],
+    worksheet_name="KuCoin D",
+    row_handler=parse_kucoin_deposits,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Deposits",
     ["Time", "Coin", "Amount", "Type", "Remark"],
     worksheet_name="KuCoin D",
     row_handler=parse_kucoin_deposits,
 )
 
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Withdrawals",
+    ["Time", "Coin", "Network", "Amount", "Type", "Wallet Address/Account", "Remark"],
+    worksheet_name="KuCoin W",
+    row_handler=parse_kucoin_withdrawals,
+)
 DataParser(
     ParserType.EXCHANGE,
     "KuCoin Withdrawals",
