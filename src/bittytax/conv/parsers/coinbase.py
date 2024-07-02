@@ -31,17 +31,21 @@ def parse_coinbase_v4(
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
 
     spot_price_ccy = DataParser.convert_currency(
-        row_dict["Price at Transaction"],
+        row_dict["Price at Transaction"].strip("£€$"),
         row_dict["Price Currency"],
         data_row.timestamp,
     )
-    subtotal = Decimal(row_dict["Subtotal"]) if row_dict["Subtotal"] else None
+    subtotal = Decimal(row_dict["Subtotal"].strip("£€$")) if row_dict["Subtotal"] else None
     total_ccy = DataParser.convert_currency(
-        row_dict["Total (inclusive of fees and/or spread)"],
+        row_dict["Total (inclusive of fees and/or spread)"].strip("£€$"),
         row_dict["Price Currency"],
         data_row.timestamp,
     )
-    fees = abs(Decimal(row_dict["Fees and/or Spread"])) if row_dict["Fees and/or Spread"] else None
+    fees = (
+        abs(Decimal(row_dict["Fees and/or Spread"].strip("£€$")))
+        if row_dict["Fees and/or Spread"]
+        else None
+    )
 
     _do_parse_coinbase(data_row, parser, (spot_price_ccy, subtotal, total_ccy, fees))
 

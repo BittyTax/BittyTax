@@ -11,6 +11,7 @@
 - Accounting tool: fix overlapping table data in PDF report.
 - Trezor Suite parser: fee can be optional.
 - Accounting tool: correct table formatting for Income in PDF report.
+- Coinbase parser: strip currency symbol from fiat values.
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
