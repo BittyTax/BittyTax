@@ -93,6 +93,7 @@
 - Conversion tool: added new parser for Easy Crypto NZ exchange.
 - KuCoin parser: added new export formats for deposits and withdrawals.
 - BlockFi parser: added handling of "Cc Rewards Redemption" and "Trade" transaction types.
+- Conversion tool: added new parser for PayPal.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
