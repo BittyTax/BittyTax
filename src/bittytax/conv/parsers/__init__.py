@@ -32,6 +32,7 @@ from . import (
     cryptopia,
     cryptsy,
     defitaxes_us,
+    easycrypto,
     electrum,
     eternl,
     etherscan,
