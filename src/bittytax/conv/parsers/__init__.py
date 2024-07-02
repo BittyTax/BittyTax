@@ -60,6 +60,7 @@ from . import (
     nexo,
     okx,
     paxful,
+    paypal,
     poloniex,
     qtrade,
     qtwallet,
