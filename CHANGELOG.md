@@ -63,11 +63,7 @@
 - Conversion tool: added parser for Gate.io exchange. ([#152](https://github.com/BittyTax/BittyTax/issues/152))
 - Crypto.com parser: added "finance.lockup.dpos_compound_interest.crypto_wallet" and finance.lockup.dpos_lock.crypto_wallet" transaction kinds. ([#356](https://github.com/BittyTax/BittyTax/issues/356))
 - Kraken parser: handle "/" in trading pair.
-- Accounting/Conversion tool: audit spreadsheet output to help with troubleshooting negative balances, and integity check issues.
 - Binance parser: added "Token Swap - Redenomination/Rebranding" operation.
-- Accounting tool: calculate transfer mismatches and warn during audit instead of waiting for the integrity check to fail.
-- Accounting tool: audit report now shows asset balances (split by crypto and fiat) as well as any transfer mismatches.
-- Accounting tool: added source filename of transaction records to cover page of PDF report.
 - Bitstamp parser: added new export format.
 - Accounting/Conversion/Price tool: output command line arguments in debug log.
 - Coinbase parser: added new export format.
@@ -92,7 +88,12 @@
 - Exodus parser: added "deposit (failed)" type.
 - Conversion tool: added new parser for Eternl wallet.
 - Conversion tool: added new parser for MyMonero wallet.
+- Accounting/Conversion tool: audit spreadsheet output to help with troubleshooting negative balances, and integrity check issues.
+- Accounting tool: calculate transfer mismatches and warn during audit instead of waiting for the integrity check to fail.
+- Accounting tool: audit report now shows asset balances (split by crypto and fiat) as well as any transfer mismatches.
+- Accounting tool: added source filename of transaction records to cover page of PDF report.
 - Conversion tool: added new parser for Easy Crypto NZ exchange.
+- KuCoin parser: added new export formats for deposits and withdrawals.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
