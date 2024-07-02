@@ -94,7 +94,7 @@
 - Accounting tool: added source filename of transaction records to cover page of PDF report.
 - Conversion tool: added new parser for Easy Crypto NZ exchange.
 - KuCoin parser: added new export formats for deposits and withdrawals.
-- BlockFi parser: added "Cc Rewards Redemption" transaction type.
+- BlockFi parser: added handling of "Cc Rewards Redemption" and "Trade" transaction types.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -157,6 +157,8 @@
 - Accounting tool: Lost transactions can now include an optional fee.
 - Accounting tool: use different default filenames for each type of PDF report.
 - Conversion tool: use comma thousand separator for high precision numbers when strings.
+- Accounting tool: disposal types changed to be an Enum.
+- BlockFi parser: "Withdrawal Fee" now joined to the "Withdrawal".
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
