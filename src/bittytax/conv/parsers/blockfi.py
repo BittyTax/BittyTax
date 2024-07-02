@@ -38,6 +38,7 @@ def parse_blockfi(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Pars
     if row_dict["Transaction Type"] in (
         "Deposit",
         "Wire Deposit",
+        "Ach Deposit",
         "ACH Deposit",
         "Crypto Transfer",
     ):
@@ -51,6 +52,7 @@ def parse_blockfi(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Pars
     elif row_dict["Transaction Type"] in (
         "Withdrawal",
         "Wire Withdrawal",
+        "Ach Withdrawal",
         "ACH Withdrawal",
     ):
         data_row.t_record = TransactionOutRecord(
@@ -89,6 +91,14 @@ def parse_blockfi(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Pars
     elif row_dict["Transaction Type"] == "Bonus Payment":
         data_row.t_record = TransactionOutRecord(
             TrType.AIRDROP,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Amount"]),
+            buy_asset=row_dict["Cryptocurrency"],
+            wallet=WALLET,
+        )
+    elif row_dict["Transaction Type"] == "Cc Rewards Redemption":
+        data_row.t_record = TransactionOutRecord(
+            TrType.CASHBACK,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Cryptocurrency"],
