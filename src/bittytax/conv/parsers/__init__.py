@@ -73,6 +73,7 @@ from . import (
     trezorsuite,
     uphold,
     volt,
+    whitebit,
     wirex,
     yoroi,
     zelcore,
