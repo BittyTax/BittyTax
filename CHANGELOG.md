@@ -98,6 +98,7 @@
 - BlockFi parser: added handling of "Cc Rewards Redemption" and "Trade" transaction types.
 - Conversion tool: added new parser for PayPal.
 - Conversion tool: added new parser for WhiteBIT exchange.
+- Scripts: added batch scripts to make BittyTax easier to use on Windows.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
