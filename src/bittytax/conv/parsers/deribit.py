@@ -281,6 +281,38 @@ DataParser(
         "Trade ID",
         "Order ID",
         "Info",
+        "Note",  # New field
+    ],
+    worksheet_name="Deribit",
+    all_handler=parse_deribit,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Deribit",
+    [
+        "ID",
+        "UserSeq",
+        "Date",
+        "Instrument",
+        "Type",
+        "Side",
+        "Base Amount",  # Renamed
+        "Position",
+        "Price",
+        "Mark Price",
+        "Index Price",  # New field
+        "Cash Flow",
+        "Funding",
+        "Fee Rate",
+        "Fee Charged",  # Renamed
+        "Fee Balance",
+        "Change",
+        "Balance",
+        "Equity",
+        "Trade ID",
+        "Order ID",
+        "Info",
     ],
     worksheet_name="Deribit",
     all_handler=parse_deribit,
