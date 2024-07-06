@@ -94,7 +94,7 @@ def _parse_deribit_row(
             TrType.DEPOSIT,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Change"]),
-            buy_asset=get_asset(row_dict["Info"]),
+            buy_asset=_get_asset(row_dict["Info"]),
             wallet=WALLET,
         )
         if data_row.t_record.buy_quantity:
@@ -104,9 +104,9 @@ def _parse_deribit_row(
             TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["Change"])) - Decimal(row_dict["Fee Charged"]),
-            sell_asset=get_asset(row_dict["Info"]),
+            sell_asset=_get_asset(row_dict["Info"]),
             fee_quantity=Decimal(row_dict["Fee Charged"]),
-            fee_asset=get_asset(row_dict["Info"]),
+            fee_asset=_get_asset(row_dict["Info"]),
             wallet=WALLET,
         )
         if data_row.t_record.sell_quantity:
@@ -117,7 +117,7 @@ def _parse_deribit_row(
                 TrType.DEPOSIT,
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Change"]),
-                buy_asset=get_asset(row_dict["Info"]),
+                buy_asset=_get_asset(row_dict["Info"]),
                 wallet=WALLET,
             )
             if data_row.t_record.buy_quantity:
@@ -127,7 +127,7 @@ def _parse_deribit_row(
                 TrType.WITHDRAWAL,
                 data_row.timestamp,
                 sell_quantity=abs(Decimal(row_dict["Change"])),
-                sell_asset=get_asset(row_dict["Info"]),
+                sell_asset=_get_asset(row_dict["Info"]),
                 wallet=WALLET,
             )
             if data_row.t_record.sell_quantity:
@@ -148,7 +148,6 @@ def _parse_deribit_row(
                     f"{Fore.GREEN}conv: {instrument}:trading_fees "
                     f"{positions[instrument].trading_fees} ({trading_fee:+})\n"
                 )
-
     elif row_dict["Type"] == "settlement":
         instrument = Instrument(row_dict["Instrument"])
         if instrument not in positions:
@@ -158,7 +157,7 @@ def _parse_deribit_row(
         funding_fee = Decimal(row_dict["Funding"])
         if funding_fee != 0:
             positions[instrument].funding_fees += funding_fee
-            balance -= funding_fee
+            balance += funding_fee
 
             if config.debug:
                 sys.stderr.write(
@@ -167,7 +166,7 @@ def _parse_deribit_row(
                 )
 
         # Accumulate unrealised profit and loss
-        unrealised_pnl = Decimal(row_dict["Cash Flow"]) + funding_fee
+        unrealised_pnl = Decimal(row_dict["Cash Flow"]) - funding_fee
         positions[instrument].unrealised_pnl += unrealised_pnl
         balance += unrealised_pnl
 
@@ -179,49 +178,36 @@ def _parse_deribit_row(
 
         # Realise profit/loss and total fees when position closes
         if Decimal(row_dict["Position"]) == 0:
-            price = DataParser.convert_currency(row_dict["Price"], "USD", data_row.timestamp)
+            _close_position(data_rows, data_row, row_index, positions)
+    elif row_dict["Type"] == "delivery":
+        instrument = Instrument(row_dict["Instrument"])
+        if instrument not in positions:
+            positions[instrument] = Position()
 
-            if positions[instrument].unrealised_pnl > 0:
-                data_row.t_record = TransactionOutRecord(
-                    TrType.MARGIN_GAIN,
-                    data_row.timestamp,
-                    buy_quantity=positions[instrument].unrealised_pnl,
-                    buy_asset=row_dict["Instrument"].split("-")[0],
-                    buy_value=positions[instrument].unrealised_pnl * price if price else None,
-                    wallet=WALLET,
-                    note=instrument,
-                )
-            else:
-                data_row.t_record = TransactionOutRecord(
-                    TrType.MARGIN_LOSS,
-                    data_row.timestamp,
-                    sell_quantity=abs(positions[instrument].unrealised_pnl),
-                    sell_asset=row_dict["Instrument"].split("-")[0],
-                    sell_value=abs(positions[instrument].unrealised_pnl) * price if price else None,
-                    wallet=WALLET,
-                    note=instrument,
+        trading_fee = Decimal(row_dict["Fee Charged"])
+        if trading_fee > 0:
+            # Accumulate trading fees
+            positions[instrument].trading_fees += trading_fee
+            balance -= trading_fee
+
+            if config.debug:
+                sys.stderr.write(
+                    f"{Fore.GREEN}conv: {instrument}:trading_fees "
+                    f"{positions[instrument].trading_fees} ({trading_fee:+})\n"
                 )
 
-            dup_data_row = copy.copy(data_row)
-            dup_data_row.row = []
-            dup_data_row.t_record = TransactionOutRecord(
-                TrType.MARGIN_FEE,
-                data_row.timestamp,
-                sell_quantity=positions[instrument].trading_fees
-                + positions[instrument].funding_fees,
-                sell_asset=row_dict["Instrument"].split("-")[0],
-                sell_value=(
-                    (positions[instrument].trading_fees + positions[instrument].funding_fees)
-                    * price
-                    if price
-                    else None
-                ),
-                wallet=WALLET,
-                note=instrument,
+        # Accumulate unrealised profit and loss
+        unrealised_pnl = Decimal(row_dict["Cash Flow"]) - trading_fee
+        positions[instrument].unrealised_pnl += unrealised_pnl
+        balance += unrealised_pnl
+
+        if config.debug:
+            sys.stderr.write(
+                f"{Fore.GREEN}conv: {instrument}:unrealised_pnl "
+                f"{positions[instrument].unrealised_pnl} ({unrealised_pnl:+})\n"
             )
-            data_rows.insert(row_index + 1, dup_data_row)
 
-            del positions[instrument]
+        _close_position(data_rows, data_row, row_index, positions)
     elif row_dict["Type"] == "transfer from insurance":
         data_row.t_record = TransactionOutRecord(
             TrType.GIFT_RECEIVED,  # Update to FEE_REBATE when merged
@@ -249,7 +235,58 @@ def _parse_deribit_row(
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
 
-def get_asset(info: str) -> str:
+def _close_position(
+    data_rows: List["DataRow"],
+    data_row: "DataRow",
+    row_index: int,
+    positions: Dict[Instrument, Position],
+) -> None:
+    row_dict = data_row.row_dict
+    instrument = Instrument(row_dict["Instrument"])
+    price = DataParser.convert_currency(row_dict["Price"], "USD", data_row.timestamp)
+
+    if positions[instrument].unrealised_pnl > 0:
+        data_row.t_record = TransactionOutRecord(
+            TrType.MARGIN_GAIN,
+            data_row.timestamp,
+            buy_quantity=positions[instrument].unrealised_pnl,
+            buy_asset=row_dict["Instrument"].split("-")[0],
+            buy_value=positions[instrument].unrealised_pnl * price if price else None,
+            wallet=WALLET,
+            note=instrument,
+        )
+    else:
+        data_row.t_record = TransactionOutRecord(
+            TrType.MARGIN_LOSS,
+            data_row.timestamp,
+            sell_quantity=abs(positions[instrument].unrealised_pnl),
+            sell_asset=row_dict["Instrument"].split("-")[0],
+            sell_value=abs(positions[instrument].unrealised_pnl) * price if price else None,
+            wallet=WALLET,
+            note=instrument,
+        )
+
+    dup_data_row = copy.copy(data_row)
+    dup_data_row.row = []
+    dup_data_row.t_record = TransactionOutRecord(
+        TrType.MARGIN_FEE,
+        data_row.timestamp,
+        sell_quantity=positions[instrument].trading_fees + positions[instrument].funding_fees,
+        sell_asset=row_dict["Instrument"].split("-")[0],
+        sell_value=(
+            (positions[instrument].trading_fees + positions[instrument].funding_fees) * price
+            if price
+            else None
+        ),
+        wallet=WALLET,
+        note=instrument,
+    )
+    data_rows.insert(row_index + 1, dup_data_row)
+
+    del positions[instrument]
+
+
+def _get_asset(info: str) -> str:
     if info.startswith("0x") or "ETH" in info:
         return "ETH"
     return "BTC"
