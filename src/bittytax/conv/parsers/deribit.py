@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2024
 
+
 import copy
+import re
 import sys
 from dataclasses import dataclass
 from decimal import Decimal
@@ -13,7 +15,7 @@ from typing_extensions import List, Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
-from ..exceptions import DataRowError, UnexpectedTypeError
+from ..exceptions import DataRowError, UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -34,7 +36,7 @@ class Position:
 
 
 def parse_deribit(
-    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     positions: Dict[Instrument, Position] = {}
 
@@ -54,7 +56,9 @@ def parse_deribit(
             continue
 
         try:
-            _parse_deribit_row(data_rows, parser, data_row, row_index, positions)
+            _parse_deribit_row(
+                data_rows, parser, data_row, row_index, positions, _get_asset(kwargs["filename"])
+            )
         except DataRowError as e:
             data_row.failure = e
         except (ValueError, ArithmeticError) as e:
@@ -80,6 +84,7 @@ def _parse_deribit_row(
     data_row: "DataRow",
     row_index: int,
     positions: Dict[Instrument, Position],
+    asset: str,
 ) -> None:
     global balance  # pylint: disable=global-statement
     row_dict = data_row.row_dict
@@ -94,7 +99,7 @@ def _parse_deribit_row(
             TrType.DEPOSIT,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Change"]),
-            buy_asset=_get_asset(row_dict["Info"]),
+            buy_asset=asset,
             wallet=WALLET,
         )
         if data_row.t_record.buy_quantity:
@@ -104,9 +109,9 @@ def _parse_deribit_row(
             TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["Change"])) - Decimal(row_dict["Fee Charged"]),
-            sell_asset=_get_asset(row_dict["Info"]),
+            sell_asset=asset,
             fee_quantity=Decimal(row_dict["Fee Charged"]),
-            fee_asset=_get_asset(row_dict["Info"]),
+            fee_asset=asset,
             wallet=WALLET,
         )
         if data_row.t_record.sell_quantity:
@@ -117,7 +122,7 @@ def _parse_deribit_row(
                 TrType.DEPOSIT,
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Change"]),
-                buy_asset=_get_asset(row_dict["Info"]),
+                buy_asset=asset,
                 wallet=WALLET,
             )
             if data_row.t_record.buy_quantity:
@@ -127,7 +132,7 @@ def _parse_deribit_row(
                 TrType.WITHDRAWAL,
                 data_row.timestamp,
                 sell_quantity=abs(Decimal(row_dict["Change"])),
-                sell_asset=_get_asset(row_dict["Info"]),
+                sell_asset=asset,
                 wallet=WALLET,
             )
             if data_row.t_record.sell_quantity:
@@ -178,7 +183,7 @@ def _parse_deribit_row(
 
         # Realise profit/loss and total fees when position closes
         if Decimal(row_dict["Position"]) == 0:
-            _close_position(data_rows, data_row, row_index, positions)
+            _close_position(data_rows, data_row, row_index, positions, asset)
     elif row_dict["Type"] == "delivery":
         instrument = Instrument(row_dict["Instrument"])
         if instrument not in positions:
@@ -207,7 +212,7 @@ def _parse_deribit_row(
                 f"{positions[instrument].unrealised_pnl} ({unrealised_pnl:+})\n"
             )
 
-        _close_position(data_rows, data_row, row_index, positions)
+        _close_position(data_rows, data_row, row_index, positions, asset)
     elif row_dict["Type"] == "transfer from insurance":
         data_row.t_record = TransactionOutRecord(
             TrType.GIFT_RECEIVED,  # Update to FEE_REBATE when merged
@@ -240,6 +245,7 @@ def _close_position(
     data_row: "DataRow",
     row_index: int,
     positions: Dict[Instrument, Position],
+    asset: str,
 ) -> None:
     row_dict = data_row.row_dict
     instrument = Instrument(row_dict["Instrument"])
@@ -250,7 +256,7 @@ def _close_position(
             TrType.MARGIN_GAIN,
             data_row.timestamp,
             buy_quantity=positions[instrument].unrealised_pnl,
-            buy_asset=row_dict["Instrument"].split("-")[0],
+            buy_asset=asset,
             buy_value=positions[instrument].unrealised_pnl * price if price else None,
             wallet=WALLET,
             note=instrument,
@@ -260,7 +266,7 @@ def _close_position(
             TrType.MARGIN_LOSS,
             data_row.timestamp,
             sell_quantity=abs(positions[instrument].unrealised_pnl),
-            sell_asset=row_dict["Instrument"].split("-")[0],
+            sell_asset=asset,
             sell_value=abs(positions[instrument].unrealised_pnl) * price if price else None,
             wallet=WALLET,
             note=instrument,
@@ -272,7 +278,7 @@ def _close_position(
         TrType.MARGIN_FEE,
         data_row.timestamp,
         sell_quantity=positions[instrument].trading_fees + positions[instrument].funding_fees,
-        sell_asset=row_dict["Instrument"].split("-")[0],
+        sell_asset=asset,
         sell_value=(
             (positions[instrument].trading_fees + positions[instrument].funding_fees) * price
             if price
@@ -286,10 +292,12 @@ def _close_position(
     del positions[instrument]
 
 
-def _get_asset(info: str) -> str:
-    if info.startswith("0x") or "ETH" in info:
-        return "ETH"
-    return "BTC"
+def _get_asset(filename: str) -> str:
+    match = re.match(r".+[-| ]([A-Z]{3,4})[-.*|.csv$]", filename)
+
+    if match:
+        return match.group(1).upper()
+    raise UnknownCryptoassetError(filename)
 
 
 DataParser(
