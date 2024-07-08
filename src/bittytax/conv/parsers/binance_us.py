@@ -99,7 +99,7 @@ def parse_binance_us(
             raise UnexpectedTypeError(
                 parser.in_header.index("Operation"), "Operation", row_dict["Operation"]
             )
-    elif row_dict["Category"] in ("Buy", "Quick Buy", "Convert"):
+    elif row_dict["Category"] in ("Buy", "Sell", "Quick Buy", "Convert"):
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
