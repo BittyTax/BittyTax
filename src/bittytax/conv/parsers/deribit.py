@@ -78,7 +78,7 @@ def parse_deribit(
         if config.debug:
             sys.stderr.write(f"{Fore.GREEN}conv: (uid: {uid}) Balance={balance[uid]} {asset}\n")
 
-    for uid in positions:
+    if uid in positions:
         for instrument, position in positions[uid].items():
             sys.stderr.write(
                 f"{Fore.CYAN}conv: Open Position: (uid: {uid}) {instrument} "
