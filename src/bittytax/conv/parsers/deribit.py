@@ -78,12 +78,13 @@ def parse_deribit(
         if config.debug:
             sys.stderr.write(f"{Fore.GREEN}conv: (uid: {uid}) Balance={balance[uid]} {asset}\n")
 
-    for instrument, position in positions[uid].items():
-        sys.stderr.write(
-            f"{Fore.CYAN}conv: Open Position: (uid: {uid}) {instrument} "
-            f"trading_fees={position.trading_fees} funding_fees={position.funding_fees} "
-            f"unrealised_pnl={position.unrealised_pnl}\n"
-        )
+    for uid in positions:
+        for instrument, position in positions[uid].items():
+            sys.stderr.write(
+                f"{Fore.CYAN}conv: Open Position: (uid: {uid}) {instrument} "
+                f"trading_fees={position.trading_fees} funding_fees={position.funding_fees} "
+                f"unrealised_pnl={position.unrealised_pnl}\n"
+            )
 
 
 def _parse_deribit_row(
@@ -146,7 +147,11 @@ def _parse_deribit_row(
             if data_row.t_record.sell_quantity:
                 balance[uid] -= data_row.t_record.sell_quantity
     elif row_dict["Type"] == "trade":
+        change = Decimal(row_dict["Change"])
         trading_fee = Decimal(row_dict["Fee Charged"])
+        if change != -abs(trading_fee):
+            raise RuntimeError("Unsupported trade")
+
         if trading_fee > 0:
             instrument = Instrument(row_dict["Instrument"])
             if uid not in positions:
@@ -266,6 +271,14 @@ def _close_position(
     instrument = Instrument(row_dict["Instrument"])
     price = DataParser.convert_currency(row_dict["Price"], "USD", data_row.timestamp)
 
+    if config.debug:
+        sys.stderr.write(
+            f"{Fore.CYAN}conv: Closed Position: (uid: {uid}) {instrument} "
+            f"trading_fees={positions[uid][instrument].trading_fees} "
+            f"funding_fees={positions[uid][instrument].funding_fees} "
+            f"unrealised_pnl={positions[uid][instrument].unrealised_pnl}\n"
+        )
+
     if positions[uid][instrument].unrealised_pnl > 0:
         data_row.t_record = TransactionOutRecord(
             TrType.MARGIN_GAIN,
@@ -289,21 +302,28 @@ def _close_position(
 
     dup_data_row = copy.copy(data_row)
     dup_data_row.row = []
-    dup_data_row.t_record = TransactionOutRecord(
-        TrType.MARGIN_FEE,
-        data_row.timestamp,
-        sell_quantity=positions[uid][instrument].trading_fees
-        + positions[uid][instrument].funding_fees,
-        sell_asset=asset,
-        sell_value=(
-            (positions[uid][instrument].trading_fees + positions[uid][instrument].funding_fees)
-            * price
-            if price
-            else None
-        ),
-        wallet=WALLET,
-        note=instrument,
-    )
+
+    total_fees = positions[uid][instrument].funding_fees - positions[uid][instrument].trading_fees
+    if total_fees > 0:
+        dup_data_row.t_record = TransactionOutRecord(
+            TrType.GIFT_RECEIVED,  # Update to FEE_REBATE when merged
+            data_row.timestamp,
+            buy_quantity=total_fees,
+            buy_asset=asset,
+            buy_value=total_fees * price if price else None,
+            wallet=WALLET,
+            note=instrument,
+        )
+    else:
+        dup_data_row.t_record = TransactionOutRecord(
+            TrType.MARGIN_FEE,
+            data_row.timestamp,
+            sell_quantity=abs(total_fees),
+            sell_asset=asset,
+            sell_value=abs(total_fees) * price if price else None,
+            wallet=WALLET,
+            note=instrument,
+        )
     data_rows.insert(row_index + 1, dup_data_row)
 
     del positions[uid][instrument]
