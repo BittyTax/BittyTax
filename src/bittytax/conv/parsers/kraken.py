@@ -486,6 +486,26 @@ DataParser(
         "amount",
         "fee",
         "balance",
+        "amountusd",
+    ],
+    worksheet_name="Kraken L",
+    all_handler=parse_kraken_ledgers,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Kraken Ledgers",
+    [
+        "txid",
+        "refid",
+        "time",
+        "type",
+        "subtype",
+        "aclass",
+        "asset",
+        "amount",
+        "fee",
+        "balance",
     ],
     worksheet_name="Kraken L",
     all_handler=parse_kraken_ledgers,
