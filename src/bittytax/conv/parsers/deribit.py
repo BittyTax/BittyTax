@@ -124,7 +124,10 @@ def _parse_deribit_row(
             wallet=WALLET,
         )
         if data_row.t_record.sell_quantity:
-            balance[uid] -= data_row.t_record.sell_quantity + data_row.t_record.fee_quantity
+            balance[uid] -= data_row.t_record.sell_quantity
+            if data_row.t_record.fee_quantity:
+                balance[uid] -= data_row.t_record.fee_quantity
+
     elif row_dict["Type"] == "transfer":
         if Decimal(row_dict["Change"]) > 0:
             data_row.t_record = TransactionOutRecord(
