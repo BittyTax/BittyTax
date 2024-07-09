@@ -286,7 +286,6 @@ def _close_position(
 ) -> None:
     row_dict = data_row.row_dict
     instrument = Instrument(row_dict["Instrument"])
-    price = DataParser.convert_currency(row_dict["Price"], "USD", data_row.timestamp)
 
     if config.debug:
         sys.stderr.write(
@@ -302,7 +301,6 @@ def _close_position(
             data_row.timestamp,
             buy_quantity=positions[uid][instrument].unrealised_pnl,
             buy_asset=asset,
-            buy_value=positions[uid][instrument].unrealised_pnl * price if price else None,
             wallet=WALLET,
             note=instrument,
         )
@@ -312,7 +310,6 @@ def _close_position(
             data_row.timestamp,
             sell_quantity=abs(positions[uid][instrument].unrealised_pnl),
             sell_asset=asset,
-            sell_value=abs(positions[uid][instrument].unrealised_pnl) * price if price else None,
             wallet=WALLET,
             note=instrument,
         )
@@ -327,7 +324,6 @@ def _close_position(
             data_row.timestamp,
             buy_quantity=total_fees,
             buy_asset=asset,
-            buy_value=total_fees * price if price else None,
             wallet=WALLET,
             note=instrument,
         )
@@ -337,7 +333,6 @@ def _close_position(
             data_row.timestamp,
             sell_quantity=abs(total_fees),
             sell_asset=asset,
-            sell_value=abs(total_fees) * price if price else None,
             wallet=WALLET,
             note=instrument,
         )
