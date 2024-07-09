@@ -666,6 +666,111 @@ def _parse_binance_statements_margin_row(
         )
 
 
+# The funding fees for Coin-M Futures are only available in the Futures transaction
+# history, they are not included in the Statements export (a bug).
+
+
+def parse_binance_futures(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    tx_ids: Dict[str, List["DataRow"]] = {}
+    for dr in data_rows:
+        dr.timestamp = DataParser.parse_timestamp(dr.row_dict["Date(UTC)"])
+        # Normalise fields to be compatible with Statements functions
+        dr.row_dict["Operation"] = dr.row_dict["type"]
+        dr.row_dict["Change"] = dr.row_dict["Amount"]
+        dr.row_dict["Coin"] = dr.row_dict["Asset"]
+
+        if dr.row_dict["Transaction ID"] in tx_ids:
+            tx_ids[dr.row_dict["Transaction ID"]].append(dr)
+        else:
+            tx_ids[dr.row_dict["Transaction ID"]] = [dr]
+
+    for data_row in data_rows:
+        if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
+            sys.stderr.write(
+                f"{Fore.YELLOW}conv: "
+                f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
+            )
+
+        if data_row.parsed:
+            continue
+
+        try:
+            _parse_binance_futures_row(tx_ids, parser, data_row)
+        except DataRowError as e:
+            data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
+
+
+def _parse_binance_futures_row(
+    tx_ids: Dict[str, List["DataRow"]], parser: DataParser, data_row: "DataRow"
+) -> None:
+    row_dict = data_row.row_dict
+
+    if row_dict["type"] == "REALIZED_PNL":
+        if Decimal(row_dict["Amount"]) > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.MARGIN_GAIN,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["Amount"]),
+                buy_asset=row_dict["Asset"],
+                wallet=WALLET,
+                note=row_dict["Symbol"],
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.MARGIN_LOSS,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["Amount"])),
+                sell_asset=row_dict["Asset"],
+                wallet=WALLET,
+                note=row_dict["Symbol"],
+            )
+    elif row_dict["type"] == "COMMISSION":
+        data_row.t_record = TransactionOutRecord(
+            TrType.MARGIN_FEE,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["Amount"])),
+            sell_asset=row_dict["Asset"],
+            wallet=WALLET,
+            note=row_dict["Symbol"],
+        )
+    elif row_dict["type"] == "FUNDING_FEE":
+        if Decimal(row_dict["Amount"]) > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.GIFT_RECEIVED,  # Update to FEE_REBATE when merged
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["Amount"]),
+                buy_asset=row_dict["Asset"],
+                wallet=WALLET,
+                note=row_dict["Symbol"],
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.MARGIN_FEE,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["Amount"])),
+                sell_asset=row_dict["Asset"],
+                wallet=WALLET,
+                note=row_dict["Symbol"],
+            )
+    elif row_dict["type"] in ("COIN_SWAP_DEPOSIT", "COIN_SWAP_WITHDRAW"):
+        _make_trade(tx_ids[row_dict["Transaction ID"]])
+    elif row_dict["type"] in ("DEPOSIT", "WITHDRAW", "TRANSFER"):
+        # Skip transfers
+        return
+    else:
+        raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
+
+
 def _get_op_rows(
     tx_times: Dict[datetime, List["DataRow"]],
     timestamp: datetime,
@@ -814,69 +919,6 @@ def _make_trade_with_fee(op_rows: List["DataRow"]) -> None:
         )
 
 
-def parse_binance_futures(
-    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
-) -> None:
-    row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Date(UTC)"])
-
-    # The funding fees for Coin-M Futures are only available in the Futures transaction
-    # history, they are not included in the Statements export (a bug).
-
-    if row_dict["type"] == "REALIZED_PNL":
-        if Decimal(row_dict["Amount"]) > 0:
-            data_row.t_record = TransactionOutRecord(
-                TrType.MARGIN_GAIN,
-                data_row.timestamp,
-                buy_quantity=Decimal(row_dict["Amount"]),
-                buy_asset=row_dict["Asset"],
-                wallet=WALLET,
-                note=row_dict["Symbol"],
-            )
-        else:
-            data_row.t_record = TransactionOutRecord(
-                TrType.MARGIN_LOSS,
-                data_row.timestamp,
-                sell_quantity=abs(Decimal(row_dict["Amount"])),
-                sell_asset=row_dict["Asset"],
-                wallet=WALLET,
-                note=row_dict["Symbol"],
-            )
-    elif row_dict["type"] == "COMMISSION":
-        data_row.t_record = TransactionOutRecord(
-            TrType.MARGIN_FEE,
-            data_row.timestamp,
-            sell_quantity=abs(Decimal(row_dict["Amount"])),
-            sell_asset=row_dict["Asset"],
-            wallet=WALLET,
-            note=row_dict["Symbol"],
-        )
-    elif row_dict["type"] == "FUNDING_FEE":
-        if Decimal(row_dict["Amount"]) > 0:
-            data_row.t_record = TransactionOutRecord(
-                TrType.GIFT_RECEIVED,  # Update to FEE_REBATE when merged
-                data_row.timestamp,
-                buy_quantity=Decimal(row_dict["Amount"]),
-                buy_asset=row_dict["Asset"],
-                wallet=WALLET,
-                note=row_dict["Symbol"],
-            )
-        else:
-            data_row.t_record = TransactionOutRecord(
-                TrType.MARGIN_FEE,
-                data_row.timestamp,
-                sell_quantity=abs(Decimal(row_dict["Amount"])),
-                sell_asset=row_dict["Asset"],
-                wallet=WALLET,
-                note=row_dict["Symbol"],
-            )
-    elif row_dict["type"] in ("DEPOSIT", "WITHDRAW", "TRANSFER"):
-        # Skip transfers
-        return
-    else:
-        raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
-
-
 DataParser(
     ParserType.EXCHANGE,
     "Binance Trades",
@@ -1023,5 +1065,5 @@ DataParser(
     "Binance Futures",
     ["Date(UTC)", "type", "Amount", "Asset", "Symbol", "Transaction ID"],
     worksheet_name="Binance F",
-    row_handler=parse_binance_futures,
+    all_handler=parse_binance_futures,
 )
