@@ -11,7 +11,7 @@
 - Accounting tool: fix overlapping table data in PDF report.
 - Trezor Suite parser: fee can be optional.
 - Accounting tool: correct table formatting for Income in PDF report.
-- Coinbase parser: strip currency symbol from fiat values.
+- Coinbase parser: strip currency symbols, brackets and commas from fiat values.
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
@@ -101,6 +101,7 @@
 - Scripts: added batch scripts to make BittyTax easier to use on Windows.
 - Binance.US parser: added handling of "Sell" category.
 - Scripts: added AppleScripts to make BittyTax easier to use on macOS.
+- Coinbase parser: added "Subscription Rebates (24 Hours)" transaction type.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))

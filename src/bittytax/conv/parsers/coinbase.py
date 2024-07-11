@@ -31,18 +31,22 @@ def parse_coinbase_v4(
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
 
     spot_price_ccy = DataParser.convert_currency(
-        row_dict["Price at Transaction"].strip("£€$"),
+        row_dict["Price at Transaction"].strip("£€$").replace(",", ""),
         row_dict["Price Currency"],
         data_row.timestamp,
     )
-    subtotal = Decimal(row_dict["Subtotal"].strip("£€$")) if row_dict["Subtotal"] else None
+    subtotal = (
+        Decimal(row_dict["Subtotal"].strip("£€$").replace(",", ""))
+        if row_dict["Subtotal"]
+        else None
+    )
     total_ccy = DataParser.convert_currency(
-        row_dict["Total (inclusive of fees and/or spread)"].strip("£€$"),
+        row_dict["Total (inclusive of fees and/or spread)"].strip("£€$").replace(",", ""),
         row_dict["Price Currency"],
         data_row.timestamp,
     )
     fees = (
-        abs(Decimal(row_dict["Fees and/or Spread"].strip("£€$")))
+        abs(Decimal(row_dict["Fees and/or Spread"].strip("()£€$").replace(",", "")))
         if row_dict["Fees and/or Spread"]
         else None
     )
@@ -231,6 +235,15 @@ def _do_parse_coinbase(
             buy_value=total_ccy,
             wallet=WALLET,
         )
+    elif row_dict["Transaction Type"] == "Subscription Rebates (24 Hours)":
+        data_row.t_record = TransactionOutRecord(
+            TrType.FEE_REBATE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Quantity Transacted"]),
+            buy_asset=row_dict["Asset"],
+            buy_value=total_ccy,
+            wallet=WALLET,
+        )
     elif row_dict["Transaction Type"] == "Send":
         # Crypto withdrawal
         data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Notes"))
@@ -351,7 +364,7 @@ def _get_convert_info(notes: str) -> Optional[Tuple[Any, ...]]:
 
 
 def _get_currency(notes: str) -> Tuple[Optional[str], str]:
-    match = re.match(r".+for .?(?:[\d|,]+\.\d{1,2}|[\d|,]+) (\w{3})(?: on )?(\w+-\w+)?$", notes)
+    match = re.match(r".+for .?(?:[\d|,]+\.\d+|[\d|,]+) (\w{3})(?: on )?(\w+-\w+)?$", notes)
 
     if match:
         currency = quote = match.group(1)
