@@ -64,7 +64,7 @@
 - Conversion tool: added parser for Gate.io exchange. ([#152](https://github.com/BittyTax/BittyTax/issues/152))
 - Crypto.com parser: added "finance.lockup.dpos_compound_interest.crypto_wallet" and finance.lockup.dpos_lock.crypto_wallet" transaction kinds. ([#356](https://github.com/BittyTax/BittyTax/issues/356))
 - Kraken parser: handle "/" in trading pair.
-- Binance parser: added "Token Swap - Redenomination/Rebranding" operation.
+- Binance parser: added "Token Swap - Redenomination/Rebranding" and "Token Swap - Distribution" operation.
 - Bitstamp parser: added new export format.
 - Accounting/Conversion/Price tool: output command line arguments in debug log.
 - Coinbase parser: added new export format.
