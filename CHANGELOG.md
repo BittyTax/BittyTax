@@ -102,6 +102,7 @@
 - Binance.US parser: added handling of "Sell" category.
 - Scripts: added AppleScripts to make BittyTax easier to use on macOS.
 - Coinbase parser: added "Subscription Rebates (24 Hours)" transaction type.
+- Conversion tool: added new parser for Neon Wallet.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
