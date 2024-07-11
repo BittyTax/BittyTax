@@ -56,6 +56,7 @@ from . import (
     mercatox,
     mymonero,
     nault,
+    neonwallet,
     nexo,
     okx,
     paxful,
