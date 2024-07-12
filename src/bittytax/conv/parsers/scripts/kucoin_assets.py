@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2024
-# Generate the constants for the Kucoin parser.
+# Test the _get_asset_from_symbol function of the KuCoin parser.
 
 import requests
-from colorama import Back
 
 from bittytax.conv.parsers.kucoin import _get_asset_from_symbol
 
