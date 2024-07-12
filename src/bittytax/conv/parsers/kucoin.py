@@ -343,22 +343,25 @@ def _parse_kucoin_futures_row(
     utc_offset = parser.args[1].group(2)
     data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
     data_row.parsed = True
+    asset = _get_asset_from_symbol(row_dict["Symbol"])
 
     if Decimal(row_dict["Realized PNL"]) > 0:
         data_row.t_record = TransactionOutRecord(
             TrType.MARGIN_GAIN,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Realized PNL"]),
-            buy_asset="USDT",
+            buy_asset=asset,
             wallet=WALLET,
+            note=row_dict["Symbol"],
         )
     else:
         data_row.t_record = TransactionOutRecord(
             TrType.MARGIN_LOSS,
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["Realized PNL"])),
-            sell_asset="USDT",
+            sell_asset=asset,
             wallet=WALLET,
+            note=row_dict["Symbol"],
         )
 
     if Decimal(row_dict["Total Funding Fees"]) + Decimal(row_dict["Total Trading Fees"]) > 0:
@@ -369,10 +372,29 @@ def _parse_kucoin_futures_row(
             data_row.timestamp,
             sell_quantity=Decimal(row_dict["Total Funding Fees"])
             + Decimal(row_dict["Total Trading Fees"]),
-            sell_asset="USDT",
+            sell_asset=asset,
             wallet=WALLET,
+            note=row_dict["Symbol"],
         )
         data_rows.insert(row_index + 1, dup_data_row)
+
+
+def _get_asset_from_symbol(symbol: str) -> str:
+    if symbol.endswith("USDTM"):
+        asset = "USDT"
+    elif symbol.endswith("USDCM"):
+        asset = "USDC"
+    elif symbol.endswith("USDM"):
+        asset = symbol[:-4]
+    elif symbol.startswith("XBT"):
+        # Special case for symbols such as XBTMM23, XBTMU24
+        asset = "XBT"
+    else:
+        raise RuntimeError(f"Unexpected symbol: {symbol}")
+
+    if asset == "XBT":
+        return "BTC"
+    return asset
 
 
 # This parser is only used for Airdrops, everything else is duplicates
