@@ -60,6 +60,13 @@ class Config:
         "binance_statements_only": False,
     }
 
+    OPTIONAL_CONFIG = (
+        "coingecko_pro_api_key",
+        "coingecko_demo_api_key",
+        "cryptocompare_api_key",
+        "coinpaprika_api_key",
+    )
+
     def __init__(self) -> None:
         self.debug = False
         self.start_of_year_month = 1
@@ -92,6 +99,9 @@ class Config:
             sys.stderr.write(f"{ERROR}Config file contains an error:\n{e}\n")
             sys.exit(1)
 
+        if self.config is None:
+            self.config = {}
+
         for name, default in self.DEFAULT_CONFIG.items():
             if name not in self.config:
                 self.config[name] = default
@@ -109,6 +119,10 @@ class Config:
 
         for name in self.DEFAULT_CONFIG:
             sys_out.write(f"{Fore.GREEN}config: {name}: {self.config[name]}\n")
+
+        for name in self.OPTIONAL_CONFIG:
+            if name in self.config:
+                sys_out.write(f"{Fore.GREEN}config: {name}: {self._mask_data(self.config[name])}\n")
 
     def sym(self) -> str:
         if self.ccy == "GBP":
@@ -155,6 +169,10 @@ class Config:
         if start.year == end.year:
             return f"{start:%Y}"
         return f"{start:%Y}/{end:%y}"
+
+    @staticmethod
+    def _mask_data(data: str, show: int = 4) -> str:
+        return data[-show:].rjust(len(data), "#")
 
 
 config = Config()

@@ -55,6 +55,7 @@ class DataSourceBase:
     TIME_OUT = 30
 
     def __init__(self) -> None:
+        self.headers = {"User-Agent": self.USER_AGENT}
         self.assets: Dict[AssetSymbol, DsSymbolToAssetData] = {}
         self.ids: Dict[AssetId, DsIdToAssetData] = {}
         self.prices = self._load_prices()
@@ -70,11 +71,11 @@ class DataSourceBase:
 
     def get_json(self, url: str) -> Any:
         if config.debug:
-            print(f"{Fore.YELLOW}price: GET {url}")
+            print(f"{Fore.YELLOW}price: GET {url} {list(self.headers.keys())}")
 
-        response = requests.get(url, headers={"User-Agent": self.USER_AGENT}, timeout=self.TIME_OUT)
+        response = requests.get(url, headers=self.headers, timeout=self.TIME_OUT)
 
-        if response.status_code in [402, 429, 502, 503, 504]:
+        if response.status_code in [401, 402, 403, 429, 502, 503, 504]:
             response.raise_for_status()
 
         if response:
@@ -419,7 +420,13 @@ class CryptoCompare(DataSourceBase):
 
     def __init__(self) -> None:
         super().__init__()
-        json_resp = self.get_json("https://min-api.cryptocompare.com/data/all/coinlist")
+
+        if "cryptocompare_api_key" in config.config:
+            self.headers["authorization"] = f"Apikey {config.cryptocompare_api_key}"
+
+        self.api_root = "https://min-api.cryptocompare.com"
+
+        json_resp = self.get_json(f"{self.api_root}/data/all/coinlist")
         self.assets = {
             c[1]["Symbol"]
             .strip()
@@ -432,8 +439,7 @@ class CryptoCompare(DataSourceBase):
         self, asset: AssetSymbol, quote: QuoteSymbol, _asset_id: AssetId = AssetId("")
     ) -> Optional[Decimal]:
         json_resp = self.get_json(
-            f"https://min-api.cryptocompare.com/data/price"
-            f"?extraParams={self.USER_AGENT}&fsym={asset}&tsyms={quote}"
+            f"{self.api_root}/data/price?extraParams={self.USER_AGENT}&fsym={asset}&tsyms={quote}"
         )
         return Decimal(repr(json_resp[quote])) if quote in json_resp else None
 
@@ -445,7 +451,7 @@ class CryptoCompare(DataSourceBase):
         _asset_id: AssetId = AssetId(""),
     ) -> None:
         url = (
-            f"https://min-api.cryptocompare.com/data/histoday?aggregate=1"
+            f"{self.api_root}/data/histoday?aggregate=1"
             f"&extraParams={self.USER_AGENT}&fsym={asset}&tsym={quote}"
             f"&limit={self.MAX_DAYS}"
             f"&toTs={self.epoch_time(Timestamp(timestamp + timedelta(days=self.MAX_DAYS)))}"
@@ -471,7 +477,17 @@ class CryptoCompare(DataSourceBase):
 class CoinGecko(DataSourceBase):
     def __init__(self) -> None:
         super().__init__()
-        json_resp = self.get_json("https://api.coingecko.com/api/v3/coins/list")
+
+        if "coingecko_pro_api_key" in config.config:
+            self.headers["x-cg-pro-api-key"] = f"{config.coingecko_pro_api_key}"
+            self.api_root = "https://pro-api.coingecko.com/api/v3"
+        elif "coingecko_demo_api_key" in config.config:
+            self.headers["x-cg-demo-api-key"] = config.coingecko_demo_api_key
+            self.api_root = "https://api.coingecko.com/api/v3"
+        else:
+            self.api_root = "https://api.coingecko.com/api/v3"
+
+        json_resp = self.get_json(f"{self.api_root}/coins/list")
         self.ids = {
             c["id"]: {"symbol": c["symbol"].strip().upper(), "name": c["name"].strip()}
             for c in json_resp
@@ -489,8 +505,8 @@ class CoinGecko(DataSourceBase):
             asset_id = self.assets[asset]["asset_id"]
 
         json_resp = self.get_json(
-            f"https://api.coingecko.com/api/v3/coins/{asset_id}?localization=false"
-            f"&community_data=false&developer_data=false"
+            f"{self.api_root}/coins/{asset_id}"
+            f"?localization=false&community_data=false&developer_data=false"
         )
         return (
             Decimal(repr(json_resp["market_data"]["current_price"][quote.lower()]))
@@ -510,10 +526,7 @@ class CoinGecko(DataSourceBase):
         if not asset_id:
             asset_id = self.assets[asset]["asset_id"]
 
-        url = (
-            f"https://api.coingecko.com/api/v3/coins/{asset_id}/market_chart"
-            f"?vs_currency={quote}&days=max"
-        )
+        url = f"{self.api_root}/coins/{asset_id}/market_chart?vs_currency={quote}&days=max"
         json_resp = self.get_json(url)
         pair = self.pair(asset, quote)
         if "prices" in json_resp:
@@ -535,7 +548,14 @@ class CoinPaprika(DataSourceBase):
 
     def __init__(self) -> None:
         super().__init__()
-        json_resp = self.get_json("https://api.coinpaprika.com/v1/coins")
+
+        if "coinpaprika_api_key" in config.config:
+            self.headers["Authorization"] = f"{config.coinpaprika_api_key}"
+            self.api_root = "https://api-pro.coinpaprika.com/v1"
+        else:
+            self.api_root = "https://api.coinpaprika.com/v1"
+
+        json_resp = self.get_json(f"{self.api_root}/coins")
         self.ids = {
             c["id"]: {"symbol": c["symbol"].strip().upper(), "name": c["name"].strip()}
             for c in json_resp
@@ -552,9 +572,7 @@ class CoinPaprika(DataSourceBase):
         if not asset_id:
             asset_id = self.assets[asset]["asset_id"]
 
-        json_resp = self.get_json(
-            f"https://api.coinpaprika.com/v1/tickers/{asset_id}?quotes={quote}"
-        )
+        json_resp = self.get_json(f"{self.api_root}/tickers/{asset_id}?quotes={quote}")
         return (
             Decimal(repr(json_resp["quotes"][quote]["price"]))
             if "quotes" in json_resp and quote in json_resp["quotes"]
@@ -576,7 +594,7 @@ class CoinPaprika(DataSourceBase):
             asset_id = self.assets[asset]["asset_id"]
 
         url = (
-            f"https://api.coinpaprika.com/v1/tickers/{asset_id}/historical"
+            f"{self.api_root}/tickers/{asset_id}/historical"
             f"?start={timestamp:%Y-%m-%d}&limit={self.MAX_DAYS}&quote={quote}&interval=1d"
         )
 
