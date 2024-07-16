@@ -344,12 +344,13 @@ def _parse_kucoin_futures_row(
     data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
     data_row.parsed = True
     asset = _get_asset_from_symbol(row_dict["Symbol"])
+    total_fees = Decimal(row_dict["Total Funding Fees"]) - Decimal(row_dict["Total Trading Fees"])
 
-    if Decimal(row_dict["Realized PNL"]) > 0:
+    if Decimal(row_dict["Realized PNL"]) - total_fees > 0:
         data_row.t_record = TransactionOutRecord(
             TrType.MARGIN_GAIN,
             data_row.timestamp,
-            buy_quantity=Decimal(row_dict["Realized PNL"]),
+            buy_quantity=Decimal(row_dict["Realized PNL"]) - total_fees,
             buy_asset=asset,
             wallet=WALLET,
             note=row_dict["Symbol"],
@@ -358,25 +359,35 @@ def _parse_kucoin_futures_row(
         data_row.t_record = TransactionOutRecord(
             TrType.MARGIN_LOSS,
             data_row.timestamp,
-            sell_quantity=abs(Decimal(row_dict["Realized PNL"])),
+            sell_quantity=abs(Decimal(row_dict["Realized PNL"]) - total_fees),
             sell_asset=asset,
             wallet=WALLET,
             note=row_dict["Symbol"],
         )
 
-    if Decimal(row_dict["Total Funding Fees"]) + Decimal(row_dict["Total Trading Fees"]) > 0:
-        dup_data_row = copy.copy(data_row)
-        dup_data_row.row = []
+    dup_data_row = copy.copy(data_row)
+    dup_data_row.row = []
+
+    if total_fees > 0:
+        dup_data_row.t_record = TransactionOutRecord(
+            TrType.GIFT_RECEIVED,  # Update to FEE_REBATE when merged
+            data_row.timestamp,
+            buy_quantity=total_fees,
+            buy_asset=asset,
+            wallet=WALLET,
+            note=row_dict["Symbol"],
+        )
+    else:
         dup_data_row.t_record = TransactionOutRecord(
             TrType.MARGIN_FEE,
             data_row.timestamp,
-            sell_quantity=Decimal(row_dict["Total Funding Fees"])
-            + Decimal(row_dict["Total Trading Fees"]),
+            sell_quantity=abs(total_fees),
             sell_asset=asset,
             wallet=WALLET,
             note=row_dict["Symbol"],
         )
-        data_rows.insert(row_index + 1, dup_data_row)
+
+    data_rows.insert(row_index + 1, dup_data_row)
 
 
 def _get_asset_from_symbol(symbol: str) -> str:
