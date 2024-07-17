@@ -471,20 +471,25 @@ class ReportLog:
     def _margin_trading(self, margin: CalculateMarginTrading) -> None:
         print(f"\n{Fore.CYAN}Margin Trading\n")
         print("These figures are NOT included in the Summary or Tax Estimate above.\n")
-        header = f'{"Wallet":<30} {"Gains":>13} {"Losses":>13} {"Fees":>13}'
+        header = f'{"Wallet":<30} {"Contract":<40} {"Gains":>13} {"Losses":>13} {"Fees":>13}'
 
         print(f"{Fore.YELLOW}{header}")
-        for wallet in sorted(margin.wallet_totals, key=str.lower):
+        for wallet, note in sorted(
+            margin.contract_totals, key=lambda key: (key[0].lower(), key[1].lower())
+        ):
             print(
                 f"{Fore.WHITE}{wallet:<30} "
-                f'{self.format_value(margin.wallet_totals[wallet]["gains"]):>13} '
-                f'{self.format_value(margin.wallet_totals[wallet]["losses"]):>13} '
-                f'{self.format_value(margin.wallet_totals[wallet]["fees"]):>13}{Style.NORMAL}'
+                f"{Fore.WHITE}{self.format_note(note):<40} "
+                f'{self.format_value(margin.contract_totals[(wallet, note)]["gains"]):>13} '
+                f'{self.format_value(margin.contract_totals[(wallet, note)]["losses"]):>13} '
+                f'{self.format_value(margin.contract_totals[(wallet, note)]["fees"]):>13}'
+                f"{Style.NORMAL}"
             )
 
         print(f'{Fore.YELLOW}{"_" * len(header)}')
         print(
             f'{Fore.YELLOW}{Style.BRIGHT}{"Total":<30} '
+            f'{"":<40} '
             f'{self.format_value(margin.totals["gains"]):>13} '
             f'{self.format_value(margin.totals["losses"]):>13} '
             f'{self.format_value(margin.totals["fees"]):>13}{Style.NORMAL}'

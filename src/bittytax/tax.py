@@ -12,7 +12,17 @@ from colorama import Fore
 from tqdm import tqdm
 from typing_extensions import NotRequired, TypedDict
 
-from .bt_types import AssetName, AssetSymbol, Date, DisposalType, FixedValue, TrType, Wallet, Year
+from .bt_types import (
+    AssetName,
+    AssetSymbol,
+    Date,
+    DisposalType,
+    FixedValue,
+    Note,
+    TrType,
+    Wallet,
+    Year,
+)
 from .config import config
 from .constants import TAX_RULES_UK_COMPANY
 from .holdings import Holdings
@@ -523,7 +533,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 if isinstance(te, TaxEventMarginTrade):
                     calc_margin_trading.totalise(te)
 
-        calc_margin_trading.totals_by_wallet()
+        calc_margin_trading.totals_by_contract()
         return calc_margin_trading
 
     def calculate_holdings(self, value_asset: ValueAsset) -> None:
@@ -860,40 +870,40 @@ class CalculateMarginTrading:
             "losses": Decimal(0),
             "fees": Decimal(0),
         }
-        self.wallets: Dict[Wallet, List[TaxEventMarginTrade]] = {}
-        self.wallet_totals: Dict[Wallet, MarginReportTotal] = {}
+        self.contracts: Dict[Tuple[Wallet, Note], List[TaxEventMarginTrade]] = {}
+        self.contract_totals: Dict[Tuple[Wallet, Note], MarginReportTotal] = {}
 
     def totalise(self, te: TaxEventMarginTrade) -> None:
         self.totals["gains"] += te.gain
         self.totals["losses"] += te.loss
         self.totals["fees"] += te.fee
 
-        if te.wallet not in self.wallets:
-            self.wallets[te.wallet] = []
+        if (te.wallet, te.note) not in self.contracts:
+            self.contracts[(te.wallet, te.note)] = []
 
-        self.wallets[te.wallet].append(te)
+        self.contracts[(te.wallet, te.note)].append(te)
 
-    def totals_by_wallet(self) -> None:
-        for wallet, te_list in self.wallets.items():
+    def totals_by_contract(self) -> None:
+        for (wallet, note), te_list in self.contracts.items():
             for te in te_list:
-                if wallet not in self.wallet_totals:
-                    self.wallet_totals[wallet] = {
+                if (wallet, note) not in self.contract_totals:
+                    self.contract_totals[(wallet, note)] = {
                         "gains": te.gain,
                         "losses": te.loss,
                         "fees": te.fee,
                     }
                 else:
-                    self.wallet_totals[wallet]["gains"] += te.gain
-                    self.wallet_totals[wallet]["losses"] += te.loss
-                    self.wallet_totals[wallet]["fees"] += te.fee
+                    self.contract_totals[(wallet, note)]["gains"] += te.gain
+                    self.contract_totals[(wallet, note)]["losses"] += te.loss
+                    self.contract_totals[(wallet, note)]["fees"] += te.fee
 
                 if config.debug:
                     print(f"{Fore.GREEN}margin: {te.t}")
-                    print(f"{Fore.YELLOW}margin:   {self.totals_str(wallet)}")
+                    print(f"{Fore.YELLOW}margin:   {self.totals_str(wallet, note)}")
 
-    def totals_str(self, wallet: Wallet) -> str:
+    def totals_str(self, wallet: Wallet, note: Note) -> str:
         return (
-            f'{wallet}: gains={config.sym()}{self.wallet_totals[wallet]["gains"]} '
-            f'losses={config.sym()}{self.wallet_totals[wallet]["losses"]} '
-            f'fess={config.sym()}{self.wallet_totals[wallet]["fees"]} '
+            f'{wallet} {note}: gains={config.sym()}{self.contract_totals[(wallet, note)]["gains"]} '
+            f'losses={config.sym()}{self.contract_totals[(wallet, note)]["losses"]} '
+            f'fess={config.sym()}{self.contract_totals[(wallet, note)]["fees"]} '
         )

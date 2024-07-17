@@ -83,6 +83,7 @@ class TaxEventMarginTrade(TaxEvent):  # pylint: disable=too-few-public-methods
     def __init__(self, t: Union[Buy, Sell]) -> None:
         super().__init__(t.date(), config.local_currency)
         self.wallet = t.wallet
+        self.note = t.note
         self.gain = Decimal(0)
         self.loss = Decimal(0)
         self.fee = Decimal(0)
