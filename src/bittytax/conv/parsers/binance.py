@@ -592,7 +592,7 @@ def _parse_binance_statements_futures_row(
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
         )
-    elif row_dict["Operation"] == "Asset Conversion Transfer":
+    elif row_dict["Operation"] in ("Asset Conversion Transfer", "Futures Convert"):
         _make_trade(
             _get_op_rows(tx_times, data_row.timestamp, (row_dict["Operation"],)),
         )
