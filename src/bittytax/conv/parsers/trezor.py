@@ -8,7 +8,8 @@ from typing import TYPE_CHECKING
 from typing_extensions import Unpack
 
 from ...bt_types import TrType
-from ..dataparser import DataParser, ParserArgs, ParserType
+from ..dataparser import ConsolidateType, DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
 
@@ -18,16 +19,13 @@ if TYPE_CHECKING:
 WALLET = "Trezor"
 
 
-def parse_trezor_labeled(
-    data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
-) -> None:
-    parse_trezor(data_row, parser, **kwargs)
-
-
 def parse_trezor(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(
         row_dict["Date"] + "T" + row_dict["Time"], tz="GMT+1"
+    )
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("TX id"), tx_dest_pos=parser.in_header.index("Address")
     )
 
     if not kwargs["cryptoasset"]:
@@ -92,7 +90,8 @@ DataParser(
         "Balance",
     ],
     worksheet_name="Trezor",
-    row_handler=parse_trezor_labeled,
+    row_handler=parse_trezor,
+    consolidate_type=ConsolidateType.HEADER_MATCH,
 )
 
 DataParser(

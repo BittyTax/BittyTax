@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -61,6 +62,11 @@ def parse_coinfloor_deposits_withdrawals(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date & Time"])
+    if "Transaction Hash" in row_dict:
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("Transaction Hash"),
+            tx_dest_pos=parser.in_header.index("Address"),
+        )
 
     if row_dict["Type"] == "Deposit":
         data_row.t_record = TransactionOutRecord(

@@ -10,6 +10,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -88,6 +89,9 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         else:
             t_type = TrType.DEPOSIT
 
+        if row_dict["Type"] == "Deposit":
+            data_row.tx_raw = TxRawPos(parser.in_header.index("Details"))
+
         data_row.t_record = TransactionOutRecord(
             t_type,
             data_row.timestamp,
@@ -124,22 +128,33 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             buy_value=value,
             wallet=WALLET,
         )
-    elif row_dict["Type"] in (
-        "Bonus",
-        "Cashback",
-        "Exchange Cashback",
-        "ReferralBonus",
-        "Referral Bonus",
-    ):
+    elif row_dict["Type"] in ("ReferralBonus", "Referral Bonus"):
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.REFERRAL,
             data_row.timestamp,
             buy_quantity=buy_quantity,
             buy_asset=buy_asset,
             buy_value=value,
             wallet=WALLET,
         )
-
+    elif row_dict["Type"] in ("Cashback", "Exchange Cashback"):
+        data_row.t_record = TransactionOutRecord(
+            TrType.CASHBACK,
+            data_row.timestamp,
+            buy_quantity=buy_quantity,
+            buy_asset=buy_asset,
+            buy_value=value,
+            wallet=WALLET,
+        )
+    elif row_dict["Type"] == "Bonus":
+        data_row.t_record = TransactionOutRecord(
+            TrType.AIRDROP,
+            data_row.timestamp,
+            buy_quantity=buy_quantity,
+            buy_asset=buy_asset,
+            buy_value=value,
+            wallet=WALLET,
+        )
     elif row_dict["Type"] in ("Exchange", "CreditCardStatus", "Credit Card Status"):
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,

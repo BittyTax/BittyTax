@@ -10,6 +10,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -58,7 +59,7 @@ def parse_bnktothefuture(
             )
     elif row_dict["Description"] == "Reward":
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.AIRDROP,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["In"]),
             buy_asset=_asset(row_dict["Currency"]),
@@ -99,6 +100,7 @@ def parse_bnktothefuture(
                     fee_asset = _asset(dtls[rel_tx]["Currency"])
                     break
 
+        data_row.tx_raw = TxRawPos(parser.in_header.index("Details"))
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,

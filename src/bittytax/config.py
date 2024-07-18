@@ -6,7 +6,6 @@ import os
 import sys
 from typing import Any, TextIO
 
-import dateutil.tz
 import pkg_resources
 import yaml
 from colorama import Fore
@@ -16,8 +15,6 @@ from .constants import BITTYTAX_PATH, ERROR
 
 class Config:
     BITTYTAX_CONFIG = "bittytax.conf"
-
-    TZ_LOCAL = dateutil.tz.gettz("Europe/London")
 
     FIAT_LIST = ["GBP", "EUR", "USD", "AUD", "NZD", "CAD", "PLN"]
     CRYPTO_LIST = ["BTC", "ETH", "XRP", "LTC", "BCH", "USDT"]
@@ -35,10 +32,13 @@ class Config:
 
     DEFAULT_CONFIG = {
         "local_currency": "GBP",
+        "local_timezone": "Europe/London",
+        "date_is_day_first": True,
         "fiat_list": FIAT_LIST,
         "crypto_list": CRYPTO_LIST,
         "trade_asset_type": TRADE_ASSET_TYPE_PRIORITY,
         "trade_allowable_cost_type": TRADE_ALLOWABLE_COST_SPLIT,
+        "transaction_fee_allowable_cost": True,
         "audit_hide_empty": False,
         "show_empty_wallets": False,
         "transfers_include": False,
@@ -56,6 +56,13 @@ class Config:
         "binance_multi_bnb_split_even": False,
         "binance_statements_only": False,
     }
+
+    OPTIONAL_CONFIG = (
+        "coingecko_pro_api_key",
+        "coingecko_demo_api_key",
+        "cryptocompare_api_key",
+        "coinpaprika_api_key",
+    )
 
     def __init__(self) -> None:
         self.debug = False
@@ -83,6 +90,9 @@ class Config:
             sys.stderr.write(f"{ERROR}Config file contains an error:\n{e}\n")
             sys.exit(1)
 
+        if self.config is None:
+            self.config = {}
+
         for name, default in self.DEFAULT_CONFIG.items():
             if name not in self.config:
                 self.config[name] = default
@@ -100,6 +110,10 @@ class Config:
 
         for name in self.DEFAULT_CONFIG:
             sys_out.write(f"{Fore.GREEN}config: {name}: {self.config[name]}\n")
+
+        for name in self.OPTIONAL_CONFIG:
+            if name in self.config:
+                sys_out.write(f"{Fore.GREEN}config: {name}: {self._mask_data(self.config[name])}\n")
 
     def sym(self) -> str:
         if self.ccy == "GBP":
@@ -146,6 +160,10 @@ class Config:
         if start.year == end.year:
             return f"{start:%Y}"
         return f"{start:%Y}/{end:%y}"
+
+    @staticmethod
+    def _mask_data(data: str, show: int = 4) -> str:
+        return data[-show:].rjust(len(data), "#")
 
 
 config = Config()

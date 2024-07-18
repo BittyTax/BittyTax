@@ -8,11 +8,13 @@ import sys
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple, Union
 
+import requests
 from colorama import Fore
 from tqdm import tqdm
 from typing_extensions import NotRequired, TypedDict
 
 from .bt_types import (
+    TRANSFER_TYPES,
     AssetName,
     AssetSymbol,
     Date,
@@ -24,7 +26,7 @@ from .bt_types import (
     Year,
 )
 from .config import config
-from .constants import TAX_RULES_UK_COMPANY
+from .constants import TAX_RULES_UK_COMPANY, WARNING
 from .holdings import Holdings
 from .price.valueasset import ValueAsset
 from .tax_event import TaxEvent, TaxEventCapitalGains, TaxEventIncome, TaxEventMarginTrade
@@ -115,8 +117,6 @@ class MarginReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
 
 
 class TaxCalculator:  # pylint: disable=too-many-instance-attributes
-    TRANSFER_TYPES = (TrType.DEPOSIT, TrType.WITHDRAWAL)
-
     INCOME_TYPES = (
         TrType.MINING,
         TrType.STAKING,
@@ -391,7 +391,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     print(f"{Fore.BLUE}section104: //{t} <- matched")
                 continue
 
-            if not config.transfers_include and t.t_type in self.TRANSFER_TYPES:
+            if not config.transfers_include and t.t_type in TRANSFER_TYPES:
                 if config.debug:
                     print(f"{Fore.BLUE}section104: //{t} <- transfer")
                 continue
@@ -494,9 +494,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
     def _all_transactions(self) -> List[Union[Buy, Sell]]:
-        if not config.transfers_include:
-            # Ordered so transfers appear before the fee spend in the log
-            return self.other_transactions + list(self.buys_ordered) + list(self.sells_ordered)
         return self.buys_ordered + self.sells_ordered + self.other_transactions
 
     def calculate_capital_gains(self, tax_year: Year) -> "CalculateCapitalGains":
@@ -550,9 +547,18 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             disable=bool(config.debug or not sys.stdout.isatty()),
         ):
             if self.holdings[h].quantity > 0 or config.show_empty_wallets:
-                value, name, _ = value_asset.get_current_value(
-                    self.holdings[h].asset, self.holdings[h].quantity
-                )
+                try:
+                    value, name, _ = value_asset.get_current_value(
+                        self.holdings[h].asset, self.holdings[h].quantity
+                    )
+                except requests.exceptions.HTTPError as e:
+                    tqdm.write(
+                        f"{WARNING} Skipping valuation of {self.holdings[h].asset} "
+                        f"due to API failure ({e.response.status_code})"
+                    )
+                    value = None
+                    name = AssetName("")
+
                 value = value.quantize(PRECISION) if value is not None else None
                 cost = (self.holdings[h].cost + self.holdings[h].fees).quantize(PRECISION)
 

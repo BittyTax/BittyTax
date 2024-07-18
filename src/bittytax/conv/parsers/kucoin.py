@@ -13,6 +13,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataFormatNotSupported, DataRowError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -202,6 +203,7 @@ def parse_kucoin_deposits_withdrawals_v1(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["created_at"], tz="Asia/Singapore")
+    data_row.tx_raw = TxRawPos(parser.in_header.index("hash"))
 
     if row_dict["type"] == "DEPOSIT":
         data_row.t_record = TransactionOutRecord(
@@ -234,15 +236,21 @@ def parse_kucoin_deposits(
         data_row.timestamp,
         buy_quantity=Decimal(row_dict["Amount"]),
         buy_asset=row_dict["Coin"],
+        fee_quantity=Decimal(row_dict["Fee"]) if "Fee" in row_dict else None,
+        fee_asset=row_dict["Coin"] if "Fee" in row_dict else "",
         wallet=WALLET,
     )
 
 
 def parse_kucoin_withdrawals(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"], tz="Asia/Singapore")
+    if "Wallet Address" in row_dict:
+        data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Wallet Address"))
+    else:
+        data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Wallet Address/Account"))
 
     data_row.t_record = TransactionOutRecord(
         TrType.WITHDRAWAL,
@@ -250,6 +258,7 @@ def parse_kucoin_withdrawals(
         sell_quantity=Decimal(row_dict["Amount"]),
         sell_asset=row_dict["Coin"],
         wallet=WALLET,
+        note=row_dict["Remark"],
     )
 
 
@@ -266,6 +275,7 @@ def parse_kucoin_deposits_withdrawals_v2(
         return
 
     if "Withdrawal Address/Account" in row_dict:
+        data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Withdrawal Address/Account"))
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -274,6 +284,7 @@ def parse_kucoin_deposits_withdrawals_v2(
             fee_quantity=Decimal(row_dict["Fee"]),
             fee_asset=row_dict["Coin"],
             wallet=WALLET,
+            note=row_dict["Remarks"],
         )
     else:
         data_row.t_record = TransactionOutRecord(
@@ -294,6 +305,7 @@ def parse_kucoin_staking_income(
 
     timestamp_hdr = parser.args[0].group(1)
     utc_offset = parser.args[0].group(2)
+
     data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
 
     data_row.t_record = TransactionOutRecord(
@@ -520,11 +532,26 @@ DataParser(
 DataParser(
     ParserType.EXCHANGE,
     "KuCoin Deposits",
+    ["Time", "Coin", "Network", "Amount", "Type", "Remark", "Fee"],
+    worksheet_name="KuCoin D",
+    row_handler=parse_kucoin_deposits,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Deposits",
     ["Time", "Coin", "Amount", "Type", "Remark"],
     worksheet_name="KuCoin D",
     row_handler=parse_kucoin_deposits,
 )
 
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Withdrawals",
+    ["Time", "Coin", "Network", "Amount", "Type", "Wallet Address/Account", "Remark"],
+    worksheet_name="KuCoin W",
+    row_handler=parse_kucoin_withdrawals,
+)
 DataParser(
     ParserType.EXCHANGE,
     "KuCoin Withdrawals",

@@ -2,6 +2,7 @@
 # (c) Nano Nano Ltd 2019
 
 import argparse
+import os
 import platform
 import re
 import sys
@@ -12,11 +13,16 @@ from typing import Dict, List, Optional, Tuple, Union
 import xlsxwriter
 from colorama import Fore
 from typing_extensions import TypedDict
-from xlsxwriter.utility import xl_rowcol_to_cell
 
 from ..bt_types import BUY_TYPES, SELL_TYPES, TrType, UnmappedType
 from ..config import config
-from ..constants import TZ_UTC
+from ..constants import (
+    FONT_COLOR_TX_DEST,
+    FONT_COLOR_TX_HASH,
+    FONT_COLOR_TX_SRC,
+    PROJECT_URL,
+    TZ_UTC,
+)
 from ..version import __version__
 from .datafile import DataFile
 from .datarow import DataRow
@@ -45,7 +51,6 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
     FONT_COLOR_IN_DATA = "#808080"
 
     TITLE = "BittyTax Records"
-    PROJECT_URL = "https://github.com/BittyTax/BittyTax"
 
     def __init__(self, progname: str, data_files: List[DataFile], args: argparse.Namespace) -> None:
         super().__init__(data_files)
@@ -57,7 +62,7 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             {
                 "title": self.TITLE,
                 "author": f"{progname} v{__version__}",
-                "comments": self.PROJECT_URL,
+                "comments": PROJECT_URL,
             }
         )
 
@@ -89,6 +94,15 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
         )
         self.format_in_data = self.workbook.add_format(
             {"font_size": FONT_SIZE, "font_color": self.FONT_COLOR_IN_DATA}
+        )
+        self.format_in_data_tx_hash = self.workbook.add_format(
+            {"font_size": FONT_SIZE, "font_color": f"#{FONT_COLOR_TX_HASH}"}
+        )
+        self.format_in_data_tx_src = self.workbook.add_format(
+            {"font_size": FONT_SIZE, "font_color": f"#{FONT_COLOR_TX_SRC}"}
+        )
+        self.format_in_data_tx_dest = self.workbook.add_format(
+            {"font_size": FONT_SIZE, "font_color": f"#{FONT_COLOR_TX_DEST}"}
         )
         self.format_in_data_col_err = self.workbook.add_format(
             {
@@ -154,7 +168,10 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             worksheet.autofit()
 
         self.workbook.close()
-        sys.stderr.write(f"{Fore.WHITE}output EXCEL file created: {Fore.YELLOW}{self.filename}\n")
+        sys.stderr.write(
+            f"{Fore.WHITE}output EXCEL file created: "
+            f"{Fore.YELLOW}{os.path.abspath(self.filename)}\n"
+        )
 
 
 class Worksheet:
@@ -279,6 +296,15 @@ class Worksheet:
                 cell_format = self.output.format_in_data_col_err
             elif data_row.failure and not isinstance(data_row.failure, DataRowError):
                 cell_format = self.output.format_in_data_err
+            elif data_row.tx_raw:
+                if data_row.tx_raw.tx_hash_pos == col_num:
+                    cell_format = self.output.format_in_data_tx_hash
+                elif data_row.tx_raw.tx_src_pos == col_num:
+                    cell_format = self.output.format_in_data_tx_src
+                elif data_row.tx_raw.tx_dest_pos == col_num:
+                    cell_format = self.output.format_in_data_tx_dest
+                else:
+                    cell_format = self.output.format_in_data
             else:
                 cell_format = self.output.format_in_data
 
@@ -348,14 +374,14 @@ class Worksheet:
                 self.worksheet.write_string(
                     row_num,
                     col_num,
-                    f"{quantity.normalize():0f}",
+                    f"{quantity.normalize():0,f}",
                     self.output.format_num_string,
                 )
             else:
                 self.worksheet.write_number(
                     row_num, col_num, quantity.normalize(), self.output.format_num_float
                 )
-                cell = xl_rowcol_to_cell(row_num, col_num)
+                cell = xlsxwriter.utility.xl_rowcol_to_cell(row_num, col_num)
 
                 if not config.large_data:
                     # Lots of conditional formatting can slow down Excel

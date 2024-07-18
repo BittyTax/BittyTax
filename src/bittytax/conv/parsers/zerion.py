@@ -13,6 +13,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataRowError, UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -56,7 +57,12 @@ def _parse_zerion_row(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(
-        row_dict["Date"] + " " + row_dict["Time"], tz="Europe/London"
+        row_dict["Date"] + " " + row_dict["Time"], tz=config.local_timezone
+    )
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Tx Hash"),
+        parser.in_header.index("Sender"),
+        parser.in_header.index("Receiver"),
     )
     data_row.parsed = True
 

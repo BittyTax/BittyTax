@@ -11,6 +11,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataRowError, MissingComponentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -55,6 +56,10 @@ def _parse_coinmetro_row(
     data_row.parsed = True
 
     if "Deposit" in row_dict["Description"]:
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("Transaction Hash"),
+            tx_dest_pos=parser.in_header.index("Address") if not "n/a" else None,
+        )
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -65,6 +70,10 @@ def _parse_coinmetro_row(
             wallet=WALLET,
         )
     elif "Withdrawal" in row_dict["Description"]:
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("Transaction Hash"),
+            tx_dest_pos=parser.in_header.index("Address"),
+        )
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,

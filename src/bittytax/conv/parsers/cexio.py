@@ -12,6 +12,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataRowError, UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -74,6 +75,7 @@ def _parse_cexio_row(
             return
 
         if row_dict["Comment"].endswith("Completed") or row_dict["Comment"].startswith("Confirmed"):
+            data_row.tx_raw = TxRawPos(parser.in_header.index("Comment"))
             data_row.t_record = TransactionOutRecord(
                 TrType.DEPOSIT,
                 data_row.timestamp,
@@ -90,6 +92,7 @@ def _parse_cexio_row(
         else:
             sell_quantity = abs(Decimal(row_dict["Amount"]))
 
+        data_row.tx_raw = TxRawPos(parser.in_header.index("Comment"))
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -141,9 +144,18 @@ def _parse_cexio_row(
         )
     elif row_dict["Type"] in ("wallet_buy", "wallet_sell"):
         _make_trade(tx_times[row_dict["DateUTC"]], data_row, parser)
-    elif row_dict["Type"] in ("referral", "checksum", "costsNothing"):
+    elif row_dict["Type"] == "referral":
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.REFERRAL,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Amount"]),
+            buy_asset=row_dict["Symbol"],
+            wallet=WALLET,
+            note=row_dict["Comment"],
+        )
+    elif row_dict["Type"] in ("checksum", "costsNothing"):
+        data_row.t_record = TransactionOutRecord(
+            TrType.FEE_REBATE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Symbol"],

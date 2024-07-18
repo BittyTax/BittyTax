@@ -11,6 +11,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType, UnmappedType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataRowError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -90,6 +91,9 @@ def _parse_gravity_row(
 
     elif row_dict["transaction type"] == "withdrawal":
         if row_dict["to account"] == SYSTEM_ACCOUNT:
+            if "withdrawal_address" in row_dict:
+                data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("withdrawal_address"))
+
             t_type = TrType.WITHDRAWAL
             sell_quantity = Decimal(row_dict["amount"])
             sell_asset = row_dict["currency"]
@@ -129,7 +133,7 @@ def _parse_gravity_row(
         if buy_quantity is None:
             return
     elif row_dict["transaction type"] == referral_type:
-        t_type = TrType.GIFT_RECEIVED
+        t_type = TrType.REFERRAL
         buy_quantity = Decimal(row_dict["amount"])
         buy_asset = row_dict["currency"]
     elif row_dict["transaction type"] in (

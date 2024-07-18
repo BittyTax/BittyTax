@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -22,6 +23,11 @@ def parse_helium_fairspot(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["date"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("transaction_hash"),
+        parser.in_header.index("payee"),
+        parser.in_header.index("payer"),
+    )
     amount_ccy = DataParser.convert_currency(row_dict["usd_amount"], "USD", data_row.timestamp)
     fee_ccy = DataParser.convert_currency(row_dict["usd_fee"], "USD", data_row.timestamp)
 
@@ -79,6 +85,11 @@ def parse_helium_explorer(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Hash"),
+        parser.in_header.index("Received From"),
+        parser.in_header.index("Sent To"),
+    )
 
     if row_dict["Tag"] == "mined":
         data_row.t_record = TransactionOutRecord(

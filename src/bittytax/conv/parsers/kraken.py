@@ -176,7 +176,7 @@ def _parse_kraken_ledgers_row(
                 dup_data_row = copy.copy(data_row)
                 dup_data_row.row = []
                 dup_data_row.t_record = TransactionOutRecord(
-                    TrType.GIFT_RECEIVED,
+                    TrType.FEE_REBATE,
                     data_row.timestamp,
                     buy_quantity=abs(Decimal(row_dict["fee"])),
                     buy_asset=_normalise_asset(row_dict["asset"]),
@@ -208,7 +208,7 @@ def _parse_kraken_ledgers_row(
                 dup_data_row = copy.copy(data_row)
                 dup_data_row.row = []
                 dup_data_row.t_record = TransactionOutRecord(
-                    TrType.GIFT_RECEIVED,
+                    TrType.FEE_REBATE,
                     data_row.timestamp,
                     buy_quantity=abs(Decimal(row_dict["fee"])),
                     buy_asset=_normalise_asset(row_dict["asset"]),
@@ -218,7 +218,7 @@ def _parse_kraken_ledgers_row(
                 data_rows.insert(row_index + 1, dup_data_row)
     elif row_dict["type"] == "invite bonus":
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.REFERRAL,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["amount"]),
             buy_asset=_normalise_asset(row_dict["asset"]),
@@ -515,6 +515,47 @@ kraken_ledgers = DataParser(
         "amount",
         "fee",
         "balance",
+        "amountusd",
+    ],
+    worksheet_name="Kraken L",
+    all_handler=parse_kraken_ledgers,
+)
+
+kraken_ledgers = DataParser(
+    ParserType.EXCHANGE,
+    "Kraken Ledgers",
+    [
+        "txid",
+        "refid",
+        "time",
+        "type",
+        "subtype",
+        "aclass",
+        "asset",
+        "wallet",
+        "amount",
+        "fee",
+        "balance",
+    ],
+    worksheet_name="Kraken L",
+    all_handler=parse_kraken_ledgers,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Kraken Ledgers",
+    [
+        "txid",
+        "refid",
+        "time",
+        "type",
+        "subtype",
+        "aclass",
+        "asset",
+        "amount",
+        "fee",
+        "balance",
+        "amountusd",
     ],
     worksheet_name="Kraken L",
     all_handler=parse_kraken_ledgers,

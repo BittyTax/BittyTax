@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -64,12 +65,15 @@ def parse_poloniex_trades(
 
 
 def parse_poloniex_deposits_withdrawals(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
 
     if "COMPLETE: " in row_dict["Status"]:
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("Status"), tx_dest_pos=parser.in_header.index("Address")
+        )
         # Legacy format also contained Withdrawals
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
@@ -79,6 +83,7 @@ def parse_poloniex_deposits_withdrawals(
             wallet=WALLET,
         )
     else:
+        data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Address"))
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -89,11 +94,14 @@ def parse_poloniex_deposits_withdrawals(
 
 
 def parse_poloniex_withdrawals(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
 
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Status"), tx_dest_pos=parser.in_header.index("Address")
+    )
     data_row.t_record = TransactionOutRecord(
         TrType.WITHDRAWAL,
         data_row.timestamp,

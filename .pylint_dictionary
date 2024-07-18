@@ -2,6 +2,7 @@ BNB
 BTC
 CGT
 CSV
+ETH
 FTX
 NFT
 PNL
@@ -9,7 +10,9 @@ TR
 USD
 UTC
 airdrop
+args
 binance
+blockchain
 coinbase
 crypto
 cryptoasset
@@ -29,9 +32,11 @@ openpyxl
 parsers
 rebase
 repr
+snowtrace
 timestamp
 timezone
 txhash
 xlsx
+xlsxwriter
 yaml
 zerion

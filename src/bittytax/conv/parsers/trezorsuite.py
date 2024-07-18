@@ -8,7 +8,9 @@ from typing import TYPE_CHECKING
 from typing_extensions import Unpack
 
 from ...bt_types import TrType
+from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
 
@@ -23,6 +25,9 @@ def parse_trezor_suite_v2(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["Timestamp"]))
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Transaction ID"), tx_dest_pos=parser.in_header.index("Address")
+    )
 
     if row_dict["Type"] == "RECV":
         # Workaround: we have to ignore the fee as fee is for the sender
@@ -40,7 +45,7 @@ def parse_trezor_suite_v2(
             data_row.timestamp,
             sell_quantity=Decimal(row_dict["Amount"]),
             sell_asset=row_dict["Amount unit"],
-            fee_quantity=Decimal(row_dict["Fee"]),
+            fee_quantity=Decimal(row_dict["Fee"]) if row_dict["Fee"] else None,
             fee_asset=row_dict["Fee unit"],
             wallet=WALLET,
             note=row_dict["Label"],
@@ -51,7 +56,7 @@ def parse_trezor_suite_v2(
             data_row.timestamp,
             sell_quantity=Decimal(0),
             sell_asset=row_dict["Amount unit"],
-            fee_quantity=Decimal(row_dict["Fee"]),
+            fee_quantity=Decimal(row_dict["Fee"]) if row_dict["Fee"] else None,
             fee_asset=row_dict["Fee unit"],
             wallet=WALLET,
             note=row_dict["Label"],
@@ -67,7 +72,7 @@ def parse_trezor_suite_v2(
             data_row.timestamp,
             sell_quantity=Decimal(row_dict["Amount"]),
             sell_asset=row_dict["Amount unit"],
-            fee_quantity=Decimal(row_dict["Fee"]),
+            fee_quantity=Decimal(row_dict["Fee"]) if row_dict["Fee"] else None,
             fee_asset=row_dict["Fee unit"],
             wallet=WALLET,
             note=note,
@@ -82,10 +87,14 @@ def parse_trezor_suite_v1(
     row_dict = data_row.row_dict
     if "Date & Time" in row_dict:
         data_row.timestamp = DataParser.parse_timestamp(
-            row_dict["Date & Time"], dayfirst=True, tz="Europe/London"
+            row_dict["Date & Time"], dayfirst=config.date_is_day_first, tz=config.local_timezone
         )
     else:
         data_row.timestamp = DataParser.parse_timestamp(int(row_dict["Timestamp"]))
+
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Transaction ID"), tx_dest_pos=parser.in_header.index("Addresses")
+    )
 
     if not kwargs["cryptoasset"]:
         match = re.match(r".+-(\w{3,4})-.*", kwargs["filename"])
@@ -156,7 +165,7 @@ DataParser(
         "Label",
         "Amount",
         "Amount unit",
-        "Fiat (GBP)",
+        lambda c: re.match(r"^Fiat \((\w{3})\)", c),
         "Other",
     ],
     worksheet_name="Trezor",

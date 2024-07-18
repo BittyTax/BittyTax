@@ -17,7 +17,7 @@
             <tr>
                 <td>{{te.asset}}</td>
                 <td>{{te.date|datefilter}}</td>
-                <td width="25%">{{te.format_disposal()|nowrapfilter}}</td>
+                <td width="25%">{{te.format_disposal()}}</td>
                 <td align="right">{{te.quantity|quantityfilter}}</td>
                 {% set asset_totals.quantity = asset_totals.quantity + te.quantity %}
                 <td align="right">{{te.cost|valuefilter}}</td>

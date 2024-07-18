@@ -1,1 +1,1 @@
-from . import bscscan, etherscan, ftmscan, hecoinfo, polygonscan, snowtrace
+from . import coincorner, etherscan, snowtrace

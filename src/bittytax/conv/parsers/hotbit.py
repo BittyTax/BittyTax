@@ -136,13 +136,13 @@ def _parse_hotbit_orders_row(
     # Have to re-calculate the total as it's incorrect for USDT trades
     total = Decimal(row_dict["Price"].split(" ")[0]) * Decimal(row_dict[amount_str].split(" ")[0])
 
-    # Maker fees are a credit (+), add as gift-received
+    # Maker fees are a credit (+)
     if row_dict["Fee"][0] == "+":
         # Have to re-calculate the fee as rounding in datafile is incorrect
         dup_data_row = copy.copy(data_row)
         dup_data_row.row = []
         dup_data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.FEE_REBATE,
             data_row.timestamp,
             buy_quantity=(total * MAKER_FEE).quantize(PRECISION, rounding=ROUND_DOWN),
             buy_asset=row_dict["Fee"].split(" ")[1],
@@ -229,13 +229,13 @@ def _parse_hotbit_trades_row(
             parser.in_header.index("market"), "market", row_dict["market"]
         )
 
-    # Maker fees are negative, add as gift-received
+    # Maker fees are negative
     if Decimal(row_dict["fee"]) < 0:
         dup_data_row = copy.copy(data_row)
         dup_data_row.row = []
 
         dup_data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.FEE_REBATE,
             data_row.timestamp,
             buy_quantity=abs(Decimal(row_dict["fee"]).quantize(PRECISION)),
             buy_asset=quote_asset,

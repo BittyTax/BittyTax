@@ -14,7 +14,7 @@ from colorama import Fore
 
 from ..bt_types import AssetSymbol, Timestamp
 from ..config import config
-from ..constants import ERROR, WARNING
+from ..constants import ERROR, TZ_UTC, WARNING
 from ..version import __version__
 from .assetdata import AsPriceRecord, AsRecord, AssetData
 from .datasource import DataSourceBase
@@ -143,6 +143,8 @@ def main() -> None:
         print(f"{Fore.YELLOW}{parser.prog} v{__version__}")
         print(f"{Fore.GREEN}python: v{platform.python_version()}")
         print(f"{Fore.GREEN}system: {platform.system()}, release: {platform.release()}")
+        for arg in vars(args):
+            print(f"{Fore.GREEN}args: {arg}: {getattr(args, arg)}")
         config.output_config(sys.stdout)
 
     if args.command in (CMD_LATEST, CMD_HISTORY):
@@ -270,7 +272,7 @@ def output_ds_price(asset_data: AsPriceRecord) -> None:
 
     print(
         f'{Fore.YELLOW}1 {asset_data["symbol"]}='
-        f'{asset_data["price"].normalize():0,f} {asset_data["quote"]} '
+        f'{asset_data["price"].normalize():0,f} {asset_data["quote"]}'
         f'{Fore.CYAN} via {asset_data["data_source"]} ({asset_data["name"]})'
         f'{Fore.YELLOW + " <-" if asset_data.get("priority") else ""}'
     )
@@ -306,7 +308,7 @@ def validate_date(value: str) -> Timestamp:
     except ValueError as e:
         raise argparse.ArgumentTypeError("date is not valid") from e
 
-    return Timestamp(date.replace(tzinfo=config.TZ_LOCAL))
+    return Timestamp(date.replace(tzinfo=TZ_UTC))
 
 
 def validate_quantity(value: str) -> Decimal:

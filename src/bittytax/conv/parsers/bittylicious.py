@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -22,6 +23,10 @@ def parse_bittylicious(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["startedTime"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("transactionID"),
+        tx_dest_pos=parser.in_header.index("coinAddress"),
+    )
 
     if row_dict["status"] != "RECEIVED":
         return

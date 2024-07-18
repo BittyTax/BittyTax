@@ -10,7 +10,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ...config import config
-from ..dataparser import DataParser, ParserArgs, ParserType
+from ..dataparser import ConsolidateType, DataParser, ParserArgs, ParserType
 from ..exceptions import DataRowError, MissingComponentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -111,7 +111,7 @@ def _parse_coinbase_pro_row(
         )
     elif row_dict["type"] == "rebate":
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.FEE_REBATE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["amount"]),
             buy_asset=row_dict["amount/balance unit"],
@@ -167,14 +167,7 @@ def parse_coinbase_pro_account_v1(
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
 
-def parse_coinbase_pro_fills_v2(
-    data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
-) -> None:
-    # Deprecated, you can now use just the account statement
-    parse_coinbase_pro_fills_v1(data_row, parser, **kwargs)
-
-
-def parse_coinbase_pro_fills_v1(
+def parse_coinbase_pro_fills(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
@@ -244,8 +237,8 @@ DataParser(
     ],
     worksheet_name="Coinbase Pro T",
     deprecated=coinbase_pro_account_v2,
-    # Different handler name used to prevent data file consolidation
-    row_handler=parse_coinbase_pro_fills_v2,
+    row_handler=parse_coinbase_pro_fills,
+    consolidate_type=ConsolidateType.HEADER_MATCH,
 )
 
 DataParser(
@@ -264,7 +257,8 @@ DataParser(
         "price/fee/total unit",
     ],
     worksheet_name="Coinbase Pro T",
-    row_handler=parse_coinbase_pro_fills_v1,
+    deprecated=coinbase_pro_account_v2,
+    row_handler=parse_coinbase_pro_fills,
 )
 
 DataParser(

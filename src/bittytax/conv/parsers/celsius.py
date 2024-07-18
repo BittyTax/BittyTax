@@ -111,17 +111,27 @@ def parse_celsius_row(
             wallet=WALLET,
         )
     elif row_dict["Transaction type"] in (
-        "promo_code_reward",
-        "Promo Code Reward",
         "referred_award",
         "Referred Award",
         "referrer_award",
         "Referrer Award",
+    ):
+        data_row.t_record = TransactionOutRecord(
+            TrType.REFERRAL,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Coin amount"]),
+            buy_asset=row_dict["Coin type"],
+            buy_value=DataParser.convert_currency(row_dict["USD Value"], "USD", data_row.timestamp),
+            wallet=WALLET,
+        )
+    elif row_dict["Transaction type"] in (
+        "promo_code_reward",
+        "Promo Code Reward",
         "bonus_token",
         "Bonus Token",
     ):
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.AIRDROP,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Coin amount"]),
             buy_asset=row_dict["Coin type"],

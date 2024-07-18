@@ -14,9 +14,13 @@ class TrType(Enum):
     DIVIDEND = "Dividend"
     INCOME = "Income"
     GIFT_RECEIVED = "Gift-Received"
+    FORK = "Fork"
     AIRDROP = "Airdrop"
     LOAN = "Loan"
     MARGIN_GAIN = "Margin-Gain"
+    REFERRAL = "Referral"
+    CASHBACK = "Cashback"
+    FEE_REBATE = "Fee-Rebate"
     WITHDRAWAL = "Withdrawal"
     SPEND = "Spend"
     GIFT_SENT = "Gift-Sent"
@@ -39,6 +43,12 @@ class DisposalType(Enum):
     NO_GAIN_NO_LOSS = "No Gain/No Loss"
 
 
+class TrRecordPart(Enum):
+    BUY = "Buy"
+    SELL = "Sell"
+    FEE = "Fee"
+
+
 BUY_TYPES = (
     TrType.DEPOSIT,
     TrType.MINING,
@@ -47,9 +57,13 @@ BUY_TYPES = (
     TrType.DIVIDEND,
     TrType.INCOME,
     TrType.GIFT_RECEIVED,
+    TrType.FORK,
     TrType.AIRDROP,
     TrType.LOAN,
     TrType.MARGIN_GAIN,
+    TrType.REFERRAL,
+    TrType.CASHBACK,
+    TrType.FEE_REBATE,
     TrType.TRADE,
 )
 
@@ -66,6 +80,8 @@ SELL_TYPES = (
     TrType.MARGIN_FEE,
     TrType.TRADE,
 )
+
+TRANSFER_TYPES = (TrType.DEPOSIT, TrType.WITHDRAWAL)
 
 UnmappedType = NewType("UnmappedType", str)
 

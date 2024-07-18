@@ -9,6 +9,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType, UnmappedType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 from ..output_csv import OutputBase
@@ -33,6 +34,8 @@ def parse_staketax_default(
     row_dict = data_row.row_dict
     if row_dict["timestamp"]:
         data_row.timestamp = DataParser.parse_timestamp(row_dict["timestamp"])
+
+    data_row.tx_raw = TxRawPos(parser.in_header.index("txid"))
 
     if row_dict["tx_type"].startswith("_"):
         t_type: Union[TrType, UnmappedType] = UnmappedType(row_dict["tx_type"])
@@ -141,6 +144,7 @@ def parse_staketax_bittytax(
         del parser.in_header[0 : len(OutputBase.BITTYTAX_OUT_HEADER)]
     del data_row.row[0 : len(OutputBase.BITTYTAX_OUT_HEADER)]
 
+    data_row.tx_raw = TxRawPos(parser.in_header.index("Tx ID"))
     raw = json.loads(row_dict["Raw Data"])
     parser.worksheet_name = "StakeTax " + raw["exchange"].replace("_blockchain", "").capitalize()
 
