@@ -31,7 +31,7 @@ from .transactions import TransactionHistory
 from .version import __version__
 
 if sys.stdout.encoding != "UTF-8":
-    sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
+    sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
 
 
 def main() -> None:

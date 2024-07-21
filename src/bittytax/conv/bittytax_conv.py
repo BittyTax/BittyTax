@@ -32,7 +32,7 @@ from .output_excel import OutputExcel
 from .parsers import *  # type: ignore[no-redef] # pylint: disable=wildcard-import, unused-wildcard-import # noqa: E501
 
 if sys.stderr.encoding != "UTF-8":
-    sys.stderr.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
+    sys.stderr.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
 
 
 def main() -> None:
