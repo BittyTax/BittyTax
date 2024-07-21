@@ -584,7 +584,7 @@ def _parse_binance_statements_futures_row(
     elif row_dict["Operation"] == "Funding Fee":
         if Decimal(row_dict["Change"]) > 0:
             data_row.t_record = TransactionOutRecord(
-                TrType.GIFT_RECEIVED,  # Update to FEE_REBATE when merged
+                TrType.FEE_REBATE,
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Change"]),
                 buy_asset=row_dict["Coin"],
@@ -600,7 +600,7 @@ def _parse_binance_statements_futures_row(
             )
     elif row_dict["Operation"] in ("Referrer rebates", "Referee rebates"):
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
+            TrType.REFERRAL,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Change"]),
             buy_asset=row_dict["Coin"],
@@ -680,10 +680,6 @@ def _parse_binance_statements_margin_row(
         )
 
 
-# The funding fees for Coin-M Futures are only available in the Futures transaction
-# history, they are not included in the Statements export (a bug).
-
-
 def parse_binance_futures(
     data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
@@ -760,7 +756,7 @@ def _parse_binance_futures_row(
     elif row_dict["type"] == "FUNDING_FEE":
         if Decimal(row_dict["Amount"]) > 0:
             data_row.t_record = TransactionOutRecord(
-                TrType.GIFT_RECEIVED,  # Update to FEE_REBATE when merged
+                TrType.FEE_REBATE,
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Amount"]),
                 buy_asset=row_dict["Asset"],
