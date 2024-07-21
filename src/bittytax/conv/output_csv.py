@@ -133,7 +133,7 @@ class OutputCsv(OutputBase):
                 f"{Fore.YELLOW}{os.path.abspath(self.filename)}\n"
             )
         else:
-            sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
+            sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
             writer = csv.writer(sys.stdout, lineterminator="\n")
             self.write_rows(writer)
 
