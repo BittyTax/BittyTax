@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType, UnmappedType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -30,9 +31,10 @@ BLOCKPIT_W_MAPPING = {
 }
 
 
-def parse_blockpit(data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
+def parse_blockpit(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
+    data_row.tx_raw = TxRawPos(parser.in_header.index("Transaction ID"))
 
     if row_dict["Fee Asset"]:
         fee_quantity = Decimal(row_dict["Fee Amount"])
