@@ -14,6 +14,7 @@ from typing_extensions import List, Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataRowError, UnexpectedTypeError, UnknownCryptoassetError
 from ..out_record import TransactionOutRecord
 
@@ -104,6 +105,7 @@ def _parse_deribit_row(
         row_dict["Fee Charged"] = row_dict["Fee Paid"]
 
     if row_dict["Type"] == "deposit":
+        data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Info"))
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -114,6 +116,7 @@ def _parse_deribit_row(
         if data_row.t_record.buy_quantity:
             balance[uid] += data_row.t_record.buy_quantity
     elif row_dict["Type"] == "withdrawal":
+        data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Info"))
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -251,7 +254,7 @@ def _parse_deribit_row(
         _close_position(data_rows, data_row, row_index, positions, uid, asset)
     elif row_dict["Type"] == "transfer from insurance":
         data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,  # Update to FEE_REBATE when merged
+            TrType.FEE_REBATE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Change"]),
             buy_asset="BTC",
@@ -320,7 +323,7 @@ def _close_position(
     total_fees = positions[uid][instrument].funding_fees - positions[uid][instrument].trading_fees
     if total_fees > 0:
         dup_data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,  # Update to FEE_REBATE when merged
+            TrType.FEE_REBATE,
             data_row.timestamp,
             buy_quantity=total_fees,
             buy_asset=asset,
