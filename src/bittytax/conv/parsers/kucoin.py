@@ -27,10 +27,15 @@ def parse_kucoin_trades_v5(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    timestamp_hdr = parser.args[0].group(1)
-    utc_offset = parser.args[0].group(2)
 
-    data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
+    if parser.args:
+        timestamp_hdr = parser.args[0].group(1)
+        utc_offset = parser.args[0].group(2)
+        data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
+    else:
+        data_row.timestamp = DataParser.parse_timestamp(
+            row_dict["Filled Time"], tz="Asia/Singapore"
+        )
 
     if row_dict["Side"] == "BUY":
         data_row.t_record = TransactionOutRecord(
@@ -266,10 +271,13 @@ def parse_kucoin_deposits_withdrawals_v2(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    timestamp_hdr = parser.args[0].group(1)
-    utc_offset = parser.args[0].group(2)
 
-    data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
+    if parser.args:
+        timestamp_hdr = parser.args[0].group(1)
+        utc_offset = parser.args[0].group(2)
+        data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
+    else:
+        data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"], tz="Asia/Singapore")
 
     if row_dict["Status"] != "SUCCESS":
         return
@@ -583,11 +591,29 @@ DataParser(
         "Coin",
         "Transfer Network",
     ],
-    worksheet_name="KuCoin D,W",
+    worksheet_name="KuCoin D",
     row_handler=parse_kucoin_deposits_withdrawals_v2,
 )
 
 # Deposit_Withdrawal History_Withdrawal Record (Bundle)
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Withdrawals",
+    [
+        "UID",
+        "Account Type",
+        "Time",
+        "Coin",
+        "Amount",
+        "Fee",
+        "Withdrawal Address/Account",
+        "Transfer Network",
+        "Status",
+        "Remarks",
+    ],
+    worksheet_name="KuCoin W",
+    row_handler=parse_kucoin_deposits_withdrawals_v2,
+)
 DataParser(
     ParserType.EXCHANGE,
     "KuCoin Withdrawals",
@@ -603,7 +629,7 @@ DataParser(
         "Transfer Network",
         "Withdrawal Address/Account",
     ],
-    worksheet_name="KuCoin D,W",
+    worksheet_name="KuCoin W",
     row_handler=parse_kucoin_deposits_withdrawals_v2,
 )
 
@@ -669,6 +695,30 @@ DataParser(
 )
 
 # Spot Orders_Filled Orders (Bundle)
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Trades",
+    [
+        "UID",
+        "Account Type",
+        "Order ID",
+        "Symbol",
+        "Side",
+        "Order Type",
+        "Avg. Filled Price",
+        "Filled Amount",
+        "Filled Volume",
+        "Filled Volume (USDT)",
+        "Filled Time",
+        "Fee",
+        "Tax",
+        "Maker/Taker",
+        "Fee Currency",
+    ],
+    worksheet_name="KuCoin T",
+    row_handler=parse_kucoin_trades_v5,
+)
+
 DataParser(
     ParserType.EXCHANGE,
     "KuCoin Trades",
