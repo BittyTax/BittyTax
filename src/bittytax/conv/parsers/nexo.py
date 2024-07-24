@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from typing_extensions import Unpack
 
 from ...bt_types import TrType
+from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError
@@ -70,7 +71,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         buy_quantity = Decimal(row_dict["Output Amount"])
         sell_quantity = abs(Decimal(row_dict["Input Amount"]))
 
-    if row_dict.get("USD Equivalent"):
+    if row_dict.get("USD Equivalent") and buy_asset != config.ccy and sell_asset != config.ccy:
         value = DataParser.convert_currency(
             row_dict["USD Equivalent"].strip("$"), "USD", data_row.timestamp
         )
@@ -93,7 +94,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
                 buy_value=value,
                 sell_quantity=Decimal(row_dict["USD Equivalent"].strip("$")),
                 sell_asset="USD",
-                sell_value=value,
+                sell_value=value if config.ccy != "USD" else None,
                 wallet=WALLET,
             )
             return
@@ -215,7 +216,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["USD Equivalent"].strip("$")),
             buy_asset="USD",
-            buy_value=value,
+            buy_value=value if config.ccy != "USD" else None,
             sell_quantity=sell_quantity,
             sell_asset=sell_asset,
             sell_value=value,
