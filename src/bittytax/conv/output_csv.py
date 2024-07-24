@@ -81,7 +81,7 @@ class OutputCsv(OutputBase):
         TrType.DEPOSIT: "Deposit",
         TrType.MINING: "Mining",
         TrType.STAKING: "StakingReward",
-        TrType.INTEREST: "LoanInterest",
+        TrType.INTEREST: "Income",
         TrType.DIVIDEND: "Income",
         TrType.INCOME: "Income",
         TrType.GIFT_RECEIVED: "Gift",
