@@ -71,7 +71,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         buy_quantity = Decimal(row_dict["Output Amount"])
         sell_quantity = abs(Decimal(row_dict["Input Amount"]))
 
-    if row_dict.get("USD Equivalent") and buy_asset != config.ccy:
+    if row_dict.get("USD Equivalent"):
         value = DataParser.convert_currency(
             row_dict["USD Equivalent"].strip("$"), "USD", data_row.timestamp
         )
@@ -94,6 +94,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
                 buy_value=value,
                 sell_quantity=Decimal(row_dict["USD Equivalent"].strip("$")),
                 sell_asset="USD",
+                sell_value=value,
                 wallet=WALLET,
             )
             return
@@ -205,7 +206,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             data_row.timestamp,
             buy_quantity=sell_quantity,
             buy_asset=sell_asset,
-            buy_value=sell_quantity,
+            buy_value=value,
             wallet=WALLET,
         )
     elif row_dict["Type"] == "Manual Sell Order":
@@ -215,8 +216,10 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["USD Equivalent"].strip("$")),
             buy_asset="USD",
+            buy_value=value,
             sell_quantity=sell_quantity,
             sell_asset=sell_asset,
+            sell_value=value,
             wallet=WALLET,
         )
     elif row_dict["Type"] in ("Liquidation", "Repayment", "Manual Repayment"):
