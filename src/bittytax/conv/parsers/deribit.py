@@ -351,11 +351,11 @@ def _close_position(
     dup_data_row = copy.copy(data_row)
     dup_data_row.row = []
 
-    if funding_fees + trading_fees > 0:
+    if funding_fees - trading_fees > 0:
         dup_data_row.t_record = TransactionOutRecord(
             TrType.FEE_REBATE,
             data_row.timestamp,
-            buy_quantity=funding_fees + trading_fees,
+            buy_quantity=funding_fees - trading_fees,
             buy_asset=asset,
             wallet=WALLET,
             note=instrument,
@@ -364,7 +364,7 @@ def _close_position(
         dup_data_row.t_record = TransactionOutRecord(
             TrType.MARGIN_FEE,
             data_row.timestamp,
-            sell_quantity=abs(funding_fees + trading_fees),
+            sell_quantity=abs(funding_fees - trading_fees),
             sell_asset=asset,
             wallet=WALLET,
             note=instrument,
