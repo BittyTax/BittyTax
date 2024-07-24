@@ -12,6 +12,7 @@
 - Trezor Suite parser: fee can be optional.
 - Accounting tool: correct table formatting for Income in PDF report.
 - Coinbase parser: strip currency symbols, brackets and commas from fiat values.
+- Conversion tool: Interest should be mapped to Income not LoanInterest for RECAP output format.
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
