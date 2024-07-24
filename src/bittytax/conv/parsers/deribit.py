@@ -93,14 +93,25 @@ def parse_deribit(
                 f"{Fore.GREEN}conv: (uid: {uid}) Balance={balance[uid].normalize():0,f} {asset}\n"
             )
 
+    balance_diff = Decimal(0)
     if uid in positions:
         for instrument, position in positions[uid].items():
+            balance_diff += position.unrealised_pnl
+            balance_diff -= position.trading_fees
+            balance_diff -= position.funding_fees
+
             sys.stderr.write(
                 f"{Fore.CYAN}conv: Open Position: (uid: {uid}) {instrument} "
                 f"unrealised_pnl={position.unrealised_pnl.normalize():0,f} "
                 f"trading_fees={position.trading_fees.normalize():0,f} "
                 f"funding_fees={position.funding_fees.normalize():0,f}\n"
             )
+
+    if balance_diff:
+        sys.stderr.write(
+            f"{Fore.CYAN}conv: Balance difference: {balance_diff.normalize():0,f} {asset} "
+            f"(for all open positions)\n"
+        )
 
 
 def _parse_deribit_row(
