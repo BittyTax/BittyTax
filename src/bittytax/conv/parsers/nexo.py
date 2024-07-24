@@ -84,12 +84,24 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         "Exchange Deposited On",
         "Top up Crypto",
     ):
+        if "Credit" in row_dict["Details"]:
+            # Loan in USD converted to crypto
+            data_row.t_record = TransactionOutRecord(
+                TrType.TRADE,
+                data_row.timestamp,
+                buy_quantity=buy_quantity,
+                buy_asset=buy_asset,
+                buy_value=value,
+                sell_quantity=Decimal(row_dict["USD Equivalent"].strip("$")),
+                sell_asset="USD",
+                wallet=WALLET,
+            )
+            return
+
         if "Airdrop" in row_dict["Details"]:
             t_type = TrType.AIRDROP
         else:
             t_type = TrType.DEPOSIT
-
-        if row_dict["Type"] == "Deposit":
             data_row.tx_raw = TxRawPos(parser.in_header.index("Details"))
 
         data_row.t_record = TransactionOutRecord(
@@ -116,9 +128,15 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
                 buy_value=value,
                 wallet=WALLET,
             )
-        else:
-            # Interest on loan is just informational
-            return
+        elif sell_quantity and sell_quantity > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.LOAN_INTEREST,
+                data_row.timestamp,
+                sell_quantity=sell_quantity,
+                sell_asset=sell_asset,
+                sell_value=value,
+                wallet=WALLET,
+            )
     elif row_dict["Type"] == "Dividend":
         data_row.t_record = TransactionOutRecord(
             TrType.DIVIDEND,
@@ -155,7 +173,12 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             buy_value=value,
             wallet=WALLET,
         )
-    elif row_dict["Type"] in ("Exchange", "CreditCardStatus", "Credit Card Status"):
+    elif row_dict["Type"] in (
+        "Exchange",
+        "CreditCardStatus",
+        "Credit Card Status",
+        "Exchange Collateral",
+    ):
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
@@ -176,39 +199,58 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             sell_value=value,
             wallet=WALLET,
         )
-    elif row_dict["Type"] in ("Liquidation", "Repayment", "Manual Repayment", "Manual Sell Order"):
-        # Repayment of loan
+    elif row_dict["Type"] in ("WithdrawalCredit", "Withdrawal Credit", "Loan Withdrawal"):
         data_row.t_record = TransactionOutRecord(
-            TrType.SPEND,
+            TrType.LOAN,
+            data_row.timestamp,
+            buy_quantity=sell_quantity,
+            buy_asset=sell_asset,
+            buy_value=sell_quantity,
+            wallet=WALLET,
+        )
+    elif row_dict["Type"] == "Manual Sell Order":
+        # Convert crypto to use for loan repayment
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["USD Equivalent"].strip("$")),
+            buy_asset="USD",
+            sell_quantity=sell_quantity,
+            sell_asset=sell_asset,
+            wallet=WALLET,
+        )
+    elif row_dict["Type"] in ("Liquidation", "Repayment", "Manual Repayment"):
+        data_row.t_record = TransactionOutRecord(
+            TrType.LOAN_REPAYMENT,
             data_row.timestamp,
             sell_quantity=sell_quantity,
             sell_asset=sell_asset,
             sell_value=value,
             wallet=WALLET,
         )
+    elif row_dict["Type"] == "Assimilation":
+        data_row.t_record = TransactionOutRecord(
+            TrType.FEE_REBATE,
+            data_row.timestamp,
+            buy_quantity=sell_quantity,
+            buy_asset=sell_asset,
+            buy_value=value,
+            wallet=WALLET,
+        )
     elif row_dict["Type"] in (
         "Administrator",
-        "Assimilation",
-        "WithdrawalCredit",
-        "Withdrawal Credit",
-        "UnlockingTermDeposit",
-        "Unlocking Term Deposit",
-        "LockingTermDeposit",
-        "Locking Term Deposit",
-        "Repayment",
-        "Loan Withdrawal",
-    ):
-        # Skip loan operations which are not disposals or are just informational
-        return
-    elif row_dict["Type"] in (
         "DepositToExchange",
         "Deposit To Exchange",
         "ExchangeToWithdraw",
         "Exchange To Withdraw",
+        "LockingTermDeposit",
+        "Locking Term Deposit",
         "TransferIn",
         "Transfer In",
         "TransferOut",
         "Transfer Out",
+        "UnlockingTermDeposit",
+        "Unlocking Term Deposit",
     ):
         # Skip internal operations
         return
