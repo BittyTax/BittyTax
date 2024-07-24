@@ -96,6 +96,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
                 sell_asset="USD",
                 sell_value=value if config.ccy != "USD" else None,
                 wallet=WALLET,
+                note=_get_note(row_dict["Details"]),
             )
             return
 
@@ -128,6 +129,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
                 buy_asset=buy_asset,
                 buy_value=value,
                 wallet=WALLET,
+                note=_get_note(row_dict["Details"]),
             )
         elif sell_quantity and sell_quantity > 0:
             data_row.t_record = TransactionOutRecord(
@@ -137,6 +139,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
                 sell_asset=sell_asset,
                 sell_value=value,
                 wallet=WALLET,
+                note=_get_note(row_dict["Details"]),
             )
     elif row_dict["Type"] == "Dividend":
         data_row.t_record = TransactionOutRecord(
@@ -146,6 +149,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             buy_asset=buy_asset,
             buy_value=value,
             wallet=WALLET,
+            note=_get_note(row_dict["Details"]),
         )
     elif row_dict["Type"] in ("ReferralBonus", "Referral Bonus"):
         data_row.t_record = TransactionOutRecord(
@@ -155,6 +159,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             buy_asset=buy_asset,
             buy_value=value,
             wallet=WALLET,
+            note=_get_note(row_dict["Details"]),
         )
     elif row_dict["Type"] in ("Cashback", "Exchange Cashback"):
         data_row.t_record = TransactionOutRecord(
@@ -164,6 +169,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             buy_asset=buy_asset,
             buy_value=value,
             wallet=WALLET,
+            note=_get_note(row_dict["Details"]),
         )
     elif row_dict["Type"] == "Bonus":
         data_row.t_record = TransactionOutRecord(
@@ -173,6 +179,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             buy_asset=buy_asset,
             buy_value=value,
             wallet=WALLET,
+            note=_get_note(row_dict["Details"]),
         )
     elif row_dict["Type"] in (
         "Exchange",
@@ -190,6 +197,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             sell_asset=sell_asset,
             sell_value=value,
             wallet=WALLET,
+            note=_get_note(row_dict["Details"]),
         )
     elif row_dict["Type"] in ("Withdrawal", "WithdrawExchanged", "Withdraw Exchanged"):
         data_row.t_record = TransactionOutRecord(
@@ -199,6 +207,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             sell_asset=sell_asset,
             sell_value=value,
             wallet=WALLET,
+            note=_get_note(row_dict["Details"]),
         )
     elif row_dict["Type"] in ("WithdrawalCredit", "Withdrawal Credit", "Loan Withdrawal"):
         data_row.t_record = TransactionOutRecord(
@@ -208,6 +217,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             buy_asset=sell_asset,
             buy_value=value,
             wallet=WALLET,
+            note=_get_note(row_dict["Details"]),
         )
     elif row_dict["Type"] == "Manual Sell Order":
         # Convert crypto to use for loan repayment
@@ -221,6 +231,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             sell_asset=sell_asset,
             sell_value=value,
             wallet=WALLET,
+            note=_get_note(row_dict["Details"]),
         )
     elif row_dict["Type"] in ("Liquidation", "Repayment", "Manual Repayment"):
         data_row.t_record = TransactionOutRecord(
@@ -230,6 +241,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             sell_asset=sell_asset,
             sell_value=value,
             wallet=WALLET,
+            note=_get_note(row_dict["Details"]),
         )
     elif row_dict["Type"] == "Assimilation":
         data_row.t_record = TransactionOutRecord(
@@ -239,6 +251,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             buy_asset=sell_asset,
             buy_value=value,
             wallet=WALLET,
+            note=_get_note(row_dict["Details"]),
         )
     elif row_dict["Type"] in (
         "Administrator",
@@ -259,6 +272,14 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         return
     else:
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
+
+
+def _get_note(details: str) -> str:
+    if details.startswith("approved / "):
+        return details[11:]
+    if details.startswith("processed / "):
+        return details[12:]
+    return ""
 
 
 DataParser(
