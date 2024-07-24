@@ -98,7 +98,7 @@ def parse_deribit(
         for instrument, position in positions[uid].items():
             balance_diff += position.unrealised_pnl
             balance_diff -= position.trading_fees
-            balance_diff -= position.funding_fees
+            balance_diff += position.funding_fees
 
             sys.stderr.write(
                 f"{Fore.CYAN}conv: Open Position: (uid: {uid}) {instrument} "
