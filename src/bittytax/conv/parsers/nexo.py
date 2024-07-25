@@ -109,8 +109,8 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         data_row.t_record = TransactionOutRecord(
             t_type,
             data_row.timestamp,
-            buy_quantity=buy_quantity,
-            buy_asset=buy_asset,
+            buy_quantity=sell_quantity,
+            buy_asset=sell_asset,
             buy_value=value,
             wallet=WALLET,
         )
@@ -219,7 +219,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             wallet=WALLET,
             note=_get_note(row_dict["Details"]),
         )
-    elif row_dict["Type"] == "Manual Sell Order":
+    elif row_dict["Type"] in ("Manual Sell Order", "Automatic Sell Order"):
         # Convert crypto to use for loan repayment
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
@@ -233,7 +233,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             wallet=WALLET,
             note=_get_note(row_dict["Details"]),
         )
-    elif row_dict["Type"] in ("Liquidation", "Repayment", "Manual Repayment"):
+    elif row_dict["Type"] in ("Liquidation", "Repayment", "Manual Repayment", "Forced Repayment"):
         data_row.t_record = TransactionOutRecord(
             TrType.LOAN_REPAYMENT,
             data_row.timestamp,
