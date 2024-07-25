@@ -190,14 +190,26 @@ def _parse_deribit_row(
             positions[uid][instrument] = Position()
 
         trading_fee = Decimal(row_dict["Fee Charged"])
-        if trading_fee > 0:
-            # Accumulate trading fees
+        unrealised_pnl = Decimal(row_dict["Cash Flow"])
+        change = Decimal(row_dict["Change"])
+
+        if change == unrealised_pnl - trading_fee:
+            # Accumulate unrealised profit and loss, and trading fees
+            positions[uid][instrument].unrealised_pnl += unrealised_pnl
+            positions[uid][instrument].trading_fees += trading_fee
+            balance[uid] += unrealised_pnl - trading_fee
+        elif change == unrealised_pnl:
+            # Assumes trading_fees are taken from "Fee Balance"
+            # Accumulate unrealised profit and loss, and trading fees
+            positions[uid][instrument].unrealised_pnl += unrealised_pnl
+            positions[uid][instrument].trading_fees += trading_fee
+            balance[uid] += unrealised_pnl - trading_fee
+        elif change == -abs(trading_fee):
+            # Accumulate only trading fees
             positions[uid][instrument].trading_fees += trading_fee
             balance[uid] -= trading_fee
-
-        # Accumulate unrealised profit and loss
-        unrealised_pnl = Decimal(row_dict["Cash Flow"])
-        positions[uid][instrument].unrealised_pnl += unrealised_pnl
+        else:
+            raise RuntimeError("Unexpected Change for {Instrument}")
 
         if config.debug:
             sys.stderr.write(
@@ -224,13 +236,9 @@ def _parse_deribit_row(
                 )
 
             _close_position(data_rows, data_row, positions, uid, asset, partial_close)
-
-        change = Decimal(row_dict["Change"])
-        if change != -abs(trading_fee):
-            balance[uid] += unrealised_pnl
     elif row_dict["Type"] == "settlement":
+        instrument = Instrument(row_dict["Instrument"])
         if row_dict["Side"] in ("long", "short"):
-            instrument = Instrument(row_dict["Instrument"])
             if uid not in positions:
                 raise RuntimeError(f"No position open for {instrument}")
             if instrument not in positions[uid]:
@@ -238,9 +246,8 @@ def _parse_deribit_row(
 
             # Accumulate funding fees
             funding_fee = Decimal(row_dict["Funding"])
-            if funding_fee != 0:
-                positions[uid][instrument].funding_fees += funding_fee
-                balance[uid] += funding_fee
+            positions[uid][instrument].funding_fees += funding_fee
+            balance[uid] += funding_fee
 
             # Accumulate unrealised profit and loss
             unrealised_pnl = Decimal(row_dict["Cash Flow"]) - funding_fee
@@ -257,6 +264,29 @@ def _parse_deribit_row(
                     f"{Fore.GREEN}conv: (uid: {uid}) {instrument}:funding_fees="
                     f"{positions[uid][instrument].funding_fees.normalize():0,f} "
                     f"({funding_fee.normalize():+0,f})\n"
+                )
+        elif row_dict["Side"] == "-":
+            # Position has already closed, final settlement
+            unrealised_pnl = Decimal(row_dict["Cash Flow"])
+            balance[uid] += unrealised_pnl
+
+            if unrealised_pnl > 0:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.MARGIN_GAIN,
+                    data_row.timestamp,
+                    buy_quantity=unrealised_pnl,
+                    buy_asset=asset,
+                    wallet=WALLET,
+                    note=instrument,
+                )
+            else:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.MARGIN_LOSS,
+                    data_row.timestamp,
+                    sell_quantity=abs(unrealised_pnl),
+                    sell_asset=asset,
+                    wallet=WALLET,
+                    note=instrument,
                 )
     elif row_dict["Type"] == "position move":
         instrument = Instrument(row_dict["Instrument"])
