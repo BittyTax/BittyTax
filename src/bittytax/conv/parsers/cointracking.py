@@ -26,6 +26,7 @@ COINTRACKING_D_MAPPING = {
     "Airdrop": TrType.AIRDROP,
     "Staking": TrType.STAKING,
     "Masternode": TrType.STAKING,
+    "Margin Profit": TrType.MARGIN_GAIN,
 }
 
 COINTRACKING_W_MAPPING = {
@@ -34,6 +35,8 @@ COINTRACKING_W_MAPPING = {
     "Gift": TrType.GIFT_SENT,
     "Stolen": TrType.LOST,
     "Lost": TrType.LOST,
+    "Margin Loss": TrType.MARGIN_LOSS,
+    "Margin Fee": TrType.MARGIN_FEE,
 }
 
 

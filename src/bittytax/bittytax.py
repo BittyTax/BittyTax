@@ -152,6 +152,7 @@ def main() -> None:
 
             if not args.summary_only:
                 tax.process_income()
+                tax.process_margin_trades()
 
             _do_each_tax_year(tax, args.tax_year, args.summary_only, value_asset)
 
@@ -274,7 +275,12 @@ def _do_each_tax_year(
             tax.tax_report[tax_year] = {"CapitalGains": calc_cgt}
         else:
             calc_income = tax.calculate_income(tax_year)
-            tax.tax_report[tax_year] = {"CapitalGains": calc_cgt, "Income": calc_income}
+            calc_margin_trading = tax.calculate_margin_trading(tax_year)
+            tax.tax_report[tax_year] = {
+                "CapitalGains": calc_cgt,
+                "Income": calc_income,
+                "MarginTrading": calc_margin_trading,
+            }
     else:
         # Calculate for all years
         for year in sorted(tax.tax_events):
@@ -286,7 +292,12 @@ def _do_each_tax_year(
                     tax.tax_report[year] = {"CapitalGains": calc_cgt}
                 else:
                     calc_income = tax.calculate_income(year)
-                    tax.tax_report[year] = {"CapitalGains": calc_cgt, "Income": calc_income}
+                    calc_margin_trading = tax.calculate_margin_trading(year)
+                    tax.tax_report[year] = {
+                        "CapitalGains": calc_cgt,
+                        "Income": calc_income,
+                        "MarginTrading": calc_margin_trading,
+                    }
             else:
                 print(f"{WARNING} Tax year {year} is not supported")
 

@@ -19,12 +19,18 @@ class TrType(Enum):
     REFERRAL = "Referral"
     CASHBACK = "Cashback"
     FEE_REBATE = "Fee-Rebate"
+    LOAN = "Loan"
+    MARGIN_GAIN = "Margin-Gain"
     WITHDRAWAL = "Withdrawal"
     SPEND = "Spend"
     GIFT_SENT = "Gift-Sent"
     GIFT_SPOUSE = "Gift-Spouse"
     CHARITY_SENT = "Charity-Sent"
     LOST = "Lost"
+    LOAN_REPAYMENT = "Loan-Repayment"
+    LOAN_INTEREST = "Loan-Interest"
+    MARGIN_LOSS = "Margin-Loss"
+    MARGIN_FEE = "Margin-Fee"
     TRADE = "Trade"
 
 
@@ -56,6 +62,8 @@ BUY_TYPES = (
     TrType.REFERRAL,
     TrType.CASHBACK,
     TrType.FEE_REBATE,
+    TrType.LOAN,
+    TrType.MARGIN_GAIN,
     TrType.TRADE,
 )
 
@@ -66,6 +74,10 @@ SELL_TYPES = (
     TrType.GIFT_SPOUSE,
     TrType.CHARITY_SENT,
     TrType.LOST,
+    TrType.LOAN_REPAYMENT,
+    TrType.LOAN_INTEREST,
+    TrType.MARGIN_LOSS,
+    TrType.MARGIN_FEE,
     TrType.TRADE,
 )
 

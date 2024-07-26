@@ -90,12 +90,18 @@ class OutputCsv(OutputBase):
         TrType.REFERRAL: "Referral",
         TrType.CASHBACK: "Cashback",
         TrType.FEE_REBATE: "FeeRebate",
+        TrType.LOAN: "LoanPrincipal",
+        TrType.MARGIN_GAIN: "MarginGain",
         TrType.WITHDRAWAL: "Withdrawal",
         TrType.SPEND: "Purchase",
         TrType.GIFT_SENT: "Gift",
         TrType.GIFT_SPOUSE: "Spouse",
         TrType.CHARITY_SENT: "Donation",
         TrType.LOST: "Lost",
+        TrType.LOAN_REPAYMENT: "LoanPrincipalPayment",
+        TrType.LOAN_INTEREST: "LoanInterest",
+        TrType.MARGIN_LOSS: "MarginLoss",
+        TrType.MARGIN_FEE: "LendingFee",
         TrType.TRADE: "Trade",
     }
 

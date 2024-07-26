@@ -40,6 +40,7 @@ QUOTE_ASSETS = [
     "BTC",
     "BUSD",
     "BVND",
+    "COP",
     "CZK",
     "DAI",
     "DOGE",
@@ -333,6 +334,14 @@ def _parse_binance_statements_row(
 ) -> None:
     row_dict = data_row.row_dict
 
+    if row_dict["Account"] in ("USDT-Futures", "USD-MFutures", "USD-M Futures", "Coin-M Futures"):
+        _parse_binance_statements_futures_row(tx_times, parser, data_row)
+        return
+
+    if row_dict["Account"] in ("Isolated Margin", "CrossMargin"):
+        _parse_binance_statements_margin_row(tx_times, parser, data_row)
+        return
+
     if row_dict["Account"].lower() not in ("spot", "earn", "pool"):
         raise UnexpectedTypeError(parser.in_header.index("Account"), "Account", row_dict["Account"])
 
@@ -465,6 +474,7 @@ def _parse_binance_statements_row(
         "Simple Earn Locked Subscription",
         "Simple Earn Locked Redemption",
         "Transfer Between Spot Account and UM Futures Account",
+        "Transfer Between Spot Account and CM Futures Account",
         "Transfer Between Main Account/Futures and Margin Account",
         "Launchpool Subscription/Redemption",
         "Launchpad Subscribe",
@@ -539,6 +549,236 @@ def _parse_binance_statements_row(
         raise UnexpectedTypeError(
             parser.in_header.index("Operation"), "Operation", row_dict["Operation"]
         )
+
+
+def _parse_binance_statements_futures_row(
+    tx_times: Dict[datetime, List["DataRow"]], parser: DataParser, data_row: "DataRow"
+) -> None:
+    row_dict = data_row.row_dict
+
+    if row_dict["Operation"] in ("Realize profit and loss", "Realized Profit and Loss"):
+        if Decimal(row_dict["Change"]) > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.MARGIN_GAIN,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["Change"]),
+                buy_asset=row_dict["Coin"],
+                wallet=WALLET,
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.MARGIN_LOSS,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["Change"])),
+                sell_asset=row_dict["Coin"],
+                wallet=WALLET,
+            )
+    elif row_dict["Operation"] in ("Fee", "Insurance Fund Compensation"):
+        data_row.t_record = TransactionOutRecord(
+            TrType.MARGIN_FEE,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["Change"])),
+            sell_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
+    elif row_dict["Operation"] == "Funding Fee":
+        if Decimal(row_dict["Change"]) > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.FEE_REBATE,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["Change"]),
+                buy_asset=row_dict["Coin"],
+                wallet=WALLET,
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.MARGIN_FEE,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["Change"])),
+                sell_asset=row_dict["Coin"],
+                wallet=WALLET,
+            )
+    elif row_dict["Operation"] in ("Referrer rebates", "Referee rebates"):
+        data_row.t_record = TransactionOutRecord(
+            TrType.REFERRAL,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Change"]),
+            buy_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
+    elif row_dict["Operation"] in ("Asset Conversion Transfer", "Futures Convert"):
+        _make_trade(
+            _get_op_rows(tx_times, data_row.timestamp, (row_dict["Operation"],)),
+        )
+    elif row_dict["Operation"] in (
+        "transfer_out",
+        "transfer_in",
+        "Transfer Between Spot Account and UM Futures Account",
+        "Transfer Between Spot Account and CM Futures Account",
+        "Transfer Between Main Account/Futures and Margin Account",
+    ):
+        # Skip not taxable events
+        return
+    else:
+        raise UnexpectedTypeError(
+            parser.in_header.index("Operation"), "Operation", row_dict["Operation"]
+        )
+
+
+def _parse_binance_statements_margin_row(
+    tx_times: Dict[datetime, List["DataRow"]], parser: DataParser, data_row: "DataRow"
+) -> None:
+    row_dict = data_row.row_dict
+
+    if row_dict["Operation"] in ("Margin loan", "Isolated Margin Loan"):
+        data_row.t_record = TransactionOutRecord(
+            TrType.LOAN,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Change"]),
+            buy_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
+    elif row_dict["Operation"] in ("Margin Repayment", "Isolated Margin Repayment"):
+        data_row.t_record = TransactionOutRecord(
+            TrType.LOAN_REPAYMENT,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["Change"])),
+            sell_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
+    elif row_dict["Operation"] in (
+        "Buy",
+        "Sell",
+        "Fee",
+        "Transaction Buy",
+        "Transaction Spend",
+        "Transaction Sold",
+        "Transaction Revenue",
+    ):
+        _make_trade_with_fee(
+            _get_op_rows(
+                tx_times,
+                data_row.timestamp,
+                (
+                    "Buy",
+                    "Sell",
+                    "Fee",
+                    "Transaction Buy",
+                    "Transaction Spend",
+                    "Transaction Sold",
+                    "Transaction Revenue",
+                ),
+            ),
+        )
+
+    elif row_dict["Operation"] == "Transfer Between Main Account/Futures and Margin Account":
+        # Skip not taxable events
+        return
+    else:
+        raise UnexpectedTypeError(
+            parser.in_header.index("Operation"), "Operation", row_dict["Operation"]
+        )
+
+
+def parse_binance_futures(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    tx_ids: Dict[str, List["DataRow"]] = {}
+    for dr in data_rows:
+        dr.timestamp = DataParser.parse_timestamp(dr.row_dict["Date(UTC)"])
+        # Normalise fields to be compatible with Statements functions
+        dr.row_dict["Operation"] = dr.row_dict["type"]
+        dr.row_dict["Change"] = dr.row_dict["Amount"]
+        dr.row_dict["Coin"] = dr.row_dict["Asset"]
+
+        if dr.row_dict["Transaction ID"] in tx_ids:
+            tx_ids[dr.row_dict["Transaction ID"]].append(dr)
+        else:
+            tx_ids[dr.row_dict["Transaction ID"]] = [dr]
+
+    for data_row in data_rows:
+        if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
+            sys.stderr.write(
+                f"{Fore.YELLOW}conv: "
+                f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
+            )
+
+        if data_row.parsed:
+            continue
+
+        try:
+            _parse_binance_futures_row(tx_ids, parser, data_row)
+        except DataRowError as e:
+            data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
+
+
+def _parse_binance_futures_row(
+    tx_ids: Dict[str, List["DataRow"]], parser: DataParser, data_row: "DataRow"
+) -> None:
+    row_dict = data_row.row_dict
+
+    if row_dict["type"] == "REALIZED_PNL":
+        if Decimal(row_dict["Amount"]) > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.MARGIN_GAIN,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["Amount"]),
+                buy_asset=row_dict["Asset"],
+                wallet=WALLET,
+                note=row_dict["Symbol"],
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.MARGIN_LOSS,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["Amount"])),
+                sell_asset=row_dict["Asset"],
+                wallet=WALLET,
+                note=row_dict["Symbol"],
+            )
+    elif row_dict["type"] == "COMMISSION":
+        data_row.t_record = TransactionOutRecord(
+            TrType.MARGIN_FEE,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["Amount"])),
+            sell_asset=row_dict["Asset"],
+            wallet=WALLET,
+            note=row_dict["Symbol"],
+        )
+    elif row_dict["type"] == "FUNDING_FEE":
+        if Decimal(row_dict["Amount"]) > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.FEE_REBATE,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["Amount"]),
+                buy_asset=row_dict["Asset"],
+                wallet=WALLET,
+                note=row_dict["Symbol"],
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.MARGIN_FEE,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["Amount"])),
+                sell_asset=row_dict["Asset"],
+                wallet=WALLET,
+                note=row_dict["Symbol"],
+            )
+    elif row_dict["type"] in ("COIN_SWAP_DEPOSIT", "COIN_SWAP_WITHDRAW"):
+        _make_trade(tx_ids[row_dict["Transaction ID"]])
+    elif row_dict["type"] in ("DEPOSIT", "WITHDRAW", "TRANSFER"):
+        # Skip transfers
+        return
+    else:
+        raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
 
 def _get_op_rows(
@@ -828,4 +1068,12 @@ DataParser(
     ["UTC_Time", "Account", "Operation", "Coin", "Change", "Remark"],
     worksheet_name="Binance S",
     all_handler=parse_binance_statements,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Binance Futures",
+    ["Date(UTC)", "type", "Amount", "Asset", "Symbol", "Transaction ID"],
+    worksheet_name="Binance F",
+    all_handler=parse_binance_futures,
 )
