@@ -290,7 +290,7 @@ indent-string='    '
 max-line-length=100
 
 # Maximum number of lines in a module.
-max-module-lines=1100
+max-module-lines=1200
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.
@@ -579,7 +579,7 @@ max-parents=7
 max-public-methods=20
 
 # Maximum number of return / yield for function / method body.
-max-returns=6
+max-returns=7
 
 # Maximum number of statements in function / method body.
 max-statements=117

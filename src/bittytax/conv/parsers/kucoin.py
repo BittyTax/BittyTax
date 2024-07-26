@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2020
 
+import copy
 import re
+import sys
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
+from colorama import Fore
 from typing_extensions import Unpack
 
 from ...bt_types import TrType
+from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..datarow import TxRawPos
-from ..exceptions import DataFormatNotSupported, UnexpectedTypeError
+from ..exceptions import DataFormatNotSupported, DataRowError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -321,6 +325,109 @@ def parse_kucoin_staking_income(
     )
 
 
+def parse_kucoin_futures(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    for row_index, data_row in enumerate(data_rows):
+        if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
+            sys.stderr.write(
+                f"{Fore.YELLOW}conv: "
+                f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
+            )
+
+        if data_row.parsed:
+            continue
+
+        try:
+            _parse_kucoin_futures_row(data_rows, parser, data_row, row_index)
+        except DataRowError as e:
+            data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
+
+
+def _parse_kucoin_futures_row(
+    data_rows: List["DataRow"],
+    parser: DataParser,
+    data_row: "DataRow",
+    row_index: int,
+) -> None:
+    row_dict = data_row.row_dict
+    timestamp_hdr = parser.args[1].group(1)
+    utc_offset = parser.args[1].group(2)
+    data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
+    data_row.parsed = True
+    asset = _get_asset_from_symbol(row_dict["Symbol"])
+    total_fees = Decimal(row_dict["Total Funding Fees"]) - Decimal(row_dict["Total Trading Fees"])
+
+    if Decimal(row_dict["Realized PNL"]) - total_fees > 0:
+        data_row.t_record = TransactionOutRecord(
+            TrType.MARGIN_GAIN,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Realized PNL"]) - total_fees,
+            buy_asset=asset,
+            wallet=WALLET,
+            note=row_dict["Symbol"],
+        )
+    else:
+        data_row.t_record = TransactionOutRecord(
+            TrType.MARGIN_LOSS,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["Realized PNL"]) - total_fees),
+            sell_asset=asset,
+            wallet=WALLET,
+            note=row_dict["Symbol"],
+        )
+
+    dup_data_row = copy.copy(data_row)
+    dup_data_row.row = []
+
+    if total_fees > 0:
+        dup_data_row.t_record = TransactionOutRecord(
+            TrType.FEE_REBATE,
+            data_row.timestamp,
+            buy_quantity=total_fees,
+            buy_asset=asset,
+            wallet=WALLET,
+            note=row_dict["Symbol"],
+        )
+    else:
+        dup_data_row.t_record = TransactionOutRecord(
+            TrType.MARGIN_FEE,
+            data_row.timestamp,
+            sell_quantity=abs(total_fees),
+            sell_asset=asset,
+            wallet=WALLET,
+            note=row_dict["Symbol"],
+        )
+
+    data_rows.insert(row_index + 1, dup_data_row)
+
+
+def _get_asset_from_symbol(symbol: str) -> str:
+    if symbol.endswith("USDTM"):
+        asset = "USDT"
+    elif symbol.endswith("USDCM"):
+        asset = "USDC"
+    elif symbol.endswith("USDM"):
+        asset = symbol[:-4]
+    elif symbol.startswith("XBT"):
+        # Special case for symbols such as XBTMM23, XBTMU24
+        asset = "XBT"
+    else:
+        raise RuntimeError(f"Unexpected symbol: {symbol}")
+
+    if asset == "XBT":
+        return "BTC"
+    return asset
+
+
 # This parser is only used for Airdrops, everything else is duplicates
 def parse_kucoin_account_history_funding(
     data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
@@ -547,6 +654,26 @@ DataParser(
     ],
     worksheet_name="KuCoin S",
     row_handler=parse_kucoin_staking_income,
+)
+
+# Futures Orders_Realized PNL (Bundle)
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Bundle Futures Orders Realized PNL",
+    [
+        "UID",
+        "Account Type",
+        "Symbol",
+        "Close Type",
+        "Realized PNL",
+        "Total Realized PNL",
+        "Total Funding Fees",
+        "Total Trading Fees",
+        lambda c: re.match(r"(^Position Opening Time\((UTC[-+]\d{2}:\d{2})\))", c),
+        lambda c: re.match(r"(^Position Closing Time\((UTC[-+]\d{2}:\d{2})\))", c),
+    ],
+    worksheet_name="Kucoin F",
+    all_handler=parse_kucoin_futures,
 )
 
 # Account History_Funding Account (Bundle)

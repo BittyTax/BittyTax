@@ -237,6 +237,30 @@ class TransactionRow:
             fee_asset=FieldRequired.OPTIONAL,
             fee_value=FieldRequired.OPTIONAL,
         ),
+        TrType.LOAN: FieldValidation(
+            t_type=FieldRequired.MANDATORY,
+            buy_quantity=FieldRequired.MANDATORY,
+            buy_asset=FieldRequired.MANDATORY,
+            buy_value=FieldRequired.OPTIONAL,
+            sell_quantity=FieldRequired.NOT_REQUIRED,
+            sell_asset=FieldRequired.NOT_REQUIRED,
+            sell_value=FieldRequired.NOT_REQUIRED,
+            fee_quantity=FieldRequired.OPTIONAL,
+            fee_asset=FieldRequired.OPTIONAL,
+            fee_value=FieldRequired.OPTIONAL,
+        ),
+        TrType.MARGIN_GAIN: FieldValidation(
+            t_type=FieldRequired.MANDATORY,
+            buy_quantity=FieldRequired.MANDATORY,
+            buy_asset=FieldRequired.MANDATORY,
+            buy_value=FieldRequired.OPTIONAL,
+            sell_quantity=FieldRequired.NOT_REQUIRED,
+            sell_asset=FieldRequired.NOT_REQUIRED,
+            sell_value=FieldRequired.NOT_REQUIRED,
+            fee_quantity=FieldRequired.OPTIONAL,
+            fee_asset=FieldRequired.OPTIONAL,
+            fee_value=FieldRequired.OPTIONAL,
+        ),
         TrType.WITHDRAWAL: FieldValidation(
             t_type=FieldRequired.MANDATORY,
             buy_quantity=FieldRequired.NOT_REQUIRED,
@@ -321,6 +345,54 @@ class TransactionRow:
             fee_asset=FieldRequired.OPTIONAL,
             fee_value=FieldRequired.OPTIONAL,
         ),
+        TrType.LOAN_REPAYMENT: FieldValidation(
+            t_type=FieldRequired.MANDATORY,
+            buy_quantity=FieldRequired.NOT_REQUIRED,
+            buy_asset=FieldRequired.NOT_REQUIRED,
+            buy_value=FieldRequired.NOT_REQUIRED,
+            sell_quantity=FieldRequired.MANDATORY,
+            sell_asset=FieldRequired.MANDATORY,
+            sell_value=FieldRequired.OPTIONAL,
+            fee_quantity=FieldRequired.OPTIONAL,
+            fee_asset=FieldRequired.OPTIONAL,
+            fee_value=FieldRequired.OPTIONAL,
+        ),
+        TrType.LOAN_INTEREST: FieldValidation(
+            t_type=FieldRequired.MANDATORY,
+            buy_quantity=FieldRequired.NOT_REQUIRED,
+            buy_asset=FieldRequired.NOT_REQUIRED,
+            buy_value=FieldRequired.NOT_REQUIRED,
+            sell_quantity=FieldRequired.MANDATORY,
+            sell_asset=FieldRequired.MANDATORY,
+            sell_value=FieldRequired.OPTIONAL,
+            fee_quantity=FieldRequired.OPTIONAL,
+            fee_asset=FieldRequired.OPTIONAL,
+            fee_value=FieldRequired.OPTIONAL,
+        ),
+        TrType.MARGIN_LOSS: FieldValidation(
+            t_type=FieldRequired.MANDATORY,
+            buy_quantity=FieldRequired.NOT_REQUIRED,
+            buy_asset=FieldRequired.NOT_REQUIRED,
+            buy_value=FieldRequired.NOT_REQUIRED,
+            sell_quantity=FieldRequired.MANDATORY,
+            sell_asset=FieldRequired.MANDATORY,
+            sell_value=FieldRequired.OPTIONAL,
+            fee_quantity=FieldRequired.OPTIONAL,
+            fee_asset=FieldRequired.OPTIONAL,
+            fee_value=FieldRequired.OPTIONAL,
+        ),
+        TrType.MARGIN_FEE: FieldValidation(
+            t_type=FieldRequired.MANDATORY,
+            buy_quantity=FieldRequired.NOT_REQUIRED,
+            buy_asset=FieldRequired.NOT_REQUIRED,
+            buy_value=FieldRequired.NOT_REQUIRED,
+            sell_quantity=FieldRequired.MANDATORY,
+            sell_asset=FieldRequired.MANDATORY,
+            sell_value=FieldRequired.OPTIONAL,
+            fee_quantity=FieldRequired.OPTIONAL,
+            fee_asset=FieldRequired.OPTIONAL,
+            fee_value=FieldRequired.OPTIONAL,
+        ),
         TrType.TRADE: FieldValidation(
             t_type=FieldRequired.MANDATORY,
             buy_quantity=FieldRequired.MANDATORY,
@@ -368,7 +440,6 @@ class TransactionRow:
             # Skip empty rows
             return
 
-        buy = sell = fee = None
         try:
             t_type = TrType(self.row_dict["Type"])
         except ValueError as e:
@@ -379,6 +450,7 @@ class TransactionRow:
         buy_quantity = sell_quantity = fee_quantity = None
         buy_asset = sell_asset = fee_asset = AssetSymbol("")
         buy_value = sell_value = fee_value = None
+        buy = sell = fee = None
 
         for pos, required in enumerate(self.TYPE_VALIDATION[t_type]):
             if pos == self.HEADER.index("Buy Quantity"):

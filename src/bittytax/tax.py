@@ -16,12 +16,28 @@ from dateutil.relativedelta import relativedelta
 from tqdm import tqdm
 from typing_extensions import NotRequired, TypedDict
 
-from .bt_types import TRANSFER_TYPES, AssetName, AssetSymbol, Date, DisposalType, Note, TrType, Year
+from .bt_types import (
+    TRANSFER_TYPES,
+    AssetName,
+    AssetSymbol,
+    Date,
+    DisposalType,
+    Note,
+    TrType,
+    Wallet,
+    Year,
+)
 from .config import config
 from .constants import TAX_RULES_UK_COMPANY, WARNING
 from .holdings import Holdings
 from .price.valueasset import ValueAsset
-from .tax_event import TaxEvent, TaxEventCapitalGains, TaxEventIncome, TaxEventNoGainNoLoss
+from .tax_event import (
+    TaxEvent,
+    TaxEventCapitalGains,
+    TaxEventIncome,
+    TaxEventMarginTrade,
+    TaxEventNoGainNoLoss,
+)
 from .transactions import Buy, Sell
 
 PRECISION = Decimal("0.00")
@@ -30,6 +46,7 @@ PRECISION = Decimal("0.00")
 class TaxReportRecord(TypedDict):  # pylint: disable=too-few-public-methods
     CapitalGains: "CalculateCapitalGains"
     Income: NotRequired["CalculateIncome"]
+    MarginTrading: NotRequired["CalculateMarginTrading"]
 
 
 class HoldingsReportAsset(TypedDict):  # pylint: disable=too-few-public-methods
@@ -109,6 +126,12 @@ class BuyAccumulator:
     dates: List[Date] = field(default_factory=list)
 
 
+class MarginReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
+    gains: Decimal
+    losses: Decimal
+    fees: Decimal
+
+
 class TaxCalculator:  # pylint: disable=too-many-instance-attributes
     INCOME_TYPES = (
         TrType.MINING,
@@ -131,6 +154,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         TrType.LOST,
         TrType.SWAP,
     )
+
+    MARGIN_TYPES = (TrType.MARGIN_GAIN, TrType.MARGIN_LOSS, TrType.MARGIN_FEE)
 
     def __init__(self, transactions: List[Union[Buy, Sell]], tax_rules: str) -> None:
         self.transactions = transactions
@@ -300,7 +325,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     Decimal(0),
                     short_term.dates,
                 )
-            self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
+            self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
             if config.debug:
                 print(f"{Fore.CYAN}fifo: {tax_event}")
@@ -339,7 +364,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     Decimal(0),
                     long_term.dates,
                 )
-            self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
+            self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
             if config.debug:
                 print(f"{Fore.CYAN}fifo: {tax_event}")
@@ -358,7 +383,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             print(f"{Fore.CYAN}process holdings")
 
         for t in tqdm(
-            sorted(self.all_transactions()),
+            sorted(self._all_transactions()),
             unit="t",
             desc=f"{Fore.CYAN}process holdings{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
@@ -419,18 +444,29 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             desc=f"{Fore.CYAN}process income{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         ):
-            if (
-                isinstance(t, Buy)
-                and t.t_type in self.INCOME_TYPES
-                and (t.is_crypto() or config.fiat_income)
-            ):
+            if t.t_type in self.INCOME_TYPES and (t.is_crypto() or config.fiat_income):
                 tax_event = TaxEventIncome(t)
-                self.tax_events[self.which_tax_year(tax_event.date)].append(tax_event)
+                self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
-    def all_transactions(self) -> Iterator[Union[Buy, Sell]]:
+    def _all_transactions(self) -> Iterator[Union[Buy, Sell]]:
         return itertools.chain(
             *self.buys_ordered.values(), self.sells_ordered, self.other_transactions
         )
+
+    def process_margin_trades(self) -> None:
+        if config.debug:
+            print(f"{Fore.CYAN}process margin trades")
+
+        for t in tqdm(
+            self.transactions,
+            unit="t",
+            desc=f"{Fore.CYAN}process margin trades{Fore.GREEN}",
+            disable=bool(config.debug or not sys.stdout.isatty()),
+        ):
+
+            if t.t_type in self.MARGIN_TYPES:
+                tax_event = TaxEventMarginTrade(t)
+                self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
     def calculate_capital_gains(self, tax_year: Year) -> "CalculateCapitalGains":
         calc_cgt = CalculateCapitalGains(tax_year)
@@ -458,8 +494,18 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     calc_income.totalise(te)
 
         calc_income.totals_by_type()
-
         return calc_income
+
+    def calculate_margin_trading(self, tax_year: Year) -> "CalculateMarginTrading":
+        calc_margin_trading = CalculateMarginTrading()
+
+        if tax_year in self.tax_events:
+            for te in sorted(self.tax_events[tax_year]):
+                if isinstance(te, TaxEventMarginTrade):
+                    calc_margin_trading.totalise(te)
+
+        calc_margin_trading.totals_by_contract()
+        return calc_margin_trading
 
     def calculate_holdings(self, value_asset: ValueAsset) -> None:
         holdings: Dict[AssetSymbol, HoldingsReportAsset] = {}
@@ -513,7 +559,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         self.holdings_report = {"holdings": holdings, "totals": totals}
 
-    def which_tax_year(self, date: Date) -> Year:
+    def _which_tax_year(self, date: Date) -> Year:
         if date > config.get_tax_year_end(date.year):
             tax_year = Year(date.year + 1)
         else:
@@ -836,3 +882,49 @@ class CalculateIncome:
                 else:
                     self.type_totals[income_type]["amount"] += te.amount
                     self.type_totals[income_type]["fees"] += te.fees
+
+
+class CalculateMarginTrading:
+    def __init__(self) -> None:
+        self.totals: MarginReportTotal = {
+            "gains": Decimal(0),
+            "losses": Decimal(0),
+            "fees": Decimal(0),
+        }
+        self.contracts: Dict[Tuple[Wallet, Note], List[TaxEventMarginTrade]] = {}
+        self.contract_totals: Dict[Tuple[Wallet, Note], MarginReportTotal] = {}
+
+    def totalise(self, te: TaxEventMarginTrade) -> None:
+        self.totals["gains"] += te.gain
+        self.totals["losses"] += te.loss
+        self.totals["fees"] += te.fee
+
+        if (te.wallet, te.note) not in self.contracts:
+            self.contracts[(te.wallet, te.note)] = []
+
+        self.contracts[(te.wallet, te.note)].append(te)
+
+    def totals_by_contract(self) -> None:
+        for (wallet, note), te_list in self.contracts.items():
+            for te in te_list:
+                if (wallet, note) not in self.contract_totals:
+                    self.contract_totals[(wallet, note)] = {
+                        "gains": te.gain,
+                        "losses": te.loss,
+                        "fees": te.fee,
+                    }
+                else:
+                    self.contract_totals[(wallet, note)]["gains"] += te.gain
+                    self.contract_totals[(wallet, note)]["losses"] += te.loss
+                    self.contract_totals[(wallet, note)]["fees"] += te.fee
+
+                if config.debug:
+                    print(f"{Fore.GREEN}margin: {te.t}")
+                    print(f"{Fore.YELLOW}margin:   {self.totals_str(wallet, note)}")
+
+    def totals_str(self, wallet: Wallet, note: Note) -> str:
+        return (
+            f'{wallet} {note}: gains={config.sym()}{self.contract_totals[(wallet, note)]["gains"]} '
+            f'losses={config.sym()}{self.contract_totals[(wallet, note)]["losses"]} '
+            f'fess={config.sym()}{self.contract_totals[(wallet, note)]["fees"]} '
+        )

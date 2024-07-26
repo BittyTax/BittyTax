@@ -32,6 +32,7 @@ from .price.valueasset import VaPriceReport
 from .tax import (
     CalculateCapitalGains,
     CalculateIncome,
+    CalculateMarginTrading,
     CapitalGainsReportTotal,
     HoldingsReportRecord,
     TaxReportRecord,
@@ -299,6 +300,7 @@ class ReportLog:
                 raise RuntimeError("Unexpected tax_rules")
 
             self._income(tax_report[tax_year]["Income"])
+            self._margin_trading(tax_report[tax_year]["MarginTrading"])
 
         print(f"{H1}Appendix{_H1}")
         for tax_year in sorted(tax_report):
@@ -603,6 +605,32 @@ class ReportLog:
             f'{"":<14} '
             f'{self.format_value(income.totals["amount"]):>18} '
             f'{self.format_value(income.totals["fees"]):>18}{Style.NORMAL}'
+        )
+
+    def _margin_trading(self, margin: CalculateMarginTrading) -> None:
+        print(f"\n{Fore.CYAN}Margin Trading\n")
+        header = f'{"Wallet":<30} {"Contract":<40} {"Gains":>13} {"Losses":>13} {"Fees":>13}'
+
+        print(f"{Fore.YELLOW}{header}")
+        for wallet, note in sorted(
+            margin.contract_totals, key=lambda key: (key[0].lower(), key[1].lower())
+        ):
+            print(
+                f"{Fore.WHITE}{wallet:<30} "
+                f"{Fore.WHITE}{self.format_note(note):<40} "
+                f'{self.format_value(margin.contract_totals[(wallet, note)]["gains"]):>13} '
+                f'{self.format_value(margin.contract_totals[(wallet, note)]["losses"]):>13} '
+                f'{self.format_value(margin.contract_totals[(wallet, note)]["fees"]):>13}'
+                f"{Style.NORMAL}"
+            )
+
+        print(f'{Fore.YELLOW}{"_" * len(header)}')
+        print(
+            f'{Fore.YELLOW}{Style.BRIGHT}{"Total":<30} '
+            f'{"":<40} '
+            f'{self.format_value(margin.totals["gains"]):>13} '
+            f'{self.format_value(margin.totals["losses"]):>13} '
+            f'{self.format_value(margin.totals["fees"]):>13}{Style.NORMAL}'
         )
 
     def _price_data(self, price_report: Dict[AssetSymbol, Dict[Date, VaPriceReport]]) -> None:

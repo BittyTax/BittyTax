@@ -3,9 +3,9 @@
 # pylint: disable=bad-option-value, unnecessary-dunder-call
 
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Union
 
-from .bt_types import AssetSymbol, Date, DisposalType
+from .bt_types import AssetSymbol, Date, DisposalType, TrType
 from .config import config
 from .constants import ACQUISITIONS_VARIOUS
 from .transactions import Buy, Sell
@@ -128,3 +128,30 @@ class TaxEventIncome(TaxEvent):  # pylint: disable=too-few-public-methods
             self.fees = b.fee_value.quantize(PRECISION)
         else:
             self.fees = Decimal(0)
+
+
+class TaxEventMarginTrade(TaxEvent):  # pylint: disable=too-few-public-methods
+    def __init__(self, t: Union[Buy, Sell]) -> None:
+        super().__init__(t.date(), config.local_currency)
+        self.wallet = t.wallet
+        self.note = t.note
+        self.gain = Decimal(0)
+        self.loss = Decimal(0)
+        self.fee = Decimal(0)
+        self.t = t
+
+        if isinstance(t, Buy) and t.t_type == TrType.MARGIN_GAIN:
+            if t.cost is None:
+                raise RuntimeError("Missing cost")
+
+            self.gain = t.cost.quantize(PRECISION)
+        elif isinstance(t, Sell) and t.t_type == TrType.MARGIN_LOSS:
+            if t.proceeds is None:
+                raise RuntimeError("Missing proceeds")
+
+            self.loss = t.proceeds.quantize(PRECISION)
+        elif isinstance(t, Sell) and t.t_type == TrType.MARGIN_FEE:
+            if t.proceeds is None:
+                raise RuntimeError("Missing proceeds")
+
+            self.fee = t.proceeds.quantize(PRECISION)

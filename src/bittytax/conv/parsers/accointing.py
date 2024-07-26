@@ -29,6 +29,7 @@ ACCOINTING_D_MAPPING = {
     "master_node": TrType.STAKING_REWARD,
     "mined": TrType.MINING,
     "staked": TrType.STAKING_REWARD,
+    "margin_gain": TrType.MARGIN_GAIN,
 }
 
 ACCOINTING_W_MAPPING = {
@@ -41,6 +42,8 @@ ACCOINTING_W_MAPPING = {
     "internal": TrType.WITHDRAWAL,
     "lost": TrType.LOST,
     "payment": TrType.SPEND,
+    "margin_loss": TrType.MARGIN_LOSS,
+    "margin_fee": TrType.MARGIN_FEE,
 }
 
 

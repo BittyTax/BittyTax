@@ -23,6 +23,7 @@
             <h2>Non-Taxable Transactions</h2>
             {% include "no_gain_no_loss.html" %}
             {% include "income.html" %}
+            {% include "margin_trading.html" %}
             {% if not loop.last %}
                 <pdf:nextpage />
             {% endif %}

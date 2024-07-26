@@ -1,0 +1,29 @@
+<h2>Margin Trading</h2>
+{% set margin = tax_report[tax_year]['MarginTrading'] %}
+<table repeat="1" width="100%">
+    <tr>
+        <th align="left">Wallet</th>
+        <th align="left">Contract</th>
+        <th align="right">Gains</th>
+        <th align="right">Losses</th>
+        <th align="right">Fees</th>
+    </tr>
+    {% for (wallet, note) in margin.contract_totals|sort %}
+        <tr>
+            <td align="left">{{wallet}}</td>
+            <td align="left">{{note}}</td>
+            <td align="right">{{margin.contract_totals[(wallet, note)]["gains"]|valuefilter}}</td>
+            <td align="right">{{margin.contract_totals[(wallet, note)]["losses"]|valuefilter}}</td>
+            <td align="right">{{margin.contract_totals[(wallet, note)]["fees"]|valuefilter}}</td>
+        </tr>
+    {% endfor %}
+</table>
+<table class="total-table">
+    <tr>
+        <td align="left">Total</td>
+        <td align="left"></td>
+        <td align="right">{{margin.totals['gains']|valuefilter}}</td>
+        <td align="right">{{margin.totals['losses']|valuefilter}}</td>
+        <td align="right">{{margin.totals['fees']|valuefilter}}</td>
+    </tr>
+</table>
