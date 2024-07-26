@@ -103,6 +103,18 @@
 - Conversion tool: added new parser for Neon Wallet.
 - Config: added optional API key config for data sources.
 - Bittrex parser: new data file formats added.
+- Accounting tool: new transaction types added. Margin-Gain, Margin-Loss, Margin-Fee, Loan, Loan-Repayment and Loan-Interest.
+- Accounting tool: added Margin Trading section to tax report.
+- Conversion tool: added Margin-Gain, Margin-Loss, Margin-Fee, Loan, Loan-Repayment and Loan-Interest mappings for RECAP output format.
+- Conversion tool: added parser for Blockpit accounting data.
+- Conversion tool: added parser for Deribit.
+- Binance parser: added Futures and Margin trading.
+- Kraken parser: added Margin trading.
+- KuCoin parser: added Futures trading.
+- Accointing parser: added mapping for "margin_gain", "margin_loss" and "margin_fee".
+- CoinTracking parser: added mapping for "Margin Profit", "Margin Loss" and "Margin Fee".
+- Koinly parser: added mapping for "Realized gain", "Loan", "Margin loan", "Margin fee", "Loan repayment" "Margin replayment", "Loan fee", "Other income", "Lending interest", "Cashback", "Salary" and "Fee refund".
+- Nexo parser: improved loan handling and added new loan transaction types.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -164,6 +176,7 @@
 - Conversion tool: use comma thousand separator for high precision numbers when strings.
 - Accounting tool: disposal types changed to be an Enum.
 - BlockFi parser: "Withdrawal Fee" now joined to the "Withdrawal".
+- Koinly parser: changed "Reward" to map to Staking.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
@@ -172,6 +185,7 @@
 - HecoInfo parser/merger: removed, replaced by generic Etherscan parser/merger.
 - PolygonScan parser/merger: removed, replaced by generic Etherscan parser/merger.
 - SnowTrace parser/merger: removed, replaced by generic Etherscan parser/merger.
+- Koinly parser: removed "Staking" and "Loan interest".
 
 ## Version [0.5.2] (2023-12-22)
 Important:-
