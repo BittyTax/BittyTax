@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 BLOCKPIT_D_MAPPING = {
     "Airdrop": TrType.AIRDROP,
-    "Bounties": TrType.AIRDROP,  # Change to REFERRAL when merged
+    "Bounties": TrType.REFERRAL,
     "Deposit": TrType.DEPOSIT,
     "Lending": TrType.STAKING,
     "Margin_trading_profit": TrType.MARGIN_GAIN,
