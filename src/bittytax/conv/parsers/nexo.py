@@ -84,8 +84,11 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         "Exchange Deposited On",
         "Top up Crypto",
     ):
-        if "Credit" in row_dict["Details"]:
-            # Loan in USD converted to crypto
+        if (
+            "Credit" in row_dict["Details"]  # Loan in USD converted to USDT/USDC
+            or "null" in row_dict["Details"]  # as above, older loans show null
+            or "OTC" in row_dict["Details"]  # OTC trade
+        ):
             data_row.t_record = TransactionOutRecord(
                 TrType.TRADE,
                 data_row.timestamp,
