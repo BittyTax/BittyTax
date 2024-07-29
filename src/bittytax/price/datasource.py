@@ -427,6 +427,9 @@ class CryptoCompare(DataSourceBase):
         self.api_root = "https://min-api.cryptocompare.com"
 
         json_resp = self.get_json(f"{self.api_root}/data/all/coinlist")
+        if json_resp["Response"] != "Success":
+            raise RuntimeError(f"CryptoCompare API failure: {json_resp.get('Message', '')}")
+
         self.assets = {
             c[1]["Symbol"]
             .strip()
@@ -441,6 +444,9 @@ class CryptoCompare(DataSourceBase):
         json_resp = self.get_json(
             f"{self.api_root}/data/price?extraParams={self.USER_AGENT}&fsym={asset}&tsyms={quote}"
         )
+        if json_resp["Response"] != "Success":
+            raise RuntimeError(f"CryptoCompare API failure: {json_resp.get('Message', '')}")
+
         return Decimal(repr(json_resp[quote])) if quote in json_resp else None
 
     def get_historical(
@@ -458,6 +464,9 @@ class CryptoCompare(DataSourceBase):
         )
 
         json_resp = self.get_json(url)
+        if json_resp["Response"] != "Success":
+            raise RuntimeError(f"CryptoCompare API failure: {json_resp.get('Message', '')}")
+
         pair = self.pair(asset, quote)
         # Warning - CryptoCompare returns 0 as data for missing dates, convert these to None.
         if "Data" in json_resp:
