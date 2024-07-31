@@ -234,7 +234,10 @@ class ReportLog:
             if tax_report is None:
                 raise RuntimeError("Missing tax_report")
 
-            self._tax_summary(args.tax_rules, tax_report)
+            if price_report is None:
+                raise RuntimeError("Missing price_report")
+
+            self._tax_summary(args.tax_rules, tax_report, price_report)
         else:
             if tax_report is None:
                 raise RuntimeError("Missing tax_report")
@@ -244,7 +247,12 @@ class ReportLog:
 
             self._tax_full(args.tax_rules, audit, tax_report, price_report, holdings_report)
 
-    def _tax_summary(self, tax_rules: str, tax_report: Dict[Year, TaxReportRecord]) -> None:
+    def _tax_summary(
+        self,
+        tax_rules: str,
+        tax_report: Dict[Year, TaxReportRecord],
+        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]],
+    ) -> None:
         print(f"{Fore.WHITE}tax report output:")
         for tax_year in sorted(tax_report):
             print(
@@ -255,9 +263,42 @@ class ReportLog:
             if tax_rules in TAX_RULES_UK_COMPANY:
                 print(f"{Fore.CYAN}Chargeable Gains")
                 # self._capital_gains(tax_report[tax_year]["CapitalGains"])
-            else:
+                self._ct_estimate(tax_report[tax_year]["CapitalGains"])
+            elif tax_rules == TAX_RULES_UK_INDIVIDUAL:
                 print(f"{Fore.CYAN}Capital Gains")
                 # self._capital_gains(tax_report[tax_year]["CapitalGains"])
+                self._cgt_estimate(tax_report[tax_year]["CapitalGains"])
+            elif tax_rules == TAX_RULES_US_INDIVIDUAL:
+                print(f"{Fore.CYAN}Capital Gains (Short-Term)")
+                self._capital_gains(
+                    tax_report[tax_year]["CapitalGains"].short_term,
+                    tax_report[tax_year]["CapitalGains"].short_term_totals,
+                )
+                print(f"\n{Fore.CYAN}Capital Gains (Long-Term)")
+                self._capital_gains(
+                    tax_report[tax_year]["CapitalGains"].long_term,
+                    tax_report[tax_year]["CapitalGains"].long_term_totals,
+                )
+                self._no_gain_no_loss(tax_report[tax_year]["CapitalGains"])
+            else:
+                raise RuntimeError("Unexpected tax_rules")
+
+            self._income(tax_report[tax_year]["Income"])
+            self._margin_trading(tax_report[tax_year]["MarginTrading"])
+
+        print(f"{H1}Appendix{_H1}")
+        for tax_year in sorted(tax_report):
+            print(f"{Fore.CYAN}Price Data - {config.format_tax_year(tax_year)}\n")
+            print(
+                f'{Fore.YELLOW}{"Asset":<{self.ASSET_WIDTH + 2}} '
+                f'{"Data Source":<16} '
+                f'{"Date":<14}  '
+                f'{"Price (" + config.ccy + ")":>18} '
+                f'{"Price (BTC)":>25}'
+            )
+
+            if tax_year in price_report:
+                self._price_data(price_report[tax_year])
 
     def _tax_full(
         self,
