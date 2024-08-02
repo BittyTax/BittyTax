@@ -57,6 +57,7 @@ from . import (
     ledgerlive,
     liquid,
     mercatox,
+    mexc,
     mymonero,
     nault,
     neonwallet,
