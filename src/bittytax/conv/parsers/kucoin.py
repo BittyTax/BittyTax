@@ -739,6 +739,33 @@ DataParser(
         lambda c: re.match(r"(^Filled Time\((UTC[-+]\d{2}:\d{2})\))", c),
         "Fee",
         "Fee Currency",
+        "Tax",  # New field
+        "Status",
+    ],
+    worksheet_name="KuCoin T",
+    row_handler=parse_kucoin_trades_v5,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Trades",
+    [
+        "UID",
+        "Account Type",
+        "Order ID",
+        lambda c: re.match(r"(^Order Time\((UTC[-+]\d{2}:\d{2})\))", c),
+        "Symbol",
+        "Side",
+        "Order Type",
+        "Order Price",
+        "Order Amount",
+        "Avg. Filled Price",
+        "Filled Amount",
+        "Filled Volume",
+        "Filled Volume (USDT)",
+        lambda c: re.match(r"(^Filled Time\((UTC[-+]\d{2}:\d{2})\))", c),
+        "Fee",
+        "Fee Currency",
         "Status",
     ],
     worksheet_name="KuCoin T",
