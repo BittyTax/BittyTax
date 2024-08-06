@@ -117,6 +117,7 @@
 - Koinly parser: added mapping for "Realized gain", "Loan", "Margin loan", "Margin fee", "Loan repayment" "Margin replayment", "Loan fee", "Other income", "Lending interest", "Cashback", "Salary" and "Fee refund".
 - Nexo parser: improved loan handling and added new loan transaction types.
 - Conversion tool: added parser for MEXC exchange.
+- Binance.US parser: added new export format.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
