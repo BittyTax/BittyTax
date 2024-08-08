@@ -108,7 +108,7 @@ def parse_defi_taxes(
             )
         except DataRowError as e:
             data_row.failure = e
-        except (ValueError, ArithmeticError) as e:
+        except (ValueError, AttributeError, ArithmeticError) as e:
             if config.debug:
                 raise
 
@@ -140,7 +140,7 @@ def _parse_defi_taxes_row(
     if config.debug:
         _output_tx_rows(tx_ins, tx_outs, tx_fee)
 
-    ctx_ins, ctx_outs = _consolidate_tx(tx_ins, tx_outs)
+    ctx_ins, ctx_outs = _consolidate_tx(tx_ins, tx_outs, tx_hash)
 
     if config.debug:
         if ctx_ins != tx_ins or ctx_outs != tx_outs:
@@ -198,6 +198,10 @@ def _make_t_record(
                         parser.in_header.index("vault id"), "vault id", tx_in.vault_id
                     ) from e
                 raise MissingValueError(parser.in_header.index("vault id"), "vault id", "") from e
+            except AttributeError as e:
+                raise UnexpectedContentError(
+                    parser.in_header.index("token symbol"), "token symbol", tx_in.asset
+                ) from e
             _do_fee_split(tx_fee, tx_rows)
         elif tx_in.classification.startswith(("mint", "swap")):
             tx_in.data_row.t_record = _make_buy(TrType.AIRDROP, tx_in, tx_fee)
@@ -238,6 +242,8 @@ def _make_t_record(
             tx_out.data_row.t_record = _make_sell(TrType.WITHDRAWAL, tx_out, tx_fee)
             if tx_out.data_row.row_dict["vault id"]:
                 _do_bridge_in(tx_out, vaults)
+        elif tx_out.classification == "fee":
+            tx_out.data_row.t_record = _make_sell(TrType.SPEND, tx_out, tx_fee)
         elif tx_out.classification == "balance adjustment":
             tx_out.value = Decimal(0)
             tx_out.data_row.t_record = _make_sell(TrType.SPEND, tx_out, tx_fee)
@@ -251,7 +257,17 @@ def _make_t_record(
         tx_out = tx_outs[0]
         if (
             tx_in.classification.startswith(
-                ("swap", "wrap", "unwrap", "mint", "deposit with receipt", "withdraw with receipt")
+                (
+                    "swap",
+                    "wrap",
+                    "unwrap",
+                    "mint",
+                    "deposit",
+                    "deposit with receipt",
+                    "withdraw with receipt",
+                    "transfer in",
+                    "transfer out",
+                )
             )
             or not tx_in.classification
         ):
@@ -285,8 +301,44 @@ def _make_t_record(
                     wallet=_get_wallet(tx_in.chain, tx_in.address),
                     note=_get_note(tx_in.data_row),
                 )
+            elif tx_in.classification.startswith("borrow"):
+                tx_in.data_row.t_record = TransactionOutRecord(
+                    TrType.LOAN,
+                    tx_in.data_row.timestamp,
+                    buy_quantity=tx_in.quantity,
+                    buy_asset=tx_in.asset,
+                    buy_value=tx_in.value,
+                    wallet=_get_wallet(tx_in.chain, tx_in.address),
+                    note=_get_note(tx_in.data_row),
+                )
+            elif tx_in.classification.startswith("claim reward"):
+                tx_in.data_row.t_record = TransactionOutRecord(
+                    TrType.STAKING_REWARD,
+                    tx_in.data_row.timestamp,
+                    buy_quantity=tx_in.quantity,
+                    buy_asset=tx_in.asset,
+                    buy_value=tx_in.value,
+                    wallet=_get_wallet(tx_in.chain, tx_in.address),
+                    note=_get_note(tx_in.data_row),
+                )
+            elif tx_in.classification.startswith("transfer in"):
+                tx_in.data_row.t_record = TransactionOutRecord(
+                    TrType.DEPOSIT,
+                    tx_in.data_row.timestamp,
+                    buy_quantity=tx_in.quantity,
+                    buy_asset=tx_in.asset,
+                    buy_value=tx_in.value,
+                    wallet=_get_wallet(tx_in.chain, tx_in.address),
+                    note=_get_note(tx_in.data_row),
+                )
             elif tx_in.classification.startswith(
-                ("unstake & claim reward", "exit vault & claim reward", "unstake", "withdraw")
+                (
+                    "unstake & claim reward",
+                    "exit vault & claim reward",
+                    "unstake",
+                    "withdraw",
+                    "deposit",
+                )
             ):
                 if tx_in.data_row.row_dict["vault id"]:
                     try:
@@ -301,6 +353,10 @@ def _make_t_record(
                         raise MissingValueError(
                             parser.in_header.index("vault id"), "vault id", ""
                         ) from e
+                    except AttributeError as e:
+                        raise UnexpectedContentError(
+                            parser.in_header.index("token symbol"), "token symbol", tx_in.asset
+                        ) from e
                 else:
                     _next_free_row(tx_rows).t_record = TransactionOutRecord(
                         TrType.STAKING_REWARD,
@@ -311,6 +367,9 @@ def _make_t_record(
                         wallet=_get_wallet(tx_in.chain, tx_in.address),
                         note=_get_note(tx_in.data_row),
                     )
+            elif tx_in.classification.startswith("spam"):
+                # Ignore spam Airdrops
+                pass
             else:
                 raise UnexpectedTypeError(
                     parser.in_header.index("classification"), "classification", tx_in.classification
@@ -329,7 +388,27 @@ def _make_t_record(
                     wallet=_get_wallet(tx_out.chain, tx_out.address),
                     note=_get_note(tx_out.data_row),
                 )
-            elif tx_out.classification.startswith("stake"):
+            elif tx_out.classification.startswith("repay"):
+                tx_out.data_row.t_record = TransactionOutRecord(
+                    TrType.LOAN_REPAYMENT,
+                    tx_out.data_row.timestamp,
+                    sell_quantity=abs(tx_out.quantity),
+                    sell_asset=tx_out.asset,
+                    sell_value=abs(tx_out.value) if tx_out.value else None,
+                    wallet=_get_wallet(tx_out.chain, tx_out.address),
+                    note=_get_note(tx_out.data_row),
+                )
+            elif tx_out.classification.startswith("transfer out"):
+                tx_out.data_row.t_record = TransactionOutRecord(
+                    TrType.WITHDRAWAL,
+                    tx_out.data_row.timestamp,
+                    sell_quantity=abs(tx_out.quantity),
+                    sell_asset=tx_out.asset,
+                    sell_value=abs(tx_out.value) if tx_out.value else None,
+                    wallet=_get_wallet(tx_out.chain, tx_out.address),
+                    note=_get_note(tx_out.data_row),
+                )
+            elif tx_out.classification.startswith(("deposit", "stake")):
                 tx_out.data_row.t_record = TransactionOutRecord(
                     TrType.STAKE,
                     tx_out.data_row.timestamp,
@@ -346,7 +425,6 @@ def _make_t_record(
                     raise MissingValueError(
                         parser.in_header.index("vault id"), "vault id", ""
                     ) from e
-
             else:
                 raise UnexpectedTypeError(
                     parser.in_header.index("classification"),
@@ -359,7 +437,7 @@ def _make_t_record(
         if (
             tx_ins[0]
             .data_row.row_dict["classification"]
-            .startswith(("swap", "mint", "deposit", "deposit with receipt"))
+            .startswith(("swap", "mint", "deposit", "deposit with receipt", "stake"))
             or not tx_ins[0].data_row.row_dict["classification"]
         ):
             # Treat the "deposit" as "deposit with receipt" as we are getting a token back here
@@ -617,7 +695,7 @@ def _do_unstake(
         raise ValueError(f"Vault: {vault_id} does not exist")
 
     if asset not in vaults[vault_id]:
-        raise RuntimeError(f"Vault: {vault_id} does not contain {asset}")
+        raise AttributeError(f"Vault: {vault_id} does not contain {asset}")
 
     vaults[vault_id][asset].quantity -= quantity
 
@@ -927,7 +1005,7 @@ def _get_ins_outs(
 
 
 def _consolidate_tx(
-    tx_ins: List[TxRecord], tx_outs: List[TxRecord]
+    tx_ins: List[TxRecord], tx_outs: List[TxRecord], tx_hash: TxHash
 ) -> Tuple[List[TxRecord], List[TxRecord]]:
     tx_assets: Dict[AssetSymbol, TxRecord] = {}
 
@@ -949,8 +1027,11 @@ def _consolidate_tx(
             if not tx_record.vault_id:
                 tx_record.vault_id = tx_in.vault_id
 
-            if tx_record.vault_id and tx_in.vault_id and tx_record.vault_id != tx_in.vault_id:
-                raise RuntimeError("Vault ID different in same tx")
+            if tx_record.vault_id and tx_record.vault_id != tx_in.vault_id:
+                sys.stderr.write(
+                    f"{WARNING} Different Vault ID:{tx_in.vault_id} detected in TX:{tx_hash} "
+                    f"Vault ID:{tx_record.vault_id}\n"
+                )
 
     for tx_out in tx_outs:
         if tx_out.classification == "interaction between your accounts":
@@ -970,8 +1051,11 @@ def _consolidate_tx(
             if not tx_record.vault_id:
                 tx_record.vault_id = tx_out.vault_id
 
-            if tx_record.vault_id and tx_out.vault_id and tx_record.vault_id != tx_out.vault_id:
-                raise RuntimeError("Vault ID different in same tx")
+            if tx_record.vault_id and tx_record.vault_id != tx_out.vault_id:
+                sys.stderr.write(
+                    f"{WARNING} Different Vault ID:{tx_out.vault_id} detected in TX:{tx_hash} "
+                    f"Vault ID:{tx_record.vault_id}\n"
+                )
 
     ctx_ins = []
     ctx_outs = []
