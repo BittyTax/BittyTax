@@ -18,6 +18,26 @@ if TYPE_CHECKING:
 WALLET = "LBank"
 
 
+def parse_lbank_deposits(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"].replace("UTC0", ""))
+
+    if row_dict["Type"] == "Deposit":
+        quantity, asset = _get_amount(row_dict["Quantity"])
+
+        data_row.t_record = TransactionOutRecord(
+            TrType.DEPOSIT,
+            data_row.timestamp,
+            buy_quantity=quantity,
+            buy_asset=asset,
+            wallet=WALLET,
+        )
+    else:
+        raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
+
+
 def parse_lbank_trades(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
@@ -70,6 +90,24 @@ def _get_amount(data_field: str) -> Tuple[Optional[Decimal], str]:
         return Decimal(amount), symbol.upper()
     return None, ""
 
+
+DataParser(
+    ParserType.EXCHANGE,
+    "LBank Deposits",
+    [
+        "ID",
+        "Time",
+        "Token",
+        "Initial Quantity",
+        "Latest Quantity",
+        "Quantity",
+        "Type",
+        "Details",
+        "Remarks",
+    ],
+    worksheet_name="LBank D",
+    row_handler=parse_lbank_deposits,
+)
 
 DataParser(
     ParserType.EXCHANGE,
