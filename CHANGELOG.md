@@ -120,6 +120,7 @@
 - Binance.US parser: added new export format.
 - Conversion tool: added parser for TradeOgre exchange.
 - Conversion tool: added parser for Voyager exchange.
+- Conversion tool: added parser for LBank exchange.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))

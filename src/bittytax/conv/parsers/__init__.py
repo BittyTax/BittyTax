@@ -53,6 +53,7 @@ from . import (
     koinly,
     kraken,
     kucoin,
+    lbank,
     ledgerlive,
     liquid,
     mercatox,
