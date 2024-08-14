@@ -15,6 +15,7 @@ from . import (
     blockpit,
     blockscout,
     bnktothefuture,
+    bybit,
     celsius,
     cexio,
     cgtcalculator,
