@@ -1098,8 +1098,8 @@ def _remove_t_records(tx_rows: List["DataRow"]) -> None:
 
 def _get_asset(token_symbol: str, token_unique_id: str) -> AssetSymbol:
     if token_unique_id:
-        if len(token_unique_id) > 8:
-            token_unique_id = f"{token_unique_id[:8]}..."
+        if len(token_unique_id) > 16:
+            token_unique_id = f"{token_unique_id[:8]}...{token_unique_id[-8:]}"
         return AssetSymbol(f"{token_symbol} #{token_unique_id}")
     return AssetSymbol(token_symbol)
 
