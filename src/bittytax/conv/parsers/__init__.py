@@ -1,6 +1,7 @@
 from . import (
     accointing,
     adalite,
+    aptoscan,
     barclays,
     binance,
     binance_us,

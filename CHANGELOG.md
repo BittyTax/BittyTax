@@ -123,6 +123,7 @@
 - Conversion tool: added parser for LBank exchange.
 - Conversion tool: added parser for Bybit exchange.
 - Conversion tool: added parser for Robinhood exchange.
+- Conversion tool: added parser for Aptoscan explorer.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
