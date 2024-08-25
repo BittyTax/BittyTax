@@ -40,6 +40,7 @@ from . import (
     eternl,
     etherscan,
     exodus,
+    fatstx,
     ftx,
     gatehub,
     gateio,
