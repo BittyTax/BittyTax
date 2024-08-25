@@ -260,7 +260,7 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
         return bool(self.asset not in config.fiat_list)
 
     def is_nft(self) -> bool:
-        match = re.match(r".+ #(\d+)$", self.asset)
+        match = re.match(r".+#(\d+)$", self.asset)
         return bool(match)
 
     def date(self) -> Date:
