@@ -188,6 +188,7 @@
 - BlockFi parser: "Withdrawal Fee" now joined to the "Withdrawal".
 - Koinly parser: changed "Reward" to map to Staking.
 - Accounting tool: for NFTs, a space between the symbol name and ID is now optional, i.e. CryptoPunk#369.
+- FTX parser: handle optional fee.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
