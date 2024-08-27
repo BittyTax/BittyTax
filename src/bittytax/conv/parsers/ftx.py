@@ -122,24 +122,28 @@ def _parse_ftx_trades_row(
             parser.in_header.index("Market"), "Market", row_dict["Market"]
         )
 
-    if Decimal(row_dict["Fee"]) < 0:
-        dup_data_row = copy.copy(data_row)
-        dup_data_row.row = []
+    if row_dict["Fee"]:
+        if Decimal(row_dict["Fee"]) < 0:
+            dup_data_row = copy.copy(data_row)
+            dup_data_row.row = []
 
-        dup_data_row.t_record = TransactionOutRecord(
-            TrType.FEE_REBATE,
-            data_row.timestamp,
-            buy_quantity=abs(Decimal(row_dict["Fee"])),
-            buy_asset=row_dict["Fee Currency"],
-            wallet=WALLET,
-        )
-        data_rows.insert(row_index + 1, dup_data_row)
+            dup_data_row.t_record = TransactionOutRecord(
+                TrType.FEE_REBATE,
+                data_row.timestamp,
+                buy_quantity=abs(Decimal(row_dict["Fee"])),
+                buy_asset=row_dict["Fee Currency"],
+                wallet=WALLET,
+            )
+            data_rows.insert(row_index + 1, dup_data_row)
 
+            fee_quantity = None
+            fee_asset = ""
+        else:
+            fee_quantity = Decimal(row_dict["Fee"])
+            fee_asset = row_dict["Fee Currency"]
+    else:
         fee_quantity = None
         fee_asset = ""
-    else:
-        fee_quantity = Decimal(row_dict["Fee"])
-        fee_asset = row_dict["Fee Currency"]
 
     if row_dict["Side"] == "buy":
         if Decimal(row_dict["Total"]) == 0:
@@ -310,6 +314,26 @@ DataParser(
     ["time", "coin", "size", "address", "status", "txid", "fee", "id"],
     worksheet_name="FTX W",
     row_handler=parse_ftx_withdrawals,
+)
+
+ftx_trades = DataParser(
+    ParserType.EXCHANGE,
+    "FTX Trades",
+    [
+        "ID",
+        "Time",
+        "Market",
+        "Side",
+        "Order Type",
+        "Size",
+        "Price",
+        "Total",
+        "Fee",
+        "Fee Currency",
+        "TWAP",  # New field
+    ],
+    worksheet_name="FTX T",
+    all_handler=parse_ftx_trades,
 )
 
 ftx_trades = DataParser(
