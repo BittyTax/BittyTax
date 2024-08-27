@@ -279,6 +279,14 @@ def _split_trading_pair(trading_pair: str) -> Tuple[Optional[str], Optional[str]
 DataParser(
     ParserType.EXCHANGE,
     "FTX Deposits",
+    ["", "Time", "Coin", "Amount", "Status", "Additional info", "Transaction ID"],
+    worksheet_name="FTX D",
+    row_handler=parse_ftx_deposits,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "FTX Deposits",
     ["", "Time", "Coin", "Amount", "Status", "Additional info", "Transaction ID", ""],
     worksheet_name="FTX D",
     row_handler=parse_ftx_deposits,
@@ -298,6 +306,15 @@ DataParser(
     ["id", "time", "coin", "size", "status", "txid"],
     worksheet_name="FTX D",
     row_handler=parse_ftx_deposits,
+)
+
+
+DataParser(
+    ParserType.EXCHANGE,
+    "FTX Withdrawals",
+    ["", "Time", "Coin", "Amount", "Destination", "Status", "Transaction ID", "fee"],
+    worksheet_name="FTX W",
+    row_handler=parse_ftx_withdrawals,
 )
 
 DataParser(
