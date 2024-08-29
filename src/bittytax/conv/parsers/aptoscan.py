@@ -28,7 +28,7 @@ def parse_aptoscan_txns(
     data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(int(row_dict["Time"]) / 100000)
+    data_row.timestamp = DataParser.parse_timestamp(int(row_dict["Time"]) / 1000000)
     data_row.tx_raw = TxRawPos(
         parser.in_header.index("Version"),
         parser.in_header.index("From"),
@@ -53,7 +53,7 @@ def parse_aptoscan_coin(
     data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(int(row_dict["Time"]) / 100000)
+    data_row.timestamp = DataParser.parse_timestamp(int(row_dict["Time"]) / 1000000)
     data_row.tx_raw = TxRawPos(
         parser.in_header.index("Version"),
         parser.in_header.index("From"),
@@ -89,7 +89,7 @@ def parse_aptoscan_tokens(
     data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(int(row_dict["Time"]) / 100000)
+    data_row.timestamp = DataParser.parse_timestamp(int(row_dict["Time"]) / 1000000)
     data_row.tx_raw = TxRawPos(
         parser.in_header.index("Version"),
         parser.in_header.index("From"),
