@@ -17,6 +17,7 @@ from . import (
     blockscout,
     bnktothefuture,
     bybit,
+    cashapp,
     celsius,
     cexio,
     cgtcalculator,
