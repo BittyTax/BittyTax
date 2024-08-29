@@ -46,7 +46,7 @@ def parse_coinbase_v4(
         data_row.timestamp,
     )
     fees = (
-        abs(Decimal(row_dict["Fees and/or Spread"].strip("()£€$").replace(",", "")))
+        abs(Decimal(re.sub(r"[^-\d.]+", "", row_dict["Fees and/or Spread"])))
         if row_dict["Fees and/or Spread"]
         else None
     )
