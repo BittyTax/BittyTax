@@ -129,6 +129,7 @@
 - Conversion tool: added parser for Aptoscan explorer.
 - Conversion tool: added parser for FatStx explorer.
 - Conversion tool: added parser for Cash App wallet.
+- Crypto.com parser: added "finance.dpos.non_compound_interest.crypto_wallet" and "finance.dpos.staking.crypto_wallet" transaction kinds. ([#383](https://github.com/BittyTax/BittyTax/issues/383))
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
