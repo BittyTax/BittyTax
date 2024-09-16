@@ -60,7 +60,7 @@ class Config:
         "binance_multi_bnb_split_even": False,
         "binance_statements_only": False,
         "stablecoin_list": STABLECOIN_LIST,
-        "is_crypto2crypto_taxable": False,
+        "is_crypto2crypto_taxable": True,
     }
 
     OPTIONAL_CONFIG = (

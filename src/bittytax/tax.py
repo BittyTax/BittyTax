@@ -153,6 +153,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         TrType.CHARITY_SENT,
         TrType.LOST,
         TrType.SWAP,
+        TrType.CRYPTO_CRYPTO,
     )
 
     MARGIN_TYPES = (TrType.MARGIN_GAIN, TrType.MARGIN_LOSS, TrType.MARGIN_FEE)
@@ -369,14 +370,14 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             if config.debug:
                 print(f"{Fore.CYAN}fifo: {tax_event}")
 
-        if sell.t_type is TrType.SWAP:
+        if sell.t_type in (TrType.SWAP, TrType.CRYPTO_CRYPTO):
             # Cost basis copied to "Buy" asset
             if sell.t_record and sell.t_record.buy:
                 sell.t_record.buy.cost = short_term.cost + long_term.cost
                 if short_term.fee_value + long_term.fee_value:
                     sell.t_record.buy.fee_value = short_term.fee_value + long_term.fee_value
             else:
-                raise RuntimeError("Missing t_record.buy for SWAP")
+                raise RuntimeError("Missing t_record.buy for SWAP/CRYPTO_CRYPTO")
 
     def process_holdings(self) -> None:
         if config.debug:

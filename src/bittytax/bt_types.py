@@ -36,6 +36,7 @@ class TrType(Enum):
     MARGIN_FEE = "Margin-Fee"
     TRADE = "Trade"
     SWAP = "Swap"
+    CRYPTO_CRYPTO = 'crypto-crypto'
 
 
 class DisposalType(Enum):
@@ -74,6 +75,7 @@ BUY_TYPES = (
     TrType.MARGIN_GAIN,
     TrType.TRADE,
     TrType.SWAP,
+    TrType.CRYPTO_CRYPTO,
 )
 
 SELL_TYPES = (
@@ -90,6 +92,7 @@ SELL_TYPES = (
     TrType.MARGIN_FEE,
     TrType.TRADE,
     TrType.SWAP,
+    TrType.CRYPTO_CRYPTO,
 )
 
 BUY_AND_SELL_TYPES = [t for t in BUY_TYPES if t in SELL_TYPES]

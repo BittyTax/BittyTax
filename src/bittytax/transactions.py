@@ -37,10 +37,20 @@ class TransactionHistory:
 
             self.get_all_values(tr)
 
+            if tr.t_type == TrType.TRADE and tr.buy and tr.sell:
+                if tr.sell.asset not in config.fiat_list and tr.buy.asset not in config.fiat_list:
+                    if tr.sell.asset not in config.stablecoin_list and tr.buy.asset not in config.stablecoin_list:
+                        if not config.is_crypto2crypto_taxable:
+                            tr.t_type = TrType.CRYPTO_CRYPTO
+                            if tr.buy:
+                                tr.buy.t_type = TrType.CRYPTO_CRYPTO
+                            if tr.sell:
+                                tr.sell.t_type = TrType.CRYPTO_CRYPTO
+
             # The fee value (trading fee) as an allowable cost to the buy, the sell or both
             if tr.fee and tr.fee.disposal and tr.fee.proceeds:
                 if tr.buy and tr.buy.acquisition and tr.sell and tr.sell.disposal:
-                    if tr.t_type in (TrType.TRADE, TrType.SWAP):
+                    if tr.t_type in (TrType.TRADE, TrType.SWAP, TrType.CRYPTO_CRYPTO):
                         if tr.buy.asset in config.fiat_list:
                             tr.sell.fee_value = tr.fee.proceeds
                             tr.sell.fee_fixed = tr.fee.proceeds_fixed
@@ -341,6 +351,7 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
         TrType.MARGIN_GAIN,
         TrType.TRADE,
         TrType.SWAP,
+        TrType.CRYPTO_CRYPTO,
     }
 
     def __init__(
@@ -464,6 +475,7 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
         TrType.MARGIN_FEE,
         TrType.TRADE,
         TrType.SWAP,
+        TrType.CRYPTO_CRYPTO,
     }
 
     def __init__(
