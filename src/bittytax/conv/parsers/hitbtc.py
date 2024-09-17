@@ -206,8 +206,10 @@ DataParser(
         "Volume",
         "Fee",
         "Rebate",
+        "PnL",  # New field
         "Total",
         "Taker",
+        "Margin Mode",  # New field
     ],
     worksheet_name="HitBTC T",
     all_handler=parse_hitbtc_trades_v2,
@@ -218,6 +220,28 @@ DataParser(
     "HitBTC Trades",
     [
         "Email",
+        "Date (UTC)",
+        "Instrument",
+        "Trade ID",
+        "Order ID",
+        "Side",
+        "Quantity",
+        "Price",
+        "Volume",
+        "Fee",
+        "Rebate",
+        "Total",
+        "Taker",  # New field
+    ],
+    worksheet_name="HitBTC T",
+    all_handler=parse_hitbtc_trades_v2,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "HitBTC Trades",
+    [
+        "Email",  # New field
         "Date (UTC)",
         "Instrument",
         "Trade ID",
@@ -258,14 +282,14 @@ DataParser(
     ParserType.EXCHANGE,
     "HitBTC Deposits/Withdrawals",
     [
-        "Email",
+        "Email",  # New field
         "Date (UTC)",
         "Operation id",
         "Type",
         "Amount",
         "Transaction hash",
         "Main account balance",
-        "Currency",
+        "Currency",  # New field
     ],
     worksheet_name="HitBTC D,W",
     row_handler=parse_hitbtc_deposits_withdrawals_v2,
