@@ -2,6 +2,7 @@
     <img src="{{TEMPLATE_PATH}}/img/BittyTax300dpi.png" class="logo">
     <h1>Cryptoasset Accounting Report</h1>
     <h2>US Individual Tax Rules</h2>
+    <p><strong>Calculation Method Used:</strong> {{ config.matching_method }}</p>
     {% if args.tax_year %}
         <h3>Tax Year: {{config.format_tax_year(args.tax_year)}}</h3>
     {% else %}
