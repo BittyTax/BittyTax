@@ -272,7 +272,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 self._create_disposal(s, matches)
 
     def lifo_match(self) -> None:
-        # Fai una copia delle transazioni per un eventuale uso futuro (tassazione o altro)
+        # Keep copy for income tax processing
         self.transactions = copy.deepcopy(self.transactions)
 
         if config.debug:
@@ -280,7 +280,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         buy_index = {}
 
-        # Itera attraverso tutte le transazioni di vendita
         for s in tqdm(
             self.sells_ordered,
             unit="t",
@@ -291,24 +290,15 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             s_quantity_remaining = s.quantity
 
             if config.debug:
-                print(f"{Fore.GREEN}lifo: Analizzando vendita: {s}")
-                print(f"{Fore.GREEN}lifo: Quantità vendita rimanente: {s_quantity_remaining}")
+                print(f"{Fore.GREEN}lifo: {s}")
 
             if s.asset in self.buys_ordered:
-                # Trova l'indice del primo acquisto che avviene **prima** della vendita e non è già stato abbinato
                 for i in reversed(range(len(self.buys_ordered[s.asset]))):
                     if self.buys_ordered[s.asset][i].date() <= s.date() and not self.buys_ordered[s.asset][i].matched:
                         buy_index[s.asset] = i
                         break
                 else:
-                    buy_index[s.asset] = -1  # Nessun acquisto disponibile prima della vendita
-
-            if config.debug:
-                if s.asset in buy_index and buy_index[s.asset] != -1:
-                    print(f"{Fore.YELLOW}lifo: Inizializzazione buy_index per {s.asset}: {buy_index[s.asset]}")
-                    print(f"{Fore.YELLOW}lifo: Transazioni di acquisto disponibili per {s.asset}: {len(self.buys_ordered[s.asset])}")
-                else:
-                    print(f"{Fore.RED}lifo: Nessun acquisto valido trovato per {s.asset} prima della vendita")
+                    buy_index[s.asset] = -1
 
             while (
                 s.asset in self.buys_ordered
@@ -317,60 +307,40 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             ):
                 b = self.buys_ordered[s.asset][buy_index[s.asset]]
 
-                if config.debug:
-                    print(f"{Fore.BLUE}lifo: Considerando acquisto {b}")
-                    print(f"{Fore.BLUE}lifo: Quantità acquisto: {b.quantity}, Data acquisto: {b.date()}, Data vendita: {s.date()}")
-
                 if b.date() > s.date():
-                    if config.debug:
-                        print(f"{Fore.RED}lifo: L'acquisto {b} è successivo alla vendita {s}. Interrompo l'abbinamento.")
                     break
 
-                # Controlla se l'acquisto è già stato abbinato a una vendita precedente
                 if b.matched:
-                    if config.debug:
-                        print(f"{Fore.RED}lifo: L'acquisto {b} è già stato usato. Passo al prossimo.")
                     buy_index[s.asset] -= 1
                     continue
 
                 if b.quantity > s_quantity_remaining:
-                    # Se la quantità acquistata è maggiore della quantità da vendere, splitta l'acquisto
                     b_remainder = b.split_buy(s_quantity_remaining)
                     self.buys_ordered[s.asset].insert(buy_index[s.asset] + 1, b_remainder)
 
                     if config.debug:
-                        print(f"{Fore.GREEN}lifo: Split dell'acquisto {b}. Nuovo acquisto {b_remainder} creato con quantità {b_remainder.quantity}")
-                        print(f"{Fore.YELLOW}lifo: Acquisto aggiornato: {b}, Quantità rimanente: {b.quantity}")
-
+                        print(f"{Fore.GREEN}lifo: {b} <-- split")
+                        print(f"{Fore.YELLOW}lifo:   {b_remainder} <-- split")
                 else:
                     if config.debug:
-                        print(f"{Fore.GREEN}lifo: Abbinamento completo per acquisto {b}")
+                        print(f"{Fore.GREEN}lifo: {b}")
 
-                b.matched = True  # Segna l'acquisto come abbinato
+                b.matched = True
                 matches.append(b)
                 s_quantity_remaining -= b.quantity
 
-                if config.debug:
-                    print(f"{Fore.GREEN}lifo: Quantità vendita rimanente dopo abbinamento: {s_quantity_remaining}")
-
-                # Spostati all'acquisto precedente
                 buy_index[s.asset] -= 1
-
-                if config.debug:
-                    print(f"{Fore.YELLOW}lifo: Nuovo buy_index per {s.asset}: {buy_index[s.asset]}")
 
             if s_quantity_remaining > 0:
                 tqdm.write(
                     f"{WARNING} No matching Buy of {s_quantity_remaining.normalize():0,f} "
-                    f"{s.asset} per la vendita di {s.format_quantity()} {s.asset}"
+                    f"{s.asset} for Sell of {s.format_quantity()} {s.asset}"
                 )
-                if config.debug:
-                    print(f"{Fore.RED}lifo: Nessun acquisto corrispondente trovato per {s_quantity_remaining} di {s.asset}")
                 if config.cost_basis_zero_if_missing:
                     buy_match = Buy(TrType.TRADE, s_quantity_remaining, s.asset, Decimal(0))
                     buy_match.wallet = s.wallet
                     buy_match.timestamp = s.timestamp
-                    buy_match.note = Note("Aggiunto come costo zero")
+                    buy_match.note =  Note("Added as cost basis zero")
                     tqdm.write(f"{Fore.GREEN}lifo: {buy_match}")
                     matches.append(buy_match)
                     s.matched = True
@@ -380,10 +350,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             else:
                 s.matched = True
                 self._create_disposal(s, matches)
-
-            if config.debug:
-                print(f"{Fore.GREEN}lifo: Vendita completata: {s}")
-                print(f"{Fore.GREEN}lifo: Matches trovati: {matches}")
 
     def _create_disposal(self, sell: Sell, matches: List[Buy]) -> None:
         short_term = BuyAccumulator()
