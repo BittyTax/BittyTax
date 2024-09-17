@@ -61,6 +61,7 @@ class Config:
         "binance_statements_only": False,
         "stablecoin_list": STABLECOIN_LIST,
         "is_crypto2crypto_taxable": True,
+        "matching_method": "FIFO", # user can choose between 'FIFO' or 'LIFO'
     }
 
     OPTIONAL_CONFIG = (

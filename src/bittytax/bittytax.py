@@ -284,7 +284,14 @@ def _do_tax(
     tax = TaxCalculator(transaction_history.transactions, tax_rules)
 
     tax.order_transactions()
-    tax.fifo_match()
+
+    if config.matching_method == "FIFO":
+        tax.fifo_match()
+    elif config.matching_method == "LIFO":
+        tax.lifo_match()
+    else:
+        raise ValueError(f"Invalid matching method: {config.matching_method}")
+
     if not tax.match_missing:
         tax.process_holdings()
 
