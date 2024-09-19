@@ -17,6 +17,7 @@ from .audit_excel import AuditLogExcel
 from .bt_types import AssetSymbol, Year
 from .config import config
 from .constants import (
+    ACCT_FORMAT_EXCEL,
     ACCT_FORMAT_IRS,
     ACCT_FORMAT_PDF,
     ACCT_FORMAT_TAXACT,
@@ -38,6 +39,7 @@ from .output_txf import OutputTurboTaxTxf
 from .price.exceptions import DataSourceError
 from .price.valueasset import ValueAsset
 from .report import ReportLog, ReportPdf
+from .report_excel import ReportExcel
 from .t_record import TransactionRecord
 from .tax import CalculateCapitalGains as CCG
 from .tax import TaxCalculator
@@ -112,6 +114,7 @@ def main() -> None:
         "--format",
         choices=[
             ACCT_FORMAT_PDF,
+            ACCT_FORMAT_EXCEL,
             ACCT_FORMAT_IRS,
             ACCT_FORMAT_TURBOTAX_CSV,
             ACCT_FORMAT_TURBOTAX_TXF,
@@ -171,7 +174,10 @@ def main() -> None:
         if args.nopdf:
             ReportLog(args, audit)
         else:
-            ReportPdf(parser.prog, args, audit)
+            if args.format == ACCT_FORMAT_EXCEL:
+                ReportExcel(parser.prog, args, audit)
+            else:
+                ReportPdf(parser.prog, args, audit)
     else:
         try:
             tax, value_asset = _do_tax(transaction_records, args.tax_rules)
@@ -200,6 +206,15 @@ def main() -> None:
         else:
             if args.format == ACCT_FORMAT_PDF:
                 ReportPdf(
+                    parser.prog,
+                    args,
+                    audit,
+                    tax.tax_report,
+                    value_asset.price_report,
+                    tax.holdings_report,
+                )
+            elif args.format == ACCT_FORMAT_EXCEL:
+                ReportExcel(
                     parser.prog,
                     args,
                     audit,

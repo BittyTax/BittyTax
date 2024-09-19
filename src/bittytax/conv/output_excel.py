@@ -24,6 +24,7 @@ from ..bt_types import (
 )
 from ..config import config
 from ..constants import (
+    EXCEL_PRECISION,
     FONT_COLOR_TX_DEST,
     FONT_COLOR_TX_HASH,
     FONT_COLOR_TX_SRC,
@@ -50,7 +51,6 @@ class Column(TypedDict):  # pylint: disable=too-few-public-methods
 
 
 class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
-    EXCEL_PRECISION = 15
     FILE_EXTENSION = "xlsx"
     DATE_FORMAT = "yyyy-mm-dd hh:mm:ss"
     DATE_FORMAT_MS = "yyyy-mm-dd hh:mm:ss.000"  # Excel can only display milliseconds
@@ -405,7 +405,7 @@ class Worksheet:
 
     def _xl_quantity(self, quantity: Optional[Decimal], row_num: int, col_num: int) -> None:
         if quantity is not None:
-            if len(quantity.normalize().as_tuple().digits) > self.output.EXCEL_PRECISION:
+            if len(quantity.normalize().as_tuple().digits) > EXCEL_PRECISION:
                 self.worksheet.write_string(
                     row_num,
                     col_num,

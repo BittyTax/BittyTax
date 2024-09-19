@@ -17,7 +17,7 @@ from xlsxwriter.utility import xl_rowcol_to_cell
 from .audit import AuditLogEntry
 from .bt_types import BUY_TYPES, SELL_TYPES, AssetSymbol, TrRecordPart, TrType
 from .config import config
-from .constants import PROJECT_URL, TZ_UTC
+from .constants import EXCEL_PRECISION, PROJECT_URL, TZ_UTC
 from .report import ProgressSpinner
 from .t_row import TransactionRow
 from .version import __version__
@@ -52,7 +52,6 @@ class AuditLogExcel:  # pylint: disable=too-few-public-methods, too-many-instanc
         "TxDest",
     ]
 
-    EXCEL_PRECISION = 15
     DATE_FORMAT = "yyyy-mm-dd hh:mm:ss"
     DATE_FORMAT_MS = "yyyy-mm-dd hh:mm:ss.000"  # Excel can only display milliseconds
     STR_FORMAT_MS = "%Y-%m-%dT%H:%M:%S.%f"
@@ -221,7 +220,7 @@ class Worksheet:
             self._xl_text_grey(audit_log_entry.t_record.t_row.tx_raw.tx_dest, row_num, 11)
 
     def _xl_balance(self, balance: Decimal, row_num: int, col_num: int) -> None:
-        if len(balance.normalize().as_tuple().digits) > self.output.EXCEL_PRECISION:
+        if len(balance.normalize().as_tuple().digits) > EXCEL_PRECISION:
             if balance < 0:
                 wb_format = self.output.format_num_string_unsigned_red
             else:
@@ -255,7 +254,7 @@ class Worksheet:
 
     def _xl_change(self, change: Optional[Decimal], row_num: int, col_num: int) -> None:
         if change is not None:
-            if len(change.normalize().as_tuple().digits) > self.output.EXCEL_PRECISION:
+            if len(change.normalize().as_tuple().digits) > EXCEL_PRECISION:
                 if change > 0:
                     change_str = f"+{change.normalize():0,f}"
                 else:
