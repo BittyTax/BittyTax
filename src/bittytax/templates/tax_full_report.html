@@ -36,6 +36,10 @@
                 <pdf:nextpage />
             {% endif %}
         {% endfor %}
+        {% if yearly_holdings_report %}
+           <pdf:nextpage />
+           {% include "yearly_holdings.html" %}
+        {% endif %}
         {% if holdings_report %}
            <pdf:nextpage />
            {% include "holdings.html" %}

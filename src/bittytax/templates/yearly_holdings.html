@@ -1,0 +1,36 @@
+<h1>Yearly Holdings</h1>
+{% for tax_year, report in yearly_holdings_report.items() %}
+<h2>{{ config.format_tax_year(tax_year) }}</h2>
+<table repeat="1" width="100%" class="asset-table">
+    <thead>
+        <tr>
+            <th align="left">Asset</th>
+            <th align="right">Quantity at End of Year</th>
+            <th align="right">Average Balance</th>
+            <th align="right">Value in Fiat at End of Year</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for asset_symbol, asset_data in report.assets.items() %}
+        <tr>
+            <td align="left">{{ asset_symbol }}</td>
+            <td align="right">{{ asset_data.quantity_end_of_year | format_decimal }}</td>
+            <td align="right">{{ asset_data.average_balance | format_decimal }}</td>
+            {% if asset_data.value_in_fiat_at_end_of_year is not none %}
+            <td align="right">{{ asset_data.value_in_fiat_at_end_of_year | valuefilter }}</td>
+            {% else %}
+            <td align="right"><i>Not available</i></td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<table class="total-table">
+    <tr>
+        <td align="left"><strong>Total</strong></td>
+        <td></td>
+        <td></td>
+        <td align="right"><strong>{{ report.totals.total_value_in_fiat_at_end_of_year | valuefilter }}</strong></td>
+    </tr>
+</table>
+{% endfor %}
