@@ -59,10 +59,8 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
     TAX_SUMMARY_FILENAME = "BittyTax_Summary_Report"
     TAX_FULL_FILENAME = "BittyTax_Report"
 
-    DEFAULT_FILENAME = "BittyTax_Report"
     FILE_EXTENSION = "xlsx"
     TITLE = "BittyTax Report"
-    DATE_FORMAT = "mm/dd/yy"
 
     def __init__(
         self,
@@ -123,7 +121,7 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
                 {"font_size": FONT_SIZE, "font_color": "black", "num_format": "#,##0." + "#" * 30}
             ),
             date=workbook.add_format(
-                {"font_size": FONT_SIZE, "font_color": "black", "num_format": self.DATE_FORMAT}
+                {"font_size": FONT_SIZE, "font_color": "black", "num_format": "mm/dd/yy"}
             ),
             string_left=workbook.add_format({"font_size": FONT_SIZE, "underline": True}),
             string_right=workbook.add_format(
@@ -306,8 +304,6 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
 
 
 class Worksheet:
-    SHEETNAME_MAX_LEN = 31
-    MAX_COL_WIDTH = 30
     TABLE_STYLE = "Table Style Medium 9"
 
     AUD_WALLET_HEADERS = ["Wallet", "Asset", "Balance"]
@@ -1149,9 +1145,11 @@ class Worksheet:
         )
         self.row_num += 1
         start_row = self.row_num
+        end_a_row = None
+
+        self.row_num += 1
 
         for h in sorted(holdings_report["holdings"], key=str.lower):
-            self.row_num += 1
             holding = holdings_report["holdings"][h]
             self.worksheet.write_string(self.row_num, 0, h)
             self.worksheet.write_string(self.row_num, 1, holding["name"])
@@ -1172,10 +1170,32 @@ class Worksheet:
                 self.worksheet.write_string(
                     self.row_num, 4, "NOT AVAILABLE", self.workbook_formats.string_right
                 )
-
-        if start_row == self.row_num:
-            # Add blank row if table is empty
+            end_a_row = self.row_num
             self.row_num += 1
+
+        self.worksheet.write_string(self.row_num, 0, "Total", self.workbook_formats.bold)
+
+        # Total Cost Basis
+        self.worksheet.write_formula(
+            self.row_num,
+            3,
+            f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row, 3, end_a_row, 3)})",
+            self.workbook_formats.currency_bold,
+        )
+        # Total Market Value
+        self.worksheet.write_formula(
+            self.row_num,
+            4,
+            f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row, 4, end_a_row, 4)})",
+            self.workbook_formats.currency_bold,
+        )
+        # Total Gain/Loss
+        self.worksheet.write_formula(
+            self.row_num,
+            5,
+            f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row, 5, end_a_row, 5)})",
+            self.workbook_formats.currency_bold,
+        )
 
         self.worksheet.add_table(
             start_row,
