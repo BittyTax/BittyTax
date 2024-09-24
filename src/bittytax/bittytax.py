@@ -7,7 +7,7 @@ import io
 import os
 import platform
 import sys
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 import colorama
 from colorama import Fore
@@ -202,7 +202,7 @@ def main() -> None:
             parser.exit(message=f"{ERROR} {e}\n")
 
         if args.nopdf:
-            ReportLog(args, audit, tax.tax_report, value_asset.price_report, tax.holdings_report)
+            ReportLog(args, audit, tax.tax_report, value_asset.price_report, tax.holdings_report, tax.yearly_holdings_report)
         else:
             if args.format == ACCT_FORMAT_PDF:
                 ReportPdf(
@@ -212,6 +212,7 @@ def main() -> None:
                     tax.tax_report,
                     value_asset.price_report,
                     tax.holdings_report,
+                    tax.yearly_holdings_report,
                 )
             elif args.format == ACCT_FORMAT_EXCEL:
                 ReportExcel(
@@ -276,7 +277,7 @@ def _do_import(filename: str) -> List[TransactionRecord]:
 
 
 def _do_tax(
-    transaction_records: List[TransactionRecord], tax_rules: str
+    transaction_records: List[TransactionRecord], tax_rules: str, tax_year: Optional[Year] = None,
 ) -> Tuple[TaxCalculator, ValueAsset]:
     value_asset = ValueAsset()
     transaction_history = TransactionHistory(transaction_records, value_asset)
@@ -284,9 +285,16 @@ def _do_tax(
     tax = TaxCalculator(transaction_history.transactions, tax_rules)
 
     tax.order_transactions()
-    tax.fifo_match()
+
+    if config.matching_method == "FIFO":
+        tax.fifo_match()
+    elif config.matching_method == "LIFO":
+        tax.lifo_match()
+    else:
+        raise ValueError(f"Invalid matching method: {config.matching_method}")
+
     if not tax.match_missing:
-        tax.process_holdings()
+        tax.process_holdings(tax_year)
 
     return tax, value_asset
 
@@ -341,6 +349,9 @@ def _do_each_tax_year(
             "Income": calc_income,
             "MarginTrading": calc_margin_trading,
         }
+
+        if not summary_only:
+            tax.calculate_yearly_holdings(value_asset, tax_year)
     else:
         # Calculate for all years
         for year in sorted(tax.tax_events):
@@ -355,11 +366,13 @@ def _do_each_tax_year(
                     "Income": calc_income,
                     "MarginTrading": calc_margin_trading,
                 }
+
             else:
                 print(f"{WARNING} Tax year {year} is not supported")
 
         if not summary_only:
             tax.calculate_holdings(value_asset)
+            tax.calculate_yearly_holdings(value_asset)
 
 
 def _do_export(transaction_records: List[TransactionRecord]) -> None:

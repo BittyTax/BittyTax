@@ -19,6 +19,7 @@ class Config:
 
     FIAT_LIST = ["GBP", "EUR", "USD", "AUD", "NZD", "CAD", "PLN"]
     CRYPTO_LIST = ["BTC", "ETH", "XRP", "LTC", "BCH", "USDT"]
+    STABLECOIN_LIST = ["USDT", "USDC", "DAI"]
 
     TRADE_ASSET_TYPE_BUY = 0
     TRADE_ASSET_TYPE_SELL = 1
@@ -58,6 +59,9 @@ class Config:
         "coinbase_zero_fees_are_gifts": False,
         "binance_multi_bnb_split_even": False,
         "binance_statements_only": False,
+        "stablecoin_list": STABLECOIN_LIST,
+        "is_crypto2crypto_taxable": True,
+        "matching_method": "FIFO", # user can choose between 'FIFO' or 'LIFO'
     }
 
     OPTIONAL_CONFIG = (

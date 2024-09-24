@@ -3,7 +3,6 @@
 # pylint: disable=bad-option-value, unnecessary-dunder-call
 
 import copy
-import datetime
 import itertools
 import sys
 from dataclasses import dataclass, field
@@ -11,6 +10,7 @@ from decimal import Decimal
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import requests
+from datetime import datetime, date, time, timezone
 from colorama import Fore
 from dateutil.relativedelta import relativedelta
 from tqdm import tqdm
@@ -67,6 +67,17 @@ class HoldingsReportRecord(TypedDict):  # pylint: disable=too-few-public-methods
     holdings: Dict[AssetSymbol, HoldingsReportAsset]
     totals: HoldingsReportTotal
 
+class YearlyReportAsset(TypedDict):
+    quantity_end_of_year: Decimal
+    average_balance: Decimal
+    value_in_fiat_at_end_of_year: Decimal
+
+class YearlyReportTotal(TypedDict):
+    total_value_in_fiat_at_end_of_year: Decimal
+
+class YearlyReportRecord(TypedDict):
+    assets: Dict[AssetSymbol, YearlyReportAsset]
+    totals: YearlyReportTotal
 
 class CapitalGainsIndividual(TypedDict):  # pylint: disable=too-few-public-methods
     allowance: Decimal
@@ -153,6 +164,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         TrType.CHARITY_SENT,
         TrType.LOST,
         TrType.SWAP,
+        TrType.CRYPTO_CRYPTO,
     )
 
     MARGIN_TYPES = (TrType.MARGIN_GAIN, TrType.MARGIN_LOSS, TrType.MARGIN_FEE)
@@ -170,6 +182,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         self.tax_report: Dict[Year, TaxReportRecord] = {}
         self.holdings_report: Optional[HoldingsReportRecord] = None
+        self.yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]] = None
 
     def order_transactions(self) -> None:
         if config.debug:
@@ -261,6 +274,86 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     buy_match.timestamp = s.timestamp
                     buy_match.note = Note("Added as cost basis zero")
                     tqdm.write(f"{Fore.GREEN}fifo: {buy_match}")
+                    matches.append(buy_match)
+                    s.matched = True
+                    self._create_disposal(s, matches)
+                else:
+                    self.match_missing = True
+            else:
+                s.matched = True
+                self._create_disposal(s, matches)
+
+    def lifo_match(self) -> None:
+        # Keep copy for income tax processing
+        self.transactions = copy.deepcopy(self.transactions)
+
+        if config.debug:
+            print(f"{Fore.CYAN}lifo match transactions")
+
+        buy_index = {}
+
+        for s in tqdm(
+            self.sells_ordered,
+            unit="t",
+            desc=f"{Fore.CYAN}lifo match transactions{Fore.GREEN}",
+            disable=bool(config.debug or not sys.stdout.isatty()),
+        ):
+            matches = []
+            s_quantity_remaining = s.quantity
+
+            if config.debug:
+                print(f"{Fore.GREEN}lifo: {s}")
+
+            if s.asset in self.buys_ordered:
+                for i in reversed(range(len(self.buys_ordered[s.asset]))):
+                    if self.buys_ordered[s.asset][i].date() <= s.date() and not self.buys_ordered[s.asset][i].matched:
+                        buy_index[s.asset] = i
+                        break
+                else:
+                    buy_index[s.asset] = -1
+
+            while (
+                s.asset in self.buys_ordered
+                and buy_index[s.asset] >= 0
+                and s_quantity_remaining > 0
+            ):
+                b = self.buys_ordered[s.asset][buy_index[s.asset]]
+
+                if b.date() > s.date():
+                    break
+
+                if b.matched:
+                    buy_index[s.asset] -= 1
+                    continue
+
+                if b.quantity > s_quantity_remaining:
+                    b_remainder = b.split_buy(s_quantity_remaining)
+                    self.buys_ordered[s.asset].insert(buy_index[s.asset] + 1, b_remainder)
+
+                    if config.debug:
+                        print(f"{Fore.GREEN}lifo: {b} <-- split")
+                        print(f"{Fore.YELLOW}lifo:   {b_remainder} <-- split")
+                else:
+                    if config.debug:
+                        print(f"{Fore.GREEN}lifo: {b}")
+
+                b.matched = True
+                matches.append(b)
+                s_quantity_remaining -= b.quantity
+
+                buy_index[s.asset] -= 1
+
+            if s_quantity_remaining > 0:
+                tqdm.write(
+                    f"{WARNING} No matching Buy of {s_quantity_remaining.normalize():0,f} "
+                    f"{s.asset} for Sell of {s.format_quantity()} {s.asset}"
+                )
+                if config.cost_basis_zero_if_missing:
+                    buy_match = Buy(TrType.TRADE, s_quantity_remaining, s.asset, Decimal(0))
+                    buy_match.wallet = s.wallet
+                    buy_match.timestamp = s.timestamp
+                    buy_match.note =  Note("Added as cost basis zero")
+                    tqdm.write(f"{Fore.GREEN}lifo: {buy_match}")
                     matches.append(buy_match)
                     s.matched = True
                     self._create_disposal(s, matches)
@@ -369,21 +462,25 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             if config.debug:
                 print(f"{Fore.CYAN}fifo: {tax_event}")
 
-        if sell.t_type is TrType.SWAP:
+        if sell.t_type in (TrType.SWAP, TrType.CRYPTO_CRYPTO):
             # Cost basis copied to "Buy" asset
             if sell.t_record and sell.t_record.buy:
                 sell.t_record.buy.cost = short_term.cost + long_term.cost
                 if short_term.fee_value + long_term.fee_value:
                     sell.t_record.buy.fee_value = short_term.fee_value + long_term.fee_value
             else:
-                raise RuntimeError("Missing t_record.buy for SWAP")
+                raise RuntimeError("Missing t_record.buy for SWAP/CRYPTO_CRYPTO")
 
-    def process_holdings(self) -> None:
+    def process_holdings(self, tax_year: Optional[Year] = None) -> None:
         if config.debug:
             print(f"{Fore.CYAN}process holdings")
 
+        transactions = sorted(self._all_transactions())
+        if tax_year:
+            transactions = [t for t in transactions if t.year <= tax_year]
+
         for t in tqdm(
-            sorted(self._all_transactions()),
+            transactions,
             unit="t",
             desc=f"{Fore.CYAN}process holdings{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
@@ -394,6 +491,19 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             if t.matched:
                 if config.debug:
                     print(f"{Fore.BLUE}holdings: //{t} <- matched")
+
+                if isinstance(t, Buy):
+                    if config.debug:
+                        print(f"{Fore.GREEN}Processing Buy for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
+                    self.holdings[t.asset]._addto_balance_history(t.quantity, t.timestamp)
+
+                elif isinstance(t, Sell):
+                    if config.debug:
+                        print(f"{Fore.RED}Processing Sell for {t.asset}, Quantity: {t.quantity}, Timestamp: {t.timestamp}")
+                    self.holdings[t.asset]._subctractto_balance_history(t.quantity, t.timestamp)
+    
+                if config.debug:
+                    print(f"{Fore.YELLOW}Updated Holdings for {t.asset}: {self.holdings[t.asset]}") 
                 continue
 
             if not config.transfers_include and t.t_type in TRANSFER_TYPES:
@@ -424,12 +534,12 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             cost = t.cost
             fees = t.fee_value or Decimal(0)
 
-        self.holdings[t.asset].add_tokens(t.quantity, cost, fees, t.t_type is TrType.DEPOSIT)
+        self.holdings[t.asset].add_tokens(t.quantity, cost, fees, t.t_type is TrType.DEPOSIT, t.timestamp)
 
     def _subtract_tokens(self, t: Sell) -> None:
         if not t.disposal:
             self.holdings[t.asset].subtract_tokens(
-                t.quantity, Decimal(0), Decimal(0), t.t_type is TrType.WITHDRAWAL
+                t.quantity, Decimal(0), Decimal(0), t.t_type is TrType.WITHDRAWAL, t.timestamp
             )
         else:
             raise RuntimeError("Unmatched disposal in holdings")
@@ -570,6 +680,138 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
         return tax_year
 
+    def _end_of_year(self, year: int) -> Date:
+        return config.get_tax_year_end(year)
+
+    def _start_of_year(self, year: int) -> Date:
+        return config.get_tax_year_start(year)
+
+    def _get_first_tax_year(self) -> Optional[Year]:
+        """
+        Identify the first fiscal year based on the processed transactions and sorted in chronological order.
+        Search all sorted transactions to find the first transaction with a valid date.
+        """
+        # Check the ordered transactions
+        all_ordered_transactions = list(self._all_transactions())
+
+        if not all_ordered_transactions:
+            raise ValueError("No transactions available to determine the starting fiscal year.")
+    
+        # Find the transaction with the oldest date
+        first_transaction = min(all_ordered_transactions, key=lambda t: t.timestamp)
+        first_year = first_transaction.timestamp.year
+
+        if config.debug:
+            print(f"First year identified by processed transactions: {first_year}")
+
+        return first_year
+
+    def calculate_yearly_holdings(self, value_asset: ValueAsset, tax_year: Optional[int] = None) -> None:
+        """
+        Calculate the annual holdings for each asset held with a fiat value and quantity.
+        If a tax_year is given, generate the report for that year only (excluding the current year).
+        Save the report in self.yearly_holdings_report.
+
+        :param value_asset: The ValueAsset instance to get historical prices.
+        :param tax_year: (optional) The tax year to generate the report for (excluding the current year).
+        """
+        current_year = datetime.now().year
+
+        # If a tax_year is not provided, generate the report for all years except the current year.
+        if tax_year is None:
+            first_year = self._get_first_tax_year()
+            years = range(first_year, current_year)  # exclude the current year
+            if config.debug:
+                print(f"Generating report for all years from {first_year} to {current_year - 1}")
+        else:
+            # If tax_year is equal to the current year, raise an exception
+            if tax_year >= current_year:
+                raise ValueError("The current year or future years cannot be selected.")
+            years = [tax_year]  # Only the specified fiscal year
+            if config.debug:
+                print(f"Generating report for the year {tax_year}")
+
+        # Initialize the annual report
+        yearly_holdings_report = {}
+
+        # Cycle through each fiscal year with progress bar
+        for year in tqdm(years, desc=f"{Fore.CYAN}Generating yearly report{Fore.GREEN}"):
+            # Get end-of-year date (just the date part)
+            end_of_year_date = self._end_of_year(year)  # This is a date (without time)
+        
+            # Get end-of-year datetime (date + time)
+            end_of_year_datetime = datetime.combine(end_of_year_date, time.min)  # This is a datetime (with time)
+
+            # Convert end_of_year_datetime in UTC
+            end_of_year_datetime_utc = end_of_year_datetime.replace(tzinfo=timezone.utc)
+        
+            # Get the start-of-year date
+            start_of_year_date = self._start_of_year(year)
+
+            assets_report = {}
+            total_value_in_fiat = Decimal(0)  # Initialize the sum to 0 for the year
+
+            if config.debug:
+                print(f"Processing year {year}: from {start_of_year_date} to {end_of_year_date}")
+
+            # Cycle on each asset in holdings with progress bar
+            for h in tqdm(self.holdings, unit="asset", desc=f"Processing year {year}", leave=False):
+                holdings = self.holdings[h]
+                # Get quantity at the end of the year (use end_of_year_date which is a date object)
+                quantity_end_of_year = holdings.get_balance_at_date(end_of_year_date)
+
+                # Quantity check (exclude if zero, unless config.show_empty_wallets is enabled)
+                if quantity_end_of_year > 0 or config.show_empty_wallets:
+                    if config.debug:
+                        print(f"Processing asset {h} for year {year}")
+
+                    # Calculate average balance for the year
+                    average_balance = holdings.calculate_average_balance(start_of_year_date, end_of_year_date)
+
+                    if config.debug:
+                        print(f"Asset {h}: Quantity at end of year = {quantity_end_of_year}, Average balance = {average_balance}")
+
+                    # Get the historical value in fiat at the end of the year (use end_of_year_datetime_utc)
+                    try:
+                        price_at_end_of_year, _, _ = value_asset.get_historical_price(h, end_of_year_datetime_utc, no_cache=False)
+                        if price_at_end_of_year is not None:
+                            value_in_fiat = quantity_end_of_year * price_at_end_of_year
+                            if config.debug:
+                                print(f"Asset {h}: Price at end of year = {price_at_end_of_year}, Value in fiat = {value_in_fiat}")
+                        else:
+                            value_in_fiat = Decimal(0)  # If no price is found, set it to 0
+                            if config.debug:
+                                print(f"Asset {h}: Price not found for end of year, setting value in fiat to 0")
+                    except requests.exceptions.HTTPError as e:
+                        tqdm.write(f"Warning: Unable to get historical price for {h} on {end_of_year_datetime} due to HTTP error: {e}")
+                        value_in_fiat = Decimal(0)
+                        if config.debug:
+                            print(f"Asset {h}: HTTP error, setting value in fiat to 0")
+
+                    # Add the fiat value to the annual sum
+                    total_value_in_fiat += value_in_fiat
+
+                    # Save details in report
+                    assets_report[h] = YearlyReportAsset(
+                        quantity_end_of_year=quantity_end_of_year,
+                        average_balance=average_balance,
+                        value_in_fiat_at_end_of_year=value_in_fiat
+                    )
+
+            # Save the total amount in the report
+            yearly_holdings_report[year] = YearlyReportRecord(
+                assets=assets_report,
+                totals=YearlyReportTotal(
+                    total_value_in_fiat_at_end_of_year=total_value_in_fiat
+                )
+            )
+
+            if config.debug:
+                print(f"Year {year}: Total value in fiat at end of year = {total_value_in_fiat}")
+
+        # Save the report in the self.yearly_holdings_report instance field
+        self.yearly_holdings_report = yearly_holdings_report
+        tqdm.write("Yearly report saved to self.yearly_holdings_report.")
 
 class CalculateCapitalGains:
     # Rate changes start from 6th April in previous year, i.e. 2022 is for tax year 2021/22
@@ -851,7 +1093,6 @@ class CalculateCapitalGains:
             # No small rate so remove estimate
             self.ct_estimate.pop("ct_small")
             self.ct_estimate["ct_small_rates"] = []
-
 
 class CalculateIncome:
     def __init__(self) -> None:

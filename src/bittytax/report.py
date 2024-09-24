@@ -3,6 +3,7 @@
 
 import argparse
 import datetime
+from doctest import debug
 import itertools
 import os
 import sys
@@ -35,6 +36,7 @@ from .tax import (
     CalculateMarginTrading,
     CapitalGainsReportTotal,
     HoldingsReportRecord,
+    YearlyReportRecord,
     TaxReportRecord,
 )
 from .tax_event import TaxEventCapitalGains
@@ -59,12 +61,14 @@ class ReportPdf:
         tax_report: Optional[Dict[Year, TaxReportRecord]] = None,
         price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
+        yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]] = None,
     ) -> None:
         self.env = jinja2.Environment(loader=jinja2.PackageLoader("bittytax", "templates"))
 
         self.env.filters["datefilter"] = self.datefilter
         self.env.filters["datefilter2"] = self.datefilter2
         self.env.filters["quantityfilter"] = self.quantityfilter
+        self.env.filters["format_decimal"] = self.format_decimal
         self.env.filters["valuefilter"] = self.valuefilter
         self.env.filters["ratefilter"] = self.ratefilter
         self.env.filters["ratesfilter"] = self.ratesfilter
@@ -113,6 +117,7 @@ class ReportPdf:
                     "tax_report": tax_report,
                     "price_report": price_report,
                     "holdings_report": holdings_report,
+                    "yearly_holdings_report": yearly_holdings_report,
                 }
             )
 
@@ -136,6 +141,11 @@ class ReportPdf:
     @staticmethod
     def quantityfilter(quantity: Decimal) -> str:
         return f"{quantity.normalize():0,f}"
+
+    @staticmethod
+    def format_decimal(value: Decimal, precision: int = 8) -> str:
+        formatted_value = f"{value:.{precision}f}"
+        return formatted_value.rstrip('0').rstrip('.') if '.' in formatted_value else formatted_value
 
     @staticmethod
     def valuefilter(value: Decimal) -> str:
@@ -227,6 +237,7 @@ class ReportLog:
         tax_report: Optional[Dict[Year, TaxReportRecord]] = None,
         price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
+        yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]] = None,
     ) -> None:
         if args.audit_only:
             self._audit(audit)
@@ -245,7 +256,7 @@ class ReportLog:
             if price_report is None:
                 raise RuntimeError("Missing price_report")
 
-            self._tax_full(args.tax_rules, audit, tax_report, price_report, holdings_report)
+            self._tax_full(args.tax_rules, audit, tax_report, price_report, holdings_report, yearly_holdings_report)
 
     def _tax_summary(
         self,
@@ -307,6 +318,7 @@ class ReportLog:
         tax_report: Dict[Year, TaxReportRecord],
         price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]],
         holdings_report: Optional[HoldingsReportRecord],
+        yearly_holdings_report: Optional[Dict[Year, YearlyReportRecord]],
     ) -> None:
         print(f"{Fore.WHITE}tax report output:")
         self._audit(audit)
@@ -361,6 +373,9 @@ class ReportLog:
 
         if holdings_report:
             self._holdings(holdings_report)
+
+        if yearly_holdings_report:
+            self._yearly_holdings(yearly_holdings_report)
 
     def _audit(self, audit: AuditRecords) -> None:
         print(f"{H1}Audit{_H1}")
@@ -745,6 +760,44 @@ class ReportLog:
             f'{Fore.RED if holdings_report["totals"]["gain"] < 0 else Fore.YELLOW}'
             f'{self.format_value(holdings_report["totals"]["gain"]):>18}{Style.NORMAL}'
         )
+
+    def _yearly_holdings(self, yearly_holdings_report: Dict[Year, YearlyReportRecord]) -> None:
+        """
+        Prints the annual holdings report for each fiscal year contained in yearly_holdings_report.
+        """
+        print(f"{Fore.CYAN}Yearly Holdings Report\n")
+
+        for year in sorted(yearly_holdings_report):
+            print(f"{Fore.CYAN}Holdings for Tax Year - {config.format_tax_year(year)}\n")
+        
+            header = (
+                f'{"Asset":<{self.ASSET_WIDTH}} '
+                f'{"Quantity at End of Year":<25} '
+                f'{"Average Balance":<25} '
+                f'{"Value in Fiat at End of Year":>25}'
+            )
+            print(f"{Fore.YELLOW}{header}")
+        
+            # Asset cycle in the annual report for that year
+            for asset_symbol in sorted(yearly_holdings_report[year]["assets"]):
+                asset = yearly_holdings_report[year]["assets"][asset_symbol]
+                print(
+                    f"{Fore.WHITE}"
+                    f'{self.format_asset(asset_symbol, asset_symbol):<{self.ASSET_WIDTH}} '
+                    f'{self.format_quantity(asset["quantity_end_of_year"]):<25} '
+                    f'{self.format_quantity(asset["average_balance"]):<25} '
+                    f'{self.format_value(asset["value_in_fiat_at_end_of_year"]):>25}'
+                )
+
+            # Print total amounts for the year
+            print(f"{Fore.YELLOW}{'-' * len(header)}")
+            totals = yearly_holdings_report[year]["totals"]
+            print(
+                f"{Fore.YELLOW}{Style.BRIGHT}"
+                f'{"Total":<{self.ASSET_WIDTH}} {"":<25} {"":<25} '
+                f'{self.format_value(totals["total_value_in_fiat_at_end_of_year"]):>25}{Style.NORMAL}'
+            )
+            print(f'{Fore.YELLOW}{"_" * len(header)}\n')
 
     @staticmethod
     def format_date(date: Date) -> str:
