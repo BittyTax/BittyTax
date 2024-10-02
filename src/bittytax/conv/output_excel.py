@@ -176,6 +176,9 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
 
                 for ws_name in worksheet_names:
                     worksheets[ws_name].make_table()
+                    if not config.large_data:
+                        # Lots of conditional formatting can slow down Excel
+                        worksheets[ws_name].conditional_formatting()
                     worksheets[ws_name].autofit()
             else:
                 # No rows, just add worksheet with headings
@@ -416,21 +419,6 @@ class Worksheet:
                 self.worksheet.write_number(
                     row_num, col_num, quantity.normalize(), self.output.format_num_float
                 )
-                cell = xlsxwriter.utility.xl_rowcol_to_cell(row_num, col_num)
-
-                if not config.large_data:
-                    # Lots of conditional formatting can slow down Excel
-                    self.worksheet.conditional_format(
-                        row_num,
-                        col_num,
-                        row_num,
-                        col_num,
-                        {
-                            "type": "formula",
-                            "criteria": f"=INT({cell})={cell}",
-                            "format": self.output.format_num_int,
-                        },
-                    )
 
             self._autofit_calc(col_num, len(f"{quantity.normalize():0,f}"))
 
@@ -491,6 +479,25 @@ class Worksheet:
     def autofit(self) -> None:
         for col_num, col_width in self.col_width.items():
             self.worksheet.set_column(col_num, col_num, col_width)
+
+    def conditional_formatting(self) -> None:
+        self._format_integer(1, 1)
+        self._format_integer(1, 4)
+        self._format_integer(1, 7)
+
+    def _format_integer(self, row_num: int, col_num: int) -> None:
+        cell = xlsxwriter.utility.xl_rowcol_to_cell(row_num, col_num)
+        self.worksheet.conditional_format(
+            row_num,
+            col_num,
+            self.row_num - 1,
+            col_num,
+            {
+                "type": "formula",
+                "criteria": f"=INT(${cell})=${cell}",
+                "format": self.output.format_num_int,
+            },
+        )
 
     def make_table(self) -> None:
         self.worksheet.add_table(
