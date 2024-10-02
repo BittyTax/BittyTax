@@ -12,7 +12,6 @@ from typing import Dict, List, Optional
 import xlsxwriter
 from colorama import Fore
 from typing_extensions import TypedDict
-from xlsxwriter.utility import xl_rowcol_to_cell
 
 from .audit import AuditLogEntry
 from .bt_types import BUY_TYPES, SELL_TYPES, AssetSymbol, TrRecordPart, TrType
@@ -157,10 +156,13 @@ class AuditLogExcel:  # pylint: disable=too-few-public-methods, too-many-instanc
         with ProgressSpinner(f"{Fore.CYAN}generating EXCEL audit log{Fore.GREEN}: "):
             for asset in sorted(self.audit_log):
                 worksheet = Worksheet(self, asset)
-                for i, audit_log_entry in enumerate(self.audit_log[asset]):
-                    worksheet.add_row(asset, audit_log_entry, i + 1)
+                for audit_log_entry in self.audit_log[asset]:
+                    worksheet.add_row(asset, audit_log_entry)
 
-                worksheet.make_table(len(self.audit_log[asset]), asset)
+                worksheet.make_table(asset)
+                if not config.large_data:
+                    # Lots of conditional formatting can slow down Excel
+                    worksheet.conditional_formatting()
                 worksheet.autofit()
 
             self.workbook.close()
@@ -180,6 +182,7 @@ class Worksheet:
         self.worksheet = output.workbook.add_worksheet(self._sheet_name(asset))
         self.col_width: Dict[int, int] = {}
         self.columns = self._make_columns(asset)
+        self.row_num = 1
         self.worksheet.freeze_panes(1, 0)
 
     def _make_columns(self, asset: AssetSymbol) -> List[Column]:
@@ -192,13 +195,13 @@ class Worksheet:
 
         return columns
 
-    def add_row(self, asset: AssetSymbol, audit_log_entry: AuditLogEntry, row_num: int) -> None:
-        self._xl_text_black(asset, row_num, 0)
-        self._xl_text_black(audit_log_entry.wallet, row_num, 1)
-        self._xl_balance(audit_log_entry.balance, row_num, 2)
-        self._xl_change(audit_log_entry.change, row_num, 3)
-        self._xl_change(audit_log_entry.fee, row_num, 4)
-        self._xl_balance(audit_log_entry.total, row_num, 5)
+    def add_row(self, asset: AssetSymbol, audit_log_entry: AuditLogEntry) -> None:
+        self._xl_text_black(asset, self.row_num, 0)
+        self._xl_text_black(audit_log_entry.wallet, self.row_num, 1)
+        self._xl_balance(audit_log_entry.balance, self.row_num, 2)
+        self._xl_change(audit_log_entry.change, self.row_num, 3)
+        self._xl_change(audit_log_entry.fee, self.row_num, 4)
+        self._xl_balance(audit_log_entry.total, self.row_num, 5)
 
         link_name = self._make_linkname(audit_log_entry.t_record.t_type, audit_log_entry.tr_part)
         if audit_log_entry.t_record.t_row.filename:
@@ -209,16 +212,20 @@ class Worksheet:
                 )
             else:
                 sheet_name = audit_log_entry.t_record.t_row.worksheet_name
-            self._xl_hyperlink(audit_log_entry.t_record.t_row, sheet_name, link_name, row_num, 6)
+            self._xl_hyperlink(
+                audit_log_entry.t_record.t_row, sheet_name, link_name, self.row_num, 6
+            )
         else:
-            self._xl_text_grey(link_name, row_num, 6)
+            self._xl_text_grey(link_name, self.row_num, 6)
 
-        self._xl_timestamp(audit_log_entry.t_record.timestamp, row_num, 7)
-        self._xl_text_grey(audit_log_entry.t_record.note, row_num, 8)
+        self._xl_timestamp(audit_log_entry.t_record.timestamp, self.row_num, 7)
+        self._xl_text_grey(audit_log_entry.t_record.note, self.row_num, 8)
         if audit_log_entry.t_record.t_row.tx_raw:
-            self._xl_text_grey(audit_log_entry.t_record.t_row.tx_raw.tx_hash, row_num, 9)
-            self._xl_text_grey(audit_log_entry.t_record.t_row.tx_raw.tx_src, row_num, 10)
-            self._xl_text_grey(audit_log_entry.t_record.t_row.tx_raw.tx_dest, row_num, 11)
+            self._xl_text_grey(audit_log_entry.t_record.t_row.tx_raw.tx_hash, self.row_num, 9)
+            self._xl_text_grey(audit_log_entry.t_record.t_row.tx_raw.tx_src, self.row_num, 10)
+            self._xl_text_grey(audit_log_entry.t_record.t_row.tx_raw.tx_dest, self.row_num, 11)
+
+        self.row_num += 1
 
     def _xl_balance(self, balance: Decimal, row_num: int, col_num: int) -> None:
         if len(balance.normalize().as_tuple().digits) > self.output.EXCEL_PRECISION:
@@ -235,21 +242,6 @@ class Worksheet:
                 wb_format = self.output.format_num_float_unsigned
 
             self.worksheet.write_number(row_num, col_num, balance.normalize(), wb_format)
-            cell = xl_rowcol_to_cell(row_num, col_num)
-
-            if not config.large_data:
-                # Lots of conditional formatting can slow down Excel
-                self.worksheet.conditional_format(
-                    row_num,
-                    col_num,
-                    row_num,
-                    col_num,
-                    {
-                        "type": "formula",
-                        "criteria": f"=INT({cell})={cell}",
-                        "format": self.output.format_num_int_unsigned,
-                    },
-                )
 
         self._autofit_calc(col_num, len(f"{balance.normalize():0,f}"))
 
@@ -271,21 +263,6 @@ class Worksheet:
                 self.worksheet.write_number(
                     row_num, col_num, change.normalize(), self.output.format_num_float_signed
                 )
-                cell = xl_rowcol_to_cell(row_num, col_num)
-
-                if not config.large_data:
-                    # Lots of conditional formatting can slow down Excel
-                    self.worksheet.conditional_format(
-                        row_num,
-                        col_num,
-                        row_num,
-                        col_num,
-                        {
-                            "type": "formula",
-                            "criteria": f"=INT({cell})={cell}",
-                            "format": self.output.format_num_int_signed,
-                        },
-                    )
 
             self._autofit_calc(col_num, len(f"{change.normalize():0,f}"))
 
@@ -361,18 +338,39 @@ class Worksheet:
         for col_num, col_width in self.col_width.items():
             self.worksheet.set_column(col_num, col_num, col_width + 3)
 
-    def make_table(self, rows: int, table_name: str) -> None:
+    def conditional_formatting(self) -> None:
+        self._format_integer(1, 2, self.output.format_num_int_unsigned)
+        self._format_integer(1, 3, self.output.format_num_int_signed)
+        self._format_integer(1, 4, self.output.format_num_int_signed)
+        self._format_integer(1, 5, self.output.format_num_int_unsigned)
+
+    def _format_integer(
+        self, row_num: int, col_num: int, ws_format: xlsxwriter.worksheet.Format
+    ) -> None:
+        cell = xlsxwriter.utility.xl_rowcol_to_cell(row_num, col_num)
+        self.worksheet.conditional_format(
+            row_num,
+            col_num,
+            self.row_num - 1,
+            col_num,
+            {
+                "type": "formula",
+                "criteria": f"=INT(${cell})=${cell}",
+                "format": ws_format,
+            },
+        )
+
+    def make_table(self, table_name: str) -> None:
         self.worksheet.add_table(
             0,
             0,
-            rows,
+            self.row_num - 1,
             len(self.columns) - 1,
             {
                 "autofilter": True,
                 "style": "Table Style Medium 14",
                 "columns": self.columns,
                 "name": self._table_name(table_name),
-                # "total_row": True,
             },
         )
 

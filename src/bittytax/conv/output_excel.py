@@ -155,11 +155,14 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             worksheet = Worksheet(self, data_file)
 
             data_rows = sorted(data_file.data_rows, key=lambda dr: dr.timestamp, reverse=False)
-            for i, data_row in enumerate(data_rows):
-                worksheet.add_row(data_row, i + 1)
+            for data_row in data_rows:
+                worksheet.add_row(data_row)
 
             if data_rows:
-                worksheet.make_table(len(data_rows), data_file.parser.worksheet_name)
+                worksheet.make_table(data_file.parser.worksheet_name)
+                if not config.large_data:
+                    # Lots of conditional formatting can slow down Excel
+                    worksheet.conditional_formatting()
             else:
                 # Just add headings
                 for i, columns in enumerate(worksheet.columns):
@@ -188,6 +191,7 @@ class Worksheet:
         )
         self.col_width: Dict[int, int] = {}
         self.columns = self._make_columns(data_file.parser.in_header)
+        self.row_num = 1
         self.microseconds, self.milliseconds = self._is_microsecond_timestamp(data_file.data_rows)
 
         self.worksheet.freeze_panes(1, len(self.output.BITTYTAX_OUT_HEADER))
@@ -267,24 +271,24 @@ class Worksheet:
 
         return milliseconds, microseconds
 
-    def add_row(self, data_row: DataRow, row_num: int) -> None:
-        self.worksheet.set_row(row_num, None, self.output.format_out_data)
+    def add_row(self, data_row: DataRow) -> None:
+        self.worksheet.set_row(self.row_num, None, self.output.format_out_data)
 
         # Add transaction record
         if data_row.t_record:
-            self._xl_type(data_row.t_record.t_type, row_num, 0, data_row.t_record)
-            self._xl_quantity(data_row.t_record.buy_quantity, row_num, 1)
-            self._xl_asset(data_row.t_record.buy_asset, row_num, 2)
-            self._xl_value(data_row.t_record.buy_value, row_num, 3)
-            self._xl_quantity(data_row.t_record.sell_quantity, row_num, 4)
-            self._xl_asset(data_row.t_record.sell_asset, row_num, 5)
-            self._xl_value(data_row.t_record.sell_value, row_num, 6)
-            self._xl_quantity(data_row.t_record.fee_quantity, row_num, 7)
-            self._xl_asset(data_row.t_record.fee_asset, row_num, 8)
-            self._xl_value(data_row.t_record.fee_value, row_num, 9)
-            self._xl_wallet(data_row.t_record.wallet, row_num, 10)
-            self._xl_timestamp(data_row.t_record.timestamp, row_num, 11)
-            self._xl_note(data_row.t_record.note, row_num, 12)
+            self._xl_type(data_row.t_record.t_type, self.row_num, 0, data_row.t_record)
+            self._xl_quantity(data_row.t_record.buy_quantity, self.row_num, 1)
+            self._xl_asset(data_row.t_record.buy_asset, self.row_num, 2)
+            self._xl_value(data_row.t_record.buy_value, self.row_num, 3)
+            self._xl_quantity(data_row.t_record.sell_quantity, self.row_num, 4)
+            self._xl_asset(data_row.t_record.sell_asset, self.row_num, 5)
+            self._xl_value(data_row.t_record.sell_value, self.row_num, 6)
+            self._xl_quantity(data_row.t_record.fee_quantity, self.row_num, 7)
+            self._xl_asset(data_row.t_record.fee_asset, self.row_num, 8)
+            self._xl_value(data_row.t_record.fee_value, self.row_num, 9)
+            self._xl_wallet(data_row.t_record.wallet, self.row_num, 10)
+            self._xl_timestamp(data_row.t_record.timestamp, self.row_num, 11)
+            self._xl_note(data_row.t_record.note, self.row_num, 12)
 
         # Add original data
         for col_num, col_data in enumerate(data_row.row):
@@ -309,13 +313,15 @@ class Worksheet:
                 cell_format = self.output.format_in_data
 
             self.worksheet.write(
-                row_num,
+                self.row_num,
                 len(self.output.BITTYTAX_OUT_HEADER) + col_num,
                 col_data,
                 cell_format,
             )
 
             self._autofit_calc(len(self.output.BITTYTAX_OUT_HEADER) + col_num, len(col_data))
+
+        self.row_num += 1
 
     def _xl_type(
         self,
@@ -381,21 +387,6 @@ class Worksheet:
                 self.worksheet.write_number(
                     row_num, col_num, quantity.normalize(), self.output.format_num_float
                 )
-                cell = xlsxwriter.utility.xl_rowcol_to_cell(row_num, col_num)
-
-                if not config.large_data:
-                    # Lots of conditional formatting can slow down Excel
-                    self.worksheet.conditional_format(
-                        row_num,
-                        col_num,
-                        row_num,
-                        col_num,
-                        {
-                            "type": "formula",
-                            "criteria": f"=INT({cell})={cell}",
-                            "format": self.output.format_num_int,
-                        },
-                    )
 
             self._autofit_calc(col_num, len(f"{quantity.normalize():0,f}"))
 
@@ -457,11 +448,30 @@ class Worksheet:
         for col_num, col_width in self.col_width.items():
             self.worksheet.set_column(col_num, col_num, col_width)
 
-    def make_table(self, rows: int, parser_name: str) -> None:
+    def conditional_formatting(self) -> None:
+        self._format_integer(1, 1)
+        self._format_integer(1, 4)
+        self._format_integer(1, 7)
+
+    def _format_integer(self, row_num: int, col_num: int) -> None:
+        cell = xlsxwriter.utility.xl_rowcol_to_cell(row_num, col_num)
+        self.worksheet.conditional_format(
+            row_num,
+            col_num,
+            self.row_num - 1,
+            col_num,
+            {
+                "type": "formula",
+                "criteria": f"=INT(${cell})=${cell}",
+                "format": self.output.format_num_int,
+            },
+        )
+
+    def make_table(self, parser_name: str) -> None:
         self.worksheet.add_table(
             0,
             0,
-            rows,
+            self.row_num - 1,
             len(self.columns) - 1,
             {
                 "autofilter": False,

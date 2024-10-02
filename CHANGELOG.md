@@ -194,6 +194,8 @@
 - Accounting tool: for NFTs, a space between the symbol name and ID is now optional, i.e. CryptoPunk#369.
 - FTX parser: handle optional fee.
 - Coinbase parser: updated regex for Advanced Trades.
+- Conversional tool: use cell range for conditional formatting.
+- Accounting tool: use cell range for conditional formatting in audit log spreadsheet.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
