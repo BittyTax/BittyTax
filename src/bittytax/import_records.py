@@ -144,7 +144,7 @@ class ImportRecords:
         tx_hash = tx_src = tx_dest = ""
 
         for cell in worksheet_row[len(TransactionRow.HEADER) :]:
-            if cell.value and cell.font.color.type == "rgb":
+            if cell.value and cell.font.color and cell.font.color.type == "rgb":
                 if cell.font.color.rgb == f"FF{FONT_COLOR_TX_HASH}":
                     tx_hash = self.get_tx_component(str(cell.value))
                 elif cell.font.color.rgb == f"FF{FONT_COLOR_TX_SRC}":
