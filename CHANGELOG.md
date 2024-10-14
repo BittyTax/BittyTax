@@ -135,6 +135,7 @@
 - Voyager parser: added new export format.
 - Accounting tool: added tax report in Excel format.
 - Accounting tool: Excel tax report now shows origins of tax calculations.
+- Deribit parser: added new export format.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
