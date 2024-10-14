@@ -134,6 +134,9 @@ def _parse_deribit_row(
     if "Size" in row_dict:
         row_dict["Base Amount"] = row_dict["Size"]
 
+    if "Amount" in row_dict:
+        row_dict["Base Amount"] = row_dict["Amount"]
+
     if row_dict["Type"] == "deposit":
         data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Info"))
         data_row.t_record = TransactionOutRecord(
@@ -425,6 +428,40 @@ def _get_uid_and_asset(filename: str) -> Tuple[Uid, str]:
         return Uid(""), match.group(1)
 
     return Uid(""), ""
+
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Deribit",
+    [
+        "ID",
+        "UserSeq",
+        "Date",
+        "Instrument",
+        "Type",
+        "Side",
+        "Amount",  # New field
+        "Base Amount",
+        "Position",
+        "Price",
+        "Mark Price",
+        "Index Price",
+        "Cash Flow",
+        "Funding",
+        "Fee Rate",
+        "Fee Charged",
+        "Fee Balance",
+        "Change",
+        "Balance",
+        "Equity",
+        "Trade ID",
+        "Order ID",
+        "Info",
+        "Note",
+    ],
+    worksheet_name="Deribit",
+    all_handler=parse_deribit,
+)
 
 
 DataParser(
