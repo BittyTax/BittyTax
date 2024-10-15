@@ -239,6 +239,7 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
         self.wallet: Wallet = Wallet("")
         self.timestamp: Timestamp
         self.note: Note = Note("")
+        self.is_split = False
         self.matched = False
         self.pooled: List[Union[Buy, Sell]] = []
 
@@ -299,6 +300,9 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
             return f"{self.timestamp:%Y-%m-%dT%H:%M:%S.%f %Z}"
         return f"{self.timestamp:%Y-%m-%dT%H:%M:%S %Z}"
 
+    def __hash__(self) -> int:
+        return hash(str(self.tid))
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TransactionBase):
             return NotImplemented
@@ -308,7 +312,11 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
         return not self == other
 
     def __lt__(self, other: "TransactionBase") -> bool:
-        return (self.asset, self.timestamp, self.tid) < (other.asset, other.timestamp, other.tid)
+        return (self.asset, self.timestamp, self.tid if self.tid else []) < (
+            other.asset,
+            other.timestamp,
+            other.tid if other.tid else [],
+        )
 
     def __deepcopy__(self, memo: Dict[int, object]) -> "TransactionBase":
         cls = self.__class__
@@ -420,6 +428,7 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
 
         remainder.quantity = remainder.quantity - sell_quantity
         remainder.set_tid()
+        remainder.is_split = True
         return remainder
 
     def _format_cost(self) -> str:
@@ -543,6 +552,7 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
 
         remainder.quantity = remainder.quantity - buy_quantity
         remainder.set_tid()
+        remainder.is_split = True
         return remainder
 
     def _format_proceeds(self) -> str:

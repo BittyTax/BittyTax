@@ -2,7 +2,6 @@
 # (c) Nano Nano Ltd 2019
 # pylint: disable=bad-option-value, unnecessary-dunder-call
 
-import copy
 import datetime
 import itertools
 import sys
@@ -28,7 +27,7 @@ from .bt_types import (
     Year,
 )
 from .config import config
-from .constants import TAX_RULES_UK_COMPANY, WARNING
+from .constants import COST_BASIS_ZERO_NOTE, TAX_RULES_UK_COMPANY, WARNING
 from .holdings import Holdings
 from .price.valueasset import ValueAsset
 from .tax_event import (
@@ -82,7 +81,6 @@ class ChargableGainsCompany(TypedDict):  # pylint: disable=too-few-public-method
 
 class CapitalGainsReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
     cost: Decimal
-    fees: Decimal
     proceeds: Decimal
     gain: Decimal
 
@@ -123,7 +121,7 @@ class BuyAccumulator:
     quantity: Decimal = Decimal(0)
     cost: Decimal = Decimal(0)
     fee_value: Decimal = Decimal(0)
-    dates: List[Date] = field(default_factory=list)
+    buys: List[Buy] = field(default_factory=list)
 
 
 class MarginReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
@@ -200,9 +198,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 print(f"{Fore.GREEN}sells: {t}")
 
     def fifo_match(self) -> None:
-        # Keep copy for income tax processing
-        self.transactions = copy.deepcopy(self.transactions)
-
         if config.debug:
             print(f"{Fore.CYAN}fifo match transactions")
 
@@ -257,10 +252,16 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 )
                 if config.cost_basis_zero_if_missing:
                     buy_match = Buy(TrType.TRADE, s_quantity_remaining, s.asset, Decimal(0))
-                    buy_match.wallet = s.wallet
                     buy_match.timestamp = s.timestamp
-                    buy_match.note = Note("Added as cost basis zero")
+                    buy_match.note = Note(COST_BASIS_ZERO_NOTE)
+                    buy_match.matched = True
                     tqdm.write(f"{Fore.GREEN}fifo: {buy_match}")
+                    if s.asset not in self.buys_ordered:
+                        self.buys_ordered[s.asset] = []
+                        buy_index[s.asset] = 0
+
+                    self.buys_ordered[s.asset].insert(buy_index[s.asset], buy_match)
+                    buy_index[s.asset] += 1
                     matches.append(buy_match)
                     s.matched = True
                     self._create_disposal(s, matches)
@@ -283,86 +284,78 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 short_term.cost += buy.cost
                 if buy.fee_value:
                     short_term.fee_value += buy.fee_value
-                short_term.dates.append(buy.date())
+                short_term.buys.append(buy)
             else:
                 long_term.quantity += buy.quantity
                 long_term.cost += buy.cost
                 if buy.fee_value:
                     long_term.fee_value += buy.fee_value
-                long_term.dates.append(buy.date())
+                long_term.buys.append(buy)
 
-        if short_term.dates:
-            sell_adjusted = copy.deepcopy(sell)
+        if short_term.buys:
+            cost = short_term.cost.quantize(PRECISION) + short_term.fee_value.quantize(PRECISION)
             if sell.proceeds is None:
                 raise RuntimeError("Missing sell.proceeds")
 
             if sell.fee_value:
-                sell_adjusted.proceeds = sell.proceeds.quantize(
-                    PRECISION
-                ) - sell.fee_value.quantize(PRECISION)
+                proceeds = sell.proceeds.quantize(PRECISION) - sell.fee_value.quantize(PRECISION)
+                if proceeds < 0:
+                    proceeds = Decimal(0)
+            else:
+                proceeds = sell.proceeds.quantize(PRECISION)
 
-                if sell_adjusted.proceeds < 0:
-                    sell_adjusted.proceeds = Decimal(0)
-
-            if sell_adjusted.proceeds is None:
-                raise RuntimeError("Missing sell_adjusted.proceeds")
-
-            sell_adjusted.proceeds = sell_adjusted.proceeds * (short_term.quantity / sell.quantity)
+            proceeds = (proceeds * (short_term.quantity / sell.quantity)).quantize(PRECISION)
 
             if sell.t_type in self.NO_GAIN_NO_LOSS_TYPES:
                 tax_event: Union[TaxEventCapitalGains, TaxEventNoGainNoLoss] = TaxEventNoGainNoLoss(
                     DisposalType.SHORT_TERM,
-                    sell_adjusted,
-                    short_term.cost.quantize(PRECISION) + short_term.fee_value.quantize(PRECISION),
-                    Decimal(0),
-                    short_term.dates,
+                    short_term.buys,
+                    sell,
+                    cost,
+                    proceeds,
                 )
             else:
                 tax_event = TaxEventCapitalGains(
                     DisposalType.SHORT_TERM,
-                    sell_adjusted,
-                    short_term.cost.quantize(PRECISION) + short_term.fee_value.quantize(PRECISION),
-                    Decimal(0),
-                    short_term.dates,
+                    short_term.buys,
+                    sell,
+                    cost,
+                    proceeds,
                 )
             self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
             if config.debug:
                 print(f"{Fore.CYAN}fifo: {tax_event}")
 
-        if long_term.dates:
-            sell_adjusted = copy.deepcopy(sell)
+        if long_term.buys:
+            cost = long_term.cost.quantize(PRECISION) + long_term.fee_value.quantize(PRECISION)
             if sell.proceeds is None:
                 raise RuntimeError("Missing sell.proceeds")
 
             if sell.fee_value:
-                sell_adjusted.proceeds = sell.proceeds.quantize(
-                    PRECISION
-                ) - sell.fee_value.quantize(PRECISION)
+                proceeds = sell.proceeds.quantize(PRECISION) - sell.fee_value.quantize(PRECISION)
+                if proceeds < 0:
+                    proceeds = Decimal(0)
+            else:
+                proceeds = sell.proceeds.quantize(PRECISION)
 
-                if sell_adjusted.proceeds < 0:
-                    sell_adjusted.proceeds = Decimal(0)
-
-            if sell_adjusted.proceeds is None:
-                raise RuntimeError("Missing sell_adjusted.proceeds")
-
-            sell_adjusted.proceeds = sell_adjusted.proceeds * (long_term.quantity / sell.quantity)
+            proceeds = (proceeds * (long_term.quantity / sell.quantity)).quantize(PRECISION)
 
             if sell.t_type in self.NO_GAIN_NO_LOSS_TYPES:
                 tax_event = TaxEventNoGainNoLoss(
                     DisposalType.LONG_TERM,
-                    sell_adjusted,
-                    long_term.cost.quantize(PRECISION) + long_term.fee_value.quantize(PRECISION),
-                    Decimal(0),
-                    long_term.dates,
+                    long_term.buys,
+                    sell,
+                    cost,
+                    proceeds,
                 )
             else:
                 tax_event = TaxEventCapitalGains(
                     DisposalType.LONG_TERM,
-                    sell_adjusted,
-                    long_term.cost.quantize(PRECISION) + long_term.fee_value.quantize(PRECISION),
-                    Decimal(0),
-                    long_term.dates,
+                    long_term.buys,
+                    sell,
+                    cost,
+                    proceeds,
                 )
             self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
@@ -686,7 +679,6 @@ class CalculateCapitalGains:
     def __init__(self, tax_year: Year) -> None:
         self.totals: CapitalGainsReportTotal = {
             "cost": Decimal(0),
-            "fees": Decimal(0),
             "proceeds": Decimal(0),
             "gain": Decimal(0),
         }
@@ -719,14 +711,12 @@ class CalculateCapitalGains:
         self.short_term: Dict[AssetSymbol, List[TaxEventCapitalGains]] = {}
         self.short_term_totals: CapitalGainsReportTotal = {
             "cost": Decimal(0),
-            "fees": Decimal(0),
             "proceeds": Decimal(0),
             "gain": Decimal(0),
         }
         self.long_term: Dict[AssetSymbol, List[TaxEventCapitalGains]] = {}
         self.long_term_totals: CapitalGainsReportTotal = {
             "cost": Decimal(0),
-            "fees": Decimal(0),
             "proceeds": Decimal(0),
             "gain": Decimal(0),
         }
@@ -761,7 +751,6 @@ class CalculateCapitalGains:
             self.short_term[te.asset].append(te)
 
             self.short_term_totals["cost"] += te.cost
-            self.short_term_totals["fees"] += te.fees
             self.short_term_totals["proceeds"] += te.proceeds
             self.short_term_totals["gain"] += te.gain
         elif te.disposal_type is DisposalType.LONG_TERM:
@@ -771,7 +760,6 @@ class CalculateCapitalGains:
             self.long_term[te.asset].append(te)
 
             self.long_term_totals["cost"] += te.cost
-            self.long_term_totals["fees"] += te.fees
             self.long_term_totals["proceeds"] += te.proceeds
             self.long_term_totals["gain"] += te.gain
         else:
@@ -786,13 +774,11 @@ class CalculateCapitalGains:
         if te.t_type.value not in self.non_tax_by_type_total:
             self.non_tax_by_type_total[te.t_type.value] = {
                 "cost": te.cost,
-                "fees": te.fees,
                 "proceeds": te.market_value,
                 "gain": Decimal(),
             }
         else:
             self.non_tax_by_type_total[te.t_type.value]["cost"] += te.cost
-            self.non_tax_by_type_total[te.t_type.value]["fees"] += te.fees
             self.non_tax_by_type_total[te.t_type.value]["proceeds"] += te.market_value
 
     def tax_estimate_cgt(self, tax_year: Year) -> None:

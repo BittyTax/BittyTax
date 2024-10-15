@@ -193,9 +193,6 @@ def main() -> None:
                     if input(f"{Fore.RESET}Do you want to continue? [y/N] ") != "y":
                         parser.exit()
 
-            tax.process_income()
-            tax.process_margin_trades()
-
             _do_each_tax_year(tax, args.tax_year, args.summary_only, value_asset)
 
         except DataSourceError as e:
@@ -218,6 +215,9 @@ def main() -> None:
                     parser.prog,
                     args,
                     audit,
+                    tax.buys_ordered,
+                    tax.sells_ordered,
+                    tax.other_transactions,
                     tax.tax_report,
                     value_asset.price_report,
                     tax.holdings_report,
@@ -282,7 +282,9 @@ def _do_tax(
     transaction_history = TransactionHistory(transaction_records, value_asset)
 
     tax = TaxCalculator(transaction_history.transactions, tax_rules)
-
+    # Important - process income and margin trades before splitting
+    tax.process_income()
+    tax.process_margin_trades()
     tax.order_transactions()
     tax.fifo_match()
     if not tax.match_missing:

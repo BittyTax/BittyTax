@@ -34,23 +34,20 @@ class TaxEventCapitalGains(TaxEvent):
     def __init__(
         self,
         disposal_type: DisposalType,
+        b: List[Buy],
         s: Sell,
         cost: Decimal,
-        fees: Decimal,
-        acquisition_dates: Optional[List[Date]] = None,
+        proceeds: Decimal,
     ) -> None:
         super().__init__(s.date(), s.asset)
-
-        if s.proceeds is None:
-            raise RuntimeError("Missing proceeds")
-
         self.disposal_type = disposal_type
+        self.buys = b
+        self.sell = s
         self.quantity = s.quantity
-        self.cost = cost.quantize(PRECISION)
-        self.fees = fees.quantize(PRECISION)
-        self.proceeds = s.proceeds.quantize(PRECISION)
-        self.gain = self.proceeds - self.cost - self.fees
-        self.acquisition_dates = acquisition_dates
+        self.cost = cost
+        self.proceeds = proceeds
+        self.gain = self.proceeds - self.cost
+        self.acquisition_dates = [buy.date() for buy in self.buys]
 
     def format_disposal(self) -> str:
         if self.acquisition_dates:
@@ -83,24 +80,21 @@ class TaxEventNoGainNoLoss(TaxEvent):
     def __init__(
         self,
         disposal_type: DisposalType,
+        b: List[Buy],
         s: Sell,
         cost: Decimal,
-        fees: Decimal,
-        acquisition_dates: Optional[List[Date]] = None,
+        market_value: Decimal,
     ) -> None:
         super().__init__(s.date(), s.asset)
-
-        if s.proceeds is None:
-            raise RuntimeError("Missing proceeds")
-
         self.disposal_type = disposal_type
+        self.buys = b
+        self.sell = s
         self.t_type = s.t_type
         self.note = s.note
         self.quantity = s.quantity
-        self.cost = cost.quantize(PRECISION)
-        self.fees = fees.quantize(PRECISION)
-        self.market_value = s.proceeds.quantize(PRECISION)
-        self.acquisition_dates = acquisition_dates
+        self.cost = cost
+        self.market_value = market_value
+        self.acquisition_dates = [buy.date() for buy in self.buys]
 
     def format_disposal(self) -> str:
         return self.disposal_type.value
@@ -120,6 +114,7 @@ class TaxEventIncome(TaxEvent):  # pylint: disable=too-few-public-methods
         if b.cost is None:
             raise RuntimeError("Missing cost")
 
+        self.buy = b
         self.type = b.t_type
         self.quantity = b.quantity
         self.amount = b.cost.quantize(PRECISION)
