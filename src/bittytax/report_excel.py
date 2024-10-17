@@ -1104,7 +1104,7 @@ class Worksheet:
                             self.row_num,
                             2,
                             ", ".join([f"{d:%m/%d/%Y}" for d in sorted(set(te.acquisition_dates))]),
-                            {"font_size": 11, "x_scale": 2},
+                            {"font_size": FONT_SIZE - 1, "x_scale": 2},
                         )
                     else:
                         self.worksheet.write_datetime(
@@ -1122,7 +1122,7 @@ class Worksheet:
                             f"Disposal is short-term and long-term\nProceeds is "
                             f"{proceeds_percent:.0%} ({quantity:,} / {te.sell.quantity:,})"
                         ),
-                        {"font_size": 11, "x_scale": 2},
+                        {"font_size": FONT_SIZE - 1, "x_scale": 2},
                     )
 
                 zero_basis = [buy for buy in te.buys if buy.t_record is None]
@@ -1131,7 +1131,7 @@ class Worksheet:
                         self.row_num,
                         5,
                         "Cost basis zero used",
-                        {"font_size": 11, "x_scale": 2},
+                        {"font_size": FONT_SIZE - 1, "x_scale": 2},
                     )
 
                 if row_tracker:
