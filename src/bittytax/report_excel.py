@@ -268,14 +268,12 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
             worksheet.capital_gains(
                 "Capital Gains - Short Term",
                 tax_report[tax_year]["CapitalGains"].short_term,
-                tax_report[tax_year]["CapitalGains"].long_term,
                 f"Tax_Year_{tax_year_table_str}_Capital_Gains_Short_Term",
                 row_tracker,
             )
             worksheet.capital_gains(
                 "Capital Gains - Long Term",
                 tax_report[tax_year]["CapitalGains"].long_term,
-                tax_report[tax_year]["CapitalGains"].short_term,
                 f"Tax_Year_{tax_year_table_str}_Capital_Gains_Long_Term",
                 row_tracker,
             )
@@ -1068,7 +1066,6 @@ class Worksheet:
         self,
         title: str,
         cgains: Dict[AssetSymbol, List[TaxEventCapitalGains]],
-        other_cgains: Dict[AssetSymbol, List[TaxEventCapitalGains]],
         table_name: str,
         row_tracker: Optional["RowTracker"],
     ) -> None:
@@ -1115,15 +1112,27 @@ class Worksheet:
                         )
                 self.worksheet.write_datetime(self.row_num, 3, te.date, self.workbook_formats.date)
 
-                if asset in other_cgains:
-                    for other_te in other_cgains[asset]:
-                        if other_te.sell == te.sell:
-                            self.worksheet.write_comment(
-                                self.row_num,
-                                4,
-                                "Disposal has both Short-Term and Long-Term acquistions.",
-                                {"font_size": 11, "x_scale": 2},
-                            )
+                quantity = sum(buy.quantity for buy in te.buys)
+                if quantity != te.sell.quantity:
+                    proceeds_percent = quantity / te.sell.quantity
+                    self.worksheet.write_comment(
+                        self.row_num,
+                        4,
+                        (
+                            f"Disposal is short-term and long-term\nProceeds is "
+                            f"{proceeds_percent:.0%} ({quantity:,} / {te.sell.quantity:,})"
+                        ),
+                        {"font_size": 11, "x_scale": 2},
+                    )
+
+                zero_basis = [buy for buy in te.buys if buy.t_record is None]
+                if zero_basis:
+                    self.worksheet.write_comment(
+                        self.row_num,
+                        5,
+                        "Cost basis zero used",
+                        {"font_size": 11, "x_scale": 2},
+                    )
 
                 if row_tracker:
                     cell_range = row_tracker.get_row(te.sell)
