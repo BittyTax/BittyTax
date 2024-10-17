@@ -43,11 +43,12 @@ PRECISION = Decimal("0.00")
 class WorkbookFormats:  # pylint: disable=too-many-instance-attributes
     quantity: xlsxwriter.worksheet.Format
     date: xlsxwriter.worksheet.Format
-    string_left: xlsxwriter.worksheet.Format
     string_right: xlsxwriter.worksheet.Format
+    string_link: xlsxwriter.worksheet.Format
     currency: xlsxwriter.worksheet.Format
     currency_bold: xlsxwriter.worksheet.Format
     currency_fixed: xlsxwriter.worksheet.Format
+    currency_link: xlsxwriter.worksheet.Format
     num_float: xlsxwriter.worksheet.Format
     num_float_red: xlsxwriter.worksheet.Format
     num_float_red_signed: xlsxwriter.worksheet.Format
@@ -151,9 +152,11 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
             date=workbook.add_format(
                 {"font_size": FONT_SIZE, "font_color": "black", "num_format": "mm/dd/yy"}
             ),
-            string_left=workbook.add_format({"font_size": FONT_SIZE, "font_color": "black"}),
             string_right=workbook.add_format(
                 {"font_size": FONT_SIZE, "font_color": "black", "align": "right"}
+            ),
+            string_link=workbook.add_format(
+                {"font_size": FONT_SIZE, "font_color": "black", "underline": True}
             ),
             currency=workbook.add_format(
                 {
@@ -186,6 +189,18 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
                     "num_format": '"='
                     + config.sym()
                     + '"#,##0.00_);[Red]("='
+                    + config.sym()
+                    + '"#,##0.00)',
+                }
+            ),
+            currency_link=workbook.add_format(
+                {
+                    "font_size": FONT_SIZE,
+                    "font_color": "black",
+                    "underline": True,
+                    "num_format": '"'
+                    + config.sym()
+                    + '"#,##0.00_);[Red]("'
                     + config.sym()
                     + '"#,##0.00)',
                 }
@@ -705,7 +720,7 @@ class Worksheet:
                         f"external:{buy.t_record.t_row.filename}"
                         f"#'{buy.t_record.t_row.worksheet_name}'"
                         f"!A{buy.t_record.t_row.row_num}:M{buy.t_record.t_row.row_num}",
-                        self.workbook_formats.string_left,
+                        self.workbook_formats.string_link,
                         string=link_name,
                     )
                 else:
@@ -737,7 +752,7 @@ class Worksheet:
                             self.row_num,
                             4,
                             hyperlink,
-                            self.workbook_formats.currency,
+                            self.workbook_formats.currency_link,
                         )
                     else:
                         self.worksheet.write_number(
@@ -854,7 +869,7 @@ class Worksheet:
                     f"external:{sell.t_record.t_row.filename}"
                     f"#'{sell.t_record.t_row.worksheet_name}'"
                     f"!A{sell.t_record.t_row.row_num}:M{sell.t_record.t_row.row_num}",
-                    self.workbook_formats.string_left,
+                    self.workbook_formats.string_link,
                     string=link_name,
                 )
             else:
@@ -886,7 +901,7 @@ class Worksheet:
                             self.row_num,
                             4,
                             hyperlink,
-                            self.workbook_formats.currency,
+                            self.workbook_formats.currency_link,
                         )
                     else:
                         self.worksheet.write_number(
@@ -986,7 +1001,7 @@ class Worksheet:
                             self.row_num,
                             2,
                             price_data["url"],
-                            self.workbook_formats.string_left,
+                            self.workbook_formats.string_link,
                             string=price_data["data_source"],
                         )
                         self.worksheet.write_datetime(
@@ -1114,13 +1129,13 @@ class Worksheet:
                     cell_range = row_tracker.get_row(te.sell)
                     hyperlink = f'=HYPERLINK("#Sells!{cell_range}", {te.proceeds})'
                     self.worksheet.write_formula(
-                        self.row_num, 4, hyperlink, self.workbook_formats.currency
+                        self.row_num, 4, hyperlink, self.workbook_formats.currency_link
                     )
 
                     cell_range = row_tracker.get_rows_from_list(te.buys)
                     hyperlink = f'=HYPERLINK("#Buys!{cell_range}", {te.cost})'
                     self.worksheet.write_formula(
-                        self.row_num, 5, hyperlink, self.workbook_formats.currency
+                        self.row_num, 5, hyperlink, self.workbook_formats.currency_link
                     )
                 else:
                     self.worksheet.write_number(
@@ -1292,13 +1307,13 @@ class Worksheet:
                     cell_range = row_tracker.get_row(te.sell)
                     hyperlink = f'=HYPERLINK("#Sells!{cell_range}", {te.market_value})'
                     self.worksheet.write_formula(
-                        self.row_num, 5, hyperlink, self.workbook_formats.currency
+                        self.row_num, 5, hyperlink, self.workbook_formats.currency_link
                     )
 
                     cell_range = row_tracker.get_rows_from_list(te.buys)
                     hyperlink = f'=HYPERLINK("#Buys!{cell_range}", {te.cost})'
                     self.worksheet.write_formula(
-                        self.row_num, 6, hyperlink, self.workbook_formats.currency
+                        self.row_num, 6, hyperlink, self.workbook_formats.currency_link
                     )
                 else:
                     self.worksheet.write_number(
@@ -1394,11 +1409,11 @@ class Worksheet:
                     cell_range = row_tracker.get_row_grouped(te.buy)
                     hyperlink = f'=HYPERLINK("#Buys!{cell_range}", {te.amount})'
                     self.worksheet.write_formula(
-                        self.row_num, 5, hyperlink, self.workbook_formats.currency
+                        self.row_num, 5, hyperlink, self.workbook_formats.currency_link
                     )
                     hyperlink = f'=HYPERLINK("#Buys!{cell_range}", {te.fees})'
                     self.worksheet.write_formula(
-                        self.row_num, 6, hyperlink, self.workbook_formats.currency
+                        self.row_num, 6, hyperlink, self.workbook_formats.currency_link
                     )
                 else:
                     self.worksheet.write_number(
@@ -1527,11 +1542,11 @@ class Worksheet:
                     cell_range = row_tracker.get_row_grouped(te.buy)
                     hyperlink = f'=HYPERLINK("#Buys!{cell_range}", {te.amount})'
                     self.worksheet.write_formula(
-                        self.row_num, 5, hyperlink, self.workbook_formats.currency
+                        self.row_num, 5, hyperlink, self.workbook_formats.currency_link
                     )
                     hyperlink = f'=HYPERLINK("#Buys!{cell_range}", {te.fees})'
                     self.worksheet.write_formula(
-                        self.row_num, 6, hyperlink, self.workbook_formats.currency
+                        self.row_num, 6, hyperlink, self.workbook_formats.currency_link
                     )
                 else:
                     self.worksheet.write_number(
@@ -1661,19 +1676,19 @@ class Worksheet:
                         self.row_num,
                         3,
                         f'=HYPERLINK("{link}", {te.gain})',
-                        self.workbook_formats.currency,
+                        self.workbook_formats.currency_link,
                     )
                     self.worksheet.write_formula(
                         self.row_num,
                         4,
                         f'=HYPERLINK("{link}", {te.loss})',
-                        self.workbook_formats.currency,
+                        self.workbook_formats.currency_link,
                     )
                     self.worksheet.write_formula(
                         self.row_num,
                         5,
                         f'=HYPERLINK("{link}", {te.fee})',
-                        self.workbook_formats.currency,
+                        self.workbook_formats.currency_link,
                     )
                 else:
                     self.worksheet.write_number(
