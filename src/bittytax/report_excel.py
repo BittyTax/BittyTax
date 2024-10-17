@@ -322,6 +322,12 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
         price_to_row = price_worksheet.price_data(price_report)
         price_worksheet.worksheet.autofit()
 
+        other_sells = [t for t in other_transactions if isinstance(t, Sell)]
+        sells_worksheet.sells_ordered(
+            sorted(sells_ordered + other_sells), row_tracker, price_to_row
+        )
+        sells_worksheet.worksheet.autofit()
+
         other_buys = [t for t in other_transactions if isinstance(t, Buy)]
         buys_ordered_flat = [
             b for asset in sorted(buys_ordered, key=str.lower) for b in buys_ordered[asset]
@@ -330,12 +336,6 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
             buys_ordered_flat + sorted(other_buys), row_tracker, price_to_row
         )
         buys_worksheet.worksheet.autofit()
-
-        other_sells = [t for t in other_transactions if isinstance(t, Sell)]
-        sells_worksheet.sells_ordered(
-            sorted(sells_ordered + other_sells), row_tracker, price_to_row
-        )
-        sells_worksheet.worksheet.autofit()
 
         self._tax_summary(tax_report, row_tracker)
 
@@ -760,12 +760,19 @@ class Worksheet:
                             self.workbook_formats.currency,
                         )
             if buy.fee_value is not None:
-                self.worksheet.write_number(
-                    self.row_num,
-                    5,
-                    buy.fee_value.normalize(),
-                    self.workbook_formats.currency,
-                )
+                if buy.t_record and buy.t_record.fee:
+                    cell_range = row_tracker.get_row(buy.t_record.fee)
+                    hyperlink = f'=HYPERLINK("#Sells!{cell_range}", {buy.fee_value.normalize()})'
+                    self.worksheet.write_formula(
+                        self.row_num, 5, hyperlink, self.workbook_formats.currency_link
+                    )
+                else:
+                    self.worksheet.write_number(
+                        self.row_num,
+                        5,
+                        buy.fee_value.normalize(),
+                        self.workbook_formats.currency,
+                    )
 
             self.worksheet.write_string(self.row_num, 6, buy.wallet)
             self.worksheet.write_string(self.row_num, 7, buy.note)
@@ -831,6 +838,9 @@ class Worksheet:
         self.worksheet.ignore_errors(
             {"formula_differs": xlsxwriter.utility.xl_range(start_row, 4, self.row_num, 4)}
         )
+        self.worksheet.ignore_errors(
+            {"formula_differs": xlsxwriter.utility.xl_range(start_row, 5, self.row_num, 5)}
+        )
 
     def sells_ordered(
         self,
@@ -852,6 +862,11 @@ class Worksheet:
         for sell in sells_ordered:
             self.row_num += 1
             row_tracker.set_row(sell, self.row_num)
+
+        self.row_num = start_row
+
+        for sell in sells_ordered:
+            self.row_num += 1
 
             if sell.t_record:
                 if sell.t_record.fee == sell:
@@ -909,12 +924,19 @@ class Worksheet:
                             self.workbook_formats.currency,
                         )
             if sell.fee_value is not None:
-                self.worksheet.write_number(
-                    self.row_num,
-                    5,
-                    sell.fee_value.normalize(),
-                    self.workbook_formats.currency,
-                )
+                if sell.t_record and sell.t_record.fee:
+                    cell_range = row_tracker.get_row(sell.t_record.fee)
+                    hyperlink = f'=HYPERLINK("#Sells!{cell_range}", {sell.fee_value.normalize()})'
+                    self.worksheet.write_formula(
+                        self.row_num, 5, hyperlink, self.workbook_formats.currency_link
+                    )
+                else:
+                    self.worksheet.write_number(
+                        self.row_num,
+                        5,
+                        sell.fee_value.normalize(),
+                        self.workbook_formats.currency,
+                    )
 
             self.worksheet.write_string(self.row_num, 6, sell.wallet)
             self.worksheet.write_string(self.row_num, 7, sell.note)
@@ -967,6 +989,9 @@ class Worksheet:
         )
         self.worksheet.ignore_errors(
             {"formula_differs": xlsxwriter.utility.xl_range(start_row, 4, self.row_num, 4)}
+        )
+        self.worksheet.ignore_errors(
+            {"formula_differs": xlsxwriter.utility.xl_range(start_row, 5, self.row_num, 5)}
         )
 
     def price_data(
@@ -1917,7 +1942,7 @@ class RowTracker:
         raise RuntimeError("buy missing in buys_to_row")
 
     def get_row(self, sell: Sell) -> str:
-        sell_row = self.sells_to_row[sell]
+        sell_row = self.sells_to_row.get(sell)
         if sell_row:
             return xlsxwriter.utility.xl_range(sell_row, 0, sell_row, 10)
         raise RuntimeError("sell missing in sells_to_row")
