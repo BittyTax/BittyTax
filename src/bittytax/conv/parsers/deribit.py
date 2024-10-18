@@ -212,7 +212,7 @@ def _parse_deribit_row(
             positions[uid][instrument].trading_fees += trading_fee
             balance[uid] -= trading_fee
         else:
-            raise RuntimeError("Unexpected Change for {Instrument}")
+            raise RuntimeError(f"Unexpected Change for {instrument}")
 
         if config.debug:
             sys.stderr.write(
