@@ -1179,8 +1179,13 @@ class Worksheet:
                         self.row_num, 5, te.cost, self.workbook_formats.currency
                     )
 
-                self.worksheet.write_number(
-                    self.row_num, 6, te.gain, self.workbook_formats.currency
+                cell_proceeds = xlsxwriter.utility.xl_rowcol_to_cell(self.row_num, 4)
+                cell_cost_basis = xlsxwriter.utility.xl_rowcol_to_cell(self.row_num, 5)
+                self.worksheet.write_formula(
+                    self.row_num,
+                    6,
+                    f"={cell_proceeds}-{cell_cost_basis}",
+                    self.workbook_formats.currency,
                 )
                 self.worksheet.set_row(self.row_num, None, None, {"level": 2, "hidden": True})
                 end_a_row = self.row_num
