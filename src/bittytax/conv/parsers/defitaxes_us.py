@@ -64,6 +64,10 @@ def parse_defi_taxes(
     my_addresses = []
 
     for dr in data_rows:
+        if not dr.row_dict["timestamp"]:
+            # Skip empty rows
+            continue
+
         chain = Chain(dr.row_dict["chain"])
         if chain not in tx_ids:
             tx_ids[chain] = {}
@@ -125,6 +129,10 @@ def _parse_defi_taxes_row(
     filename: str,
 ) -> None:
     row_dict = data_row.row_dict
+
+    if not row_dict["timestamp"]:
+        # Skip empty rows
+        return
 
     chain = Chain(row_dict["chain"])
     tx_hash = TxHash(row_dict["transaction hash"])
