@@ -14,7 +14,7 @@ from .dataparser import DataParser, ParserArgs
 from .exceptions import DataRowError
 from .out_record import TransactionOutRecord
 
-DEFAULT_TIMESTAMP = datetime.datetime(datetime.MINYEAR, 1, 1, tzinfo=TZ_UTC)
+DEFAULT_TIMESTAMP = datetime.datetime(datetime.MAXYEAR, 1, 1, tzinfo=TZ_UTC)
 
 
 @dataclass
