@@ -2,6 +2,7 @@
 # (c) Nano Nano Ltd 2023
 
 import os
+import re
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
@@ -31,7 +32,7 @@ def parse_subscan_transfers(
         data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
     else:
         data_row.timestamp = DataParser.parse_timestamp(
-            row_dict["Block Timestamp"].replace(" (+UTC)", "")
+            re.sub(r" \(\+?UTC\)", "", row_dict["Block Timestamp"])
         )
 
     data_row.tx_raw = TxRawPos(
@@ -80,7 +81,7 @@ def parse_subscan_paidout(
     data_row: "DataRow", _parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"].replace(" (+UTC)", ""))
+    data_row.timestamp = DataParser.parse_timestamp(re.sub(r" \(\+?UTC\)", "", row_dict["Time"]))
     network = _get_network(kwargs["filename"])
     token = _get_token(network, **kwargs)
 
