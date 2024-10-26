@@ -127,7 +127,7 @@ def _do_parse_coinbase(
     (spot_price_ccy, subtotal, total_ccy, fees) = fiat_values
     row_dict = data_row.row_dict
 
-    if row_dict["Transaction Type"] == "Deposit" or row_dict["Transaction Type"] == "Pro Deposit":
+    if row_dict["Transaction Type"] == "Deposit":
         # Fiat deposit
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
@@ -142,10 +142,7 @@ def _do_parse_coinbase(
             fee_asset=row_dict["Asset"],
             wallet=WALLET,
         )
-    elif (
-        row_dict["Transaction Type"] == "Withdrawal"
-        or row_dict["Transaction Type"] == "Pro Withdrawal"
-    ):
+    elif row_dict["Transaction Type"] == "Withdrawal":
         # Fiat withdrawal
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
@@ -160,7 +157,7 @@ def _do_parse_coinbase(
             fee_asset=row_dict["Asset"],
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] == "Exchange Deposit":
+    elif row_dict["Transaction Type"] in ("Exchange Deposit", "Pro Deposit"):
         # Withdrawal to Coinbase Pro
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
@@ -169,7 +166,7 @@ def _do_parse_coinbase(
             sell_asset=row_dict["Asset"],
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] == "Exchange Withdrawal":
+    elif row_dict["Transaction Type"] in ("Exchange Withdrawal", "Pro Withdrawal"):
         # Deposit from Coinbase Pro
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
