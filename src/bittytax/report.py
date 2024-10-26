@@ -28,7 +28,7 @@ from .constants import (
     TAX_RULES_UK_INDIVIDUAL,
     TAX_RULES_US_INDIVIDUAL,
 )
-from .price.valueasset import VaPriceReport
+from .price.valueasset import VaPriceRecord
 from .tax import (
     CalculateCapitalGains,
     CalculateIncome,
@@ -57,7 +57,7 @@ class ReportPdf:
         args: argparse.Namespace,
         audit: AuditRecords,
         tax_report: Optional[Dict[Year, TaxReportRecord]] = None,
-        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
+        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
     ) -> None:
         self.env = jinja2.Environment(loader=jinja2.PackageLoader("bittytax", "templates"))
@@ -225,7 +225,7 @@ class ReportLog:
         args: argparse.Namespace,
         audit: AuditRecords,
         tax_report: Optional[Dict[Year, TaxReportRecord]] = None,
-        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
+        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
     ) -> None:
         if args.audit_only:
@@ -251,7 +251,7 @@ class ReportLog:
         self,
         tax_rules: str,
         tax_report: Dict[Year, TaxReportRecord],
-        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]],
+        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]],
     ) -> None:
         print(f"{Fore.WHITE}tax report output:")
         for tax_year in sorted(tax_report):
@@ -305,7 +305,7 @@ class ReportLog:
         tax_rules: str,
         audit: AuditRecords,
         tax_report: Dict[Year, TaxReportRecord],
-        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]],
+        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]],
         holdings_report: Optional[HoldingsReportRecord],
     ) -> None:
         print(f"{Fore.WHITE}tax report output:")
@@ -674,25 +674,25 @@ class ReportLog:
             f'{self.format_value(margin.totals["fees"]):>13}{Style.NORMAL}'
         )
 
-    def _price_data(self, price_report: Dict[AssetSymbol, Dict[Date, VaPriceReport]]) -> None:
+    def _price_data(self, price_report: Dict[AssetSymbol, Dict[Date, VaPriceRecord]]) -> None:
         price_missing_flag = False
         for asset in sorted(price_report):
             for date in sorted(price_report[asset]):
                 price_data = price_report[asset][date]
-                if price_data["price_ccy"] is not None:
+                if price_data.price_ccy is not None:
                     print(
                         f"{Fore.WHITE}"
-                        f'1 {self.format_asset(asset, price_data["name"]):<{self.ASSET_WIDTH}} '
-                        f'{price_data["data_source"]:<16} '
+                        f"1 {self.format_asset(asset, price_data.name):<{self.ASSET_WIDTH}} "
+                        f"{price_data.data_source:<16} "
                         f"{self.format_date(date):<14}  "
-                        f'{self.format_value(price_data["price_ccy"]):>18} '
-                        f'{self.format_quantity(price_data["price_btc"]):>25}'
+                        f"{self.format_value(price_data.price_ccy):>18} "
+                        f"{self.format_quantity(price_data.price_btc):>25}"
                     )
                 else:
                     price_missing_flag = True
                     print(
                         f"{Fore.WHITE}"
-                        f'1 {self.format_asset(asset, price_data["name"]):<{self.ASSET_WIDTH}} '
+                        f"1 {self.format_asset(asset, price_data.name):<{self.ASSET_WIDTH}} "
                         f'{"":<16} '
                         f"{self.format_date(date):<18} "
                         f'{Fore.BLUE}{"Not available*":>13} '

@@ -179,12 +179,19 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             desc=f"{Fore.CYAN}order transactions{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         ):
-            if isinstance(t, Buy) and t.is_crypto() and t.acquisition:
+            if (
+                isinstance(t, Buy)
+                and t.is_crypto()
+                and t.acquisition
+                and (t.quantity or t.fee_value)
+            ):
                 if t.asset not in self.buys_ordered:
                     self.buys_ordered[t.asset] = []
 
                 self.buys_ordered[t.asset].append(t)
-            elif isinstance(t, Sell) and t.is_crypto() and t.disposal:
+            elif (
+                isinstance(t, Sell) and t.is_crypto() and t.disposal and (t.quantity or t.fee_value)
+            ):
                 self.sells_ordered.append(t)
             else:
                 self.other_transactions.append(t)
@@ -402,10 +409,11 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             if config.debug:
                 print(f"{Fore.GREEN}holdings: {t}")
 
-            if isinstance(t, Buy):
-                self._add_tokens(t)
-            elif isinstance(t, Sell):
-                self._subtract_tokens(t)
+            if t.quantity or t.fee_value:
+                if isinstance(t, Buy):
+                    self._add_tokens(t)
+                elif isinstance(t, Sell):
+                    self._subtract_tokens(t)
 
     def _add_tokens(self, t: Buy) -> None:
         if not t.acquisition:
@@ -437,7 +445,11 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             desc=f"{Fore.CYAN}process income{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         ):
-            if t.t_type in self.INCOME_TYPES and (t.is_crypto() or config.fiat_income):
+            if (
+                t.t_type in self.INCOME_TYPES
+                and (t.is_crypto() or config.fiat_income)
+                and (t.quantity or t.fee_value)
+            ):
                 tax_event = TaxEventIncome(t)
                 self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
@@ -457,7 +469,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             disable=bool(config.debug or not sys.stdout.isatty()),
         ):
 
-            if t.t_type in self.MARGIN_TYPES:
+            if t.t_type in self.MARGIN_TYPES and (t.quantity or t.fee_value):
                 tax_event = TaxEventMarginTrade(t)
                 self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 

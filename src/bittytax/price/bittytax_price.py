@@ -188,9 +188,11 @@ def main() -> None:
             else:
                 value_asset = ValueAsset(price_tool=True)
                 if args.command == CMD_HISTORY:
-                    price_ccy2, name, _ = value_asset.get_historical_price(
+                    price_record = value_asset.get_historical_price(
                         symbol, args.date[0], args.no_cache
                     )
+                    price_ccy2 = price_record.price_ccy
+                    name = price_record.name
                 else:
                     price_ccy2, name, _ = value_asset.get_latest_price(symbol)
 
@@ -245,13 +247,13 @@ def get_latest_btc_price() -> AsPriceRecord:
 
 
 def get_historic_btc_price(date: Timestamp) -> AsPriceRecord:
-    price_ccy, name, data_source = ValueAsset().get_historical_price(AssetSymbol("BTC"), date)
-    if price_ccy is not None:
+    price_record = ValueAsset().get_historical_price(AssetSymbol("BTC"), date)
+    if price_record.price_ccy is not None:
         return AsPriceRecord(
             symbol=AssetSymbol("BTC"),
-            name=name,
-            data_source=data_source,
-            price=price_ccy,
+            name=price_record.name,
+            data_source=price_record.data_source,
+            price=price_record.price_ccy,
             quote=config.ccy,
         )
     raise RuntimeError("BTC price is not available")

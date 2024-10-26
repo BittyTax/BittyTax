@@ -15,7 +15,7 @@ from .audit import AuditRecords, AuditTotals
 from .bt_types import BUY_AND_SELL_TYPES, TRANSFER_TYPES, AssetSymbol, Date, Wallet, Year
 from .config import config
 from .constants import ACQUISITIONS_VARIOUS, COST_BASIS_ZERO_NOTE, EXCEL_PRECISION, PROJECT_URL
-from .price.valueasset import VaPriceReport
+from .price.valueasset import VaPriceRecord
 from .report import ProgressSpinner
 from .tax import (
     CalculateCapitalGains,
@@ -49,6 +49,7 @@ class WorkbookFormats:  # pylint: disable=too-many-instance-attributes
     currency_bold: xlsxwriter.worksheet.Format
     currency_fixed: xlsxwriter.worksheet.Format
     currency_link: xlsxwriter.worksheet.Format
+    currency_fixed_link: xlsxwriter.worksheet.Format
     num_float: xlsxwriter.worksheet.Format
     num_float_red: xlsxwriter.worksheet.Format
     num_float_red_signed: xlsxwriter.worksheet.Format
@@ -80,7 +81,7 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
         sells_ordered: Optional[List[Sell]] = None,
         other_transactions: Optional[List[Union[Buy, Sell]]] = None,
         tax_report: Optional[Dict[Year, TaxReportRecord]] = None,
-        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
+        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
     ) -> None:
         self.progname = progname
@@ -98,7 +99,13 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
                 if tax_report is None:
                     raise RuntimeError("Missing tax_report")
 
+                if price_report is None:
+                    raise RuntimeError("Missing price_report")
+
                 self._tax_summary(tax_report)
+                price_worksheet = Worksheet(self.workbook, self.workbook_formats, "Price Data")
+                price_worksheet.price_data(price_report)
+                price_worksheet.worksheet.autofit()
             else:
                 filename = self.get_output_filename(args.output_filename, self.TAX_FULL_FILENAME)
                 self.workbook = self._create_workbook(filename)
@@ -185,7 +192,6 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
                 {
                     "font_size": FONT_SIZE,
                     "font_color": "black",
-                    # "italic": True,
                     "num_format": '"='
                     + config.sym()
                     + '"#,##0.00_);[Red]("='
@@ -201,6 +207,18 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
                     "num_format": '"'
                     + config.sym()
                     + '"#,##0.00_);[Red]("'
+                    + config.sym()
+                    + '"#,##0.00)',
+                }
+            ),
+            currency_fixed_link=workbook.add_format(
+                {
+                    "font_size": FONT_SIZE,
+                    "font_color": "black",
+                    "underline": True,
+                    "num_format": '"='
+                    + config.sym()
+                    + '"#,##0.00_);[Red]("='
                     + config.sym()
                     + '"#,##0.00)',
                 }
@@ -310,7 +328,7 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
         sells_ordered: List[Sell],
         other_transactions: List[Union[Buy, Sell]],
         tax_report: Dict[Year, TaxReportRecord],
-        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]],
+        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]],
         holdings_report: Optional[HoldingsReportRecord],
     ) -> None:
         row_tracker = RowTracker()
@@ -322,20 +340,21 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
         price_to_row = price_worksheet.price_data(price_report)
         price_worksheet.worksheet.autofit()
 
-        other_sells = [t for t in other_transactions if isinstance(t, Sell)]
-        sells_worksheet.sells_ordered(
-            sorted(sells_ordered + other_sells), row_tracker, price_to_row
-        )
-        sells_worksheet.worksheet.autofit()
-
-        other_buys = [t for t in other_transactions if isinstance(t, Buy)]
-        buys_ordered_flat = [
+        all_buys = [
             b for asset in sorted(buys_ordered, key=str.lower) for b in buys_ordered[asset]
-        ]
-        buys_worksheet.buys_ordered(
-            buys_ordered_flat + sorted(other_buys), row_tracker, price_to_row
-        )
+        ] + sorted([t for t in other_transactions if isinstance(t, Buy)])
+        for row, buy in enumerate(all_buys, 2):
+            row_tracker.set_row(buy, row)
+
+        all_sells = sorted(sells_ordered + [t for t in other_transactions if isinstance(t, Sell)])
+        for row, sell in enumerate(all_sells, 2):
+            row_tracker.set_row(sell, row)
+
+        buys_worksheet.buys_ordered(all_buys, row_tracker, price_to_row)
         buys_worksheet.worksheet.autofit()
+
+        sells_worksheet.sells_ordered(all_sells, row_tracker, price_to_row)
+        sells_worksheet.worksheet.autofit()
 
         self._tax_summary(tax_report, row_tracker)
 
@@ -703,7 +722,6 @@ class Worksheet:
 
         for buy in buys_ordered:
             self.row_num += 1
-            row_tracker.set_row(buy, self.row_num)
 
             if not buy.is_split:
                 if buy.t_type in BUY_AND_SELL_TYPES:
@@ -732,16 +750,12 @@ class Worksheet:
                 self.row_num, 3, buy.timestamp, self.workbook_formats.date
             )
             if buy.cost is not None:
-                if buy.cost_fixed:
-                    self.worksheet.write_number(
-                        self.row_num,
-                        4,
-                        buy.cost.normalize(),
-                        self.workbook_formats.currency_fixed,
-                    )
-                else:
-                    price_row = price_to_row.get((buy.asset, buy.date()))
-                    if price_row is not None:
+                if buy.cost_origin is None:
+                    raise RuntimeError("Missing buy.cost_origin")
+
+                if buy.cost_origin.origin == buy:
+                    if buy.cost_origin.price_record:
+                        price_row = price_to_row.get((buy.asset, buy.date()))
                         hyperlink = (
                             f"=HYPERLINK(\"#'Price Data'!A{price_row}:G{price_row}\","
                             f"{buy.cost.normalize()})"
@@ -752,27 +766,60 @@ class Worksheet:
                             hyperlink,
                             self.workbook_formats.currency_link,
                         )
+                        if buy.cost_origin.price_record.price_ccy is not None:
+                            self.worksheet.write_comment(
+                                self.row_num,
+                                4,
+                                (
+                                    f"1 {buy.asset} ({buy.cost_origin.price_record.name}) = "
+                                    f"{config.sym()}{buy.cost_origin.price_record.price_ccy:0,.2f} "
+                                    f"{config.ccy}"
+                                ),
+                                {"font_size": FONT_SIZE - 1, "x_scale": 2},
+                            )
+                        else:
+                            self.worksheet.write_comment(
+                                self.row_num,
+                                4,
+                                "Price NOT available",
+                                {"font_size": FONT_SIZE - 1, "x_scale": 2},
+                            )
                     else:
                         self.worksheet.write_number(
                             self.row_num,
                             4,
                             buy.cost.normalize(),
-                            self.workbook_formats.currency,
+                            self.workbook_formats.currency_fixed,
                         )
+                else:
+                    link = row_tracker.get_row_grouped(buy.cost_origin.origin)
+                    hyperlink = f'=HYPERLINK("{link}", {buy.cost.normalize()})'
+                    if buy.cost_origin.price_record:
+                        self.worksheet.write_formula(
+                            self.row_num, 4, hyperlink, self.workbook_formats.currency_link
+                        )
+                    else:
+                        self.worksheet.write_formula(
+                            self.row_num, 4, hyperlink, self.workbook_formats.currency_fixed_link
+                        )
+
             if buy.fee_value is not None:
                 if buy.t_record and buy.t_record.fee:
-                    cell_range = row_tracker.get_row(buy.t_record.fee)
-                    hyperlink = f'=HYPERLINK("#Sells!{cell_range}", {buy.fee_value.normalize()})'
-                    self.worksheet.write_formula(
-                        self.row_num, 5, hyperlink, self.workbook_formats.currency_link
-                    )
+                    if buy.t_record.fee.proceeds_origin is None:
+                        raise RuntimeError("Missing buy.t_record.fee.proceeds_origin")
+
+                    link = row_tracker.get_row(buy.t_record.fee)
+                    hyperlink = f'=HYPERLINK("{link}", {buy.fee_value.normalize()})'
+                    if buy.t_record.fee.proceeds_origin.price_record:
+                        self.worksheet.write_formula(
+                            self.row_num, 5, hyperlink, self.workbook_formats.currency_link
+                        )
+                    else:
+                        self.worksheet.write_formula(
+                            self.row_num, 5, hyperlink, self.workbook_formats.currency_fixed_link
+                        )
                 else:
-                    self.worksheet.write_number(
-                        self.row_num,
-                        5,
-                        buy.fee_value.normalize(),
-                        self.workbook_formats.currency,
-                    )
+                    raise RuntimeError("Missing buy.t_record.fee")
 
             self.worksheet.write_string(self.row_num, 6, buy.wallet)
             self.worksheet.write_string(self.row_num, 7, buy.note)
@@ -861,12 +908,6 @@ class Worksheet:
 
         for sell in sells_ordered:
             self.row_num += 1
-            row_tracker.set_row(sell, self.row_num)
-
-        self.row_num = start_row
-
-        for sell in sells_ordered:
-            self.row_num += 1
 
             if sell.t_record:
                 if sell.t_record.fee == sell:
@@ -896,16 +937,12 @@ class Worksheet:
                 self.row_num, 3, sell.timestamp, self.workbook_formats.date
             )
             if sell.proceeds is not None:
-                if sell.proceeds_fixed:
-                    self.worksheet.write_number(
-                        self.row_num,
-                        4,
-                        sell.proceeds.normalize(),
-                        self.workbook_formats.currency_fixed,
-                    )
-                else:
-                    price_row = price_to_row.get((sell.asset, sell.date()))
-                    if price_row is not None:
+                if sell.proceeds_origin is None:
+                    raise RuntimeError("Missing sell.proceeds_origin")
+
+                if sell.proceeds_origin.origin == sell:
+                    if sell.proceeds_origin.price_record:
+                        price_row = price_to_row.get((sell.asset, sell.date()))
                         hyperlink = (
                             f"=HYPERLINK(\"#'Price Data'!A{price_row}:G{price_row}\","
                             f"{sell.proceeds.normalize()})"
@@ -916,27 +953,69 @@ class Worksheet:
                             hyperlink,
                             self.workbook_formats.currency_link,
                         )
+                        if sell.proceeds_origin.price_record.price_ccy is not None:
+                            self.worksheet.write_comment(
+                                self.row_num,
+                                4,
+                                (
+                                    f"1 {sell.asset} ({sell.proceeds_origin.price_record.name}) = "
+                                    f"{config.sym()}"
+                                    f"{sell.proceeds_origin.price_record.price_ccy:0,.2f} "
+                                    f"{config.ccy}"
+                                ),
+                                {"font_size": FONT_SIZE - 1, "x_scale": 2},
+                            )
+                        else:
+                            self.worksheet.write_comment(
+                                self.row_num,
+                                4,
+                                "Price NOT available",
+                                {"font_size": FONT_SIZE - 1, "x_scale": 2},
+                            )
                     else:
                         self.worksheet.write_number(
                             self.row_num,
                             4,
                             sell.proceeds.normalize(),
-                            self.workbook_formats.currency,
+                            self.workbook_formats.currency_fixed,
                         )
+                else:
+                    link = row_tracker.get_row_grouped(sell.proceeds_origin.origin)
+                    hyperlink = f'=HYPERLINK("{link}", {sell.proceeds.normalize()})'
+                    if sell.proceeds_origin.price_record:
+                        self.worksheet.write_formula(
+                            self.row_num, 4, hyperlink, self.workbook_formats.currency_link
+                        )
+                    else:
+                        self.worksheet.write_formula(
+                            self.row_num, 4, hyperlink, self.workbook_formats.currency_fixed_link
+                        )
+
+                    if sell.proceeds_origin.derived_price:
+                        self.worksheet.write_comment(
+                            self.row_num,
+                            4,
+                            (f"Derived from matching {sell.proceeds_origin.origin.name()} asset"),
+                            {"font_size": FONT_SIZE - 1, "x_scale": 2},
+                        )
+
             if sell.fee_value is not None:
                 if sell.t_record and sell.t_record.fee:
-                    cell_range = row_tracker.get_row(sell.t_record.fee)
-                    hyperlink = f'=HYPERLINK("#Sells!{cell_range}", {sell.fee_value.normalize()})'
-                    self.worksheet.write_formula(
-                        self.row_num, 5, hyperlink, self.workbook_formats.currency_link
-                    )
+                    if sell.t_record.fee.proceeds_origin is None:
+                        raise RuntimeError("Missing sell.t_record.fee.proceeds_origin")
+
+                    link = row_tracker.get_row(sell.t_record.fee)
+                    hyperlink = f'=HYPERLINK("{link}", {sell.fee_value.normalize()})'
+                    if sell.t_record.fee.proceeds_origin.price_record:
+                        self.worksheet.write_formula(
+                            self.row_num, 5, hyperlink, self.workbook_formats.currency_link
+                        )
+                    else:
+                        self.worksheet.write_formula(
+                            self.row_num, 5, hyperlink, self.workbook_formats.currency_fixed_link
+                        )
                 else:
-                    self.worksheet.write_number(
-                        self.row_num,
-                        5,
-                        sell.fee_value.normalize(),
-                        self.workbook_formats.currency,
-                    )
+                    raise RuntimeError("Missing sell.t_record.fee")
 
             self.worksheet.write_string(self.row_num, 6, sell.wallet)
             self.worksheet.write_string(self.row_num, 7, sell.note)
@@ -996,7 +1075,7 @@ class Worksheet:
 
     def price_data(
         self,
-        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]],
+        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]],
     ) -> Dict[Tuple[AssetSymbol, Date], int]:
         price_to_row = {}
         self.worksheet.merge_range(
@@ -1017,15 +1096,15 @@ class Worksheet:
                     price_to_row[(asset, date)] = self.row_num + 1
 
                     price_data = price_report[year][asset][date]
-                    if price_data["price_ccy"] is not None:
+                    if price_data.price_ccy is not None:
                         self.worksheet.write_string(self.row_num, 0, asset)
-                        self.worksheet.write_string(self.row_num, 1, price_data["name"])
+                        self.worksheet.write_string(self.row_num, 1, price_data.name)
                         self.worksheet.write_url(
                             self.row_num,
                             2,
-                            price_data["url"],
+                            price_data.url,
                             self.workbook_formats.string_link,
-                            string=price_data["data_source"],
+                            string=price_data.data_source,
                         )
                         self.worksheet.write_datetime(
                             self.row_num, 3, date, self.workbook_formats.date
@@ -1037,13 +1116,13 @@ class Worksheet:
                             self.workbook_formats.string_right,
                         )
                         self.worksheet.write_number(
-                            self.row_num, 5, price_data["price_ccy"], self.workbook_formats.currency
+                            self.row_num, 5, price_data.price_ccy, self.workbook_formats.currency
                         )
-                        if price_data["price_btc"] is not None:
+                        if price_data.price_btc is not None:
                             self.worksheet.write_number(
                                 self.row_num,
                                 6,
-                                price_data["price_btc"].normalize(),
+                                price_data.price_btc.normalize(),
                                 self.workbook_formats.quantity,
                             )
                         else:
@@ -1052,7 +1131,7 @@ class Worksheet:
                             )
                     else:
                         self.worksheet.write_string(self.row_num, 0, asset)
-                        self.worksheet.write_string(self.row_num, 1, price_data["name"])
+                        self.worksheet.write_string(self.row_num, 1, price_data.name)
                         self.worksheet.write_datetime(
                             self.row_num, 3, date, self.workbook_formats.date
                         )
@@ -1160,14 +1239,14 @@ class Worksheet:
                     )
 
                 if row_tracker:
-                    cell_range = row_tracker.get_row(te.sell)
-                    hyperlink = f'=HYPERLINK("#Sells!{cell_range}", {te.proceeds})'
+                    link = row_tracker.get_row(te.sell)
+                    hyperlink = f'=HYPERLINK("{link}", {te.proceeds})'
                     self.worksheet.write_formula(
                         self.row_num, 4, hyperlink, self.workbook_formats.currency_link
                     )
 
-                    cell_range = row_tracker.get_rows_from_list(te.buys)
-                    hyperlink = f'=HYPERLINK("#Buys!{cell_range}", {te.cost})'
+                    link = row_tracker.get_rows_from_list(te.buys)
+                    hyperlink = f'=HYPERLINK("{link}", {te.cost})'
                     self.worksheet.write_formula(
                         self.row_num, 5, hyperlink, self.workbook_formats.currency_link
                     )
@@ -1343,14 +1422,14 @@ class Worksheet:
                 self.worksheet.write_string(self.row_num, 4, te.disposal_type.value)
 
                 if row_tracker:
-                    cell_range = row_tracker.get_row(te.sell)
-                    hyperlink = f'=HYPERLINK("#Sells!{cell_range}", {te.market_value})'
+                    link = row_tracker.get_row(te.sell)
+                    hyperlink = f'=HYPERLINK("{link}", {te.market_value})'
                     self.worksheet.write_formula(
                         self.row_num, 5, hyperlink, self.workbook_formats.currency_link
                     )
 
-                    cell_range = row_tracker.get_rows_from_list(te.buys)
-                    hyperlink = f'=HYPERLINK("#Buys!{cell_range}", {te.cost})'
+                    link = row_tracker.get_rows_from_list(te.buys)
+                    hyperlink = f'=HYPERLINK("{link}", {te.cost})'
                     self.worksheet.write_formula(
                         self.row_num, 6, hyperlink, self.workbook_formats.currency_link
                     )
@@ -1445,12 +1524,12 @@ class Worksheet:
                 self.worksheet.write_string(self.row_num, 4, te.type.value)
 
                 if row_tracker:
-                    cell_range = row_tracker.get_row_grouped(te.buy)
-                    hyperlink = f'=HYPERLINK("#Buys!{cell_range}", {te.amount})'
+                    link = row_tracker.get_row_grouped(te.buy)
+                    hyperlink = f'=HYPERLINK("{link}", {te.amount})'
                     self.worksheet.write_formula(
                         self.row_num, 5, hyperlink, self.workbook_formats.currency_link
                     )
-                    hyperlink = f'=HYPERLINK("#Buys!{cell_range}", {te.fees})'
+                    hyperlink = f'=HYPERLINK("{link}", {te.fees})'
                     self.worksheet.write_formula(
                         self.row_num, 6, hyperlink, self.workbook_formats.currency_link
                     )
@@ -1578,12 +1657,12 @@ class Worksheet:
                 self.worksheet.write_datetime(self.row_num, 4, te.date, self.workbook_formats.date)
 
                 if row_tracker:
-                    cell_range = row_tracker.get_row_grouped(te.buy)
-                    hyperlink = f'=HYPERLINK("#Buys!{cell_range}", {te.amount})'
+                    link = row_tracker.get_row_grouped(te.buy)
+                    hyperlink = f'=HYPERLINK("{link}", {te.amount})'
                     self.worksheet.write_formula(
                         self.row_num, 5, hyperlink, self.workbook_formats.currency_link
                     )
-                    hyperlink = f'=HYPERLINK("#Buys!{cell_range}", {te.fees})'
+                    hyperlink = f'=HYPERLINK("{link}", {te.fees})'
                     self.worksheet.write_formula(
                         self.row_num, 6, hyperlink, self.workbook_formats.currency_link
                     )
@@ -1703,14 +1782,7 @@ class Worksheet:
                 self.worksheet.write_datetime(self.row_num, 2, te.date, self.workbook_formats.date)
 
                 if row_tracker:
-                    cell_range = row_tracker.get_row_grouped(te.t)
-                    if isinstance(te.t, Buy):
-                        link = f"#Buys!{cell_range}"
-                    elif isinstance(te.t, Sell):
-                        link = f"#Sells!{cell_range}"
-                    else:
-                        raise RuntimeError
-
+                    link = row_tracker.get_row_grouped(te.t)
                     self.worksheet.write_formula(
                         self.row_num,
                         3,
@@ -1938,19 +2010,19 @@ class RowTracker:
             if buy in self.buys_to_row:
                 buy_matches.append(self.buys_to_row[buy][0])
             else:
-                raise RuntimeError("buy missing in buys_to_row")
+                raise RuntimeError("Buy missing in buys_to_row")
 
         if buy_matches:
             min_row = min(buy_matches)
             max_row = max(buy_matches)
-            return xlsxwriter.utility.xl_range(min_row, 0, max_row, 10)
-        raise RuntimeError("buy missing in buys_to_row")
+            return f"#Buys!{xlsxwriter.utility.xl_range(min_row, 0, max_row, 10)}"
+        raise RuntimeError("Buy missing in buys_to_row")
 
     def get_row(self, sell: Sell) -> str:
         sell_row = self.sells_to_row.get(sell)
         if sell_row:
-            return xlsxwriter.utility.xl_range(sell_row, 0, sell_row, 10)
-        raise RuntimeError("sell missing in sells_to_row")
+            return f"#Sells!{xlsxwriter.utility.xl_range(sell_row, 0, sell_row, 10)}"
+        raise RuntimeError("Sell missing in sells_to_row")
 
     def get_row_grouped(self, t: Union[Buy, Sell]) -> str:
         if isinstance(t, Buy):
@@ -1958,11 +2030,11 @@ class RowTracker:
             if buy_rows:
                 min_row = min(buy_rows)
                 max_row = max(buy_rows)
-                return xlsxwriter.utility.xl_range(min_row, 0, max_row, 10)
-            return ""
+                return f"#Buys!{xlsxwriter.utility.xl_range(min_row, 0, max_row, 10)}"
+            raise RuntimeError("Buy missing in buys_to_row")
         if isinstance(t, Sell):
             sell_row = self.sells_to_row.get(t)
             if sell_row:
-                return xlsxwriter.utility.xl_range(sell_row, 0, sell_row, 10)
-            raise RuntimeError("Missing Sell in sell_to_row")
+                return f"#Sells!{xlsxwriter.utility.xl_range(sell_row, 0, sell_row, 10)}"
+            raise RuntimeError("Sell missing in sells_to_row")
         raise RuntimeError("Unexpected transaction type")

@@ -10,9 +10,9 @@ from typing import Dict, List, Optional, Tuple, Union
 from colorama import Fore, Style
 from tqdm import tqdm
 
-from .bt_types import TRANSFER_TYPES, AssetSymbol, Date, FixedValue, Note, Timestamp, TrType, Wallet
+from .bt_types import TRANSFER_TYPES, AssetSymbol, Date, Note, Timestamp, TrType, Wallet
 from .config import config
-from .price.valueasset import ValueAsset
+from .price.valueasset import ValueAsset, ValueOrigin
 from .t_record import TransactionRecord
 
 
@@ -43,81 +43,71 @@ class TransactionHistory:
                     if tr.t_type in (TrType.TRADE, TrType.SWAP):
                         if tr.buy.asset in config.fiat_list:
                             tr.sell.fee_value = tr.fee.proceeds
-                            tr.sell.fee_fixed = tr.fee.proceeds_fixed
                         elif tr.sell.asset in config.fiat_list:
                             tr.buy.fee_value = tr.fee.proceeds
-                            tr.buy.fee_fixed = tr.fee.proceeds_fixed
                         else:
                             # Crypto-to-crypto trades
                             if config.trade_allowable_cost_type == config.TRADE_ALLOWABLE_COST_BUY:
                                 tr.buy.fee_value = tr.fee.proceeds
-                                tr.buy.fee_fixed = tr.fee.proceeds_fixed
                             elif (
                                 config.trade_allowable_cost_type == config.TRADE_ALLOWABLE_COST_SELL
                             ):
                                 tr.sell.fee_value = tr.fee.proceeds
-                                tr.sell.fee_fixed = tr.fee.proceeds_fixed
                             else:
                                 # Split fee between both
                                 tr.buy.fee_value = tr.fee.proceeds / 2
-                                tr.buy.fee_fixed = tr.fee.proceeds_fixed
                                 tr.sell.fee_value = tr.fee.proceeds - tr.buy.fee_value
-                                tr.sell.fee_fixed = tr.fee.proceeds_fixed
                     elif tr.t_type is TrType.LOST:
                         if config.transaction_fee_allowable_cost:
                             # Assign fee to the disposal
                             tr.sell.fee_value = tr.fee.proceeds
-                            tr.sell.fee_fixed = tr.fee.proceeds_fixed
                     else:
                         raise RuntimeError(f"Unexpected tr.t_type: {tr.t_type}")
                 elif tr.buy and tr.buy.acquisition:
                     if config.transaction_fee_allowable_cost:
                         tr.buy.fee_value = tr.fee.proceeds
-                        tr.buy.fee_fixed = tr.fee.proceeds_fixed
                 elif tr.sell and tr.sell.disposal:
                     if config.transaction_fee_allowable_cost:
                         tr.sell.fee_value = tr.fee.proceeds
-                        tr.sell.fee_fixed = tr.fee.proceeds_fixed
                 else:
                     # Special case for transfer fees
                     if tr.t_type in TRANSFER_TYPES:
                         if config.transfer_fee_allowable_cost:
                             tr.fee.fee_value = tr.fee.proceeds
-                            tr.fee.fee_fixed = tr.fee.proceeds_fixed
 
             if tr.t_type not in (TrType.LOST, TrType.SWAP):
-                if tr.buy and (tr.buy.quantity or tr.buy.fee_value):
+                if tr.buy:
                     tr.buy.set_tid()
                     self.transactions.append(tr.buy)
                     if config.debug:
                         print(f"{Fore.GREEN}split:   {tr.buy}")
 
-                if tr.sell and (tr.sell.quantity or tr.sell.fee_value):
+                if tr.sell:
                     tr.sell.set_tid()
                     self.transactions.append(tr.sell)
                     if config.debug:
                         print(f"{Fore.GREEN}split:   {tr.sell}")
 
-                if tr.fee and tr.fee.quantity:
+                if tr.fee:
                     tr.fee.set_tid()
                     self.transactions.append(tr.fee)
                     if config.debug:
                         print(f"{Fore.GREEN}split:   {tr.fee}")
             else:
                 # Special case for LOST/SWAP, sell and fee must be before buy-back/buy
-                if tr.sell and (tr.sell.quantity or tr.sell.fee_value):
+                if tr.sell:
                     tr.sell.set_tid()
                     self.transactions.append(tr.sell)
                     if config.debug:
                         print(f"{Fore.GREEN}split:   {tr.sell}")
 
-                if tr.fee and tr.fee.quantity:
+                if tr.fee:
                     tr.fee.set_tid()
                     self.transactions.append(tr.fee)
                     if config.debug:
                         print(f"{Fore.GREEN}split:   {tr.fee}")
 
-                if tr.buy and (tr.buy.quantity or tr.buy.fee_value):
+                if tr.buy:
                     tr.buy.set_tid()
                     self.transactions.append(tr.buy)
                     if config.debug:
@@ -129,100 +119,103 @@ class TransactionHistory:
     def get_all_values(self, tr: TransactionRecord) -> None:
         if tr.buy and tr.buy.acquisition and tr.buy.cost is None:
             if tr.sell:
-                (tr.buy.cost, tr.buy.cost_fixed) = self.which_asset_value(tr)
+                tr.buy.cost, tr.buy.cost_origin = self.which_asset_value(tr.buy, tr.sell)
             else:
-                (tr.buy.cost, tr.buy.cost_fixed) = self.value_asset.get_value(
-                    tr.buy.asset, tr.buy.timestamp, tr.buy.quantity
-                )
+                tr.buy.cost, tr.buy.cost_origin = self.value_asset.get_value(tr.buy)
 
         if tr.sell and tr.sell.disposal and tr.sell.proceeds is None:
             if tr.buy:
-                tr.sell.proceeds = tr.buy.cost
-                tr.sell.proceeds_fixed = tr.buy.cost_fixed
+                tr.sell.proceeds, tr.sell.proceeds_origin = tr.buy.cost, tr.buy.cost_origin
             else:
-                (tr.sell.proceeds, tr.sell.proceeds_fixed) = self.value_asset.get_value(
-                    tr.sell.asset, tr.sell.timestamp, tr.sell.quantity
-                )
+                tr.sell.proceeds, tr.sell.proceeds_origin = self.value_asset.get_value(tr.sell)
+
         if tr.fee and tr.fee.disposal and tr.fee.proceeds is None:
             if tr.fee.asset not in config.fiat_list:
+                if tr.fee.quantity == 0:
+                    tr.fee.proceeds = Decimal(0)
+                    tr.fee.proceeds_origin = ValueOrigin(tr.fee)
+                    return
+
                 if tr.buy and tr.buy.asset == tr.fee.asset:
                     if tr.buy.cost and tr.buy.quantity:
                         price = tr.buy.cost / tr.buy.quantity
                         tr.fee.proceeds = tr.fee.quantity * price
-                        tr.fee.proceeds_fixed = tr.buy.cost_fixed
-                    else:
-                        (
-                            tr.fee.proceeds,
-                            tr.fee.proceeds_fixed,
-                        ) = self.value_asset.get_value(
-                            tr.fee.asset, tr.fee.timestamp, tr.fee.quantity
+
+                        if tr.buy.cost_origin is None:
+                            raise RuntimeError("Missing tr.buy.cost_origin")
+
+                        tr.fee.proceeds_origin = ValueOrigin(
+                            tr.buy,
+                            tr.buy.cost_origin.price_record,
+                            derived_price=True,
                         )
+                    else:
+                        tr.fee.proceeds, tr.fee.proceeds_origin = self.value_asset.get_value(tr.fee)
                 elif tr.sell and tr.sell.asset == tr.fee.asset:
                     if tr.sell.proceeds and tr.sell.quantity:
                         price = tr.sell.proceeds / tr.sell.quantity
                         tr.fee.proceeds = tr.fee.quantity * price
-                        tr.fee.proceeds_fixed = tr.sell.proceeds_fixed
-                    else:
-                        (
-                            tr.fee.proceeds,
-                            tr.fee.proceeds_fixed,
-                        ) = self.value_asset.get_value(
-                            tr.fee.asset, tr.fee.timestamp, tr.fee.quantity
+
+                        if tr.sell.proceeds_origin is None:
+                            raise RuntimeError("Missing tr.sell.proceeds_origin")
+
+                        tr.fee.proceeds_origin = ValueOrigin(
+                            tr.sell,
+                            tr.sell.proceeds_origin.price_record,
+                            derived_price=True,
                         )
+                    else:
+                        tr.fee.proceeds, tr.fee.proceeds_origin = self.value_asset.get_value(tr.fee)
                 else:
                     # Must be a 3rd cryptoasset
-                    (
-                        tr.fee.proceeds,
-                        tr.fee.proceeds_fixed,
-                    ) = self.value_asset.get_value(tr.fee.asset, tr.fee.timestamp, tr.fee.quantity)
+                    tr.fee.proceeds, tr.fee.proceeds_origin = self.value_asset.get_value(tr.fee)
             else:
                 # Fee paid in fiat
-                (tr.fee.proceeds, tr.fee.proceeds_fixed) = self.value_asset.get_value(
-                    tr.fee.asset, tr.fee.timestamp, tr.fee.quantity
-                )
+                tr.fee.proceeds, tr.fee.proceeds_origin = self.value_asset.get_value(tr.fee)
 
-    def which_asset_value(self, tr: TransactionRecord) -> Tuple[Decimal, FixedValue]:
-        if not tr.buy or not tr.sell:
-            raise RuntimeError("Missing buy/sell")
-
+    def which_asset_value(self, buy: "Buy", sell: "Sell") -> Tuple[Decimal, ValueOrigin]:
         if config.trade_asset_type == config.TRADE_ASSET_TYPE_BUY:
-            if tr.buy.cost is None:
-                value, fixed = self.value_asset.get_value(
-                    tr.buy.asset, tr.buy.timestamp, tr.buy.quantity
-                )
+            if buy.cost is None:
+                value, origin = self.value_asset.get_value(buy)
             else:
-                value, fixed = tr.buy.cost, tr.buy.cost_fixed
+                if buy.cost_origin is None:
+                    raise RuntimeError("Missing buy.cost_origin")
+
+                value, origin = buy.cost, buy.cost_origin
         elif config.trade_asset_type == config.TRADE_ASSET_TYPE_SELL:
-            if tr.sell.proceeds is None:
-                value, fixed = self.value_asset.get_value(
-                    tr.sell.asset, tr.sell.timestamp, tr.sell.quantity
-                )
+            if sell.proceeds is None:
+                value, origin = self.value_asset.get_value(sell)
             else:
-                value, fixed = tr.sell.proceeds, tr.sell.proceeds_fixed
+                if sell.proceeds_origin is None:
+                    raise RuntimeError("Missing sell.proceeds_origin")
+
+                value, origin = sell.proceeds, sell.proceeds_origin
         else:
             pos_sell_asset = pos_buy_asset = len(config.asset_priority) + 1
 
-            if tr.sell.asset in config.asset_priority:
-                pos_sell_asset = config.asset_priority.index(tr.sell.asset)
-            if tr.buy.asset in config.asset_priority:
-                pos_buy_asset = config.asset_priority.index(tr.buy.asset)
+            if sell.asset in config.asset_priority:
+                pos_sell_asset = config.asset_priority.index(sell.asset)
+            if buy.asset in config.asset_priority:
+                pos_buy_asset = config.asset_priority.index(buy.asset)
 
             if pos_sell_asset <= pos_buy_asset:
-                if tr.sell.proceeds is None:
-                    value, fixed = self.value_asset.get_value(
-                        tr.sell.asset, tr.sell.timestamp, tr.sell.quantity
-                    )
+                if sell.proceeds is None:
+                    value, origin = self.value_asset.get_value(sell)
                 else:
-                    value, fixed = tr.sell.proceeds, tr.sell.proceeds_fixed
-            else:
-                if tr.buy.cost is None:
-                    value, fixed = self.value_asset.get_value(
-                        tr.buy.asset, tr.buy.timestamp, tr.buy.quantity
-                    )
-                else:
-                    value, fixed = tr.buy.cost, tr.buy.cost_fixed
+                    if sell.proceeds_origin is None:
+                        raise RuntimeError("Missing sell.proceeds_origin")
 
-        return value, fixed
+                    value, origin = sell.proceeds, sell.proceeds_origin
+            else:
+                if buy.cost is None:
+                    value, origin = self.value_asset.get_value(buy)
+                else:
+                    if buy.cost_origin is None:
+                        raise RuntimeError("Missing buy.cost_origin")
+
+                    value, origin = buy.cost, buy.cost_origin
+
+        return value, origin
 
 
 class TransactionBase:  # pylint: disable=too-many-instance-attributes
@@ -235,7 +228,6 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
         self.asset = asset
         self.quantity = quantity
         self.fee_value: Optional[Decimal] = None
-        self.fee_fixed: FixedValue = FixedValue(True)
         self.wallet: Wallet = Wallet("")
         self.timestamp: Timestamp
         self.note: Note = Note("")
@@ -267,6 +259,16 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
     def date(self) -> Date:
         return Date(self.timestamp.date())
 
+    def is_fee_fixed(self) -> bool:
+        if (
+            self.t_record
+            and self.t_record.fee
+            and self.t_record.fee.proceeds_origin
+            and self.t_record.fee.proceeds_origin.price_record
+        ):
+            return False
+        return True
+
     def format_quantity(self) -> str:
         return f"{self.quantity.normalize():0,f}"
 
@@ -286,7 +288,7 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
     def _format_fee(self) -> str:
         if self.fee_value is not None:
             return (
-                f" + fee={'' if self.fee_fixed else '~'}"
+                f" + fee={'' if self.is_fee_fixed() else '~'}"
                 f"{config.sym()}{self.fee_value:0,.2f} {config.ccy}"
             )
 
@@ -361,11 +363,11 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
         super().__init__(t_type, buy_asset, buy_quantity)
         self.acquisition = bool(self.t_type in self.ACQUISITIONS)
         self.cost = None
-        self.cost_fixed: FixedValue = FixedValue(False)
+        self.cost_origin: Optional[ValueOrigin] = None
 
         if self.acquisition and buy_value is not None:
             self.cost = buy_value
-            self.cost_fixed = FixedValue(True)
+            self.cost_origin = ValueOrigin(self)
 
     def __iadd__(self, other: "Buy") -> "Buy":
         if not self.pooled:
@@ -393,11 +395,8 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
         if other.wallet != self.wallet:
             self.wallet = Wallet(self.POOLED)
 
-        if other.cost_fixed != self.cost_fixed:
-            self.cost_fixed = FixedValue(False)
-
-        if other.fee_fixed != self.fee_fixed:
-            self.fee_fixed = FixedValue(False)
+        if other.cost_origin and other.cost_origin.price_record:
+            self.cost_origin = other.cost_origin
 
         if other.note != self.note:
             self.note = Note(self.POOLED)
@@ -431,10 +430,15 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
         remainder.is_split = True
         return remainder
 
+    def is_cost_fixed(self) -> bool:
+        if self.cost_origin and self.cost_origin.price_record:
+            return False
+        return True
+
     def _format_cost(self) -> str:
         if self.cost is not None:
             return (
-                f" ({'=' if self.cost_fixed else '~'}"
+                f" ({'=' if self.is_cost_fixed() else '~'}"
                 f"{config.sym()}{self.cost:0,.2f} {config.ccy})"
             )
         return ""
@@ -485,11 +489,11 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
         super().__init__(t_type, sell_asset, sell_quantity)
         self.disposal = bool(self.t_type in self.DISPOSALS)
         self.proceeds = None
-        self.proceeds_fixed: FixedValue = FixedValue(False)
+        self.proceeds_origin: Optional[ValueOrigin] = None
 
         if self.disposal and sell_value is not None:
             self.proceeds = sell_value
-            self.proceeds_fixed = FixedValue(True)
+            self.proceeds_origin = ValueOrigin(self)
 
     def __iadd__(self, other: "Sell") -> "Sell":
         if not self.pooled:
@@ -517,11 +521,8 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
         if other.wallet != self.wallet:
             self.wallet = Wallet(self.POOLED)
 
-        if other.proceeds_fixed != self.proceeds_fixed:
-            self.proceeds_fixed = FixedValue(False)
-
-        if other.fee_fixed != self.fee_fixed:
-            self.fee_fixed = FixedValue(False)
+        if other.proceeds_origin and other.proceeds_origin.price_record:
+            self.proceeds_origin = other.proceeds_origin
 
         if other.note != self.note:
             self.note = Note(self.POOLED)
@@ -555,10 +556,15 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
         remainder.is_split = True
         return remainder
 
+    def is_proceeds_fixed(self) -> bool:
+        if self.proceeds_origin and self.proceeds_origin.price_record:
+            return False
+        return True
+
     def _format_proceeds(self) -> str:
         if self.proceeds is not None:
             return (
-                f" ({'=' if self.proceeds_fixed else '~'}"
+                f" ({'=' if self.is_proceeds_fixed() else '~'}"
                 f"{config.sym()}{self.proceeds:0,.2f} {config.ccy})"
             )
         return ""

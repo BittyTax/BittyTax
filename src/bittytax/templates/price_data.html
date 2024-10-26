@@ -11,14 +11,14 @@
     {% if tax_year in price_report %}
         {% for asset in price_report[tax_year]|sort %}
             {% for date in price_report[tax_year][asset]|sort %}
-                {% if price_report[tax_year][asset][date]['price_ccy'] != none %}
+                {% if price_report[tax_year][asset][date].price_ccy != none %}
                     <tr>
-                        <td>1 {{asset}} ({{price_report[tax_year][asset][date]['name']}})</td>
-                        <td><a href="{{price_report[tax_year][asset][date]['url']}}">{{price_report[tax_year][asset][date]['data_source']}}</a></td>
+                        <td>1 {{asset}} ({{price_report[tax_year][asset][date].name}})</td>
+                        <td><a href="{{price_report[tax_year][asset][date].url}}">{{price_report[tax_year][asset][date].data_source}}</a></td>
                         <td>{{date|datefilter}}</td>
-                        <td align="right">{{price_report[tax_year][asset][date]['price_ccy']|valuefilter}}</td>
-                        {% if price_report[tax_year][asset][date]['price_btc'] != none %}
-                            <td align="right">{{price_report[tax_year][asset][date]['price_btc']|quantityfilter}}</td>
+                        <td align="right">{{price_report[tax_year][asset][date].price_ccy|valuefilter}}</td>
+                        {% if price_report[tax_year][asset][date].price_btc != none %}
+                            <td align="right">{{price_report[tax_year][asset][date].price_btc|quantityfilter}}</td>
                         {% else %}
                             <td align="right">n/a</td>
                         {% endif %}
