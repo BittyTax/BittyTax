@@ -128,7 +128,6 @@ DEPRECATED_TYPES = (TrType.STAKING,)
 UnmappedType = NewType("UnmappedType", str)
 
 AssetSymbol = NewType("AssetSymbol", str)
-FixedValue = NewType("FixedValue", bool)
 Wallet = NewType("Wallet", str)
 Timestamp = NewType("Timestamp", datetime)
 Note = NewType("Note", str)

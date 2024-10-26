@@ -20,7 +20,6 @@ from .bt_types import (
     AssetSymbol,
     Date,
     DisposalType,
-    FixedValue,
     Note,
     TaxRules,
     TrType,
@@ -469,7 +468,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 t.proceeds = cost.quantize(PRECISION) + (
                     fees + (t.fee_value or Decimal(0))
                 ).quantize(PRECISION)
-                t.proceeds_fixed = FixedValue(True)
+                t.proceeds_origin = None
                 disposal_type = DisposalType.NO_GAIN_NO_LOSS
             elif t.is_nft():
                 disposal_type = DisposalType.UNPOOLED

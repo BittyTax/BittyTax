@@ -20,7 +20,7 @@ from .audit import AuditRecords, AuditTotals
 from .bt_types import TAX_RULES_UK_COMPANY, AssetName, AssetSymbol, Date, Note, TaxRules, Year
 from .config import config
 from .constants import _H1, ERROR, H1, TERMINAL_POWERSHELL_GUI
-from .price.valueasset import VaPriceReport
+from .price.valueasset import VaPriceRecord
 from .tax import (
     CalculateCapitalGains,
     CalculateIncome,
@@ -53,7 +53,7 @@ class ReportPdf:
         args: argparse.Namespace,
         audit: AuditRecords,
         tax_report: Optional[Dict[Year, TaxReportRecord]] = None,
-        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
+        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
     ) -> None:
         self.env = jinja2.Environment(loader=jinja2.PackageLoader(__package__, "templates"))
@@ -220,7 +220,7 @@ class ReportLog:
         args: argparse.Namespace,
         audit: AuditRecords,
         tax_report: Optional[Dict[Year, TaxReportRecord]] = None,
-        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
+        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
     ) -> None:
         if args.audit_only:
@@ -259,7 +259,7 @@ class ReportLog:
         tax_rules: TaxRules,
         audit: AuditRecords,
         tax_report: Dict[Year, TaxReportRecord],
-        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]],
+        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]],
         holdings_report: Optional[HoldingsReportRecord],
     ) -> None:
         print(f"{Fore.WHITE}tax report output:")
@@ -287,8 +287,11 @@ class ReportLog:
         for tax_year in sorted(tax_report):
             print(f"{Fore.CYAN}Price Data - {config.format_tax_year(tax_year)}\n")
             print(
-                f'{Fore.YELLOW}{"Asset":<{self.ASSET_WIDTH + 2}} {"Data Source":<16} '
-                f'{"Date":<10}  {"Price (" + config.ccy + ")":>13} {"Price (BTC)":>25}'
+                f'{Fore.YELLOW}{"Asset":<{self.ASSET_WIDTH + 2}} '
+                f'{"Data Source":<16} '
+                f'{"Date":<10}  '
+                f'{"Price (" + config.ccy + ")":>13} '
+                f'{"Price (BTC)":>25}'
             )
 
             if tax_year in price_report:
@@ -592,25 +595,27 @@ class ReportLog:
             f'{self.format_value(margin.totals["fee_rebates"]):>13}{Style.NORMAL}'
         )
 
-    def _price_data(self, price_report: Dict[AssetSymbol, Dict[Date, VaPriceReport]]) -> None:
+    def _price_data(self, price_report: Dict[AssetSymbol, Dict[Date, VaPriceRecord]]) -> None:
         price_missing_flag = False
         for asset in sorted(price_report):
             for date in sorted(price_report[asset]):
                 price_data = price_report[asset][date]
-                if price_data["price_ccy"] is not None:
+                if price_data.price_ccy is not None:
                     print(
                         f"{Fore.WHITE}"
-                        f'1 {self.format_asset(asset, price_data["name"]):<{self.ASSET_WIDTH}} '
-                        f'{price_data["data_source"]:<16} {self.format_date(date):<10}  '
-                        f'{self.format_value(price_data["price_ccy"]):>13} '
-                        f'{self.format_quantity(price_data["price_btc"]):>25}'
+                        f"1 {self.format_asset(asset, price_data.name):<{self.ASSET_WIDTH}} "
+                        f"{price_data.data_source:<16} "
+                        f"{self.format_date(date):<10}  "
+                        f"{self.format_value(price_data.price_ccy):>13} "
+                        f"{self.format_quantity(price_data.price_btc):>25}"
                     )
                 else:
                     price_missing_flag = True
                     print(
                         f"{Fore.WHITE}"
-                        f'1 {self.format_asset(asset, price_data["name"]):<{self.ASSET_WIDTH}} '
-                        f'{"":<16} {self.format_date(date):<10} '
+                        f"1 {self.format_asset(asset, price_data.name):<{self.ASSET_WIDTH}} "
+                        f'{"":<16} '
+                        f"{self.format_date(date):<10} "
                         f'{Fore.BLUE}{"Not available*":>13} '
                         f'{"":>25}'
                     )
