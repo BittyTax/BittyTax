@@ -157,7 +157,7 @@ def _do_parse_coinbase(
             fee_asset=row_dict["Asset"],
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] == "Exchange Deposit":
+    elif row_dict["Transaction Type"] in ("Exchange Deposit", "Pro Deposit"):
         # Withdrawal to Coinbase Pro
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
@@ -166,7 +166,7 @@ def _do_parse_coinbase(
             sell_asset=row_dict["Asset"],
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] == "Exchange Withdrawal":
+    elif row_dict["Transaction Type"] in ("Exchange Withdrawal", "Pro Withdrawal"):
         # Deposit from Coinbase Pro
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
