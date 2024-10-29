@@ -930,7 +930,7 @@ To get a full details of all arguments, use the help option, either on its own o
 ## Config
 The `bittytax.conf` file resides in the .bittytax folder within your home directory.
 
-The [default](https://github.com/BittyTax/BittyTax/blob/master/bittytax/config/bittytax.conf) file created at runtime should cater for most users.
+The [default](https://github.com/BittyTax/BittyTax/blob/master/src/bittytax/config/bittytax.conf) file created at runtime should cater for most users.
 
 If you need to change anything, the parameters are described below. The file is in YAML format.
 
