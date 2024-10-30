@@ -819,7 +819,13 @@ class Worksheet:
                             self.row_num, 5, hyperlink, self.workbook_formats.currency_fixed_link
                         )
                 else:
-                    raise RuntimeError("Missing buy.t_record.fee")
+                    # raise RuntimeError("Missing buy.t_record.fee")
+                    self.worksheet.write_number(
+                        self.row_num,
+                        5,
+                        buy.fee_value.normalize(),
+                        self.workbook_formats.currency_fixed,
+                    )
 
             self.worksheet.write_string(self.row_num, 6, buy.wallet)
             self.worksheet.write_string(self.row_num, 7, buy.note)
