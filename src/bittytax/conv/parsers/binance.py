@@ -212,10 +212,10 @@ def _split_asset(amount: str) -> Tuple[Optional[Decimal], str]:
         if amount.endswith(base_asset):
             return Decimal(amount[: -len(base_asset)]), base_asset
 
-    match = re.match(r"([\d|,]*\.\d+)(\w+)$", amount)
+    match = re.match(r"(\d+|\d+\.\d+)(\w+)$", amount)
     if match:
         return Decimal(match.group(1)), match.group(2)
-    return None, ""
+    raise RuntimeError(f"Cannot split Quantity from Asset: {amount}")
 
 
 def parse_binance_deposits_withdrawals_crypto(

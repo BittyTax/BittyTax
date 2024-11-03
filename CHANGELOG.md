@@ -201,6 +201,7 @@
 - Accounting tool: use cell range for conditional formatting in audit log spreadsheet.
 - Conversional tool: use datetime.MAXYEAR for default timestamp.
 - Exodus parser: skip empty rows.
+- Binance parser: updated regex for quantities without decimal places.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
