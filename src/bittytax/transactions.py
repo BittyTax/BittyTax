@@ -265,8 +265,20 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
         return Date(self.timestamp.date())
 
     def is_fee_fixed(self) -> bool:
+        if self.pooled:
+            return all(
+                not (
+                    t.fee_value is not None
+                    and t.t_record
+                    and t.t_record.fee
+                    and t.t_record.fee.proceeds_origin
+                    and t.t_record.fee.proceeds_origin.price_record
+                )
+                for t in self.pooled
+            )
         if (
-            self.t_record
+            self.fee_value is not None
+            and self.t_record
             and self.t_record.fee
             and self.t_record.fee.proceeds_origin
             and self.t_record.fee.proceeds_origin.price_record
@@ -323,8 +335,8 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.__dict__.items():
-            if k == "t_record":
-                # Keep reference to the transaction record
+            if k in ("t_record", "cost_origin", "proceeds_origin"):
+                # Keep references to transaction records
                 setattr(result, k, v)
             else:
                 setattr(result, k, copy.deepcopy(v, memo))
@@ -393,9 +405,6 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
         if other.wallet != self.wallet:
             self.wallet = Wallet(self.POOLED)
 
-        if other.cost_origin and other.cost_origin.price_record:
-            self.cost_origin = other.cost_origin
-
         if other.note != self.note:
             self.note = Note(self.POOLED)
 
@@ -424,10 +433,20 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
             remainder.fee_value = remainder.fee_value - self.fee_value
 
         remainder.quantity = remainder.quantity - sell_quantity
+
+        remainder.cost_origin = copy.copy(self.cost_origin)
+        if remainder.cost_origin and self.cost_origin and self.cost_origin.origin is self:
+            remainder.cost_origin.origin = remainder
+
         remainder.set_tid()
         return remainder
 
     def is_cost_fixed(self) -> bool:
+        if self.pooled:
+            return all(
+                not (isinstance(t, Buy) and t.cost_origin and t.cost_origin.price_record)
+                for t in self.pooled
+            )
         if self.cost_origin and self.cost_origin.price_record:
             return False
         return True
@@ -517,9 +536,6 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
         if other.wallet != self.wallet:
             self.wallet = Wallet(self.POOLED)
 
-        if other.proceeds_origin and other.proceeds_origin.price_record:
-            self.proceeds_origin = other.proceeds_origin
-
         if other.note != self.note:
             self.note = Note(self.POOLED)
 
@@ -548,10 +564,24 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
             remainder.fee_value = remainder.fee_value - self.fee_value
 
         remainder.quantity = remainder.quantity - buy_quantity
+
+        remainder.proceeds_origin = copy.copy(self.proceeds_origin)
+        if (
+            remainder.proceeds_origin
+            and self.proceeds_origin
+            and self.proceeds_origin.origin is self
+        ):
+            remainder.proceeds_origin.origin = remainder
+
         remainder.set_tid()
         return remainder
 
     def is_proceeds_fixed(self) -> bool:
+        if self.pooled:
+            return all(
+                not (isinstance(t, Sell) and t.proceeds_origin and t.proceeds_origin.price_record)
+                for t in self.pooled
+            )
         if self.proceeds_origin and self.proceeds_origin.price_record:
             return False
         return True

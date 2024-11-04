@@ -49,6 +49,7 @@
 - Price tool: added rate-limiter, retries and backoff handling for each API to prevent failures.
 - Conversion tool: OutputExcel determines if macOS via parameter instead of direct from platform.
 - Uphold parser: transaction type "in" can be a Trade, i.e. credit-card purchase of crypto.
+- Accounting tool: Buy/Sell transactions now track the origin of their price valuations.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
