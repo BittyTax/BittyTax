@@ -325,8 +325,8 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
         result = cls.__new__(cls)
         memo[id(self)] = result
         for k, v in self.__dict__.items():
-            if k == "t_record":
-                # Keep reference to the transaction record
+            if k in ("t_record", "cost_origin", "proceeds_origin"):
+                # Keep references to transaction records
                 setattr(result, k, v)
             else:
                 setattr(result, k, copy.deepcopy(v, memo))
@@ -426,6 +426,11 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
             remainder.fee_value = remainder.fee_value - self.fee_value
 
         remainder.quantity = remainder.quantity - sell_quantity
+
+        remainder.cost_origin = copy.copy(self.cost_origin)
+        if remainder.cost_origin and self.cost_origin and self.cost_origin.origin is self:
+            remainder.cost_origin.origin = remainder
+
         remainder.set_tid()
         remainder.is_split = True
         return remainder
@@ -552,6 +557,15 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
             remainder.fee_value = remainder.fee_value - self.fee_value
 
         remainder.quantity = remainder.quantity - buy_quantity
+
+        remainder.proceeds_origin = copy.copy(self.proceeds_origin)
+        if (
+            remainder.proceeds_origin
+            and self.proceeds_origin
+            and self.proceeds_origin.origin is self
+        ):
+            remainder.proceeds_origin.origin = remainder
+
         remainder.set_tid()
         remainder.is_split = True
         return remainder

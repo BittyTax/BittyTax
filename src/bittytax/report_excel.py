@@ -753,7 +753,7 @@ class Worksheet:
                 if buy.cost_origin is None:
                     raise RuntimeError("Missing buy.cost_origin")
 
-                if buy.cost_origin.origin == buy:
+                if buy.cost_origin.origin is buy:
                     if buy.cost_origin.price_record:
                         price_row = price_to_row.get((buy.asset, buy.date()))
                         hyperlink = (
@@ -916,7 +916,7 @@ class Worksheet:
             self.row_num += 1
 
             if sell.t_record:
-                if sell.t_record.fee == sell:
+                if sell.t_record.fee is sell:
                     link_name = f"{sell.t_type.value} ({sell.t_record.t_type.value} Fee)"
                 elif sell.t_type in BUY_AND_SELL_TYPES:
                     link_name = f"{sell.t_type.value} (Sell)"
@@ -946,7 +946,7 @@ class Worksheet:
                 if sell.proceeds_origin is None:
                     raise RuntimeError("Missing sell.proceeds_origin")
 
-                if sell.proceeds_origin.origin == sell:
+                if sell.proceeds_origin.origin is sell:
                     if sell.proceeds_origin.price_record:
                         price_row = price_to_row.get((sell.asset, sell.date()))
                         hyperlink = (
