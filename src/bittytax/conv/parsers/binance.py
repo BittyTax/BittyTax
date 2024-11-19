@@ -338,7 +338,7 @@ def _parse_binance_statements_row(
         _parse_binance_statements_futures_row(tx_times, parser, data_row)
         return
 
-    if row_dict["Account"] in ("Isolated Margin", "CrossMargin"):
+    if row_dict["Account"] in ("Isolated Margin", "CrossMargin", "Cross Margin"):
         _parse_binance_statements_margin_row(tx_times, parser, data_row)
         return
 
@@ -651,6 +651,7 @@ def _parse_binance_statements_margin_row(
         "Sell",
         "Fee",
         "Transaction Buy",
+        "Transaction Fee",
         "Transaction Spend",
         "Transaction Sold",
         "Transaction Revenue",
@@ -664,6 +665,7 @@ def _parse_binance_statements_margin_row(
                     "Sell",
                     "Fee",
                     "Transaction Buy",
+                    "Transaction Fee",
                     "Transaction Spend",
                     "Transaction Sold",
                     "Transaction Revenue",
