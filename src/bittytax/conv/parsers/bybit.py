@@ -84,7 +84,10 @@ def parse_bybit_deposits_withdrawals_v1(
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
         )
-    elif row_dict["Type"] == "internalAccountTransferWithdrawal":
+    elif row_dict["Type"] in (
+        "internalAccountTransferDeposit",
+        "internalAccountTransferWithdrawal",
+    ):
         # Ignore internal transfers
         return
     else:
