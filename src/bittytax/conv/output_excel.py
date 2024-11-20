@@ -17,6 +17,7 @@ from typing_extensions import TypedDict
 from ..bt_types import BUY_TYPES, SELL_TYPES, TrType, UnmappedType
 from ..config import config
 from ..constants import (
+    EXCEL_PRECISION,
     FONT_COLOR_TX_DEST,
     FONT_COLOR_TX_HASH,
     FONT_COLOR_TX_SRC,
@@ -43,7 +44,6 @@ class Column(TypedDict):  # pylint: disable=too-few-public-methods
 
 
 class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
-    EXCEL_PRECISION = 15
     FILE_EXTENSION = "xlsx"
     DATE_FORMAT = "yyyy-mm-dd hh:mm:ss"
     DATE_FORMAT_MS = "yyyy-mm-dd hh:mm:ss.000"  # Excel can only display milliseconds
@@ -376,7 +376,7 @@ class Worksheet:
 
     def _xl_quantity(self, quantity: Optional[Decimal], row_num: int, col_num: int) -> None:
         if quantity is not None:
-            if len(quantity.normalize().as_tuple().digits) > self.output.EXCEL_PRECISION:
+            if len(quantity.normalize().as_tuple().digits) > EXCEL_PRECISION:
                 self.worksheet.write_string(
                     row_num,
                     col_num,
@@ -454,7 +454,7 @@ class Worksheet:
         self._format_integer(1, 7)
 
     def _format_integer(self, row_num: int, col_num: int) -> None:
-        cell = xlsxwriter.utility.xl_rowcol_to_cell(row_num, col_num)
+        cell = xlsxwriter.utility.xl_rowcol_to_cell(row_num, col_num, col_abs=True)
         self.worksheet.conditional_format(
             row_num,
             col_num,
@@ -462,7 +462,7 @@ class Worksheet:
             col_num,
             {
                 "type": "formula",
-                "criteria": f"=INT(${cell})=${cell}",
+                "criteria": f"=INT({cell})={cell}",
                 "format": self.output.format_num_int,
             },
         )
