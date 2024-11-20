@@ -486,7 +486,7 @@ class Worksheet:
         self._format_integer(1, 7)
 
     def _format_integer(self, row_num: int, col_num: int) -> None:
-        cell = xlsxwriter.utility.xl_rowcol_to_cell(row_num, col_num)
+        cell = xlsxwriter.utility.xl_rowcol_to_cell(row_num, col_num, col_abs=True)
         self.worksheet.conditional_format(
             row_num,
             col_num,
@@ -494,7 +494,7 @@ class Worksheet:
             col_num,
             {
                 "type": "formula",
-                "criteria": f"=INT(${cell})=${cell}",
+                "criteria": f"=INT({cell})={cell}",
                 "format": self.output.format_num_int,
             },
         )

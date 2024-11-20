@@ -11,7 +11,6 @@ from typing import Dict, List, Optional
 
 import xlsxwriter
 from colorama import Fore
-from typing_extensions import TypedDict
 
 from .audit import AuditLogEntry
 from .bt_types import BUY_TYPES, SELL_TYPES, AssetSymbol, TrRecordPart, TrType
@@ -26,11 +25,6 @@ if platform.system() == "Darwin":
     FONT_SIZE = 12
 else:
     FONT_SIZE = 11
-
-
-class Column(TypedDict):  # pylint: disable=too-few-public-methods
-    header: str
-    header_format: xlsxwriter.worksheet.Format
 
 
 class AuditLogExcel:  # pylint: disable=too-few-public-methods, too-many-instance-attributes
@@ -85,6 +79,9 @@ class AuditLogExcel:  # pylint: disable=too-few-public-methods, too-many-instanc
         )
         self.format_text_grey = self.workbook.add_format(
             {"font_size": FONT_SIZE, "font_color": self.FONT_COLOR_GREY}
+        )
+        self.format_text_grey_link = self.workbook.add_format(
+            {"font_size": FONT_SIZE, "font_color": self.FONT_COLOR_GREY, "underline": True}
         )
         self.format_num_float_unsigned = self.workbook.add_format(
             {
@@ -162,7 +159,10 @@ class AuditLogExcel:  # pylint: disable=too-few-public-methods, too-many-instanc
                 if not config.large_data:
                     # Lots of conditional formatting can slow down Excel
                     worksheet.conditional_formatting()
-                worksheet.autofit()
+                worksheet.worksheet.autofit()
+                worksheet.worksheet.set_column(
+                    self.AUDIT_HEADER.index("Timestamp"), self.AUDIT_HEADER.index("Timestamp"), 23
+                )
 
             self.workbook.close()
 
@@ -180,19 +180,8 @@ class Worksheet:
         self.output = output
         self.worksheet = output.workbook.add_worksheet(self._sheet_name(asset))
         self.col_width: Dict[int, int] = {}
-        self.columns = self._make_columns(asset)
         self.row_num = 1
         self.worksheet.freeze_panes(1, 0)
-
-    def _make_columns(self, asset: AssetSymbol) -> List[Column]:
-        columns = []
-
-        for col_num, col_name in enumerate(self.output.AUDIT_HEADER):
-            col_name = col_name.replace("{{asset}}", asset)
-            columns.append(Column({"header": col_name, "header_format": self.output.format_header}))
-            self._autofit_calc(col_num, len(col_name))
-
-        return columns
 
     def add_row(self, asset: AssetSymbol, audit_log_entry: AuditLogEntry) -> None:
         self._xl_text_black(asset, self.row_num, 0)
@@ -242,8 +231,6 @@ class Worksheet:
 
             self.worksheet.write_number(row_num, col_num, balance.normalize(), wb_format)
 
-        self._autofit_calc(col_num, len(f"{balance.normalize():0,f}"))
-
     def _xl_change(self, change: Optional[Decimal], row_num: int, col_num: int) -> None:
         if change is not None:
             if len(change.normalize().as_tuple().digits) > EXCEL_PRECISION:
@@ -263,15 +250,11 @@ class Worksheet:
                     row_num, col_num, change.normalize(), self.output.format_num_float_signed
                 )
 
-            self._autofit_calc(col_num, len(f"{change.normalize():0,f}"))
-
     def _xl_text_black(self, text: str, row_num: int, col_num: int) -> None:
         self.worksheet.write_string(row_num, col_num, text)
-        self._autofit_calc(col_num, len(text) if text else self.MAX_COL_WIDTH)
 
     def _xl_text_grey(self, text: str, row_num: int, col_num: int) -> None:
         self.worksheet.write_string(row_num, col_num, text, self.output.format_text_grey)
-        self._autofit_calc(col_num, len(text) if text else self.MAX_COL_WIDTH)
 
     def _xl_timestamp(self, timestamp: datetime, row_num: int, col_num: int) -> None:
         utc_timestamp = timestamp.astimezone(TZ_UTC)
@@ -285,17 +268,14 @@ class Worksheet:
                 f"{utc_timestamp:{self.output.STR_FORMAT_MS}}",
                 self.output.format_timestamp_string,
             )
-            self._autofit_calc(col_num, len(f"{utc_timestamp:{self.output.STR_FORMAT_MS}}"))
         elif timestamp.microsecond:
             self.worksheet.write_datetime(
                 row_num, col_num, utc_timestamp, self.output.format_timestamp_ms
             )
-            self._autofit_calc(col_num, len(self.output.DATE_FORMAT_MS))
         else:
             self.worksheet.write_datetime(
                 row_num, col_num, utc_timestamp, self.output.format_timestamp
             )
-            self._autofit_calc(col_num, len(self.output.DATE_FORMAT))
 
     def _xl_hyperlink(
         self,
@@ -305,15 +285,13 @@ class Worksheet:
         row_num: int,
         col_num: int,
     ) -> None:
-        hyperlink = (
-            f"=HYPERLINK(\"[{t_row.filename}]'{sheet_name}'"
-            f'!A{t_row.row_num}:M{t_row.row_num}","{link_name}")'
+        self.worksheet.write_url(
+            row_num,
+            col_num,
+            f"external:{t_row.filename}#'{sheet_name}'!A{t_row.row_num}:M{t_row.row_num}",
+            self.output.format_text_grey_link,
+            string=link_name,
         )
-        self.worksheet.write_formula(row_num, col_num, hyperlink, self.output.format_text_grey)
-        self._autofit_calc(col_num, len(link_name))
-
-    def _make_hyperlink(self, filename: str, sheet_name: str, row_num: int, name: str) -> str:
-        return f'=HYPERLINK("[{filename}]\'{sheet_name}\'!A{row_num}:M{row_num}","{name}")'
 
     def _make_linkname(self, t_type: TrType, tr_part: TrRecordPart) -> str:
         if t_type is TrType.TRADE:
@@ -324,19 +302,6 @@ class Worksheet:
             return f"{t_type.value} ({tr_part.value})"
         return f"{t_type.value}"
 
-    def _autofit_calc(self, col_num: int, width: int) -> None:
-        width = min(width, self.MAX_COL_WIDTH)
-
-        if col_num in self.col_width:
-            if width > self.col_width[col_num]:
-                self.col_width[col_num] = width
-        else:
-            self.col_width[col_num] = width
-
-    def autofit(self) -> None:
-        for col_num, col_width in self.col_width.items():
-            self.worksheet.set_column(col_num, col_num, col_width + 3)
-
     def conditional_formatting(self) -> None:
         self._format_integer(1, 2, self.output.format_num_int_unsigned)
         self._format_integer(1, 3, self.output.format_num_int_signed)
@@ -346,7 +311,7 @@ class Worksheet:
     def _format_integer(
         self, row_num: int, col_num: int, ws_format: xlsxwriter.worksheet.Format
     ) -> None:
-        cell = xlsxwriter.utility.xl_rowcol_to_cell(row_num, col_num)
+        cell = xlsxwriter.utility.xl_rowcol_to_cell(row_num, col_num, col_abs=True)
         self.worksheet.conditional_format(
             row_num,
             col_num,
@@ -354,24 +319,33 @@ class Worksheet:
             col_num,
             {
                 "type": "formula",
-                "criteria": f"=INT(${cell})=${cell}",
+                "criteria": f"=INT({cell})={cell}",
                 "format": ws_format,
             },
         )
 
-    def make_table(self, table_name: str) -> None:
+    def make_table(self, asset: AssetSymbol) -> None:
         self.worksheet.add_table(
             0,
             0,
             self.row_num - 1,
-            len(self.columns) - 1,
+            len(self.output.AUDIT_HEADER) - 1,
             {
                 "autofilter": True,
                 "style": "Table Style Medium 14",
-                "columns": self.columns,
-                "name": self._table_name(table_name),
+                "columns": self._get_columns(asset),
+                "name": self._table_name(asset),
             },
         )
+
+    def _get_columns(self, asset: AssetSymbol) -> List[Dict[str, str]]:
+        return [
+            {
+                "header": header.replace("{{asset}}", asset),
+                "header_format": self.output.format_header,
+            }
+            for header in self.output.AUDIT_HEADER
+        ]
 
     def _sheet_name(self, name: str) -> str:
         name = self._sheet_name_validate(name)
