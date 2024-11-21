@@ -14,7 +14,14 @@ from colorama import Fore
 
 from .audit import AuditRecords
 from .audit_excel import AuditLogExcel
-from .bt_types import AssetSymbol, Year
+from .bt_types import (
+    TAX_RULES_UK_COMPANY,
+    TAX_RULES_US_INDIVIDUAL,
+    AssetSymbol,
+    CostBasisMethod,
+    TaxRules,
+    Year,
+)
 from .config import config
 from .constants import (
     ACCT_FORMAT_EXCEL,
@@ -24,9 +31,6 @@ from .constants import (
     ACCT_FORMAT_TURBOTAX_CSV,
     ACCT_FORMAT_TURBOTAX_TXF,
     ERROR,
-    TAX_RULES_UK_COMPANY,
-    TAX_RULES_UK_INDIVIDUAL,
-    TAX_RULES_US_INDIVIDUAL,
     WARNING,
 )
 from .exceptions import ImportFailureError
@@ -78,9 +82,10 @@ def main() -> None:
     )
     parser.add_argument(
         "--taxrules",
-        choices=[TAX_RULES_UK_INDIVIDUAL] + TAX_RULES_UK_COMPANY + [TAX_RULES_US_INDIVIDUAL],
-        metavar="{UK_INDIVIDUAL, US_INDIVIDUAL, UK_COMPANY_XXX} "
-        "where XXX is the month which starts the financial year, i.e. JAN, FEB, etc.",
+        choices=[tax_rules.name for tax_rules in TaxRules],
+        metavar="{UK_INDIVIDUAL,US_INDIVIDUAL_FIFO,US_INDIVIDUAL_LIFO,US_INDIVIDUAL_HIFO,"
+        "US_INDIVIDUAL_LOFO,UK_COMPANY_XXX} where XXX is the month which starts the financial year"
+        ", i.e. JAN, FEB, etc.",
         default=config.default_tax_rules,
         type=str.upper,
         dest="tax_rules",
@@ -136,6 +141,17 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+    try:
+        args.tax_rules = TaxRules[args.tax_rules]
+    except KeyError as e:
+        if args.tax_rules == config.default_tax_rules:
+            parser.error(
+                f'Unrecognised --taxrules option "{args.tax_rules}" '
+                f"used in {config.BITTYTAX_CONFIG} file\n"
+            )
+        else:
+            raise RuntimeError(f"Unrecognised args.tax_rules: {args.tax_rules}") from e
+
     config.debug = args.debug
 
     if config.debug:
@@ -146,7 +162,7 @@ def main() -> None:
             print(f"{Fore.GREEN}args: {arg}: {getattr(args, arg)}")
         config.output_config(sys.stdout)
 
-    if args.tax_rules in [TAX_RULES_UK_INDIVIDUAL] + TAX_RULES_UK_COMPANY:
+    if args.tax_rules not in TAX_RULES_US_INDIVIDUAL:
         parser.exit(message=f"{ERROR} {args.tax_rules} not supported in this version\n")
 
     if args.tax_rules in TAX_RULES_UK_COMPANY:
@@ -215,7 +231,7 @@ def main() -> None:
                     parser.prog,
                     args,
                     audit,
-                    tax.buys_ordered,
+                    tax.buy_queue,
                     tax.sells_ordered,
                     tax.other_transactions,
                     tax.tax_report,
@@ -276,7 +292,7 @@ def _do_import(filename: str) -> List[TransactionRecord]:
 
 
 def _do_tax(
-    transaction_records: List[TransactionRecord], tax_rules: str
+    transaction_records: List[TransactionRecord], tax_rules: TaxRules
 ) -> Tuple[TaxCalculator, ValueAsset]:
     value_asset = ValueAsset()
     transaction_history = TransactionHistory(transaction_records, value_asset)
@@ -285,8 +301,19 @@ def _do_tax(
     # Important - process income and margin trades before splitting
     tax.process_income()
     tax.process_margin_trades()
+
     tax.order_transactions()
-    tax.fifo_match()
+    if tax_rules is TaxRules.US_INDIVIDUAL_FIFO:
+        tax.match_transactions(CostBasisMethod.FIFO)
+    elif tax_rules is TaxRules.US_INDIVIDUAL_LIFO:
+        tax.match_transactions(CostBasisMethod.LIFO)
+    elif tax_rules is TaxRules.US_INDIVIDUAL_HIFO:
+        tax.match_transactions(CostBasisMethod.HIFO)
+    elif tax_rules is TaxRules.US_INDIVIDUAL_LOFO:
+        tax.match_transactions(CostBasisMethod.LOFO)
+    else:
+        raise RuntimeError(f"Unexpected tax_rules: {tax_rules}")
+
     if not tax.match_missing:
         tax.process_holdings()
 

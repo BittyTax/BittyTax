@@ -15,6 +15,7 @@
 - Conversion tool: Interest should be mapped to Income not LoanInterest for RECAP output format.
 - Price tool: CryptoCompare API rate limit reached returns 200 OK. ([#381](https://github.com/BittyTax/BittyTax/issues/381))
 - Accounting tool: fix AttributeError exception when decoding cell color.
+- Accounting tool: the buy component of a SWAP should not be matched until the cost basis has been tranferred.
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
@@ -138,6 +139,7 @@
 - Deribit parser: added new export format.
 - Coinbase parser: added "Pro Deposit" and "Pro Withdrawal" transaction types.
 - Binance parser: added "Cross Margin" and "Transaction Fee" for margin statements. ([#395](https://github.com/BittyTax/BittyTax/issues/395))
+- Accounting tool: added LIFO, HIFO and LOFO cost basis methods in addition to FIFO.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))

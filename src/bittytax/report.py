@@ -18,16 +18,18 @@ from colorama import Fore, Style
 from xhtml2pdf import pisa
 
 from .audit import AuditRecords, AuditTotals
-from .bt_types import AssetName, AssetSymbol, Date, Note, Year
-from .config import config
-from .constants import (
-    _H1,
-    ERROR,
-    H1,
+from .bt_types import (
     TAX_RULES_UK_COMPANY,
-    TAX_RULES_UK_INDIVIDUAL,
     TAX_RULES_US_INDIVIDUAL,
+    AssetName,
+    AssetSymbol,
+    Date,
+    Note,
+    TaxRules,
+    Year,
 )
+from .config import config
+from .constants import _H1, ERROR, H1
 from .price.valueasset import VaPriceRecord
 from .tax import (
     CalculateCapitalGains,
@@ -249,11 +251,12 @@ class ReportLog:
 
     def _tax_summary(
         self,
-        tax_rules: str,
+        tax_rules: TaxRules,
         tax_report: Dict[Year, TaxReportRecord],
         price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]],
     ) -> None:
         print(f"{Fore.WHITE}tax report output:")
+        print(f"{H1}{tax_rules.value} Tax Rules{_H1}")
         for tax_year in sorted(tax_report):
             print(
                 f"{H1}Tax Year - {config.format_tax_year(tax_year)} "
@@ -264,11 +267,11 @@ class ReportLog:
                 print(f"{Fore.CYAN}Chargeable Gains")
                 # self._capital_gains(tax_report[tax_year]["CapitalGains"])
                 self._ct_estimate(tax_report[tax_year]["CapitalGains"])
-            elif tax_rules == TAX_RULES_UK_INDIVIDUAL:
+            elif tax_rules is TaxRules.UK_INDIVIDUAL:
                 print(f"{Fore.CYAN}Capital Gains")
                 # self._capital_gains(tax_report[tax_year]["CapitalGains"])
                 self._cgt_estimate(tax_report[tax_year]["CapitalGains"])
-            elif tax_rules == TAX_RULES_US_INDIVIDUAL:
+            elif tax_rules in TAX_RULES_US_INDIVIDUAL:
                 print(f"{Fore.CYAN}Capital Gains (Short-Term)")
                 self._capital_gains(
                     tax_report[tax_year]["CapitalGains"].short_term,
@@ -302,13 +305,14 @@ class ReportLog:
 
     def _tax_full(
         self,
-        tax_rules: str,
+        tax_rules: TaxRules,
         audit: AuditRecords,
         tax_report: Dict[Year, TaxReportRecord],
         price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]],
         holdings_report: Optional[HoldingsReportRecord],
     ) -> None:
         print(f"{Fore.WHITE}tax report output:")
+        print(f"{H1}{tax_rules.value} Tax Rules{_H1}")
         self._audit(audit)
 
         for tax_year in sorted(tax_report):
@@ -321,11 +325,11 @@ class ReportLog:
                 print(f"{Fore.CYAN}Chargeable Gains")
                 # self._capital_gains(tax_report[tax_year]["CapitalGains"])
                 self._ct_estimate(tax_report[tax_year]["CapitalGains"])
-            elif tax_rules == TAX_RULES_UK_INDIVIDUAL:
+            elif tax_rules is TaxRules.UK_INDIVIDUAL:
                 print(f"{Fore.CYAN}Capital Gains")
                 # self._capital_gains(tax_report[tax_year]["CapitalGains"])
                 self._cgt_estimate(tax_report[tax_year]["CapitalGains"])
-            elif tax_rules == TAX_RULES_US_INDIVIDUAL:
+            elif tax_rules in TAX_RULES_US_INDIVIDUAL:
                 print(f"{Fore.CYAN}Capital Gains (Short-Term)")
                 self._capital_gains(
                     tax_report[tax_year]["CapitalGains"].short_term,

@@ -35,7 +35,7 @@ class Config:
         "local_currency": "USD",
         "local_timezone": "America/New_York",
         "date_is_day_first": False,
-        "default_tax_rules": "US_INDIVIDUAL",
+        "default_tax_rules": "US_INDIVIDUAL_FIFO",
         "fiat_list": FIAT_LIST,
         "crypto_list": CRYPTO_LIST,
         "trade_asset_type": TRADE_ASSET_TYPE_PRIORITY,

@@ -302,6 +302,11 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
             return f"{self.timestamp:%Y-%m-%dT%H:%M:%S.%f %Z}"
         return f"{self.timestamp:%Y-%m-%dT%H:%M:%S %Z}"
 
+    def _format_price(self, price: Optional[Decimal]) -> str:
+        if price and self.asset != config.ccy:
+            return f" '1 {self.asset}={config.sym()}{price:0,.2f} {config.ccy}'"
+        return ""
+
     def __hash__(self) -> int:
         return hash(str(self.tid))
 
@@ -417,6 +422,7 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
 
         self.quantity = sell_quantity
         self.set_tid()
+        self.is_split = True
 
         # pylint: disable=attribute-defined-outside-init
         remainder.cost = remainder.cost - self.cost
@@ -434,6 +440,13 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
         remainder.set_tid()
         remainder.is_split = True
         return remainder
+
+    def price(self) -> Decimal:
+        if self.cost is not None and self.fee_value is not None and self.quantity:
+            return (self.cost + self.fee_value) / self.quantity
+        if self.cost is not None and self.quantity:
+            return self.cost / self.quantity
+        return Decimal(0)
 
     def is_cost_fixed(self) -> bool:
         if self.cost_origin and self.cost_origin.price_record:
@@ -457,7 +470,8 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
             f"{self.asset}"
             f"{Style.NORMAL if quantity_bold else ''}"
             f"{self._format_cost()}"
-            f"{self._format_fee()} "
+            f"{self._format_fee()}"
+            f"{self._format_price(self.price())} "
             f"'{self.wallet}' "
             f"{self._format_timestamp()} "
             f"{self._format_note()}"
@@ -570,6 +584,13 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
         remainder.is_split = True
         return remainder
 
+    def price(self) -> Decimal:
+        if self.proceeds is not None and self.fee_value is not None and self.quantity:
+            return (self.proceeds - self.fee_value) / self.quantity
+        if self.proceeds is not None and self.quantity:
+            return self.proceeds / self.quantity
+        return Decimal(0)
+
     def is_proceeds_fixed(self) -> bool:
         if self.proceeds_origin and self.proceeds_origin.price_record:
             return False
@@ -592,7 +613,8 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
             f"{self.asset}"
             f"{Style.NORMAL if quantity_bold else ''}"
             f"{self._format_proceeds()}"
-            f"{self._format_fee()} "
+            f"{self._format_fee()}"
+            f"{self._format_price(self.price())} "
             f"'{self.wallet}' "
             f"{self._format_timestamp()} "
             f"{self._format_note()}"

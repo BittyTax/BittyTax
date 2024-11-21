@@ -16,20 +16,23 @@ from tqdm import tqdm
 from typing_extensions import NotRequired, TypedDict
 
 from .bt_types import (
+    TAX_RULES_UK_COMPANY,
     TRANSFER_TYPES,
     AssetName,
     AssetSymbol,
+    CostBasisMethod,
     Date,
     DisposalType,
     Note,
+    TaxRules,
     TrType,
     Wallet,
     Year,
 )
 from .config import config
-from .constants import COST_BASIS_ZERO_NOTE, TAX_RULES_UK_COMPANY, WARNING
+from .constants import COST_BASIS_ZERO_NOTE, WARNING
 from .holdings import Holdings
-from .price.valueasset import ValueAsset
+from .price.valueasset import ValueAsset, ValueOrigin
 from .tax_event import (
     TaxEvent,
     TaxEventCapitalGains,
@@ -155,12 +158,13 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
     MARGIN_TYPES = (TrType.MARGIN_GAIN, TrType.MARGIN_LOSS, TrType.MARGIN_FEE)
 
-    def __init__(self, transactions: List[Union[Buy, Sell]], tax_rules: str) -> None:
+    def __init__(self, transactions: List[Union[Buy, Sell]], tax_rules: TaxRules) -> None:
         self.transactions = transactions
         self.tax_rules = tax_rules
         self.buys_ordered: Dict[AssetSymbol, List[Buy]] = {}
         self.sells_ordered: List[Sell] = []
         self.other_transactions: List[Union[Buy, Sell]] = []
+        self.buy_queue: Dict[AssetSymbol, BuyQueue] = {}
 
         self.match_missing = False
         self.tax_events: Dict[Year, List[TaxEvent]] = {}
@@ -204,53 +208,48 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             for t in self.sells_ordered:
                 print(f"{Fore.GREEN}sells: {t}")
 
-    def fifo_match(self) -> None:
+    def match_transactions(self, method: CostBasisMethod) -> None:
         if config.debug:
-            print(f"{Fore.CYAN}fifo match transactions")
+            print(f"{Fore.CYAN}match transactions ({method.value.lower()})")
 
-        buy_index = {}
+        for asset, buys in self.buys_ordered.items():
+            self.buy_queue[asset] = BuyQueue(buys, method)
 
         for s in tqdm(
             self.sells_ordered,
             unit="t",
-            desc=f"{Fore.CYAN}fifo match transactions{Fore.GREEN}",
+            desc=f"{Fore.CYAN}match transactions ({method.value.lower()}){Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         ):
             matches = []
             s_quantity_remaining = s.quantity
 
             if config.debug:
-                print(f"{Fore.GREEN}fifo: {s}")
+                print(f"{Fore.GREEN}match: {s}")
 
-            if s.asset not in buy_index:
-                buy_index[s.asset] = 0
+            if s.asset not in self.buy_queue:
+                self.buy_queue[s.asset] = BuyQueue([], method)
 
-            while (
-                s.asset in self.buys_ordered
-                and buy_index[s.asset] < len(self.buys_ordered[s.asset])
-                and s_quantity_remaining > 0
-            ):
-                b = self.buys_ordered[s.asset][buy_index[s.asset]]
+            while s_quantity_remaining > 0:
+                b = self.buy_queue[s.asset].get_buy(s.date())
 
-                if b.date() > s.date():
+                if not b:
                     break
 
                 if b.quantity > s_quantity_remaining:
                     b_remainder = b.split_buy(s_quantity_remaining)
-                    self.buys_ordered[s.asset].insert(buy_index[s.asset] + 1, b_remainder)
+                    self.buy_queue[s.asset].insert_buy(s.date(), b_remainder)
 
                     if config.debug:
-                        print(f"{Fore.GREEN}fifo: {b} <-- split")
-                        print(f"{Fore.YELLOW}fifo:   {b_remainder} <-- split")
+                        print(f"{Fore.GREEN}match: {b} <-- split")
+                        print(f"{Fore.YELLOW}match:   {b_remainder} <-- split")
                 else:
                     if config.debug:
-                        print(f"{Fore.GREEN}fifo: {b}")
+                        print(f"{Fore.GREEN}match: {b}")
 
                 b.matched = True
                 matches.append(b)
                 s_quantity_remaining -= b.quantity
-
-                buy_index[s.asset] += 1
 
             if s_quantity_remaining > 0:
                 tqdm.write(
@@ -262,13 +261,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     buy_match.timestamp = s.timestamp
                     buy_match.note = Note(COST_BASIS_ZERO_NOTE)
                     buy_match.matched = True
-                    tqdm.write(f"{Fore.GREEN}fifo: {buy_match}")
-                    if s.asset not in self.buys_ordered:
-                        self.buys_ordered[s.asset] = []
-                        buy_index[s.asset] = 0
-
-                    self.buys_ordered[s.asset].insert(buy_index[s.asset], buy_match)
-                    buy_index[s.asset] += 1
+                    tqdm.write(f"{Fore.GREEN}match: {buy_match}")
+                    self.buy_queue[s.asset].add_buy(buy_match)
                     matches.append(buy_match)
                     s.matched = True
                     self._create_disposal(s, matches)
@@ -332,7 +326,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
             if config.debug:
-                print(f"{Fore.CYAN}fifo: {tax_event}")
+                print(f"{Fore.CYAN}match: {tax_event}")
 
         if long_term.buys:
             cost = long_term.cost.quantize(PRECISION) + long_term.fee_value.quantize(PRECISION)
@@ -367,14 +361,15 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 
             if config.debug:
-                print(f"{Fore.CYAN}fifo: {tax_event}")
+                print(f"{Fore.CYAN}match: {tax_event}")
 
         if sell.t_type is TrType.SWAP:
-            # Cost basis copied to "Buy" asset
+            # Cost basis transferred to the Buy asset
             if sell.t_record and sell.t_record.buy:
                 sell.t_record.buy.cost = short_term.cost + long_term.cost
                 if short_term.fee_value + long_term.fee_value:
                     sell.t_record.buy.fee_value = short_term.fee_value + long_term.fee_value
+                sell.t_record.buy.cost_origin = ValueOrigin(sell)
             else:
                 raise RuntimeError("Missing t_record.buy for SWAP")
 
@@ -455,7 +450,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
     def _all_transactions(self) -> Iterator[Union[Buy, Sell]]:
         return itertools.chain(
-            *self.buys_ordered.values(), self.sells_ordered, self.other_transactions
+            *[b.buys for _, b in self.buy_queue.items()],
+            self.sells_ordered,
+            self.other_transactions,
         )
 
     def process_margin_trades(self) -> None:
@@ -926,3 +923,85 @@ class CalculateMarginTrading:
             f'losses={config.sym()}{self.contract_totals[(wallet, note)]["losses"]} '
             f'fess={config.sym()}{self.contract_totals[(wallet, note)]["fees"]} '
         )
+
+
+class BuyQueue:
+    def __init__(self, buys: List[Buy], method: CostBasisMethod) -> None:
+        self.method = method
+        self.buys = buys
+        self.buy_ranges: Dict[Date, List[Buy]] = {}
+        self.buy_index = 0
+        self.buys_matched: List[Buy] = []
+
+    def get_buy(self, s_date: Date) -> Optional[Buy]:
+        if s_date not in self.buy_ranges:
+            self.buy_ranges[s_date] = list(
+                filter(lambda b: b.date() <= s_date and not b.matched, self.buys)
+            )
+            self._sort_by_method(self.buy_ranges[s_date])
+
+            if config.debug:
+                for i, b in enumerate(self.buy_ranges[s_date]):
+                    if b.t_type is TrType.SWAP:
+                        print(
+                            f"{Fore.BLUE}match:   [{i}] {b}{' S' if b.is_split else ''} "
+                            f"{'<- swapped' if self._is_swapped(b) else '<- not swapped'}"
+                        )
+                    else:
+                        print(f"{Fore.BLUE}match:   [{i}] {b}{' S' if b.is_split else ''}")
+
+        buy = None
+        i = 0
+        while i < len(self.buy_ranges[s_date]):
+            b = self.buy_ranges[s_date][i]
+
+            if not b.matched:
+                if b.t_type is TrType.SWAP and not self._is_swapped(b):
+                    # Don't use Swap until cost basis has been transferred
+                    i += 1
+                    continue
+
+                buy = b
+                self.buy_index = i
+                break
+
+            i += 1
+
+        if buy:
+            self.buys_matched.append(buy)
+
+        return buy
+
+    def _sort_by_method(self, buy_list: List[Buy]) -> None:
+        if self.method == CostBasisMethod.FIFO:
+            buy_list.sort()
+        elif self.method == CostBasisMethod.LIFO:
+            buy_list.sort(reverse=True)
+        elif self.method == CostBasisMethod.HIFO:
+            buy_list.sort(key=lambda b: b.price(), reverse=True)
+        elif self.method == CostBasisMethod.LOFO:
+            buy_list.sort(key=lambda b: b.price())
+
+    def _is_swapped(self, buy: Buy) -> bool:
+        if buy.t_type is not TrType.SWAP:
+            raise RuntimeError("Not SWAP")
+
+        if not buy.t_record or not buy.t_record.sell:
+            raise RuntimeError("Missing t_record.sell for SWAP")
+
+        if buy.t_record.sell.matched:
+            return True
+        return False
+
+    def insert_buy(self, s_date: Date, buy: Buy) -> None:
+        self.buy_ranges[s_date].insert(self.buy_index + 1, buy)
+        self.buys.append(buy)
+
+    def add_buy(self, buy: Buy) -> None:
+        self.buys_matched.append(buy)
+        self.buys.append(buy)
+
+    def ordered_by_method(self) -> List[Buy]:
+        buys_unmatched = list(filter(lambda b: not b.matched, self.buys))
+        self._sort_by_method(buys_unmatched)
+        return self.buys_matched + buys_unmatched
