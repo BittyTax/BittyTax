@@ -15,6 +15,7 @@
 - Conversion tool: Interest should be mapped to Income not LoanInterest for RECAP output format.
 - Price tool: CryptoCompare API rate limit reached returns 200 OK. ([#381](https://github.com/BittyTax/BittyTax/issues/381))
 - Accounting tool: fix AttributeError exception when decoding cell color.
+- Accounting/Price tool: Fix CoinGecko API error "Your request exceeds the allowed time range".
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
