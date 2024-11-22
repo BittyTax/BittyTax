@@ -482,14 +482,17 @@ class CryptoCompare(DataSourceBase):
 
 
 class CoinGecko(DataSourceBase):
+    PRO_KEY = "x-cg-pro-api-key"
+    DEMO_KEY = "x-cg-demo-api-key"
+
     def __init__(self) -> None:
         super().__init__()
 
         if "coingecko_pro_api_key" in config.config:
-            self.headers["x-cg-pro-api-key"] = f"{config.coingecko_pro_api_key}"
+            self.headers[self.PRO_KEY] = f"{config.coingecko_pro_api_key}"
             self.api_root = "https://pro-api.coingecko.com/api/v3"
         elif "coingecko_demo_api_key" in config.config:
-            self.headers["x-cg-demo-api-key"] = config.coingecko_demo_api_key
+            self.headers[self.DEMO_KEY] = config.coingecko_demo_api_key
             self.api_root = "https://api.coingecko.com/api/v3"
         else:
             self.api_root = "https://api.coingecko.com/api/v3"
@@ -533,7 +536,13 @@ class CoinGecko(DataSourceBase):
         if not asset_id:
             asset_id = self.assets[asset]["asset_id"]
 
-        url = f"{self.api_root}/coins/{asset_id}/market_chart?vs_currency={quote}&days=max"
+        if self.PRO_KEY in self.headers:
+            days = "max"
+        else:
+            # Public API is limited to 365 days of historical price data
+            days = "365"
+
+        url = f"{self.api_root}/coins/{asset_id}/market_chart?vs_currency={quote}&days={days}"
         json_resp = self.get_json(url)
         pair = self.pair(asset, quote)
         if "prices" in json_resp:
