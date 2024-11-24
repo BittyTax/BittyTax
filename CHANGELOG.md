@@ -134,6 +134,7 @@
 - Deribit parser: added new export format.
 - Coinbase parser: added "Pro Deposit" and "Pro Withdrawal" transaction types.
 - Binance parser: added "Cross Margin" and "Transaction Fee" for margin statements. ([#395](https://github.com/BittyTax/BittyTax/issues/395))
+- Accounting/Price tool: added CryptoCompare asset IDs to allow custom mapping of asset symbols.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))

@@ -142,31 +142,12 @@ class DataSourceBase:
         for symbol in config.data_source_select:
             for ds_select in config.data_source_select[symbol]:
                 if ds_select.upper().startswith(self.name().upper() + ":"):  # pylint: disable=E1101
-                    if symbol in self.assets:
-                        self._update_asset(symbol, ds_select)
-                    else:
-                        self._add_asset(symbol, ds_select)
-
-    def _update_asset(self, symbol: AssetSymbol, ds_select: str) -> None:
-        asset_id = AssetId(ds_select.split(":")[1])
-        # Update an existing symbol, validate id belongs to that symbol
-        if asset_id in self.ids and self.ids[asset_id]["symbol"] == symbol:
-            self.assets[symbol] = {"asset_id": asset_id, "name": self.ids[asset_id]["name"]}
-
-            if config.debug:
-                print(
-                    f"{Fore.YELLOW}price: "
-                    f"{symbol} updated as {self.name()} [ID:{asset_id}] "
-                    f'({self.ids[asset_id]["name"]})'
-                )
-        else:
-            raise UnexpectedDataSourceAssetIdError(ds_select, symbol)
+                    self._add_asset(symbol, ds_select)
 
     def _add_asset(self, symbol: AssetSymbol, ds_select: str) -> None:
         asset_id = AssetId(ds_select.split(":")[1])
         if asset_id in self.ids:
             self.assets[symbol] = {"asset_id": asset_id, "name": self.ids[asset_id]["name"]}
-            self.ids[asset_id] = {"symbol": symbol, "name": self.ids[asset_id]["name"]}
 
             if config.debug:
                 print(
@@ -178,22 +159,15 @@ class DataSourceBase:
             raise UnexpectedDataSourceAssetIdError(ds_select, symbol)
 
     def get_list(self) -> Dict[AssetSymbol, List[DsSymbolToAssetData]]:
+        asset_list = {k: [v] for k, v in self.assets.items()}
+
         if self.ids:
-            asset_list: Dict[AssetSymbol, List[DsSymbolToAssetData]] = {}
-            for t, ids in self.ids.items():
-                symbol = ids["symbol"]
-                if symbol not in asset_list:
-                    asset_list[symbol] = []
+            for k, v in self.ids.items():
+                asset_data = DsSymbolToAssetData({"asset_id": k, "name": v["name"]})
+                if asset_data not in asset_list[v["symbol"]]:
+                    asset_list[v["symbol"]].append(asset_data)
 
-                asset_list[symbol].append({"asset_id": t, "name": ids["name"]})
-
-            # Include any custom symbols as well
-            for symbol, assets in asset_list.items():
-                if self.assets[symbol] not in assets:
-                    assets.append(self.assets[symbol])
-
-            return asset_list
-        return {k: [{"asset_id": AssetId(""), "name": v["name"]}] for k, v in self.assets.items()}
+        return asset_list
 
     def get_latest(
         self, _asset: AssetSymbol, _quote: QuoteSymbol, _asset_id: AssetId = AssetId("")
@@ -430,19 +404,30 @@ class CryptoCompare(DataSourceBase):
         if json_resp["Response"] != "Success":
             raise RuntimeError(f"CryptoCompare API failure: {json_resp.get('Message', '')}")
 
+        # CryptoCompare symbols are unique, so can be used as the ID
+        self.ids = {
+            c[1]["Symbol"]
+            .strip()
+            .lower(): {"symbol": c[1]["Symbol"].strip().upper(), "name": c[1]["CoinName"].strip()}
+            for c in json_resp["Data"].items()
+        }
         self.assets = {
             c[1]["Symbol"]
             .strip()
-            .upper(): {"asset_id": AssetId(""), "name": c[1]["CoinName"].strip()}
+            .upper(): {"asset_id": c[1]["Symbol"].strip().lower(), "name": c[1]["CoinName"].strip()}
             for c in json_resp["Data"].items()
         }
-        # CryptoCompare symbols are unique, so no ID required
+        self.get_config_assets()
 
     def get_latest(
-        self, asset: AssetSymbol, quote: QuoteSymbol, _asset_id: AssetId = AssetId("")
+        self, asset: AssetSymbol, quote: QuoteSymbol, asset_id: AssetId = AssetId("")
     ) -> Optional[Decimal]:
+        if not asset_id:
+            asset_id = self.assets[asset]["asset_id"]
+
         json_resp = self.get_json(
-            f"{self.api_root}/data/price?extraParams={self.USER_AGENT}&fsym={asset}&tsyms={quote}"
+            f"{self.api_root}/data/price?extraParams={self.USER_AGENT}"
+            f"&fsym={asset_id}&tsyms={quote}"
         )
         return Decimal(repr(json_resp[quote])) if quote in json_resp else None
 
@@ -451,15 +436,17 @@ class CryptoCompare(DataSourceBase):
         asset: AssetSymbol,
         quote: QuoteSymbol,
         timestamp: Timestamp,
-        _asset_id: AssetId = AssetId(""),
+        asset_id: AssetId = AssetId(""),
     ) -> None:
+        if not asset_id:
+            asset_id = self.assets[asset]["asset_id"]
+
         url = (
             f"{self.api_root}/data/histoday?aggregate=1"
-            f"&extraParams={self.USER_AGENT}&fsym={asset}&tsym={quote}"
+            f"&extraParams={self.USER_AGENT}&fsym={asset_id}&tsym={quote}"
             f"&limit={self.MAX_DAYS}"
             f"&toTs={self.epoch_time(Timestamp(timestamp + timedelta(days=self.MAX_DAYS)))}"
         )
-
         json_resp = self.get_json(url)
         # Type=2 - CCCAGG market does not exist for this coin pair
         if json_resp["Response"] != "Success" and json_resp["Type"] != 2:
@@ -497,7 +484,7 @@ class CoinGecko(DataSourceBase):
         else:
             self.api_root = "https://api.coingecko.com/api/v3"
 
-        json_resp = self.get_json(f"{self.api_root}/coins/list")
+        json_resp = self.get_json(f"{self.api_root}/coins/list?status=active")
         self.ids = {
             c["id"]: {"symbol": c["symbol"].strip().upper(), "name": c["name"].strip()}
             for c in json_resp
@@ -506,6 +493,18 @@ class CoinGecko(DataSourceBase):
             c["symbol"].strip().upper(): {"asset_id": c["id"], "name": c["name"].strip()}
             for c in json_resp
         }
+        if self.PRO_KEY in self.headers:
+            json_resp = self.get_json(f"{self.api_root}/coins/list?status=inactive")
+            for c in json_resp:
+                self.ids[c["id"]] = {
+                    "symbol": c["symbol"].strip().upper(),
+                    "name": c["name"].strip(),
+                }
+            for c in json_resp:
+                self.assets[c["symbol"].strip().upper()] = {
+                    "asset_id": c["id"],
+                    "name": c["name"].strip(),
+                }
         self.get_config_assets()
 
     def get_latest(
