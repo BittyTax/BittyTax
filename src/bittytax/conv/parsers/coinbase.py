@@ -30,28 +30,31 @@ def parse_coinbase_v4(
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
 
+    currency = row_dict["Price Currency"]
     spot_price_ccy = DataParser.convert_currency(
         row_dict["Price at Transaction"].strip("£€$").replace(",", ""),
-        row_dict["Price Currency"],
+        currency,
         data_row.timestamp,
     )
-    subtotal = (
-        Decimal(row_dict["Subtotal"].strip("£€$").replace(",", ""))
-        if row_dict["Subtotal"]
-        else None
+    subtotal_ccy = DataParser.convert_currency(
+        row_dict["Subtotal"].strip("£€$").replace(",", ""),
+        currency,
+        data_row.timestamp,
     )
     total_ccy = DataParser.convert_currency(
         row_dict["Total (inclusive of fees and/or spread)"].strip("£€$").replace(",", ""),
-        row_dict["Price Currency"],
+        currency,
         data_row.timestamp,
     )
-    fees = (
-        abs(Decimal(re.sub(r"[^-\d.]+", "", row_dict["Fees and/or Spread"])))
-        if row_dict["Fees and/or Spread"]
-        else None
+    fees_ccy = DataParser.convert_currency(
+        re.sub(r"[^-\d.]+", "", row_dict["Fees and/or Spread"]),
+        currency,
+        data_row.timestamp,
     )
 
-    _do_parse_coinbase(data_row, parser, (spot_price_ccy, subtotal, total_ccy, fees))
+    _do_parse_coinbase(
+        data_row, parser, (spot_price_ccy, subtotal_ccy, total_ccy, fees_ccy, currency)
+    )
 
 
 def parse_coinbase_v3(
@@ -60,20 +63,31 @@ def parse_coinbase_v3(
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
 
+    currency = row_dict["Spot Price Currency"]
     spot_price_ccy = DataParser.convert_currency(
         row_dict["Spot Price at Transaction"],
-        row_dict["Spot Price Currency"],
+        currency,
         data_row.timestamp,
     )
-    subtotal = Decimal(row_dict["Subtotal"]) if row_dict["Subtotal"] else None
+    subtotal_ccy = DataParser.convert_currency(
+        row_dict["Subtotal"],
+        currency,
+        data_row.timestamp,
+    )
     total_ccy = DataParser.convert_currency(
         row_dict["Total (inclusive of fees and/or spread)"],
-        row_dict["Spot Price Currency"],
+        currency,
         data_row.timestamp,
     )
-    fees = abs(Decimal(row_dict["Fees and/or Spread"])) if row_dict["Fees and/or Spread"] else None
+    fees_ccy = DataParser.convert_currency(
+        row_dict["Fees and/or Spread"],
+        currency,
+        data_row.timestamp,
+    )
 
-    _do_parse_coinbase(data_row, parser, (spot_price_ccy, subtotal, total_ccy, fees))
+    _do_parse_coinbase(
+        data_row, parser, (spot_price_ccy, subtotal_ccy, total_ccy, fees_ccy, currency)
+    )
 
 
 def parse_coinbase_v2(
@@ -82,20 +96,31 @@ def parse_coinbase_v2(
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
 
+    currency = row_dict["Spot Price Currency"]
     spot_price_ccy = DataParser.convert_currency(
         row_dict["Spot Price at Transaction"],
-        row_dict["Spot Price Currency"],
+        currency,
         data_row.timestamp,
     )
-    subtotal = Decimal(row_dict["Subtotal"]) if row_dict["Subtotal"] else None
+    subtotal_ccy = DataParser.convert_currency(
+        row_dict["Subtotal"],
+        currency,
+        data_row.timestamp,
+    )
     total_ccy = DataParser.convert_currency(
         row_dict["Total (inclusive of fees)"],
-        row_dict["Spot Price Currency"],
+        currency,
         data_row.timestamp,
     )
-    fees = abs(Decimal(row_dict["Fees"])) if row_dict["Fees"] else None
+    fees_ccy = DataParser.convert_currency(
+        row_dict["Fees"],
+        currency,
+        data_row.timestamp,
+    )
 
-    _do_parse_coinbase(data_row, parser, (spot_price_ccy, subtotal, total_ccy, fees))
+    _do_parse_coinbase(
+        data_row, parser, (spot_price_ccy, subtotal_ccy, total_ccy, fees_ccy, currency)
+    )
 
 
 def parse_coinbase_v1(
@@ -103,28 +128,34 @@ def parse_coinbase_v1(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
-    currency = parser.args[0].group(1)
 
+    currency = parser.args[0].group(1)
     spot_price_ccy = DataParser.convert_currency(
         row_dict[f"{currency} Spot Price at Transaction"], currency, data_row.timestamp
     )
-    subtotal = (
-        Decimal(row_dict[f"{currency} Subtotal"]) if row_dict[f"{currency} Subtotal"] else None
+    subtotal_ccy = DataParser.convert_currency(
+        row_dict[f"{currency} Subtotal"], currency, data_row.timestamp
     )
     total_ccy = DataParser.convert_currency(
         row_dict[f"{currency} Total (inclusive of fees)"], currency, data_row.timestamp
     )
-    fees = abs(Decimal(row_dict[f"{currency} Fees"])) if row_dict[f"{currency} Fees"] else None
+    fees_ccy = DataParser.convert_currency(
+        row_dict[f"{currency} Fees"], currency, data_row.timestamp
+    )
 
-    _do_parse_coinbase(data_row, parser, (spot_price_ccy, subtotal, total_ccy, fees))
+    _do_parse_coinbase(
+        data_row, parser, (spot_price_ccy, subtotal_ccy, total_ccy, fees_ccy, currency)
+    )
 
 
 def _do_parse_coinbase(
     data_row: "DataRow",
     parser: DataParser,
-    fiat_values: Tuple[Optional[Decimal], Optional[Decimal], Optional[Decimal], Optional[Decimal]],
+    fiat_values: Tuple[
+        Optional[Decimal], Optional[Decimal], Optional[Decimal], Optional[Decimal], str
+    ],
 ) -> None:
-    (spot_price_ccy, subtotal, total_ccy, fees) = fiat_values
+    (spot_price_ccy, subtotal_ccy, total_ccy, fees_ccy, currency) = fiat_values
     row_dict = data_row.row_dict
 
     if row_dict["Transaction Type"] == "Deposit":
@@ -133,12 +164,12 @@ def _do_parse_coinbase(
             TrType.DEPOSIT,
             data_row.timestamp,
             buy_quantity=(
-                Decimal(row_dict["Quantity Transacted"]) + fees
-                if fees
+                Decimal(row_dict["Quantity Transacted"]) + abs(fees_ccy)
+                if fees_ccy
                 else Decimal(row_dict["Quantity Transacted"])
             ),
             buy_asset=row_dict["Asset"],
-            fee_quantity=fees,
+            fee_quantity=fees_ccy,
             fee_asset=row_dict["Asset"],
             wallet=WALLET,
         )
@@ -148,12 +179,12 @@ def _do_parse_coinbase(
             TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=(
-                Decimal(row_dict["Quantity Transacted"]) - fees
-                if fees
+                Decimal(row_dict["Quantity Transacted"]) - abs(fees_ccy)
+                if fees_ccy
                 else Decimal(row_dict["Quantity Transacted"])
             ),
             sell_asset=row_dict["Asset"],
-            fee_quantity=fees,
+            fee_quantity=abs(fees_ccy) if fees_ccy is not None else None,
             fee_asset=row_dict["Asset"],
             wallet=WALLET,
         )
@@ -255,26 +286,26 @@ def _do_parse_coinbase(
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] in ("Buy", "Advanced Trade Buy", "Advance Trade Buy"):
-        currency, quote = _get_currency(row_dict["Notes"])
-        if currency is None:
+        note_currency, quote = _get_note_currency(row_dict["Notes"])
+        if note_currency is None:
             raise UnexpectedContentError(
                 parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
             )
 
-        if currency != quote:
+        if quote != currency:
             if parser.in_header_row_num is None:
                 raise RuntimeError("Missing in_header_row_num")
 
             sys.stderr.write(
                 f"{Fore.YELLOW}row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
-                f"{WARNING} {quote} amount is not availabe so will not balance, "
+                f"{WARNING} {quote} amount/fee is not availabe so will not balance, "
                 f"using {currency} instead\n"
             )
 
         if (
             config.coinbase_zero_fees_are_gifts
             and row_dict["Transaction Type"] == "Buy"
-            and fees == 0
+            and fees_ccy == 0
         ):
             # Zero fees "may" indicate an early referral reward, or airdrop
             data_row.t_record = TransactionOutRecord(
@@ -291,38 +322,38 @@ def _do_parse_coinbase(
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Quantity Transacted"]),
                 buy_asset=row_dict["Asset"],
-                sell_quantity=subtotal,
-                sell_asset=currency,
-                fee_quantity=fees,
-                fee_asset=currency,
+                sell_quantity=subtotal_ccy,
+                sell_asset=config.ccy,
+                fee_quantity=abs(fees_ccy) if fees_ccy is not None else None,
+                fee_asset=config.ccy,
                 wallet=WALLET,
             )
     elif row_dict["Transaction Type"] in ("Sell", "Advanced Trade Sell", "Advance Trade Sell"):
-        currency, quote = _get_currency(row_dict["Notes"])
-        if currency is None:
+        note_currency, quote = _get_note_currency(row_dict["Notes"])
+        if note_currency is None:
             raise UnexpectedContentError(
                 parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
             )
 
-        if currency != quote:
+        if quote != currency:
             if parser.in_header_row_num is None:
                 raise RuntimeError("Missing in_header_row_num")
 
             sys.stderr.write(
                 f"{Fore.YELLOW}row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
-                f"{WARNING} {quote} amount is not available so will not balance, "
+                f"{WARNING} {quote} amount/fee is not available so will not balance, "
                 f"using {currency} instead\n"
             )
 
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=subtotal,
-            buy_asset=currency,
+            buy_quantity=subtotal_ccy,
+            buy_asset=config.ccy,
             sell_quantity=Decimal(row_dict["Quantity Transacted"]),
             sell_asset=row_dict["Asset"],
-            fee_quantity=fees,
-            fee_asset=currency,
+            fee_quantity=abs(fees_ccy) if fees_ccy is not None else None,
+            fee_asset=config.ccy,
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] == "Convert":
@@ -363,8 +394,8 @@ def _get_convert_info(notes: str) -> Optional[Tuple[Any, ...]]:
     return None
 
 
-def _get_currency(notes: str) -> Tuple[Optional[str], str]:
-    match = re.match(r".+for .?(?:[\d|,]+\.\d+|[\d|,]+) (\w{3})(?: on )?(\w+-\w+)?.*$", notes)
+def _get_note_currency(notes: str) -> Tuple[Optional[str], str]:
+    match = re.match(r".+for [£€$]?(?:[\d|,]+\.\d+|[\d|,]+) (\w+)(?: on )?(\w+-\w+)?.*$", notes)
 
     if match:
         currency = quote = match.group(1)
