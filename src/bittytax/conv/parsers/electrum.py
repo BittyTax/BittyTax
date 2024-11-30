@@ -3,10 +3,10 @@
 
 import sys
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from colorama import Fore
-from typing_extensions import List, Unpack
+from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ...config import config

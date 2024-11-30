@@ -5,10 +5,10 @@ import copy
 import sys
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import TYPE_CHECKING, NewType
+from typing import TYPE_CHECKING, Dict, List, NewType, Optional, Tuple
 
 from colorama import Fore
-from typing_extensions import Dict, List, Optional, Tuple, Unpack
+from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ...config import config

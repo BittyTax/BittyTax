@@ -4,10 +4,10 @@
 import sys
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List
 
 from colorama import Fore
-from typing_extensions import Dict, List, Unpack
+from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ...config import config

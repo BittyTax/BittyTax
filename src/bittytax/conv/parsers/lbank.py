@@ -3,9 +3,9 @@
 
 import re
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Tuple
 
-from typing_extensions import Optional, Tuple, Unpack
+from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
