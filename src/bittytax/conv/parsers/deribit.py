@@ -6,10 +6,10 @@ import re
 import sys
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import TYPE_CHECKING, Dict, NewType, Tuple
+from typing import TYPE_CHECKING, Dict, List, NewType, Tuple
 
 from colorama import Fore
-from typing_extensions import List, Unpack
+from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ...config import config
