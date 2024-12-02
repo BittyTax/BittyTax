@@ -18,6 +18,7 @@
 - Accounting/Price tool: Fix CoinGecko API error "Your request exceeds the allowed time range".
 - Coinbase parser: fix missing warning for advanced trades which are crypto-to-crypto.
 - Coinbase parser: fixed currency conversion when data file is not in local currency.
+- Price tool: fix epoch_time.
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
