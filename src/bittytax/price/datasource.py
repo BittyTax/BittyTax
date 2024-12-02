@@ -26,7 +26,7 @@ from ..bt_types import (
     TradingPair,
 )
 from ..config import config
-from ..constants import CACHE_DIR, TZ_UTC, WARNING
+from ..constants import CACHE_DIR, WARNING
 from ..version import __version__
 from .exceptions import UnexpectedDataSourceAssetIdError
 
@@ -208,9 +208,8 @@ class DataSourceBase:
         return None
 
     @staticmethod
-    def epoch_time(timestamp: Timestamp) -> int:
-        epoch = timestamp - Timestamp(datetime(1971, 1, 1, tzinfo=TZ_UTC))
-        return int(epoch.total_seconds())
+    def epoch_time(timestamp: datetime) -> int:
+        return int(timestamp.timestamp())
 
 
 class BittyTaxAPI(DataSourceBase):
