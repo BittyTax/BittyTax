@@ -147,7 +147,7 @@ def _parse_blockfi_row(
             if dr.row_dict["Transaction Type"] == row_dict["Transaction Type"] and not dr.parsed
         ]
         _make_trade(t_rows)
-    elif row_dict["Transaction Type"] == "BIA Withdraw":
+    elif row_dict["Transaction Type"] in ("BIA Deposit", "BIA Withdraw"):
         # Skip internal transfers
         return
     else:
