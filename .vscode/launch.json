@@ -1,0 +1,124 @@
+{
+    "version": "0.2.0",
+    "configurations": [ 
+        {
+            "name": "Python Debugger: bittytax_conv",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "bittytax.conv.bittytax_conv",
+            "args": [
+                "${input:getDataFilename}",
+                "--format",
+                "${input:getFormat}",
+                "--debug"
+            ]
+        },
+        {
+            "name": "Python Debugger: bittytax",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "bittytax.bittytax",
+            "args": [
+                "${input:getTransactionRecordsFilename}",
+                "--debug"
+            ]
+        },
+        {
+            "name": "Python Debugger: bittytax_price list",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "bittytax.price.bittytax_price",
+            "args": [
+                "list",
+                "--debug"
+            ]
+        },
+        {
+            "name": "Python Debugger: bittytax_price latest",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "bittytax.price.bittytax_price",
+            "args": [
+                "latest",
+                "${input:getAsset}",
+                "${input:getQuantity}",
+                "-ds",
+                "${input:getDataSource}",
+                "--debug"
+            ]
+        },
+        {
+            "name": "Python Debugger: bittytax_price historic",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "bittytax.price.bittytax_price",
+            "args": [
+                "historic",
+                "${input:getAsset}",
+                "${input:getDate}",
+                "${input:getQuantity}",
+                "-ds",
+                "${input:getDataSource}",
+                "--nocache",
+                "--debug"
+            ]
+        }
+    ],
+    "inputs": [
+        {
+            "id": "getDataFilename",
+            "type": "promptString",
+            "description": "Enter data filename"
+        },
+        {
+            "id": "getTransactionRecordsFilename",
+            "type": "promptString",
+            "description": "Enter Transaction Records filename",
+            "default": "data/example.xlsx"
+        },
+        {
+            "id": "getFormat",
+            "type": "pickString",
+            "description": "Select output format",
+            "options": [
+                "EXCEL",
+                "CSV",
+                "RECAP"
+            ],
+            "default": "EXCEL"
+        },
+        {
+            "id": "getAsset",
+            "type": "promptString",
+            "description": "Enter asset symbol",
+            "default": "BTC"
+        },
+        {
+            "id": "getDate",
+            "type": "promptString",
+            "description": "Enter date YYYY-MM-DD or DD/MM/YYYY",
+            "default": "2024-01-01"
+        },
+        {
+            "id": "getQuantity",
+            "type": "promptString",
+            "description": "Enter quantity",
+            "default": "1"
+        },
+        {
+            "id": "getDataSource",
+            "type": "pickString",
+            "description": "Select data source",
+            "options": [
+                "BittyTaxAPI",
+                "CoinDesk",
+                "CoinGecko",
+                "CoinPaprika",
+                "CryptoCompare",
+                "Frankfurter",
+                "ALL" 
+            ],
+            "default": "CryptoCompare"
+        }
+    ]
+}
