@@ -7,7 +7,7 @@
             "request": "launch",
             "module": "bittytax.conv.bittytax_conv",
             "args": [
-                "${input:getDataFilename}",
+                "${input:pickDataFilename}",
                 "--format",
                 "${input:getFormat}",
                 "--debug"
@@ -19,7 +19,7 @@
             "request": "launch",
             "module": "bittytax.bittytax",
             "args": [
-                "${input:getTransactionRecordsFilename}",
+                "${input:pickTransactionRecordsFilename}",
                 "--debug"
             ]
         },
@@ -73,7 +73,7 @@
         {
             "id": "getTransactionRecordsFilename",
             "type": "promptString",
-            "description": "Enter Transaction Records filename",
+            "description": "Enter transaction records filename",
             "default": "data/example.xlsx"
         },
         {
@@ -119,6 +119,27 @@
                 "ALL" 
             ],
             "default": "CryptoCompare"
+        },
+        {
+            "id": "pickDataFilename",
+            "type": "command",
+            "command": "extension.commandvariable.file.pickFile",
+            "args": {
+                "include": "**/*.{xlsx,csv,xls}",
+                "description": "Select a data file",
+                "addAsk": "true",
+                //"multiPick": "true"
+            }
+        },
+        {
+            "id": "pickTransactionRecordsFilename",
+            "type": "command",
+            "command": "extension.commandvariable.file.pickFile",
+            "args": {
+                "include": "**/*.xlsx",
+                "description": "Select a transaction records file",
+                "addAsk": "true"
+            }
         }
     ]
 }
