@@ -123,22 +123,26 @@
         {
             "id": "pickDataFilename",
             "type": "command",
-            "command": "extension.commandvariable.file.pickFile",
+            "command": "extension.commandvariable.file.openDialog",
             "args": {
-                "include": "**/*.{xlsx,csv,xls}",
-                "description": "Select a data file",
-                "addAsk": "true",
-                //"multiPick": "true"
+                //"canSelectMany": "true",
+                "defaultUri": "${userHome}${pathSeparator}Downloads",
+                "filters": {
+                    "Data file": ["csv", "xlsx", "xls", "txt"]
+                },
+                "title": "Select a data file:"
             }
         },
         {
             "id": "pickTransactionRecordsFilename",
             "type": "command",
-            "command": "extension.commandvariable.file.pickFile",
+            "command": "extension.commandvariable.file.openDialog",
             "args": {
-                "include": "**/*.xlsx",
-                "description": "Select a transaction records file",
-                "addAsk": "true"
+                "defaultUri": "${workspaceFolder}",
+                "filters": {
+                    "Excel file": ["xlsx"]
+                },
+                "title": "Select a transaction records file:"
             }
         }
     ]
