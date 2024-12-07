@@ -6,62 +6,35 @@
             "type": "debugpy",
             "request": "launch",
             "module": "bittytax.conv.bittytax_conv",
-            "args": [
-                "${input:pickDataFilename}",
-                "--format",
-                "${input:getFormat}",
-                "--debug"
-            ]
+            "args": "${input:pickDataFilenames} --format ${input:getFormat} --debug"
         },
         {
             "name": "Python Debugger: bittytax",
             "type": "debugpy",
             "request": "launch",
             "module": "bittytax.bittytax",
-            "args": [
-                "${input:pickTransactionRecordsFilename}",
-                "--debug"
-            ]
+            "args": "${input:pickTransactionRecordsFilename} --debug"
         },
         {
             "name": "Python Debugger: bittytax_price list",
             "type": "debugpy",
             "request": "launch",
             "module": "bittytax.price.bittytax_price",
-            "args": [
-                "list",
-                "--debug"
-            ]
+            "args": "list --debug"
         },
         {
             "name": "Python Debugger: bittytax_price latest",
             "type": "debugpy",
             "request": "launch",
             "module": "bittytax.price.bittytax_price",
-            "args": [
-                "latest",
-                "${input:getAsset}",
-                "${input:getQuantity}",
-                "-ds",
-                "${input:getDataSource}",
-                "--debug"
-            ]
+            "args": "latest ${input:getAsset} ${input:getQuantity} -ds ${input:getDataSource} --debug"
         },
         {
             "name": "Python Debugger: bittytax_price historic",
             "type": "debugpy",
             "request": "launch",
             "module": "bittytax.price.bittytax_price",
-            "args": [
-                "historic",
-                "${input:getAsset}",
-                "${input:getDate}",
-                "${input:getQuantity}",
-                "-ds",
-                "${input:getDataSource}",
-                "--nocache",
-                "--debug"
-            ]
+            "args": "historic ${input:getAsset} ${input:getDate} ${input:getQuantity} -ds ${input:getDataSource} --nocache --debug"
         }
     ],
     "inputs": [
@@ -125,7 +98,6 @@
             "type": "command",
             "command": "extension.commandvariable.file.openDialog",
             "args": {
-                //"canSelectMany": "true",
                 "defaultUri": "${userHome}${pathSeparator}Downloads",
                 "filters": {
                     "Data file": ["csv", "xlsx", "xls", "txt"]
@@ -143,6 +115,37 @@
                     "Excel file": ["xlsx"]
                 },
                 "title": "Select a transaction records file:"
+            }
+        },
+        {
+            "id": "pickDataFilenames",
+            "type": "command",
+            "command": "extension.commandvariable.transform",
+            "args": {
+                "text": "${openDialog:dataFilenamesDialog}",
+                "apply": [
+                    {
+                        "find": " ",
+                        "replace": "\\ ",
+                        "flags": "g"
+                    },
+                    {
+                        "find": ",",
+                        "replace": " ",
+                        "flags": "g"
+                    }
+                ],
+                "openDialog": {
+                    "dataFilenamesDialog": {
+                        "defaultUri": "${userHome}${pathSeparator}Downloads",
+                        "filters": {
+                            "Data file": ["csv", "xlsx", "xls", "txt"]
+                        },
+                        "title": "Select a data file(s):",
+                        "canSelectMany": "true",
+                        "separator": ","
+                    }
+                }
             }
         }
     ]
