@@ -591,7 +591,7 @@ DataParser(
         "Coin",
         "Transfer Network",
     ],
-    worksheet_name="KuCoin D",
+    worksheet_name="KuCoin D,W",
     row_handler=parse_kucoin_deposits_withdrawals_v2,
 )
 
@@ -611,7 +611,7 @@ DataParser(
         "Status",
         "Remarks",
     ],
-    worksheet_name="KuCoin W",
+    worksheet_name="KuCoin D,W",
     row_handler=parse_kucoin_deposits_withdrawals_v2,
 )
 DataParser(
@@ -629,7 +629,7 @@ DataParser(
         "Transfer Network",
         "Withdrawal Address/Account",
     ],
-    worksheet_name="KuCoin W",
+    worksheet_name="KuCoin D,W",
     row_handler=parse_kucoin_deposits_withdrawals_v2,
 )
 
