@@ -148,6 +148,7 @@
 - BlockFi parser: added "BIA Deposit" transaction type.
 - Config: added USDC to crypto_list.
 - CoinTracker parser: added new export format. ([#401](https://github.com/BittyTax/BittyTax/issues/401))
+- Conversion tool: added (--cryptoasset) option.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
