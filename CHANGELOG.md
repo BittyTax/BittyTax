@@ -146,6 +146,7 @@
 - Accounting tool: added LIFO, HIFO and LOFO cost basis methods in addition to FIFO.
 - Accounting/Price tool: added CryptoCompare asset IDs to allow custom mapping of asset symbols.
 - BlockFi parser: added "BIA Deposit" transaction type.
+- Config: added USDC to crypto_list.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
