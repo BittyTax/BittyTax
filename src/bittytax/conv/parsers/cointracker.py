@@ -58,11 +58,18 @@ def _parse_cointracker_row(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
-    data_row.tx_raw = TxRawPos(
-        parser.in_header.index("Transaction ID"),
-        parser.in_header.index("Received Address"),
-        parser.in_header.index("Sent Address"),
-    )
+    if "Transaction Hash" in parser.in_header:
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("Transaction Hash"),
+            parser.in_header.index("Received Address"),
+            parser.in_header.index("Sent Address"),
+        )
+    else:
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("Transaction ID"),
+            parser.in_header.index("Received Address"),
+            parser.in_header.index("Sent Address"),
+        )
     data_row.parsed = True
 
     if row_dict["Fee Amount"]:
@@ -70,7 +77,7 @@ def _parse_cointracker_row(
     else:
         fee_quantity = None
 
-    if row_dict["Type"] in ("Buy", "Sell", "Trade"):
+    if row_dict["Type"].upper() in ("BUY", "SELL", "TRADE", "MULTI_TOKEN_TRADE", "SPAM"):
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
@@ -83,7 +90,7 @@ def _parse_cointracker_row(
             wallet=_wallet_name(row_dict["Received Wallet"]),
             note=row_dict["Received Comment"],
         )
-    elif row_dict["Type"] == "Receive":
+    elif row_dict["Type"].upper() == "RECEIVE":
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -94,7 +101,7 @@ def _parse_cointracker_row(
             wallet=_wallet_name(row_dict["Received Wallet"]),
             note=row_dict["Received Comment"],
         )
-    elif row_dict["Type"] == "Send":
+    elif row_dict["Type"].upper() == "SEND":
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -105,7 +112,7 @@ def _parse_cointracker_row(
             wallet=_wallet_name(row_dict["Sent Wallet"]),
             note=row_dict["Sent Comment"],
         )
-    elif row_dict["Type"] == "Transfer":
+    elif row_dict["Type"].upper() == "TRANSFER":
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -129,6 +136,17 @@ def _parse_cointracker_row(
             note=row_dict["Received Comment"],
         )
         data_rows.insert(row_index + 1, dup_data_row)
+    elif row_dict["Type"].upper() in ("AIRDROP", "MINT"):
+        data_row.t_record = TransactionOutRecord(
+            TrType.AIRDROP,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Received Quantity"]),
+            buy_asset=row_dict["Received Currency"],
+            fee_quantity=fee_quantity,
+            fee_asset=row_dict["Fee Currency"],
+            wallet=_wallet_name(row_dict["Received Wallet"]),
+            note=row_dict["Received Comment"],
+        )
     else:
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
@@ -136,6 +154,36 @@ def _parse_cointracker_row(
 def _wallet_name(wallet: str) -> str:
     return wallet.split(" - ")[0]
 
+
+DataParser(
+    ParserType.ACCOUNTING,
+    "CoinTracker",
+    [
+        "Date",
+        "Type",
+        "Transaction ID",
+        "Received Quantity",
+        "Received Currency",
+        lambda c: re.match(r"Received Cost Basis \((\w{3})\)?", c),
+        "Received Wallet",
+        "Received Address",
+        "Received Comment",
+        "Sent Quantity",
+        "Sent Currency",
+        lambda c: re.match(r"Sent Cost Basis \((\w{3})\)?", c),
+        "Sent Wallet",
+        "Sent Address",
+        "Sent Comment",
+        "Fee Amount",
+        "Fee Currency",
+        lambda c: re.match(r"Fee Cost Basis \((\w{3})\)?", c),
+        lambda c: re.match(r"Realized Return \((\w{3})\)?", c),
+        lambda c: re.match(r"Fee Realized Return \((\w{3})\)?", c),
+        "Transaction Hash",
+    ],
+    worksheet_name="CoinTracker",
+    all_handler=parse_cointracker,
+)
 
 DataParser(
     ParserType.ACCOUNTING,
