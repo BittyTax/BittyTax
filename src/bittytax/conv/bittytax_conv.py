@@ -57,7 +57,7 @@ def main() -> None:
     )
     parser.add_argument(
         "-ca",
-        dest="cryptoasset",
+        "--cryptoasset",
         type=str,
         help="specify a cryptoasset symbol, if it cannot be identified automatically",
     )
