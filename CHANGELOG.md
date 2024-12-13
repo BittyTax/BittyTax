@@ -20,6 +20,8 @@
 - Coinbase parser: fixed currency conversion when data file is not in local currency.
 - Price tool: fix epoch_time.
 - Accounting tool: skipping blank rows should also include the Note field being empty.
+- Kraken parser: added missing fee for "staking".
+- Kraken parser: "earn" with a fee must be a "reward" if the subtype is empty.
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
@@ -144,6 +146,7 @@
 - CoinTracker parser: added new export format. ([#401](https://github.com/BittyTax/BittyTax/issues/401))
 - Conversion tool: added (--cryptoasset) option.
 - Nexo parser: added "Administrative Deduction", "Nexo Card Purchase" and "Transfer To Pro Wallet" types.
+- Kraken parser: added "earn" subtypes "reward", "migration", "autoallocate" and "deallocation".
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
