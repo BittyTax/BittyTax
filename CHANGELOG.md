@@ -150,6 +150,7 @@
 - Config: added USDC to crypto_list.
 - CoinTracker parser: added new export format. ([#401](https://github.com/BittyTax/BittyTax/issues/401))
 - Conversion tool: added (--cryptoasset) option.
+- Nexo parser: added "Administrative Deduction", "Nexo Card Purchase" and "Transfer To Pro Wallet" types.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))

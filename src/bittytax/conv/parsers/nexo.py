@@ -256,8 +256,17 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             wallet=WALLET,
             note=_get_note(row_dict["Details"]),
         )
+    elif row_dict["Type"] in ("Administrator", "Administrative Deduction", "Nexo Card Purchase"):
+        data_row.t_record = TransactionOutRecord(
+            TrType.SPEND,
+            data_row.timestamp,
+            sell_quantity=sell_quantity,
+            sell_asset=sell_asset,
+            sell_value=value,
+            wallet=WALLET,
+            note=_get_note(row_dict["Details"]),
+        )
     elif row_dict["Type"] in (
-        "Administrator",
         "DepositToExchange",
         "Deposit To Exchange",
         "ExchangeToWithdraw",
@@ -270,6 +279,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         "Transfer Out",
         "UnlockingTermDeposit",
         "Unlocking Term Deposit",
+        "Transfer To Pro Wallet",
     ):
         # Skip internal operations
         return
