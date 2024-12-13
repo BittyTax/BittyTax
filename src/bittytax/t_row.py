@@ -436,7 +436,7 @@ class TransactionRow:
         self.failure: Optional[TransactionParserError] = None
 
     def parse(self) -> None:
-        if all(not self.row[i] for i in range(len(self.row) - 1)):
+        if all(not self.row[i] for i in range(len(self.row))):
             # Skip empty rows
             return
 

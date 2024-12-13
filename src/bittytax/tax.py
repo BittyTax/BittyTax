@@ -465,7 +465,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             desc=f"{Fore.CYAN}process margin trades{Fore.GREEN}",
             disable=bool(config.debug or not sys.stdout.isatty()),
         ):
-
             if t.t_type in self.MARGIN_TYPES and (t.quantity or t.fee_value):
                 tax_event = TaxEventMarginTrade(t)
                 self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
