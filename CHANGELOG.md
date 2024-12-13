@@ -19,6 +19,7 @@
 - Coinbase parser: fix missing warning for advanced trades which are crypto-to-crypto.
 - Coinbase parser: fixed currency conversion when data file is not in local currency.
 - Price tool: fix epoch_time.
+- Accounting tool: skipping blank rows should also include the Note field being empty.
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
