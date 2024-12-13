@@ -63,6 +63,7 @@ def parse_crypto_com(
         "supercharger_reward_to_app_credited",
         "finance.lockup.dpos_compound_interest.crypto_wallet",
         "finance.dpos.non_compound_interest.crypto_wallet",
+        "finance.dpos.compound_interest.crypto_wallet",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.INTEREST,
@@ -88,6 +89,7 @@ def parse_crypto_com(
         "crypto_exchange",
         "crypto_to_van_sell_order",
         "trading.limit_order.fiat_wallet.sell_commit",
+        "recurring_buy_order",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,

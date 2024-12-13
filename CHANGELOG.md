@@ -154,6 +154,7 @@
 - Conversion tool: added (--cryptoasset) option.
 - Nexo parser: added "Administrative Deduction", "Nexo Card Purchase" and "Transfer To Pro Wallet" types.
 - Kraken parser: added "earn" subtypes "reward", "migration", "autoallocate" and "deallocation".
+- Crypto.com parser: added "finance.dpos.compound_interest.crypto_wallet" and "recurring_buy_order" transaction kinds.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
