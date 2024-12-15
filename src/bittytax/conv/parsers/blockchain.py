@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2021
-
+import re
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Tuple, Union
 
 from typing_extensions import Unpack
 
@@ -25,9 +25,11 @@ def parse_blockchain_v2(
     data_row.timestamp = _get_timestamp(row_dict["date"], row_dict["time"])
     data_row.tx_raw = TxRawPos(parser.in_header.index("tx"))
 
-    value = _get_fiat_value(row_dict["value_then"], data_row.timestamp)
-    fee_value = _get_fiat_value(row_dict["fee_value_then"], data_row.timestamp)
-    recipient_value = _get_fiat_value(row_dict["recipient_value_then"], data_row.timestamp)
+    value, currency = _get_fiat_value(row_dict["value_then"], data_row.timestamp)
+    fee_value, _ = _get_fiat_value(row_dict["fee_value_then"], data_row.timestamp, currency)
+    recipient_value, _ = _get_fiat_value(
+        row_dict["recipient_value_then"], data_row.timestamp, currency
+    )
 
     if Decimal(row_dict["amount"]) > 0:
         data_row.t_record = TransactionOutRecord(
@@ -54,21 +56,25 @@ def parse_blockchain_v2(
         )
 
 
-def _get_fiat_value(value_str: str, timestamp: datetime) -> Optional[Decimal]:
-    symbol, value_str = value_str[0], value_str.strip("£€$ ").replace(",", "")
-    if symbol == "£":
-        value = DataParser.convert_currency(value_str, "GBP", timestamp)
-    elif symbol == "€":
-        value = DataParser.convert_currency(value_str, "EUR", timestamp)
-    elif symbol == "$":
-        value = DataParser.convert_currency(value_str, "USD", timestamp)
-    else:
-        value = None
+def _get_fiat_value(
+    value_str: str, timestamp: datetime, currency_known: Optional[str] = ""
+) -> Tuple[Optional[Decimal], str]:
 
-    if value is not None:
-        value = abs(value)
+    match = re.match(r"^-?([£€$]?)([\d|,]+\.\d{2})$", value_str)
+    if match:
+        symbol = match.group(1)
+        value = match.group(2).replace(",", "")
 
-    return value
+        if symbol == "£":
+            return DataParser.convert_currency(value, "GBP", timestamp), "GBP"
+        if symbol == "€":
+            return DataParser.convert_currency(value, "EUR", timestamp), "EUR"
+        if symbol == "$":
+            return DataParser.convert_currency(value, "USD", timestamp), "USD"
+        if currency_known:
+            return DataParser.convert_currency(value, currency_known, timestamp), currency_known
+
+    raise RuntimeError(f"Unexpected fiat value: {value_str}")
 
 
 def _get_timestamp(date_str: str, time_str: str) -> datetime:
@@ -95,7 +101,7 @@ def parse_blockchain_v1(
     row_dict = data_row.row_dict
     data_row.timestamp = _get_timestamp(row_dict["date"], row_dict["time"])
 
-    value = _get_fiat_value(row_dict["value_then"], data_row.timestamp)
+    value, _ = _get_fiat_value(row_dict["value_then"], data_row.timestamp)
 
     if Decimal(row_dict["amount"]) > 0:
         data_row.t_record = TransactionOutRecord(
