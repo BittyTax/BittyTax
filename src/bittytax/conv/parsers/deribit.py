@@ -327,7 +327,7 @@ def _parse_deribit_row(
         # balances e.g your margin money is in ETH and you short the ETH_USDC-PERPETUAL. If ETH goes up, the short
         # position becomes negative in USDC. Deribit and other exchanges charge a rate of interest on negative balances
         # so we need to add negative balances to funding fee and adjust balance[uid]
-    elif row_dict["Type"] in ("settlement", "negative_balance_fee"):
+    elif row_dict["Type"] in ("settlement", "negative_balance_fee", "correction"):
         if row_dict["Type"] == "settlement":
             instrument = Instrument(row_dict["Instrument"])
         else:
@@ -377,7 +377,19 @@ def _parse_deribit_row(
                     f"{Fore.GREEN}conv: (uid: {uid}) {instrument}:negative_balance_fee="
                     f"{negative_balance_fee}\n"
                 )
-        if row_dict["Side"] == "-" and row_dict["Type"] != "negative_balance_fee":
+        if row_dict["Side"] == "-" and row_dict["Type"] == "correction":
+            # Accumulate for corrections
+            # Add / Deduct them from funding fees
+            correction = Decimal(row_dict["Cash Flow"])
+            positions[uid][instrument].funding_fees += correction
+            balance[uid] += correction
+            if config.debug:
+                sys.stderr.write(
+                    f"{Fore.GREEN}conv: (uid: {uid}) {instrument}:correction="
+                    f"{correction}\n"
+                )
+        if row_dict["Side"] == "-" and row_dict["Type"] != "negative_balance_fee"\
+                and row_dict["Type"] != "correction":
             # Position has already closed, final settlement
             unrealised_pnl = Decimal(row_dict["Cash Flow"])
             balance[uid] += unrealised_pnl
