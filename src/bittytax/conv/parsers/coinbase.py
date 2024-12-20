@@ -32,17 +32,17 @@ def parse_coinbase_v4(
 
     currency = row_dict["Price Currency"]
     spot_price_ccy = DataParser.convert_currency(
-        row_dict["Price at Transaction"].strip("£€$").replace(",", ""),
+        re.sub(r"[^-\d.]+", "", row_dict["Price at Transaction"]),
         currency,
         data_row.timestamp,
     )
     subtotal_ccy = DataParser.convert_currency(
-        row_dict["Subtotal"].strip("£€$").replace(",", ""),
+        re.sub(r"[^-\d.]+", "", row_dict["Subtotal"]),
         currency,
         data_row.timestamp,
     )
     total_ccy = DataParser.convert_currency(
-        row_dict["Total (inclusive of fees and/or spread)"].strip("£€$").replace(",", ""),
+        re.sub(r"[^-\d.]+", "", row_dict["Total (inclusive of fees and/or spread)"]),
         currency,
         data_row.timestamp,
     )
