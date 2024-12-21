@@ -331,8 +331,13 @@ def _parse_deribit_row(
         if row_dict["Type"] == "settlement":
             instrument = Instrument(row_dict["Instrument"])
         else:
-            # rows / lines where "Type" is negative_balance_fee have a blank '' for Instrument
+            # rows / lines where "Type" is negative_balance_fee  or "correction" have a blank '' for Instrument
             # therefore have to look back to previous row(s)
+            # however, it has to be said that negative_balance_fee may well apply to a number of positions
+            # I only have one position per account but it would probably be better to generalise it
+            # into a new column of row.t_record
+            # "correction" has a note explaining which instrument it applies to
+            # but in this draft I just apply it to the closest listed row
             instrument = Instrument(row_dict["Instrument"])
             counter = 1
             if not re.search('(?i)([0-3][0-9](JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[0-9][0-9])|(PERPETUAL)', instrument):
