@@ -49,6 +49,11 @@ jobs:
         run: |
           pip install black
           black --check $(git ls-files '*.py')
+      - name: Djlint
+        run: |
+          pip install djlint
+          djlint --check .
+          djlint .
   spell:
     runs-on: ubuntu-latest
     steps:
