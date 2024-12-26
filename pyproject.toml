@@ -22,3 +22,15 @@ warn_redundant_casts = true
 disallow_untyped_decorators = true
 disallow_untyped_calls = true
 enable_incomplete_feature = ["Unpack"]
+
+[tool.djlint]
+profile = "jinja"
+
+# H005 Html tag should have lang attribute.
+# H006 Img tag should have height and width attributes.
+# H013 Img tag should have an alt attribute.
+# H016 Missing title tag in html.
+# H021 Inline styles should be avoided.
+# H030 Consider adding a meta description.
+# H031 Consider adding meta keywords.
+ignore = "H005,H006,H013,H016,H021,H030,H031"

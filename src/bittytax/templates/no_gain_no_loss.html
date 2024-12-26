@@ -12,19 +12,19 @@
         </tr>
     </table>
     <table class="total-table mt">
-    <tr>
-        <td align="left">Total</td>
-        <td align="right"></td>
-        <td align="left"></td>
-        <td align="left"></td>
-        <td align="left"></td>
-        <td align="right">{{0|valuefilter}}</td>
-        <td align="right">{{0|valuefilter}}</td>
-    </tr>
+        <tr>
+            <td align="left">Total</td>
+            <td align="right"></td>
+            <td align="left"></td>
+            <td align="left"></td>
+            <td align="left"></td>
+            <td align="right">{{ 0|valuefilter }}</td>
+            <td align="right">{{ 0|valuefilter }}</td>
+        </tr>
     </table>
 {% endif %}
 {% for t_type in cgains["non_tax_by_type"]|sort %}
-    <h3>{{t_type}}</h3>
+    <h3>{{ t_type }}</h3>
     <table repeat="1" width="100%" class="asset-table mt mb">
         <tr>
             <th align="left">Asset</th>
@@ -37,13 +37,13 @@
         </tr>
         {% for te in cgains["non_tax_by_type"][t_type] %}
             <tr>
-                <td>{{te.asset}}</td>
-                <td>{{te.quantity|quantityfilter}}</td>
-                <td>{{te.note}}</td>
-                <td>{{te.date|datefilter}}</td>
-                <td>{{te.format_disposal()}}</td>
-                <td align="right">{{te.market_value|valuefilter}}</td>
-                <td align="right">{{te.cost|valuefilter}}</td>
+                <td>{{ te.asset }}</td>
+                <td>{{ te.quantity|quantityfilter }}</td>
+                <td>{{ te.note }}</td>
+                <td>{{ te.date|datefilter }}</td>
+                <td>{{ te.format_disposal() }}</td>
+                <td align="right">{{ te.market_value|valuefilter }}</td>
+                <td align="right">{{ te.cost|valuefilter }}</td>
             </tr>
         {% endfor %}
     </table>
@@ -54,8 +54,8 @@
             <td align="left"></td>
             <td align="left"></td>
             <td align="left"></td>
-            <td align="right">{{cgains["non_tax_by_type_total"][t_type]['proceeds']|valuefilter}}</td>
-            <td align="right">{{cgains["non_tax_by_type_total"][t_type]['cost']|valuefilter}}</td>
+            <td align="right">{{ cgains["non_tax_by_type_total"][t_type]['proceeds']|valuefilter }}</td>
+            <td align="right">{{ cgains["non_tax_by_type_total"][t_type]['cost']|valuefilter }}</td>
         </tr>
     </table>
 {% endfor %}

@@ -6,32 +6,30 @@
         {% include "cover_page.html" %}
         {% for tax_year in tax_report|sort %}
             {% set cgains = tax_report[tax_year]['CapitalGains'] %}
-            <h1 class="tax-year">Tax Year - {{config.format_tax_year(tax_year)}}</h1>
-            <h2 class="date-range">{{config.get_tax_year_start(tax_year)|datefilter2}} to {{config.get_tax_year_end(tax_year)|datefilter2}}</h2>
+            <h1 class="tax-year">Tax Year - {{ config.format_tax_year(tax_year) }}</h1>
+            <h2 class="date-range">
+                {{ config.get_tax_year_start(tax_year) |datefilter2 }} to {{ config.get_tax_year_end(tax_year) |datefilter2 }}
+            </h2>
             <h2>Capital Gains</h2>
             <h3>Short-Term</h3>
             {% with assets=cgains["short_term"], totals=cgains["short_term_totals"] %}
-               {% include "capital_gains.html" %}
+                {% include "capital_gains.html" %}
             {% endwith %}
             <h3>Long-Term</h3>
             {% with assets=cgains["long_term"], totals=cgains["long_term_totals"] %}
-               {% include "capital_gains.html" %}
+                {% include "capital_gains.html" %}
             {% endwith %}
             <h2>Non-Taxable Transactions</h2>
             {% include "no_gain_no_loss.html" %}
             {% include "income.html" %}
             {% include "margin_trading.html" %}
-            {% if not loop.last %}
-                <pdf:nextpage />
-            {% endif %}
+            {% if not loop.last %}<pdf:nextpage />{% endif %}
         {% endfor %}
         <pdf:nextpage />
         <h1>Appendix</h1>
         {% for tax_year in tax_report|sort %}
             {% include "price_data.html" %}
-            {% if not loop.last %}
-                <pdf:nextpage />
-            {% endif %}
+            {% if not loop.last %}<pdf:nextpage />{% endif %}
         {% endfor %}
     </body>
 </html>

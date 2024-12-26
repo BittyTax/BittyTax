@@ -1,17 +1,5 @@
-<table repeat="1" width="100%" class="asset-table mt mb">
-    <tr>
-        <th align="left">Asset</th>
-        <th align="left">Quantity</th>
-        <th align="left">Date Acquired</th>
-        <th align="left">Date Sold</th>
-        <th align="right">Proceeds</th>
-        <th align="right">Cost Basis</th>
-        <th align="right">Gain or (Loss)</th>
-    </tr>
-{% for asset in assets|sort %}
-    {% set asset_totals = namespace(disposals=0, quantity=0, proceeds=0, cost=0, gain=0) %}
-    {% if not loop.first %}
-        <table repeat="1" width="100%" class="asset-table mt mb">
+{% if not assets %}
+    <table repeat="1" width="100%" class="asset-table mt mb">
         <tr>
             <th align="left">Asset</th>
             <th align="left">Quantity</th>
@@ -21,59 +9,69 @@
             <th align="right">Cost Basis</th>
             <th align="right">Gain or (Loss)</th>
         </tr>
-    {% endif %}
-    {% for te in assets[asset] %}
-        {% set asset_totals.disposals = asset_totals.disposals + 1 %}
+    </table>
+{% endif %}
+{% for asset in assets|sort %}
+    {% set asset_totals = namespace(disposals=0, quantity=0, proceeds=0, cost=0, gain=0) %}
+    <table repeat="1" width="100%" class="asset-table mt mb">
         <tr>
-            <td>{{te.asset}}</td>
-            <td>{{te.quantity|quantityfilter}}</td>
-            {% set asset_totals.quantity = asset_totals.quantity + te.quantity %}
-            <td>{{te.a_date()}}</td>
-            <td>{{te.date|datefilter}}</td>
-            <td align="right">{{te.proceeds|valuefilter}}</td>
-            {% set asset_totals.proceeds = asset_totals.proceeds + te.proceeds %}
-            <td align="right">{{te.cost|valuefilter}}</td>
-            {% set asset_totals.cost = asset_totals.cost + te.cost %}
-            {% if te.gain >= 0 %}
-               <td align="right">{{te.gain|valuefilter}}</td>
-            {% else %}
-               <td align="right" class="red-font">{{te.gain|valuefilter}}</td>
-            {% endif %}
-            {% set asset_totals.gain = asset_totals.gain + te.gain %}
+            <th align="left">Asset</th>
+            <th align="left">Quantity</th>
+            <th align="left">Date Acquired</th>
+            <th align="left">Date Sold</th>
+            <th align="right">Proceeds</th>
+            <th align="right">Cost Basis</th>
+            <th align="right">Gain or (Loss)</th>
         </tr>
-    {% endfor %}
-    {% if asset_totals.disposals > 1 %}
-        <tr>
-            <td align="left">Total</td>
-            <td align="left">{{asset_totals.quantity|quantityfilter}}</td>
-            <td align="left"></td>
-            <td align="left"></td>
-            <td align="right">{{asset_totals.proceeds|valuefilter}}</td>
-            <td align="right">{{asset_totals.cost|valuefilter}}</td>
-            {% if asset_totals.gain >= 0 %}
-                <td align="right">{{asset_totals.gain|valuefilter}}</td>
-            {% else %}
-                <td align="right" class="red-font">{{asset_totals.gain|valuefilter}}</td>
-            {% endif %}
-        </tr>
-    {% endif %}
-    {% if not loop.first %}
-        </table>
-    {% endif %}
+        {% for te in assets[asset] %}
+            {% set asset_totals.disposals = asset_totals.disposals + 1 %}
+            <tr>
+                <td>{{ te.asset }}</td>
+                <td>{{ te.quantity|quantityfilter }}</td>
+                {% set asset_totals.quantity = asset_totals.quantity + te.quantity %}
+                <td>{{ te.a_date() }}</td>
+                <td>{{ te.date|datefilter }}</td>
+                <td align="right">{{ te.proceeds|valuefilter }}</td>
+                {% set asset_totals.proceeds = asset_totals.proceeds + te.proceeds %}
+                <td align="right">{{ te.cost|valuefilter }}</td>
+                {% set asset_totals.cost = asset_totals.cost + te.cost %}
+                {% if te.gain >= 0 %}
+                    <td align="right">{{ te.gain|valuefilter }}</td>
+                {% else %}
+                    <td align="right" class="red-font">{{ te.gain|valuefilter }}</td>
+                {% endif %}
+                {% set asset_totals.gain = asset_totals.gain + te.gain %}
+            </tr>
+        {% endfor %}
+        {% if asset_totals.disposals > 1 %}
+            <tr>
+                <td align="left">Total</td>
+                <td align="left">{{ asset_totals.quantity|quantityfilter }}</td>
+                <td align="left"></td>
+                <td align="left"></td>
+                <td align="right">{{ asset_totals.proceeds|valuefilter }}</td>
+                <td align="right">{{ asset_totals.cost|valuefilter }}</td>
+                {% if asset_totals.gain >= 0 %}
+                    <td align="right">{{ asset_totals.gain|valuefilter }}</td>
+                {% else %}
+                    <td align="right" class="red-font">{{ asset_totals.gain|valuefilter }}</td>
+                {% endif %}
+            </tr>
+        {% endif %}
+    </table>
 {% endfor %}
-</table>
 <table class="total-table mt">
     <tr>
         <td align="left">Total</td>
         <td align="right"></td>
         <td align="left"></td>
         <td align="left"></td>
-        <td align="right">{{totals['proceeds']|valuefilter}}</td>
-        <td align="right">{{totals['cost']|valuefilter}}</td>
+        <td align="right">{{ totals['proceeds']|valuefilter }}</td>
+        <td align="right">{{ totals['cost']|valuefilter }}</td>
         {% if totals['gain'] >= 0 %}
-            <td align="right">{{totals['gain']|valuefilter}}</td>
+            <td align="right">{{ totals['gain']|valuefilter }}</td>
         {% else %}
-            <td align="right" class="red-font">{{totals['gain']|valuefilter}}</td>
+            <td align="right" class="red-font">{{ totals['gain']|valuefilter }}</td>
         {% endif %}
     </tr>
 </table>
