@@ -23,6 +23,7 @@
 - Accounting tool: skipping blank rows should also include the Note field being empty.
 - Kraken parser: added missing fee for "staking".
 - Kraken parser: "earn" with a fee must be a "reward" if the subtype is empty.
+- Accounting tool: in PDF reports only word-wrap for asset-table and total-table.
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
