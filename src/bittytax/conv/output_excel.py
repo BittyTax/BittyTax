@@ -171,7 +171,7 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             worksheet.autofit()
 
         self.workbook.close()
-        sys.stderr.write(
+        sys.stdout.write(
             f"{Fore.WHITE}output EXCEL file created: "
             f"{Fore.YELLOW}{os.path.abspath(self.filename)}\n"
         )
