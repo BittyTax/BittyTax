@@ -1,4 +1,4 @@
- Change Log
+# Change Log
 ## [Unreleased]
 ### Fixed
 - Coinbase parser: fixed regex to handle whole numbers, and a single digit after the decimal point.
