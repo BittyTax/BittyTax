@@ -172,6 +172,7 @@ class OutputIrs:
         Year(2021): f"{IRS_FORMS_DIR}/f8949--2021.pdf",
         Year(2022): f"{IRS_FORMS_DIR}/f8949--2022.pdf",
         Year(2023): f"{IRS_FORMS_DIR}/f8949--2023.pdf",
+        Year(2024): f"{IRS_FORMS_DIR}/f8949--2024.pdf",
     }
 
     def __init__(self, filename: str, tax_report: Dict[Year, TaxReportRecord]) -> None:
