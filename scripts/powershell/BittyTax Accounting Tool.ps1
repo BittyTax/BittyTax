@@ -12,6 +12,7 @@ param (
 )
 
 Add-Type -AssemblyName System.Windows.Forms
+[System.Windows.Forms.Application]::EnableVisualStyles();
 
 $iconBase64 = @'
 iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAACnVBMVEUAAAD4kxr3kxr1khr2lBzw8PCEhIRGRkZHR0dCQkL3lBr3lBr2lBo2NTM1NTX6kxf7lRj2kxlAQED2lBr1kxr4kxv5khv1kRrxjRwvLy/1lRX/oACBWipCQkL3kxr3kxr/mhRAQED3kxr3kxr3kxo6Ojo/Pz8yMjL3khoxMTH3kxr2khv2kxo5OTn4khr5kxr3kxr1kxsyMjL4lBr4khr/tQD5kRdFRUXzlxf3kxr///+kpKSlpaX3kxusrKz7lRr/ox2ioqH3khj/mBv+lxv/nhyop6b/nBuoqKiTk5P/oRze3t+ZmZlPUlX4kBL3iQOpqamenp6MjY1weYR5eXlxcnJsbGxYYGr/mBf+kgz/+vPs7Oyzs7Opq62hpKd8hpGQkJCIiIh8fHxrcXlTVVdHTldQT0//pDGEVRv/mhr4lBr9lBb/mxX4jQv2iwjj5OTe3NrZ2dn/79bT1NXHx8fCwsG5ubn/47atra3+1aSXl5aIjpR1fomDg4OAgIBwdnxtcnlgaXRlZWX5slxbW1tQUVH5q01CR01ISkxtW0VERERfUUD4ojj4nCyNYCucZyiIXSj3mCT/px2/dh36kxf3kRX/oRP/mRL/jQHq+P/g6/f//vTw8PDg5u7n5+fY1tTNzs/MzMy+w8n837y7vLz/57mztLaurq781qmYnqadoKT/26H9zpb/05X7zZWKi4t+g4r7xoX/y4R3e3/6wHqWiXncr3iIfnL/wGtmZmZRW2ZLVmQ8TmOReFpaWlo/S1o/Slj/uFS2h06Cak3al0XzokFmVkFhUj9yWDiIYjVfSjBQQjBjSiyeaiuEWyr8miK6dCCVYCD3lR7KfB3iiRz/oxr/qxjYfxP/lg//lg7mggn/lwXYdwH2gQDYcwD0gQVSAAAAOXRSTlMA+uhOG/7+4NzPvrKgmZRzXVFHRD83JiISDQwE+/Tw4uDc29rVz76+t62nopOQiICAaGBFRC0sGha8ueGSAAACe0lEQVQ4y72RZVfbYACF3+LutjF3d8ubpEmaNqGlLVKhBYa7M2y4uzNs7u7u7u4uv2Vv0vFhDL7t8Hx97rnnnnPBBBOwYfL40sbdyUqCSaY7e4wZCnCR0wqeZVleRUuW/+utJTSbgQlQpqzBTzPWjvIraYVoSe1Q5vvunlfdU1zd3FyXrh/xnjRLYiSWozXfvfc8ubYiNrZcGRcep587Mk/OkxgmI+tff71/42hBMCJ3V1RUVEHdQiCygEYey+6A8GbznvxiKYHjRGh0YZ5tvnG+4NcpKORRw5Xddw4UMQxOEATOhIUxhbbB+nmrAFhCWwb2m1urDx2LwRkmJiY0FEeZoh25SQ0AzOYxEfPD5BaNRtOYkqLRJJWJib3qW8XARiIXvSykdGve5x+/Lm3b+eDb2whhCaduUUuBj5wSA1pZJITnUlM3QZj6fUvERhSQVjVsJoAnS1kK6iFEEnEie+iNJWAwSnHgLTSQspCf++F2M38cwpLhL4N/GvR1qMGPRBsG3h05BeHFtLS0y+Wnn/Z0PauWCgFlCseBQKt0DMtpgoika7E6g8Gg0+nOcMgTQcrGhGgAFqmECZ0XIuG+NiL6sFSEwAmOCLe72hYPwGqaEjZgsPRgRbKS4YIEOIJg4iuNjl6OAIA5KvRFyFkoK4l8cft8uLJMrUZnxlfaGWdOAgK+KvT2QGdTLzw53NV8vTaxJjGxJiGhSj8VeZEVfRRJanNkHb2ZWR9ePnnc3v6o1cHB3t4LjODSJxcf15IZpixTZj//0R38zTIV+txCBmWi0z3AaLxn0ap0OUVRcp5WOPmDMbB2nsYqFArWarEvGIdAvzXWPv7gv/Mbf2bVmEONLrIAAAAASUVORK5CYII=
@@ -23,7 +24,11 @@ function Show-FileDialog {
     $openFileDialog = New-Object System.Windows.Forms.OpenFileDialog
     $openFileDialog.Title = 'Select a BittyTax transaction records spreadsheet:'
     $openFileDialog.Filter = 'Excel files (*.xlsx;*.xls)|*.xlsx;*.xls|CSV files (*.csv)|*.csv'
-    $openFileDialog.ShowDialog() | Out-Null
+    $openFileDialog.ShowDialog((New-Object System.Windows.Forms.Form -Property @{
+                TopMost       = $true
+                StartPosition = 'CenterScreen'
+                Icon          = [System.Drawing.Icon]::FromHandle(([System.Drawing.Bitmap]::new($iconStream).GetHIcon()))
+            })) | Out-Null
     return $openFileDialog.FileNames
 }
 
@@ -36,6 +41,8 @@ function Show-ArgumentInputBox {
     $form.MinimizeBox = $false
     $form.MaximizeBox = $false
     $form.Icon = [System.Drawing.Icon]::FromHandle(([System.Drawing.Bitmap]::new($iconStream).GetHIcon()))
+    $form.Topmost = $true
+    $form.TopLevel = $true
 
     $label = New-Object Windows.Forms.Label
     $label.Location = New-Object Drawing.Point(10, 15)
@@ -80,6 +87,8 @@ function Show-SuccessMessageBox {
     $form.MinimizeBox = $false
     $form.MaximizeBox = $false
     $form.Icon = [System.Drawing.Icon]::FromHandle(([System.Drawing.Bitmap]::new($iconStream).GetHIcon()))
+    $form.Topmost = $true
+    $form.TopLevel = $true
     
     $label = New-Object Windows.Forms.Label
     $label.Location = New-Object Drawing.Point(10, 15)
@@ -170,6 +179,9 @@ function BittyTaxAccountingTool {
 
     Invoke-Expression $command | Tee-Object -Variable output
 
+    # Remove ANSI colour codes
+    $output = $output | ForEach-Object { $_ -replace "\x1b\[\d+(;\d+)*m", "" }
+
     # Check for success message in the command output
     $success = $false
     $outputFilePath = ""
@@ -194,7 +206,7 @@ function BittyTaxAccountingTool {
         }
     }
     else {
-        Write-Host 'Press Enter to continue...'
+        Write-Host 'Press Enter to continue...' -ForegroundColor White
         Read-Host
     }
 }
