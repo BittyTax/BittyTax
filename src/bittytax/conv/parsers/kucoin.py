@@ -289,7 +289,7 @@ def parse_kucoin_deposits_withdrawals_v2(
             data_row.timestamp,
             sell_quantity=Decimal(row_dict["Amount"]),
             sell_asset=row_dict["Coin"],
-            fee_quantity=Decimal(row_dict["Fee"]),
+            fee_quantity=Decimal(row_dict["Fee"]) if row_dict["Fee"] else Decimal(0),
             fee_asset=row_dict["Coin"],
             wallet=WALLET,
             note=row_dict["Remarks"],
@@ -300,7 +300,7 @@ def parse_kucoin_deposits_withdrawals_v2(
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Coin"],
-            fee_quantity=Decimal(row_dict["Fee"]),
+            fee_quantity=Decimal(row_dict["Fee"]) if row_dict["Fee"] else Decimal(0),
             fee_asset=row_dict["Coin"],
             wallet=WALLET,
         )
