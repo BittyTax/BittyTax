@@ -77,7 +77,39 @@ def parse_mexc_withdrawals(
     )
 
 
-def parse_mexc_trades(
+def parse_mexc_trades_v2(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
+
+    if row_dict["Direction"] == "Buy":
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Filled Quantity"]),
+            buy_asset=row_dict["Pairs"].split("_")[0],
+            sell_quantity=Decimal(row_dict["Order Amount"]),
+            sell_asset=row_dict["Pairs"].split("_")[1],
+            wallet=WALLET,
+        )
+    elif row_dict["Direction"] == "Sell":
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Order Amount"]),
+            buy_asset=row_dict["Pairs"].split("_")[1],
+            sell_quantity=Decimal(row_dict["Filled Quantity"]),
+            sell_asset=row_dict["Pairs"].split("_")[0],
+            wallet=WALLET,
+        )
+    else:
+        raise UnexpectedTypeError(
+            parser.in_header.index("Direction"), "Direction", row_dict["Direction"]
+        )
+
+
+def parse_mexc_trades_v1(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
@@ -104,7 +136,7 @@ def parse_mexc_trades(
             sell_quantity=Decimal(row_dict["Executed Amount"]),
             sell_asset=row_dict["Pairs"].split("_")[0],
             fee_quantity=Decimal(row_dict["Fee"]),
-            fee_asset=row_dict["Pairst"].split("_")[1],
+            fee_asset=row_dict["Pairs"].split("_")[1],
             wallet=WALLET,
         )
     else:
@@ -116,9 +148,12 @@ def parse_mexc_futures(
 ) -> None:
     positions: Dict[Instrument, Position] = {}
     timestamp_hdr = parser.args[0].group(1)
-    utc_offset = parser.args[0].group(2)
+    if parser.args[0].group(2) is not None:
+        utc_offset = parser.args[0].group(2)
+    else:
+        utc_offset = "UTC+00:00"
 
-    for data_row in reversed(data_rows):
+    for row_index, data_row in reversed(list(enumerate(data_rows))):
         if config.debug:
             if parser.in_header_row_num is None:
                 raise RuntimeError("Missing in_header_row_num")
@@ -127,6 +162,11 @@ def parse_mexc_futures(
                 f"{Fore.YELLOW}conv: "
                 f" row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
             )
+
+        if not data_row.row:
+            # Delete blank rows
+            del data_rows[row_index]
+            continue
 
         data_row.timestamp = DataParser.parse_timestamp(
             f"{data_row.row_dict[timestamp_hdr]} {utc_offset}"
@@ -251,7 +291,7 @@ def _parse_mexc_futures_row(
                 f"{positions[instrument].trading_fees.normalize():0,f} "
                 f"{positions[instrument].fee_asset} ({trading_fee.normalize():+0,f})\n"
             )
-        partial_close = 1 - (positions[instrument].size / (positions[instrument].size + size))
+        partial_close = 1 - (positions[instrument].size / (positions[instrument].size - size))
         _close_position(data_rows, data_row, positions, instrument, partial_close)
     else:
         raise UnexpectedTypeError(
@@ -314,10 +354,9 @@ def _close_position(
             note=instrument,
         )
 
-    dup_data_row = copy.copy(data_row)
-    dup_data_row.row = []
-
     if trading_fees > 0:
+        dup_data_row = copy.copy(data_row)
+        dup_data_row.row = []
         dup_data_row.t_record = TransactionOutRecord(
             TrType.MARGIN_FEE,
             data_row.timestamp,
@@ -326,7 +365,7 @@ def _close_position(
             wallet=WALLET,
             note=instrument,
         )
-    data_rows.append(dup_data_row)
+        data_rows.append(dup_data_row)
 
 
 DataParser(
@@ -356,19 +395,42 @@ DataParser(
     row_handler=parse_mexc_withdrawals,
 )
 
+
+# Export Order History
+DataParser(
+    ParserType.EXCHANGE,
+    "MEXC Trades",
+    [
+        "Pairs",
+        "Time",
+        "Type",
+        "Direction",
+        "Average Filled Price",
+        "Order Price",
+        "Filled Quantity",
+        "Order Quantity",
+        "Order Amount",
+        "Status",
+    ],
+    worksheet_name="MEXC T",
+    row_handler=parse_mexc_trades_v2,
+)
+
+
+# Export Trade History, this is preferred as it contains fees
 DataParser(
     ParserType.EXCHANGE,
     "MEXC Trades",
     ["Pairs", "Time", "Side", "Filled Price", "Executed Amount", "Total", "Fee", "Role"],
     worksheet_name="MEXC T",
-    row_handler=parse_mexc_trades,
+    row_handler=parse_mexc_trades_v1,
 )
 
 DataParser(
     ParserType.EXCHANGE,
     "MEXC Futures",
     [
-        lambda c: re.match(r"(^Time\((UTC[-+]\d{2}:\d{2})\))", c),
+        lambda c: re.match(r"(^Time\((UTC[-+]\d{2}:\d{2})\)|Time)", c),
         "Futures Trading Pair",
         "Direction",
         "Leverage",
