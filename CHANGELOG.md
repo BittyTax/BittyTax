@@ -160,6 +160,7 @@
 - Crypto.com parser: added "finance.dpos.compound_interest.crypto_wallet" and "recurring_buy_order" transaction kinds.
 - Scripts: added PowerShell scripts to make BittyTax easier to use on Windows.
 - Accounting tool: added IRS Form 8949 for 2024.
+- Exodus parser: added "withdrawal (failed)" type.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
