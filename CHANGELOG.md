@@ -161,6 +161,7 @@
 - Scripts: added PowerShell scripts to make BittyTax easier to use on Windows.
 - Accounting tool: added IRS Form 8949 for 2024.
 - Exodus parser: added "withdrawal (failed)" type.
+- CoinCorner parser: added new export format.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
