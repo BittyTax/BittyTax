@@ -154,6 +154,7 @@
 - Scripts: added PowerShell scripts to make BittyTax easier to use on Windows.
 - Exodus parser: added "withdrawal (failed)" type.
 - CoinCorner parser: added new export format.
+- Coinbase parser: calculate amount/fee for advanced trades.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
