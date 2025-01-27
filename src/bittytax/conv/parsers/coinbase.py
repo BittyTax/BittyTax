@@ -251,8 +251,8 @@ def _do_parse_coinbase(
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] in ("Buy", "Advanced Trade Buy", "Advance Trade Buy"):
-        quote, subtotal, fees = _get_trade_info(row_dict["Notes"])
-        if not quote:
+        quote_asset, subtotal, fees = _get_trade_info(row_dict["Notes"])
+        if not quote_asset:
             raise UnexpectedContentError(
                 parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
             )
@@ -271,7 +271,7 @@ def _do_parse_coinbase(
                 buy_value=total_ccy if total_ccy and total_ccy > 0 else None,
                 wallet=WALLET,
             )
-        elif quote == currency:
+        elif quote_asset == currency:
             # Regular Buy
             data_row.t_record = TransactionOutRecord(
                 TrType.TRADE,
@@ -293,21 +293,21 @@ def _do_parse_coinbase(
                 buy_asset=row_dict["Asset"],
                 buy_value=subtotal_ccy,
                 sell_quantity=subtotal,
-                sell_asset=quote,
+                sell_asset=quote_asset,
                 sell_value=subtotal_ccy,
                 fee_quantity=fees,
-                fee_asset=quote,
+                fee_asset=quote_asset,
                 fee_value=abs(fees_ccy) if fees_ccy is not None else None,
                 wallet=WALLET,
             )
     elif row_dict["Transaction Type"] in ("Sell", "Advanced Trade Sell", "Advance Trade Sell"):
-        quote, subtotal, fees = _get_trade_info(row_dict["Notes"])
-        if not quote:
+        quote_asset, subtotal, fees = _get_trade_info(row_dict["Notes"])
+        if not quote_asset:
             raise UnexpectedContentError(
                 parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
             )
 
-        if quote == currency:
+        if quote_asset == currency:
             # Regular Sell
             data_row.t_record = TransactionOutRecord(
                 TrType.TRADE,
@@ -326,13 +326,13 @@ def _do_parse_coinbase(
                 TrType.TRADE,
                 data_row.timestamp,
                 buy_quantity=subtotal,
-                buy_asset=quote,
+                buy_asset=quote_asset,
                 buy_value=subtotal_ccy,
                 sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
                 sell_asset=row_dict["Asset"],
                 sell_value=subtotal_ccy,
                 fee_quantity=fees,
-                fee_asset=quote,
+                fee_asset=quote_asset,
                 fee_value=abs(fees_ccy) if fees_ccy is not None else None,
                 wallet=WALLET,
             )
