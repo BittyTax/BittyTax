@@ -247,7 +247,6 @@ def _do_parse_coinbase(
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
             sell_asset=row_dict["Asset"],
-            sell_value=abs(subtotal_ccy) if subtotal_ccy else None,
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] in ("Buy", "Advanced Trade Buy", "Advance Trade Buy"):
