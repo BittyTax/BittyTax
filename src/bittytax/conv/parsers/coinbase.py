@@ -2,16 +2,13 @@
 # (c) Nano Nano Ltd 2019
 
 import re
-import sys
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
-from colorama import Fore
 from typing_extensions import Unpack
 
 from ...bt_types import TrType, UnmappedType
 from ...config import config
-from ...constants import WARNING
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..datarow import TxRawPos
 from ..exceptions import UnexpectedContentError, UnexpectedTypeError
@@ -31,11 +28,6 @@ def parse_coinbase_v4(
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
 
     currency = row_dict["Price Currency"]
-    spot_price_ccy = DataParser.convert_currency(
-        re.sub(r"[^-\d.]+", "", row_dict["Price at Transaction"]),
-        currency,
-        data_row.timestamp,
-    )
     subtotal_ccy = DataParser.convert_currency(
         re.sub(r"[^-\d.]+", "", row_dict["Subtotal"]),
         currency,
@@ -52,9 +44,7 @@ def parse_coinbase_v4(
         data_row.timestamp,
     )
 
-    _do_parse_coinbase(
-        data_row, parser, (spot_price_ccy, subtotal_ccy, total_ccy, fees_ccy, currency)
-    )
+    _do_parse_coinbase(data_row, parser, (subtotal_ccy, total_ccy, fees_ccy, currency))
 
 
 def parse_coinbase_v3(
@@ -64,11 +54,6 @@ def parse_coinbase_v3(
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
 
     currency = row_dict["Spot Price Currency"]
-    spot_price_ccy = DataParser.convert_currency(
-        row_dict["Spot Price at Transaction"],
-        currency,
-        data_row.timestamp,
-    )
     subtotal_ccy = DataParser.convert_currency(
         row_dict["Subtotal"],
         currency,
@@ -85,9 +70,7 @@ def parse_coinbase_v3(
         data_row.timestamp,
     )
 
-    _do_parse_coinbase(
-        data_row, parser, (spot_price_ccy, subtotal_ccy, total_ccy, fees_ccy, currency)
-    )
+    _do_parse_coinbase(data_row, parser, (subtotal_ccy, total_ccy, fees_ccy, currency))
 
 
 def parse_coinbase_v2(
@@ -97,11 +80,6 @@ def parse_coinbase_v2(
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
 
     currency = row_dict["Spot Price Currency"]
-    spot_price_ccy = DataParser.convert_currency(
-        row_dict["Spot Price at Transaction"],
-        currency,
-        data_row.timestamp,
-    )
     subtotal_ccy = DataParser.convert_currency(
         row_dict["Subtotal"],
         currency,
@@ -118,9 +96,7 @@ def parse_coinbase_v2(
         data_row.timestamp,
     )
 
-    _do_parse_coinbase(
-        data_row, parser, (spot_price_ccy, subtotal_ccy, total_ccy, fees_ccy, currency)
-    )
+    _do_parse_coinbase(data_row, parser, (subtotal_ccy, total_ccy, fees_ccy, currency))
 
 
 def parse_coinbase_v1(
@@ -130,9 +106,6 @@ def parse_coinbase_v1(
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
 
     currency = parser.args[0].group(1)
-    spot_price_ccy = DataParser.convert_currency(
-        row_dict[f"{currency} Spot Price at Transaction"], currency, data_row.timestamp
-    )
     subtotal_ccy = DataParser.convert_currency(
         row_dict[f"{currency} Subtotal"], currency, data_row.timestamp
     )
@@ -143,19 +116,15 @@ def parse_coinbase_v1(
         row_dict[f"{currency} Fees"], currency, data_row.timestamp
     )
 
-    _do_parse_coinbase(
-        data_row, parser, (spot_price_ccy, subtotal_ccy, total_ccy, fees_ccy, currency)
-    )
+    _do_parse_coinbase(data_row, parser, (subtotal_ccy, total_ccy, fees_ccy, currency))
 
 
 def _do_parse_coinbase(
     data_row: "DataRow",
     parser: DataParser,
-    fiat_values: Tuple[
-        Optional[Decimal], Optional[Decimal], Optional[Decimal], Optional[Decimal], str
-    ],
+    fiat_values: Tuple[Optional[Decimal], Optional[Decimal], Optional[Decimal], str],
 ) -> None:
-    (spot_price_ccy, subtotal_ccy, total_ccy, fees_ccy, currency) = fiat_values
+    (subtotal_ccy, total_ccy, fees_ccy, currency) = fiat_values
     row_dict = data_row.row_dict
 
     if row_dict["Transaction Type"] == "Deposit":
@@ -179,9 +148,9 @@ def _do_parse_coinbase(
             TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=(
-                Decimal(row_dict["Quantity Transacted"]) - abs(fees_ccy)
+                abs(Decimal(row_dict["Quantity Transacted"])) - abs(fees_ccy)
                 if fees_ccy
-                else Decimal(row_dict["Quantity Transacted"])
+                else abs(Decimal(row_dict["Quantity Transacted"]))
             ),
             sell_asset=row_dict["Asset"],
             fee_quantity=abs(fees_ccy) if fees_ccy is not None else None,
@@ -193,7 +162,7 @@ def _do_parse_coinbase(
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=Decimal(row_dict["Quantity Transacted"]),
+            sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
             sell_asset=row_dict["Asset"],
             wallet=WALLET,
         )
@@ -207,19 +176,13 @@ def _do_parse_coinbase(
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] == "Receive":
-        # Calculate the buy_value from the spot price if available
-        if spot_price_ccy:
-            buy_value = spot_price_ccy * Decimal(row_dict["Quantity Transacted"])
-        else:
-            buy_value = None
-
         if "Coinbase Referral" in row_dict["Notes"]:
             data_row.t_record = TransactionOutRecord(
                 TrType.REFERRAL,
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Quantity Transacted"]),
                 buy_asset=row_dict["Asset"],
-                buy_value=buy_value,
+                buy_value=total_ccy if total_ccy else None,
                 wallet=WALLET,
             )
         elif "Coinbase Earn" in row_dict["Notes"] or "Coinbase Rewards" in row_dict["Notes"]:
@@ -228,7 +191,7 @@ def _do_parse_coinbase(
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Quantity Transacted"]),
                 buy_asset=row_dict["Asset"],
-                buy_value=buy_value,
+                buy_value=total_ccy if total_ccy else None,
                 wallet=WALLET,
             )
         else:
@@ -238,6 +201,7 @@ def _do_parse_coinbase(
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Quantity Transacted"]),
                 buy_asset=row_dict["Asset"],
+                buy_value=total_ccy if total_ccy else None,
                 wallet=WALLET,
             )
     elif row_dict["Transaction Type"] in (
@@ -266,7 +230,7 @@ def _do_parse_coinbase(
             buy_value=total_ccy,
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] == "Subscription Rebates (24 Hours)":
+    elif row_dict["Transaction Type"] in ("Subscription Rebate", "Subscription Rebates (24 Hours)"):
         data_row.t_record = TransactionOutRecord(
             TrType.FEE_REBATE,
             data_row.timestamp,
@@ -281,25 +245,15 @@ def _do_parse_coinbase(
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=Decimal(row_dict["Quantity Transacted"]),
+            sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
             sell_asset=row_dict["Asset"],
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] in ("Buy", "Advanced Trade Buy", "Advance Trade Buy"):
-        note_currency, quote = _get_note_currency(row_dict["Notes"])
-        if note_currency is None:
+        quote_asset, subtotal, fees = _get_trade_info(row_dict["Notes"])
+        if not quote_asset:
             raise UnexpectedContentError(
                 parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
-            )
-
-        if quote != currency:
-            if parser.in_header_row_num is None:
-                raise RuntimeError("Missing in_header_row_num")
-
-            sys.stderr.write(
-                f"{Fore.YELLOW}row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
-                f"{WARNING} {quote} amount/fee is not availabe so will not balance, "
-                f"using {currency} instead\n"
             )
 
         if (
@@ -316,7 +270,8 @@ def _do_parse_coinbase(
                 buy_value=total_ccy if total_ccy and total_ccy > 0 else None,
                 wallet=WALLET,
             )
-        else:
+        elif quote_asset == currency:
+            # Regular Buy
             data_row.t_record = TransactionOutRecord(
                 TrType.TRADE,
                 data_row.timestamp,
@@ -328,54 +283,79 @@ def _do_parse_coinbase(
                 fee_asset=config.ccy,
                 wallet=WALLET,
             )
+        else:
+            # Advanced Buy
+            data_row.t_record = TransactionOutRecord(
+                TrType.TRADE,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["Quantity Transacted"]),
+                buy_asset=row_dict["Asset"],
+                buy_value=subtotal_ccy,
+                sell_quantity=subtotal,
+                sell_asset=quote_asset,
+                sell_value=subtotal_ccy,
+                fee_quantity=fees,
+                fee_asset=quote_asset,
+                fee_value=abs(fees_ccy) if fees_ccy is not None else None,
+                wallet=WALLET,
+            )
     elif row_dict["Transaction Type"] in ("Sell", "Advanced Trade Sell", "Advance Trade Sell"):
-        note_currency, quote = _get_note_currency(row_dict["Notes"])
-        if note_currency is None:
+        quote_asset, subtotal, fees = _get_trade_info(row_dict["Notes"])
+        if not quote_asset:
             raise UnexpectedContentError(
                 parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
             )
 
-        if quote != currency:
-            if parser.in_header_row_num is None:
-                raise RuntimeError("Missing in_header_row_num")
-
-            sys.stderr.write(
-                f"{Fore.YELLOW}row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
-                f"{WARNING} {quote} amount/fee is not available so will not balance, "
-                f"using {currency} instead\n"
+        if quote_asset == currency:
+            # Regular Sell
+            data_row.t_record = TransactionOutRecord(
+                TrType.TRADE,
+                data_row.timestamp,
+                buy_quantity=subtotal_ccy,
+                buy_asset=config.ccy,
+                sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
+                sell_asset=row_dict["Asset"],
+                fee_quantity=abs(fees_ccy) if fees_ccy is not None else None,
+                fee_asset=config.ccy,
+                wallet=WALLET,
             )
-
-        data_row.t_record = TransactionOutRecord(
-            TrType.TRADE,
-            data_row.timestamp,
-            buy_quantity=subtotal_ccy,
-            buy_asset=config.ccy,
-            sell_quantity=Decimal(row_dict["Quantity Transacted"]),
-            sell_asset=row_dict["Asset"],
-            fee_quantity=abs(fees_ccy) if fees_ccy is not None else None,
-            fee_asset=config.ccy,
-            wallet=WALLET,
-        )
+        else:
+            # Advanced Sell
+            data_row.t_record = TransactionOutRecord(
+                TrType.TRADE,
+                data_row.timestamp,
+                buy_quantity=subtotal,
+                buy_asset=quote_asset,
+                buy_value=subtotal_ccy,
+                sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
+                sell_asset=row_dict["Asset"],
+                sell_value=subtotal_ccy,
+                fee_quantity=fees,
+                fee_asset=quote_asset,
+                fee_value=abs(fees_ccy) if fees_ccy is not None else None,
+                wallet=WALLET,
+            )
     elif row_dict["Transaction Type"] == "Convert":
-        convert_info = _get_convert_info(row_dict["Notes"])
-        if convert_info is None:
+        buy_quantity, buy_asset = _get_convert_info(row_dict["Notes"])
+        if buy_quantity is None:
             raise UnexpectedContentError(
                 parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
             )
 
-        buy_quantity = Decimal(convert_info[2].replace(",", ""))
-        buy_asset = convert_info[3]
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
             buy_quantity=buy_quantity,
             buy_asset=buy_asset,
             buy_value=total_ccy,
-            sell_quantity=Decimal(row_dict["Quantity Transacted"]),
+            sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
             sell_asset=row_dict["Asset"],
             sell_value=total_ccy,
             wallet=WALLET,
         )
+    elif row_dict["Transaction Type"] == "Vault Withdrawal":
+        # Skip internal transfers
+        return
     else:
         raise UnexpectedTypeError(
             parser.in_header.index("Transaction Type"),
@@ -384,25 +364,55 @@ def _do_parse_coinbase(
         )
 
 
-def _get_convert_info(notes: str) -> Optional[Tuple[Any, ...]]:
+def _get_convert_info(notes: str) -> Tuple[Optional[Decimal], str]:
     match = re.match(
-        r"^Converted ([\d|,]*\.\d+|[\d|,]+) (\w+) to ([\d|,]*\.\d+|[\d|,]+) (\w+) *$", notes
+        r"^Converted (?:[\d|,]*\.\d+|[\d|,]+) (?:\w+) to ([\d|,]*\.\d+|[\d|,]+) (\w+) *$", notes
     )
 
     if match:
-        return match.groups()
-    return None
+        buy_quantity = Decimal(match.group(1).replace(",", ""))
+        buy_asset = match.group(2)
+
+        return buy_quantity, buy_asset
+    return None, ""
 
 
-def _get_note_currency(notes: str) -> Tuple[Optional[str], str]:
-    match = re.match(r".+for [£€$]?(?:[\d|,]+\.\d+|[\d|,]+) (\w+)(?: on )?(\w+-\w+)?.*$", notes)
+def _get_trade_info(notes: str) -> Tuple[str, Optional[Decimal], Optional[Decimal]]:
+    match = re.match(
+        r"^(?:Bought|Sold) ([\d|,]+\.\d+|[\d|,]+) (\w+) for [£€$]?([\d|,]+\.\d+|[\d|,]+) (\w+)"
+        r"(?: on )?(\w+-\w+)?(?: at )?([\d|,]+\.\d+|[\d|,]+)? ?(\w+\/\w+)?$",
+        notes,
+    )
 
     if match:
-        currency = quote = match.group(1)
-        if match.group(2):
-            quote = match.group(2).split("-")[1]
-        return currency, quote
-    return None, ""
+        base_amount = Decimal(match.group(1))
+        # base_asset = match.group(2)
+        quote_amount = Decimal(match.group(3))
+        quote_asset = match.group(4)
+        trading_pair = match.group(5)
+
+        if trading_pair is not None:
+            rate = Decimal(match.group(6))
+            rate_pair = match.group(7)
+
+            # Advanced Trade
+            if trading_pair.split("-")[1] != quote_asset:
+                raise RuntimeError(
+                    f"Trading pair and quote asset mismatch: {trading_pair} and {quote_asset}"
+                )
+
+            if trading_pair.split("-")[1] != rate_pair.split("/")[0]:
+                raise RuntimeError(
+                    f"Trading pair and rate pair mismatch: {trading_pair} and {rate_pair}"
+                )
+
+            subtotal = base_amount * rate
+            fees = abs(subtotal - quote_amount)
+
+            return quote_asset, subtotal, fees
+        # Regular Buy/Sell
+        return quote_asset, None, None
+    return "", None, None
 
 
 def parse_coinbase_transfers(
