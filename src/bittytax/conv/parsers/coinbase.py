@@ -44,9 +44,7 @@ def parse_coinbase_v4(
         data_row.timestamp,
     )
 
-    _do_parse_coinbase(
-        data_row, parser, (subtotal_ccy, total_ccy, fees_ccy, currency)
-    )
+    _do_parse_coinbase(data_row, parser, (subtotal_ccy, total_ccy, fees_ccy, currency))
 
 
 def parse_coinbase_v3(
@@ -72,9 +70,7 @@ def parse_coinbase_v3(
         data_row.timestamp,
     )
 
-    _do_parse_coinbase(
-        data_row, parser, (subtotal_ccy, total_ccy, fees_ccy, currency)
-    )
+    _do_parse_coinbase(data_row, parser, (subtotal_ccy, total_ccy, fees_ccy, currency))
 
 
 def parse_coinbase_v2(
@@ -100,9 +96,7 @@ def parse_coinbase_v2(
         data_row.timestamp,
     )
 
-    _do_parse_coinbase(
-        data_row, parser, (subtotal_ccy, total_ccy, fees_ccy, currency)
-    )
+    _do_parse_coinbase(data_row, parser, (subtotal_ccy, total_ccy, fees_ccy, currency))
 
 
 def parse_coinbase_v1(
@@ -398,8 +392,8 @@ def _get_trade_info(notes: str) -> Tuple[str, Optional[Decimal], Optional[Decima
         quote_asset = match.group(4)
 
         trading_pair = match.group(5)
-        rate = Decimal(match.group(6)) if match.group(6) else None
-        rate_pair = match.group(7)  # Optional
+        rate = Decimal(match.group(6))
+        rate_pair = match.group(7)
 
         if trading_pair is not None:
             # Advanced Trade
@@ -413,14 +407,12 @@ def _get_trade_info(notes: str) -> Tuple[str, Optional[Decimal], Optional[Decima
                     f"Trading pair and rate pair mismatch: {trading_pair} and {rate_pair}"
                 )
 
-            if base_amount is not None and rate is not None:
-                subtotal = base_amount * rate
-                fees = abs(subtotal - quote_amount)
+            subtotal = base_amount * rate
+            fees = abs(subtotal - quote_amount)
 
-                return quote_asset, subtotal, fees
+            return quote_asset, subtotal, fees
         # Regular Buy/Sell
         return quote_asset, None, None
-
     return "", None, None
 
 
