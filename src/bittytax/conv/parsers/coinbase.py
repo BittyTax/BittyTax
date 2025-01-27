@@ -182,7 +182,7 @@ def _do_parse_coinbase(
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Quantity Transacted"]),
                 buy_asset=row_dict["Asset"],
-                buy_value=total_ccy,
+                buy_value=total_ccy if total_ccy else None,
                 wallet=WALLET,
             )
         elif "Coinbase Earn" in row_dict["Notes"] or "Coinbase Rewards" in row_dict["Notes"]:
@@ -191,7 +191,7 @@ def _do_parse_coinbase(
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Quantity Transacted"]),
                 buy_asset=row_dict["Asset"],
-                buy_value=total_ccy,
+                buy_value=total_ccy if total_ccy else None,
                 wallet=WALLET,
             )
         else:
@@ -201,7 +201,7 @@ def _do_parse_coinbase(
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Quantity Transacted"]),
                 buy_asset=row_dict["Asset"],
-                buy_value=total_ccy,
+                buy_value=total_ccy if total_ccy else None,
                 wallet=WALLET,
             )
     elif row_dict["Transaction Type"] in (
@@ -247,7 +247,7 @@ def _do_parse_coinbase(
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
             sell_asset=row_dict["Asset"],
-            sell_value=subtotal_ccy,
+            sell_value=abs(subtotal_ccy) if subtotal_ccy else None,
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] in ("Buy", "Advanced Trade Buy", "Advance Trade Buy"):
@@ -390,12 +390,12 @@ def _get_trade_info(notes: str) -> Tuple[str, Optional[Decimal], Optional[Decima
         # base_asset = match.group(2)
         quote_amount = Decimal(match.group(3))
         quote_asset = match.group(4)
-
         trading_pair = match.group(5)
-        rate = Decimal(match.group(6))
-        rate_pair = match.group(7)
 
         if trading_pair is not None:
+            rate = Decimal(match.group(6))
+            rate_pair = match.group(7)
+
             # Advanced Trade
             if trading_pair.split("-")[1] != quote_asset:
                 raise RuntimeError(
