@@ -126,9 +126,9 @@ class Config:
 
     def sym(self) -> str:
         if self.ccy == "GBP":
-            return "\xA3"  # £
+            return "\xa3"  # £
         if self.ccy == "EUR":
-            return "\u20AC"  # €
+            return "\u20ac"  # €
         if self.ccy in ("USD", "AUD", "NZD"):
             return "$"
         if self.ccy in ("DKK", "NOK", "SEK"):
