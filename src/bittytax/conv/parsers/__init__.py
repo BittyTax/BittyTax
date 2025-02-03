@@ -15,6 +15,7 @@ from . import (
     blockfi,
     blockpit,
     blockscout,
+    blofin,
     bnktothefuture,
     bybit,
     cashapp,

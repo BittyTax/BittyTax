@@ -163,6 +163,7 @@
 - Exodus parser: added "withdrawal (failed)" type.
 - CoinCorner parser: added new export format.
 - Coinbase parser: calculate amount/fee for advanced trades.
+- Conversion tool: added parser for BloFin exchange.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
