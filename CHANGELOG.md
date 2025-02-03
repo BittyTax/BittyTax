@@ -10,6 +10,7 @@
 - Accounting tool: new transaction types added. Stake, Unstake and Staking-Reward (Staking has been deprecated).
 - Conversion tool: added new parser for DefiTaxes.us.
 - Conversion tool: allow parsers to specify a different worksheet
+- Conversion tool: added parser for BloFin exchange.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
