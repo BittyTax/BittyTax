@@ -200,9 +200,9 @@ def _get_file_info(filename: str) -> Tuple[str, str]:
     with open(filename, "rb") as df:
         file_hash = hashlib.sha1()
         chunk = df.read(8192)
-        if chunk[0:8] == b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1":
+        if chunk[0:8] == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
             file_type = "xls"
-        elif chunk[0:4] == b"\x50\x4B\x03\x04":
+        elif chunk[0:4] == b"\x50\x4b\x03\x04":
             # xlsx is a zip file, let openpyxl unpack and check
             file_type = "zip"
 
