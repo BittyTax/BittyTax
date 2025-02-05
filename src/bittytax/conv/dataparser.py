@@ -209,7 +209,7 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def match_header(cls, row: List[str], row_num: int) -> "DataParser":
-        row = [col.strip() for col in row]
+        row = [col.replace("\n", "").strip() for col in row]
         if config.debug:
             sys.stderr.write(
                 f"{Fore.YELLOW}header: row[{row_num + 1}] TRY: {cls._format_row(row)}\n"
