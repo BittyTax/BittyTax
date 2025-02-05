@@ -464,7 +464,7 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
                 fee_asset = _normalise_asset(row_dict["asset"])
             else:
                 # Add as secondary fee
-                data_row.t_record = TransactionOutRecord(  # type: ignore[unreachable]
+                data_row.t_record = TransactionOutRecord(
                     TrType.SPEND,
                     data_row.timestamp,
                     sell_quantity=Decimal(0),
