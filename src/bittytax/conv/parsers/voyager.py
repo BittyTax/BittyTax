@@ -178,7 +178,7 @@ def _make_recovery(recovery_rows: List["DataRow"], data_row: "DataRow") -> None:
         if amount is None:
             amount = Decimal(row_dict["Amount"])
         else:
-            amount += Decimal(row_dict["Amount"])  # type: ignore[unreachable]
+            amount += Decimal(row_dict["Amount"])
 
     if amount:
         data_row.t_record = TransactionOutRecord(

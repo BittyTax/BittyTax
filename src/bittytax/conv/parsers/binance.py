@@ -842,7 +842,7 @@ def _get_bnb_quantity(op_rows: List["DataRow"]) -> Optional[Decimal]:
             if buy_quantity is None:
                 buy_quantity = Decimal(data_row.row_dict["Change"])
             else:
-                buy_quantity += Decimal(data_row.row_dict["Change"])  # type: ignore[unreachable]
+                buy_quantity += Decimal(data_row.row_dict["Change"])
 
     return buy_quantity
 
