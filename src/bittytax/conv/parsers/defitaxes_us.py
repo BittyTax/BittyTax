@@ -85,10 +85,15 @@ def parse_defi_taxes(
             parser.in_header.index("destination address"),
         )
 
-        # Try to identify addresses
+        # Try to identify own addresses
         if dr.row_dict["destination address"] == "network":
             if dr.row_dict["source address"] not in my_addresses:
                 my_addresses.append(dr.row_dict["source address"])
+
+        if dr.row_dict["classification"].startswith("interaction between your accounts"):
+            if dr.row_dict["destination address"] != "network":
+                if dr.row_dict["destination address"] not in my_addresses:
+                    my_addresses.append(dr.row_dict["destination address"])
 
     if config.debug:
         sys.stderr.write(f"{Fore.CYAN}conv: my addresses: {', '.join(my_addresses)}\n")
@@ -216,7 +221,7 @@ def _make_t_record(
         elif tx_in.classification.startswith("spam"):
             # Ignore spam Airdrops
             pass
-        elif tx_in.classification == "claim reward":
+        elif tx_in.classification.startswith("claim reward"):
             tx_in.data_row.t_record = _make_buy(TrType.STAKING_REWARD, tx_in, tx_fee)
         elif tx_in.classification == "balance adjustment":
             tx_in.data_row.t_record = _make_buy(TrType.AIRDROP, tx_in, tx_fee)
@@ -290,7 +295,7 @@ def _make_t_record(
                 _remove_t_records(tx_rows)
                 raise MissingValueError(parser.in_header.index("vault id"), "vault id", "") from e
 
-        elif tx_in.classification == "interaction between your accounts":
+        elif tx_in.classification.startswith("interaction between your accounts"):
             _make_transfer(tx_in, tx_out, tx_fee, tx_rows)
         else:
             raise UnexpectedTypeError(
@@ -343,6 +348,7 @@ def _make_t_record(
                 (
                     "unstake & claim reward",
                     "exit vault & claim reward",
+                    "exit vault",
                     "unstake",
                     "withdraw",
                     "deposit",
@@ -1018,7 +1024,7 @@ def _consolidate_tx(
     tx_assets: Dict[AssetSymbol, TxRecord] = {}
 
     for tx_in in tx_ins:
-        if tx_in.classification == "interaction between your accounts":
+        if tx_in.classification.startswith("interaction between your accounts"):
             return tx_ins, tx_outs
 
         if tx_in.asset not in tx_assets:
@@ -1042,7 +1048,7 @@ def _consolidate_tx(
                 )
 
     for tx_out in tx_outs:
-        if tx_out.classification == "interaction between your accounts":
+        if tx_out.classification.startswith("interaction between your accounts"):
             return tx_ins, tx_outs
 
         if tx_out.asset not in tx_assets:
