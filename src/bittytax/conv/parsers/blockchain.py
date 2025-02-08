@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2021
+
 import re
 from datetime import datetime
 from decimal import Decimal
@@ -10,12 +11,60 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..datarow import TxRawPos
+from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
     from ..datarow import DataRow
 
 WALLET = "Blockchain.com"
+
+
+def parse_blockchain_v3(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["date_time_utc"])
+
+    if row_dict["transaction_type"] in ("BUY", "SELL", "SWAP"):
+        if row_dict["fee_asset"] == row_dict["counter_asset"]:
+            sell_quantity = Decimal(row_dict["counter_amount"]) - Decimal(row_dict["fee_amount"])
+        else:
+            sell_quantity = Decimal(row_dict["counter_amount"])
+
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["quantity_transacted"]),
+            buy_asset=row_dict["asset"],
+            sell_quantity=sell_quantity,
+            sell_asset=row_dict["counter_asset"],
+            fee_quantity=Decimal(row_dict["fee_amount"]),
+            fee_asset=row_dict["fee_asset"],
+            wallet=WALLET,
+        )
+    elif row_dict["transaction_type"] == "REWARDS":
+        data_row.t_record = TransactionOutRecord(
+            TrType.INTEREST,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["quantity_transacted"]),
+            buy_asset=row_dict["asset"],
+            wallet=WALLET,
+        )
+    elif row_dict["transaction_type"] == "SEND":
+        data_row.t_record = TransactionOutRecord(
+            TrType.WITHDRAWAL,
+            data_row.timestamp,
+            sell_quantity=Decimal(row_dict["counter_amount"]),
+            sell_asset=row_dict["counter_asset"],
+            wallet=WALLET,
+        )
+    else:
+        raise UnexpectedTypeError(
+            parser.in_header.index("transaction_type"),
+            "transaction_type",
+            row_dict["transaction_type"],
+        )
 
 
 def parse_blockchain_v2(
@@ -132,6 +181,26 @@ def parse_blockchain_btc(
     data_row.row_dict["amount"] = data_row.row_dict["amount_btc"]
     parse_blockchain_v1(data_row, parser, **kwargs)
 
+
+DataParser(
+    ParserType.WALLET,
+    "Blockchain.com",
+    [
+        "date_time_utc",
+        "transaction_type",
+        "asset",
+        "quantity_transacted",
+        "counter_asset",
+        "counter_amount",
+        "fee_asset",
+        "fee_amount",
+        "Notes",
+        "transaction_id",
+        "transaction_hash",
+    ],
+    worksheet_name="Blockchain.com",
+    row_handler=parse_blockchain_v3,
+)
 
 DataParser(
     ParserType.WALLET,
