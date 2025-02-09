@@ -4,6 +4,7 @@
 import copy
 import sys
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Dict, List, NewType, Optional, Tuple
 
@@ -94,10 +95,11 @@ def parse_bybit_deposits_withdrawals_v1(
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
 
-def parse_bybit_futures(
+def parse_bybit(
     data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     order_ids: Dict[OrderId, List["DataRow"]] = {}
+    tx_times: Dict[datetime, List["DataRow"]] = {}
     positions: Dict[Contract, Position] = {}
 
     for dr in data_rows:
@@ -108,6 +110,11 @@ def parse_bybit_futures(
             order_ids[order_id].append(dr)
         else:
             order_ids[order_id] = [dr]
+
+        if dr.timestamp in tx_times:
+            tx_times[dr.timestamp].append(dr)
+        else:
+            tx_times[dr.timestamp] = [dr]
 
     for data_row in reversed(data_rows):
         if config.debug:
@@ -129,11 +136,12 @@ def parse_bybit_futures(
             continue
 
         try:
-            _parse_bybit_futures_row(
+            _parse_bybit_row(
                 data_rows,
                 parser,
                 data_row,
                 order_ids,
+                tx_times,
                 positions,
             )
         except DataRowError as e:
@@ -170,20 +178,45 @@ def parse_bybit_futures(
         )
 
 
-def _parse_bybit_futures_row(
+def _parse_bybit_row(
     data_rows: List["DataRow"],
     parser: DataParser,
     data_row: "DataRow",
     order_ids: Dict[OrderId, List["DataRow"]],
+    tx_times: Dict[datetime, List["DataRow"]],
     positions: Dict[Contract, Position],
 ) -> None:
     global balance  # pylint: disable=global-statement
     row_dict = data_row.row_dict
-    data_row.parsed = True
 
     contract = Contract(row_dict["Contract"])
 
-    if row_dict["Type"] == "trade":
+    if row_dict["Type"] == "deposit":
+        data_row.t_record = TransactionOutRecord(
+            TrType.DEPOSIT,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Cash Flow"]),
+            buy_asset=row_dict["Currency"],
+            wallet=WALLET,
+        )
+    elif row_dict["Type"] == "withdraw":
+        data_row.t_record = TransactionOutRecord(
+            TrType.WITHDRAWAL,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["Cash Flow"])),
+            sell_asset=row_dict["Currency"],
+            fee_quantity=Decimal(row_dict["Fee Paid"]),
+            fee_asset=row_dict["Currency"],
+            wallet=WALLET,
+        )
+    elif row_dict["Type"] in ("exchangeIn", "exchangeOut"):
+        rows = [
+            dr
+            for dr in tx_times[data_row.timestamp]
+            if dr.row_dict["Type"] in ("exchangeIn", "exchangeOut") and not dr.parsed
+        ]
+        _make_trade(rows)
+    elif row_dict["Type"] == "trade":
         unrealised_pnl, trading_fee, quantity, position = _consolidate_trades(
             order_ids[OrderId(row_dict["Order ID"])]
         )
@@ -279,6 +312,44 @@ def _parse_bybit_futures_row(
         return
     else:
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
+
+
+def _make_trade(op_rows: List["DataRow"]) -> None:
+    buy_quantity = sell_quantity = None
+    buy_asset = sell_asset = ""
+    trade_row = None
+
+    for data_row in op_rows:
+        row_dict = data_row.row_dict
+
+        if Decimal(row_dict["Change"]) > 0:
+            if buy_quantity is None:
+                buy_quantity = Decimal(row_dict["Change"])
+                buy_asset = row_dict["Currency"]
+                data_row.parsed = True
+
+        if Decimal(row_dict["Change"]) <= 0:
+            if sell_quantity is None:
+                sell_quantity = abs(Decimal(row_dict["Change"]))
+                sell_asset = row_dict["Currency"]
+                data_row.parsed = True
+
+        if not trade_row:
+            trade_row = data_row
+
+        if buy_quantity and sell_quantity:
+            break
+
+    if trade_row:
+        trade_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            trade_row.timestamp,
+            buy_quantity=buy_quantity,
+            buy_asset=buy_asset,
+            sell_quantity=sell_quantity,
+            sell_asset=sell_asset,
+            wallet=WALLET,
+        )
 
 
 def _consolidate_trades(
@@ -416,7 +487,7 @@ DataParser(
 
 DataParser(
     ParserType.EXCHANGE,
-    "Bybit Futures",
+    "Bybit",
     [
         "Time",
         "Currency",
@@ -435,6 +506,6 @@ DataParser(
         "Trade ID",
         "Order ID",
     ],
-    worksheet_name="Bybit F",
-    all_handler=parse_bybit_futures,
+    worksheet_name="Bybit",
+    all_handler=parse_bybit,
 )
