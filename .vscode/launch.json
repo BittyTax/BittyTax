@@ -35,6 +35,20 @@
             "request": "launch",
             "module": "bittytax.price.bittytax_price",
             "args": "historic ${input:getAsset} ${input:getDate} ${input:getQuantity} -ds ${input:getDataSource} --nocache --debug"
+        },
+        {
+            "name": "PowerShell: BittyTax Conversion Tool",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/scripts/powershell/BittyTax Conversion Tool.ps1",
+            "cwd": "${cwd}"
+        },
+        {
+            "name": "PowerShell: BittyTax Accounting Tool",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/scripts/powershell/BittyTax Accounting Tool.ps1",
+            "cwd": "${cwd}"
         }
     ],
     "inputs": [
