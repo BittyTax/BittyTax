@@ -90,11 +90,6 @@ def parse_defi_taxes(
             if dr.row_dict["source address"] not in my_addresses:
                 my_addresses.append(dr.row_dict["source address"])
 
-        if dr.row_dict["classification"].startswith("interaction between your accounts"):
-            if dr.row_dict["destination address"] != "network":
-                if dr.row_dict["destination address"] not in my_addresses:
-                    my_addresses.append(dr.row_dict["destination address"])
-
     if config.debug:
         sys.stderr.write(f"{Fore.CYAN}conv: my addresses: {', '.join(my_addresses)}\n")
 
@@ -285,7 +280,7 @@ def _make_t_record(
             or not tx_in.classification
         ):
             _next_free_row(tx_rows).t_record = _make_trade(tx_in, tx_out, tx_fee)
-        elif tx_in.classification.startswith("stake & claim reward"):
+        elif tx_in.classification.startswith(("stake", "stake & claim reward")):
             _next_free_row(tx_rows).t_record = _make_sell(TrType.STAKE, tx_out, tx_fee)
             _next_free_row(tx_rows).t_record = _make_buy(TrType.STAKING_REWARD, tx_in, tx_fee)
             _do_fee_split(tx_fee, tx_rows)
