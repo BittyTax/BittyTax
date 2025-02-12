@@ -71,11 +71,21 @@ class DataFile:
             self.data_rows += [dr for dr in other.data_rows if dr not in self.data_rows]
         else:
             # Checking for duplicates can be very slow for large files
-            if not config.large_data and [dr for dr in other.data_rows if dr in self.data_rows]:
+            duplicates = [dr for dr in other.data_rows if dr in self.data_rows]
+            if not config.large_data and duplicates:
                 sys.stderr.write(
                     f'{WARNING} Duplicate rows detected for "{self.parser.name}", '
                     f"use the [--duplicates] option to remove them (use with care)\n"
                 )
+                if config.debug:
+                    for dr in duplicates:
+                        if self.parser.in_header_row_num is None:
+                            raise RuntimeError("Missing in_header_row_num")
+
+                        sys.stderr.write(
+                            f"{Fore.CYAN}duplicate: "
+                            f"row[{self.parser.in_header_row_num + dr.line_num}] {dr}\n"
+                        )
             self.data_rows += other.data_rows
 
         return self

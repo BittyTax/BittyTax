@@ -47,6 +47,7 @@ QUOTE_ASSETS = [
     "DOT",
     "ETH",
     "EUR",
+    "EURI",
     "FDUSD",
     "GBP",
     "GYEN",
@@ -58,6 +59,7 @@ QUOTE_ASSETS = [
     "PLN",
     "RON",
     "RUB",
+    "SOL",
     "TRX",
     "TRY",
     "TUSD",
@@ -74,10 +76,13 @@ QUOTE_ASSETS = [
 ]
 
 BASE_ASSETS = [
+    "1000CAT",
+    "1000CHEEMS",
     "1000SATS",
     "1INCH",
     "1INCHDOWN",
     "1INCHUP",
+    "1MBABYDOGE",
 ]
 
 TRADINGPAIR_TO_QUOTE_ASSET = {
@@ -218,7 +223,47 @@ def _split_asset(amount: str) -> Tuple[Optional[Decimal], str]:
     raise RuntimeError(f"Cannot split Quantity from Asset: {amount}")
 
 
-def parse_binance_deposits_withdrawals_crypto(
+def parse_binance_deposits_withdrawals_crypto_v2(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(_get_timestamp(row_dict["Date(UTC+0)"]))
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("TXID"), tx_dest_pos=parser.in_header.index("Address")
+    )
+
+    if row_dict["Status"] != "Completed":
+        return
+
+    if "Fee" not in row_dict:
+        data_row.t_record = TransactionOutRecord(
+            TrType.DEPOSIT,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Amount"]),
+            buy_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
+    else:
+        data_row.t_record = TransactionOutRecord(
+            TrType.WITHDRAWAL,
+            data_row.timestamp,
+            sell_quantity=Decimal(row_dict["Amount"]),
+            sell_asset=row_dict["Coin"],
+            fee_quantity=Decimal(row_dict["Fee"]),
+            fee_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
+
+
+def _get_timestamp(timestamp: str) -> str:
+    match = re.match(r"^\d{2}-\d{2}-\d{2}.*$", timestamp)
+
+    if match:
+        return f"20{timestamp}"
+    return timestamp
+
+
+def parse_binance_deposits_withdrawals_crypto_v1(
     data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
@@ -298,6 +343,7 @@ def parse_binance_statements(
     data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     tx_times: Dict[datetime, List["DataRow"]] = {}
+
     for dr in data_rows:
         dr.timestamp = DataParser.parse_timestamp(dr.row_dict["UTC_Time"])
         if dr.timestamp in tx_times:
@@ -424,6 +470,7 @@ def _parse_binance_statements_row(
         "DOT Slot Auction Rewards",
         "Launchpool Earnings Withdrawal",
         "BNB Vault Rewards",
+        "Swap Farming Rewards",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.STAKING_REWARD,
@@ -464,15 +511,23 @@ def _parse_binance_statements_row(
             TrType.SWAP,
         )
     elif row_dict["Operation"] in (
+        "Swap Farming Transaction",
+        "Liquid Swap Sell",
+    ):
+        # Trade before a Liquid Swap
+        _make_trade(
+            _get_op_rows(
+                tx_times, data_row.timestamp, ("Swap Farming Transaction", "Liquid Swap Sell")
+            ),
+        )
+    elif row_dict["Operation"] in (
         "transfer_out",
         "transfer_in",
         "Savings purchase",
-        "Simple Earn Flexible Subscription",
         "Savings Principal redemption",
-        "Simple Earn Flexible Redemption",
         "POS savings purchase",
-        "Staking Purchase",
         "POS savings redemption",
+        "Staking Purchase",
         "Staking Redemption",
         "Simple Earn Locked Subscription",
         "Simple Earn Locked Redemption",
@@ -481,8 +536,13 @@ def _parse_binance_statements_row(
         "Transfer Between Main Account/Futures and Margin Account",
         "Launchpool Subscription/Redemption",
         "Launchpad Subscribe",
+        "Simple Earn Flexible Subscription",  # See merger
+        "Simple Earn Flexible Redemption",  # See merger
+        "Liquid Swap Add",  # See merger
+        "Liquid Swap Add/Sell",  # See merger
+        "Liquidity Farming Remove",  # See merger
     ):
-        # Skip not taxable events
+        # Skip non-taxable events and those which are handled by the merger
         return
     elif row_dict["Operation"] in ("Deposit", "Fiat Deposit"):
         if config.binance_statements_only:
@@ -989,6 +1049,22 @@ DataParser(
 
 DataParser(
     ParserType.EXCHANGE,
+    "Binance Deposits",
+    ["Date(UTC+0)", "Coin", "Network", "Amount", "Address", "TXID", "Status"],
+    worksheet_name="Binance D,W",
+    row_handler=parse_binance_deposits_withdrawals_crypto_v2,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Binance Withdrawals",
+    ["Date(UTC+0)", "Coin", "Network", "Amount", "Fee", "Address", "TXID", "Status"],
+    worksheet_name="Binance D,W",
+    row_handler=parse_binance_deposits_withdrawals_crypto_v2,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
     "Binance Deposits/Withdrawals",
     [
         "Date(UTC)",
@@ -1003,7 +1079,7 @@ DataParser(
         "Status",
     ],
     worksheet_name="Binance D,W",
-    row_handler=parse_binance_deposits_withdrawals_crypto,
+    row_handler=parse_binance_deposits_withdrawals_crypto_v1,
 )
 
 DataParser(
@@ -1021,7 +1097,7 @@ DataParser(
         "Status",
     ],
     worksheet_name="Binance D,W",
-    row_handler=parse_binance_deposits_withdrawals_crypto,
+    row_handler=parse_binance_deposits_withdrawals_crypto_v1,
 )
 
 DataParser(
@@ -1039,7 +1115,7 @@ DataParser(
         "Status",
     ],
     worksheet_name="Binance D,W",
-    row_handler=parse_binance_deposits_withdrawals_crypto,
+    row_handler=parse_binance_deposits_withdrawals_crypto_v1,
 )
 
 DataParser(
@@ -1059,7 +1135,7 @@ DataParser(
     row_handler=parse_binance_deposits_withdrawals_cash,
 )
 
-DataParser(
+statements = DataParser(
     ParserType.EXCHANGE,
     "Binance Statements",
     ["User_ID", "UTC_Time", "Account", "Operation", "Coin", "Change", "Remark"],
