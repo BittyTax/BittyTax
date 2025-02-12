@@ -36,6 +36,7 @@ snowtrace
 timestamp
 timezone
 txhash
+unstake
 xlsx
 xlsxwriter
 yaml
