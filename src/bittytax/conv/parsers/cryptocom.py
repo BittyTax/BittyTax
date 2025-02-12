@@ -213,6 +213,7 @@ def parse_crypto_com(
         "trading.limit_order.fiat_wallet.sell_lock",
         "finance.lockup.dpos_lock.crypto_wallet",
         "finance.dpos.staking.crypto_wallet",
+        "finance.dpos.unstaking.crypto_wallet",
     ):
         return
     elif row_dict["Transaction Kind"] == "":
