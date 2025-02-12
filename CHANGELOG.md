@@ -156,6 +156,10 @@
 - CoinCorner parser: added new export format.
 - Coinbase parser: calculate amount/fee for advanced trades.
 - Conversion tool: added parser for Revolut app.
+- Binance parser: added new deposits/withdrawals export formats.
+- Binance parser: added "Swap Farming Rewards", "Swap Farming Transaction", "Liquid Swap Sell", "Liquid Swap Add", "Liquid Swap Add/Sell", "Liquidity Farming Remove" operations.
+- Conversion tool: added merge parser for Binance to handle stake/unstake of "Liquid Swap" and "Simple Earn Flexible", where you can gain/lose tokens.
+- Conversion tool: show duplicate rows detected when debug is on.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
