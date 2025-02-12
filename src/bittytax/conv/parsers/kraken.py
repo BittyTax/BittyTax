@@ -31,6 +31,7 @@ QUOTE_ASSETS = [
     "EUR",
     "GBP",
     "JPY",
+    "POL",
     "PYUSD",
     "USD",
     "USDC",
@@ -81,6 +82,8 @@ STAKED_SUFFIX = [
 ]
 
 TRADINGPAIR_TO_QUOTE_ASSET = {
+    "AI16ZEUR": "EUR",
+    "AI16ZUSD": "USD",
     "BLZEUR": "EUR",
     "BLZUSD": "USD",
     "CHZEUR": "EUR",
@@ -88,6 +91,8 @@ TRADINGPAIR_TO_QUOTE_ASSET = {
     "ETHPYUSD": "PYUSD",
     "ICXETH": "ETH",
     "ICXXBT": "XBT",
+    "REZEUR": "EUR",
+    "REZUSD": "USD",
     "SNXETH": "ETH",
     "SNXXBT": "XBT",
     "TRXETH": "ETH",
