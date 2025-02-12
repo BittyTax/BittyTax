@@ -161,6 +161,7 @@
 - Conversion tool: added merge parser for Binance to handle stake/unstake of "Liquid Swap" and "Simple Earn Flexible", where you can gain/lose tokens.
 - Conversion tool: show duplicate rows detected when debug is on.
 - AdaLite parser: added new export format. ([#418](https://github.com/BittyTax/BittyTax/issues/418))
+- Crypto.com parser: added "finance.dpos.unstaking.crypto_wallet" transaction kind. ([#419](https://github.com/BittyTax/BittyTax/issues/419))
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
