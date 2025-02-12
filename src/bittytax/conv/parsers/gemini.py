@@ -36,6 +36,7 @@ QUOTE_ASSETS = [
 ]
 
 TRADINGPAIR_TO_QUOTE_ASSET = {
+    "MOODENGUSD": "USD",
     "PAXGUSD": "USD",
 }
 
