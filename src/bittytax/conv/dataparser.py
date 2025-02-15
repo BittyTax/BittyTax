@@ -71,10 +71,10 @@ class AllHandler2(Protocol):  # pylint: disable=too-few-public-methods
 
 
 class ParserArgs(TypedDict):  # pylint: disable=too-few-public-methods, too-many-ancestors
-    filename: str
+    filename: NotRequired[str]
     worksheet: NotRequired[str]
-    unconfirmed: bool
-    cryptoasset: str
+    unconfirmed: NotRequired[bool]
+    cryptoasset: NotRequired[str]
 
 
 class DataParser:  # pylint: disable=too-many-instance-attributes
@@ -114,8 +114,8 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         self.all_handler = all_handler
         self.consolidate_type = consolidate_type
         self.args: List[Any] = []
-        self.in_header: List[str] = []
-        self.in_header_row_num: Optional[int] = None
+        self.in_header = [col if col and not callable(col) else "" for col in self.header]
+        self.in_header_row_num = 1
 
         self.parsers.append(self)
 

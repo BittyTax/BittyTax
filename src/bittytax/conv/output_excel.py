@@ -2,6 +2,7 @@
 # (c) Nano Nano Ltd 2019
 
 import argparse
+import io
 import os
 import platform
 import re
@@ -52,10 +53,26 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
 
     TITLE = "BittyTax Records"
 
-    def __init__(self, progname: str, data_files: List[DataFile], args: argparse.Namespace) -> None:
+    def __init__(
+        self,
+        progname: str,
+        data_files: List[DataFile],
+        args: Optional[argparse.Namespace] = None,
+        stream: Optional[io.BytesIO] = None,
+    ) -> None:
         super().__init__(data_files)
-        self.filename = self.get_output_filename(args.output_filename, self.FILE_EXTENSION)
-        self.workbook = xlsxwriter.Workbook(self.filename)
+        if not stream:
+            if not args:
+                raise RuntimeError("Missing args")
+
+            self.filename: Optional[str] = self.get_output_filename(
+                args.output_filename, self.FILE_EXTENSION
+            )
+            self.workbook = xlsxwriter.Workbook(self.filename)
+        else:
+            self.filename = None
+            self.workbook = xlsxwriter.Workbook(stream, {"in_memory": True})
+
         self.workbook.set_size(1800, 1200)
         self.workbook.formats[0].set_font_size(FONT_SIZE)
         self.workbook.set_properties(
@@ -171,10 +188,11 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             worksheet.autofit()
 
         self.workbook.close()
-        sys.stdout.write(
-            f"{Fore.WHITE}output EXCEL file created: "
-            f"{Fore.YELLOW}{os.path.abspath(self.filename)}\n"
-        )
+        if self.filename:
+            sys.stdout.write(
+                f"{Fore.WHITE}output EXCEL file created: "
+                f"{Fore.YELLOW}{os.path.abspath(self.filename)}\n"
+            )
 
 
 class Worksheet:
