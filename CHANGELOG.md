@@ -236,6 +236,8 @@
 - Accounting tool: audit excel report now uses built-in autofit for column width.
 - Conversion tool: use stdout for EXCEL file creation message.
 - Conversion tool: changed DataParser defaults and made args optional.
+- Conversion tool: moved sheet_name and table_name functions to OutputExcel.
+- Conversion tool: header in OutputBase now uses place holders for the currency.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.

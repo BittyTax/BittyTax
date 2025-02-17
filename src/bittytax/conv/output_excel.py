@@ -50,6 +50,7 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
     DATE_FORMAT_MS = "yyyy-mm-dd hh:mm:ss.000"  # Excel can only display milliseconds
     STR_FORMAT_MS = "%Y-%m-%dT%H:%M:%S.%f"
     FONT_COLOR_IN_DATA = "#808080"
+    SHEETNAME_MAX_LEN = 31
 
     TITLE = "BittyTax Records"
 
@@ -61,6 +62,9 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
         stream: Optional[io.BytesIO] = None,
     ) -> None:
         super().__init__(data_files)
+        self.sheet_names: Dict[str, int] = {}
+        self.table_names: Dict[str, int] = {}
+
         if not stream:
             if not args:
                 raise RuntimeError("Missing args")
@@ -166,6 +170,38 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             }
         )
 
+    def sheet_name(self, parser_name: str) -> str:
+        # Remove special characters
+        name = re.sub(r"[/\\\?\*\[\]:]", "", parser_name)
+        name = name[: self.SHEETNAME_MAX_LEN] if len(name) > self.SHEETNAME_MAX_LEN else name
+
+        if name.lower() not in self.sheet_names:
+            self.sheet_names[name.lower()] = 1
+            sheet_name = name
+        else:
+            self.sheet_names[name.lower()] += 1
+            sheet_name = f"{name}({self.sheet_names[name.lower()]})"
+            if len(sheet_name) > self.SHEETNAME_MAX_LEN:
+                sheet_name = (
+                    f"{name[: len(name) - (len(sheet_name) - self.SHEETNAME_MAX_LEN)]}"
+                    f"({self.sheet_names[name.lower()]})"
+                )
+
+        return sheet_name
+
+    def table_name(self, parser_name: str) -> str:
+        # Remove characters which are not allowed
+        name = parser_name.replace(" ", "_")
+        name = re.sub(r"[^a-zA-Z0-9\._]", "", name)
+
+        if name.lower() not in self.table_names:
+            self.table_names[name.lower()] = 1
+        else:
+            self.table_names[name.lower()] += 1
+            name += str(self.table_names[name.lower()])
+
+        return name
+
     def write_excel(self) -> None:
         data_files = sorted(self.data_files, key=lambda df: df.parser.worksheet_name, reverse=False)
         for data_file in data_files:
@@ -196,16 +232,12 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
 
 
 class Worksheet:
-    SHEETNAME_MAX_LEN = 31
     MAX_COL_WIDTH = 30
-
-    sheet_names: Dict[str, int] = {}
-    table_names: Dict[str, int] = {}
 
     def __init__(self, output: OutputExcel, data_file: DataFile) -> None:
         self.output = output
         self.worksheet = output.workbook.add_worksheet(
-            self._sheet_name(data_file.parser.worksheet_name)
+            self.output.sheet_name(data_file.parser.worksheet_name)
         )
         self.col_width: Dict[int, int] = {}
         self.columns = self._make_columns(data_file.parser.in_header)
@@ -214,43 +246,12 @@ class Worksheet:
 
         self.worksheet.freeze_panes(1, len(self.output.BITTYTAX_OUT_HEADER))
 
-    def _sheet_name(self, parser_name: str) -> str:
-        # Remove special characters
-        name = re.sub(r"[/\\\?\*\[\]:]", "", parser_name)
-        name = name[: self.SHEETNAME_MAX_LEN] if len(name) > self.SHEETNAME_MAX_LEN else name
-
-        if name.lower() not in self.sheet_names:
-            self.sheet_names[name.lower()] = 1
-            sheet_name = name
-        else:
-            self.sheet_names[name.lower()] += 1
-            sheet_name = f"{name}({self.sheet_names[name.lower()]})"
-            if len(sheet_name) > self.SHEETNAME_MAX_LEN:
-                sheet_name = (
-                    f"{name[: len(name) - (len(sheet_name) - self.SHEETNAME_MAX_LEN)]}"
-                    f"({self.sheet_names[name.lower()]})"
-                )
-
-        return sheet_name
-
-    def _table_name(self, parser_name: str) -> str:
-        # Remove characters which are not allowed
-        name = parser_name.replace(" ", "_")
-        name = re.sub(r"[^a-zA-Z0-9\._]", "", name)
-
-        if name.lower() not in self.table_names:
-            self.table_names[name.lower()] = 1
-        else:
-            self.table_names[name.lower()] += 1
-            name += str(self.table_names[name.lower()])
-
-        return name
-
     def _make_columns(self, in_header: List[str]) -> List[Column]:
         col_names = {}
         columns = []
 
         for col_num, col_name in enumerate(self.output.BITTYTAX_OUT_HEADER + in_header):
+            col_name = col_name.replace("{{currency}}", config.ccy)
             if col_name.lower() not in col_names:
                 col_names[col_name.lower()] = 1
             else:
@@ -495,6 +496,6 @@ class Worksheet:
                 "autofilter": False,
                 "style": "Table Style Medium 13",
                 "columns": self.columns,
-                "name": self._table_name(parser_name),
+                "name": self.output.table_name(parser_name),
             },
         )

@@ -27,13 +27,13 @@ class OutputBase:  # pylint: disable=too-few-public-methods
         "Type",
         "Buy Quantity",
         "Buy Asset",
-        "Buy Value in " + config.ccy,
+        "Buy Value in {{currency}}",
         "Sell Quantity",
         "Sell Asset",
-        "Sell Value in " + config.ccy,
+        "Sell Value in {{currency}}",
         "Fee Quantity",
         "Fee Asset",
-        "Fee Value in " + config.ccy,
+        "Fee Value in {{currency}}",
         "Wallet",
         "Timestamp",
         "Note",
@@ -120,7 +120,7 @@ class OutputCsv(OutputBase):
         if self.csv_format == CONV_FORMAT_RECAP:
             return self.RECAP_OUT_HEADER
 
-        return self.BITTYTAX_OUT_HEADER
+        return [header.replace("{{currency}}", config.ccy) for header in self.BITTYTAX_OUT_HEADER]
 
     def in_header(self, in_header: List[str]) -> List[str]:
         if self.csv_format == CONV_FORMAT_RECAP:
