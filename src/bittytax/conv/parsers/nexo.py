@@ -71,6 +71,13 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         buy_quantity = Decimal(row_dict["Output Amount"])
         sell_quantity = abs(Decimal(row_dict["Input Amount"]))
 
+    if "Fee" in row_dict and row_dict["Fee"] != "-":
+        fee_quantity = Decimal(row_dict["Fee"])
+        fee_asset = row_dict["Fee Currency"]
+    else:
+        fee_quantity = None
+        fee_asset = ""
+
     if row_dict.get("USD Equivalent") and buy_asset != config.ccy and sell_asset != config.ccy:
         value = DataParser.convert_currency(
             row_dict["USD Equivalent"].strip("$"), "USD", data_row.timestamp
@@ -189,7 +196,16 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         "CreditCardStatus",
         "Credit Card Status",
         "Exchange Collateral",
+        "DepositToExchange",
+        "Deposit To Exchange",
+        "ExchangeToWithdraw",
+        "Exchange To Withdraw",
     ):
+        if sell_asset == fee_asset:
+            # Sell quantity should be the net amount
+            if sell_quantity and fee_quantity:
+                sell_quantity -= fee_quantity
+
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
@@ -199,16 +215,25 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             sell_quantity=sell_quantity,
             sell_asset=sell_asset,
             sell_value=value,
+            fee_quantity=fee_quantity,
+            fee_asset=fee_asset,
             wallet=WALLET,
             note=_get_note(row_dict["Details"]),
         )
     elif row_dict["Type"] in ("Withdrawal", "WithdrawExchanged", "Withdraw Exchanged"):
+        if sell_asset == fee_asset:
+            # Sell quantity should be the net amount
+            if sell_quantity and fee_quantity:
+                sell_quantity -= fee_quantity
+
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=sell_quantity,
             sell_asset=sell_asset,
             sell_value=value,
+            fee_quantity=fee_quantity,
+            fee_asset=fee_asset,
             wallet=WALLET,
             note=_get_note(row_dict["Details"]),
         )
@@ -267,10 +292,6 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             note=_get_note(row_dict["Details"]),
         )
     elif row_dict["Type"] in (
-        "DepositToExchange",
-        "Deposit To Exchange",
-        "ExchangeToWithdraw",
-        "Exchange To Withdraw",
         "LockingTermDeposit",
         "Locking Term Deposit",
         "TransferIn",
@@ -360,6 +381,26 @@ DataParser(
         "USD Equivalent",
         "Details",
         lambda c: c in ("Date / Time", "Date / Time (UTC)"),
+    ],
+    worksheet_name="Nexo",
+    row_handler=parse_nexo,
+)
+
+DataParser(
+    ParserType.SAVINGS,
+    "Nexo",
+    [
+        "Transaction",
+        "Type",
+        "Input Currency",
+        "Input Amount",
+        "Output Currency",
+        "Output Amount",
+        "USD Equivalent",
+        "Fee",
+        "Fee Currency",
+        "Details",
+        "Date / Time (UTC)",
     ],
     worksheet_name="Nexo",
     row_handler=parse_nexo,

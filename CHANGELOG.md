@@ -163,6 +163,7 @@
 - AdaLite parser: added new export format. ([#418](https://github.com/BittyTax/BittyTax/issues/418))
 - Crypto.com parser: added "finance.dpos.unstaking.crypto_wallet" transaction kind. ([#419](https://github.com/BittyTax/BittyTax/issues/419))
 - Conversion tool: added stream output as option for OutputExcel.
+- Nexo parser: added new export format which includes fees.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -238,6 +239,7 @@
 - Conversion tool: changed DataParser defaults and made args optional.
 - Conversion tool: moved sheet_name and table_name functions to OutputExcel.
 - Conversion tool: header in OutputBase now uses place holders for the currency.
+- Nexo parser: "Deposit To Exchange" and "Exchange To Withdraw" made trades.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
