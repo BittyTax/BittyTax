@@ -1114,7 +1114,7 @@ def _get_asset(token_symbol: str, token_unique_id: str) -> AssetSymbol:
 
 
 def _get_wallet(chain: str, address: str) -> str:
-    return f"{chain}-{address.lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN]}"
+    return f"{chain}-{address[0 : TransactionOutRecord.WALLET_ADDR_LEN]}"
 
 
 def _get_worksheet_name(chain: str, address: str) -> str:
