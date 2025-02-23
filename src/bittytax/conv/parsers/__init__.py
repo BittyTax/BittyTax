@@ -12,6 +12,7 @@ from . import (
     bittrex,
     bittylicious,
     blockchain,
+    blockchainexc,
     blockfi,
     blockpit,
     blockscout,
