@@ -211,6 +211,8 @@ def _make_t_record(
                     parser.in_header.index("token symbol"), "token symbol", tx_in.asset
                 ) from e
             _do_fee_split(tx_fee, tx_rows)
+        elif tx_in.classification.startswith(("borrow")):
+            tx_in.data_row.t_record = _make_buy(TrType.LOAN, tx_in, tx_fee)
         elif tx_in.classification.startswith(("mint", "swap")):
             tx_in.data_row.t_record = _make_buy(TrType.AIRDROP, tx_in, tx_fee)
         elif tx_in.classification.startswith("spam"):
@@ -250,6 +252,8 @@ def _make_t_record(
             tx_out.data_row.t_record = _make_sell(TrType.WITHDRAWAL, tx_out, tx_fee)
             if tx_out.data_row.row_dict["vault id"]:
                 _do_bridge_in(tx_out, vaults)
+        elif tx_out.classification.startswith("repay"):
+            tx_out.data_row.t_record = _make_sell(TrType.LOAN_REPAYMENT, tx_out, tx_fee)
         elif tx_out.classification == "fee":
             tx_out.data_row.t_record = _make_sell(TrType.SPEND, tx_out, tx_fee)
         elif tx_out.classification == "balance adjustment":
@@ -964,7 +968,7 @@ def _get_ins_outs(
 
         if (
             row_dict["destination address"] in my_addresses
-            or row_dict["destination address"].lower() in filename.lower()
+            or row_dict["destination address"].lower()[0:10] in filename.lower()
         ):
             tx_ins.append(
                 TxRecord(
@@ -983,7 +987,7 @@ def _get_ins_outs(
 
         if (
             row_dict["source address"] in my_addresses
-            or row_dict["source address"].lower() in filename.lower()
+            or row_dict["source address"].lower()[0:10] in filename.lower()
         ):
             tx_outs.append(
                 TxRecord(
