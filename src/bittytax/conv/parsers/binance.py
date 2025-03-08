@@ -388,7 +388,7 @@ def _parse_binance_statements_row(
         _parse_binance_statements_margin_row(tx_times, parser, data_row)
         return
 
-    if row_dict["Account"].lower() not in ("spot", "earn", "pool"):
+    if row_dict["Account"].lower() not in ("spot", "earn", "pool", "savings"):
         raise UnexpectedTypeError(parser.in_header.index("Account"), "Account", row_dict["Account"])
 
     if row_dict["Operation"] in (
