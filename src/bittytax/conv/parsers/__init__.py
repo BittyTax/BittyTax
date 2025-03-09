@@ -22,6 +22,7 @@ from . import (
     celsius,
     cexio,
     cgtcalculator,
+    changelly,
     changetip,
     circle,
     coinbase,
