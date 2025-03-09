@@ -176,6 +176,7 @@
 - Nexo parser: added new export format which includes fees.
 - Conversion tool: added parser for Blockchain.com Exchange.
 - Binance parser: added "Savings" Account. ([#422](https://github.com/BittyTax/BittyTax/issues/422))
+- Conversion tool: added parser for Changelly Exchange.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
