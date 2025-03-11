@@ -167,6 +167,7 @@
 - Conversion tool: added parser for Blockchain.com Exchange.
 - Binance parser: added "Savings" Account. ([#422](https://github.com/BittyTax/BittyTax/issues/422))
 - Conversion tool: added parser for Changelly Exchange.
+- Kraken parser: added "allocation" subtype. ([#424](https://github.com/BittyTax/BittyTax/issues/424))
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
