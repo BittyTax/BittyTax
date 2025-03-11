@@ -383,7 +383,7 @@ def _parse_kraken_ledgers_row(
                     fee_asset=_normalise_asset(row_dict["asset"]),
                     wallet=WALLET,
                 )
-        elif row_dict["subtype"] in ("migration", "autoallocate", "deallocation"):
+        elif row_dict["subtype"] in ("migration", "autoallocate", "allocation", "deallocation"):
             # Skip internal transfers
             return
         elif row_dict["subtype"] == "":
