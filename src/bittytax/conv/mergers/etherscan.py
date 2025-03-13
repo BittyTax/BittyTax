@@ -268,7 +268,7 @@ def _method_handling(
                     if not staking[0].t_record:
                         raise RuntimeError("Missing t_record")
 
-                    staking[0].t_record.t_type = TrType.STAKING
+                    staking[0].t_record.t_type = TrType.STAKING_REWARD
                     t_ins.remove(staking[0])
 
                     if config.debug:
