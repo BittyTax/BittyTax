@@ -292,7 +292,6 @@ def _make_t_record(
             except ValueError as e:
                 _remove_t_records(tx_rows)
                 raise MissingValueError(parser.in_header.index("vault id"), "vault id", "") from e
-
         elif tx_in.classification.startswith("interaction between your accounts"):
             _make_transfer(tx_in, tx_out, tx_fee, tx_rows)
         else:
@@ -303,45 +302,13 @@ def _make_t_record(
         # Multi transfer in
         for tx_in in tx_ins:
             if tx_in.classification.startswith(("mint", "swap")) or not tx_in.classification:
-                tx_in.data_row.t_record = TransactionOutRecord(
-                    TrType.AIRDROP,
-                    tx_in.data_row.timestamp,
-                    buy_quantity=tx_in.quantity,
-                    buy_asset=tx_in.asset,
-                    buy_value=tx_in.value,
-                    wallet=_get_wallet(tx_in.chain, tx_in.address),
-                    note=_get_note(tx_in.data_row),
-                )
+                tx_in.data_row.t_record = _make_buy(TrType.AIRDROP, tx_in)
             elif tx_in.classification.startswith("borrow"):
-                tx_in.data_row.t_record = TransactionOutRecord(
-                    TrType.LOAN,
-                    tx_in.data_row.timestamp,
-                    buy_quantity=tx_in.quantity,
-                    buy_asset=tx_in.asset,
-                    buy_value=tx_in.value,
-                    wallet=_get_wallet(tx_in.chain, tx_in.address),
-                    note=_get_note(tx_in.data_row),
-                )
+                tx_in.data_row.t_record = _make_buy(TrType.LOAN, tx_in)
             elif tx_in.classification.startswith("claim reward"):
-                tx_in.data_row.t_record = TransactionOutRecord(
-                    TrType.STAKING_REWARD,
-                    tx_in.data_row.timestamp,
-                    buy_quantity=tx_in.quantity,
-                    buy_asset=tx_in.asset,
-                    buy_value=tx_in.value,
-                    wallet=_get_wallet(tx_in.chain, tx_in.address),
-                    note=_get_note(tx_in.data_row),
-                )
+                tx_in.data_row.t_record = _make_buy(TrType.STAKING_REWARD, tx_in)
             elif tx_in.classification.startswith("transfer in"):
-                tx_in.data_row.t_record = TransactionOutRecord(
-                    TrType.DEPOSIT,
-                    tx_in.data_row.timestamp,
-                    buy_quantity=tx_in.quantity,
-                    buy_asset=tx_in.asset,
-                    buy_value=tx_in.value,
-                    wallet=_get_wallet(tx_in.chain, tx_in.address),
-                    note=_get_note(tx_in.data_row),
-                )
+                tx_in.data_row.t_record = _make_buy(TrType.DEPOSIT, tx_in)
             elif tx_in.classification.startswith(
                 (
                     "unstake & claim reward",
@@ -370,15 +337,7 @@ def _make_t_record(
                             parser.in_header.index("token symbol"), "token symbol", tx_in.asset
                         ) from e
                 else:
-                    _next_free_row(tx_rows).t_record = TransactionOutRecord(
-                        TrType.STAKING_REWARD,
-                        tx_in.data_row.timestamp,
-                        buy_quantity=tx_in.quantity,
-                        buy_asset=tx_in.asset,
-                        buy_value=tx_in.value,
-                        wallet=_get_wallet(tx_in.chain, tx_in.address),
-                        note=_get_note(tx_in.data_row),
-                    )
+                    _next_free_row(tx_rows).t_record = _make_buy(TrType.STAKING_REWARD, tx_in)
             elif tx_in.classification.startswith("spam"):
                 # Ignore spam Airdrops
                 pass
@@ -391,45 +350,13 @@ def _make_t_record(
         # Multi transfer out
         for tx_out in tx_outs:
             if tx_out.classification.startswith("swap") or tx_out.classification == "":
-                tx_out.data_row.t_record = TransactionOutRecord(
-                    TrType.SPEND,
-                    tx_out.data_row.timestamp,
-                    sell_quantity=abs(tx_out.quantity),
-                    sell_asset=tx_out.asset,
-                    sell_value=abs(tx_out.value) if tx_out.value else None,
-                    wallet=_get_wallet(tx_out.chain, tx_out.address),
-                    note=_get_note(tx_out.data_row),
-                )
+                tx_out.data_row.t_record = _make_sell(TrType.SPEND, tx_out)
             elif tx_out.classification.startswith("repay"):
-                tx_out.data_row.t_record = TransactionOutRecord(
-                    TrType.LOAN_REPAYMENT,
-                    tx_out.data_row.timestamp,
-                    sell_quantity=abs(tx_out.quantity),
-                    sell_asset=tx_out.asset,
-                    sell_value=abs(tx_out.value) if tx_out.value else None,
-                    wallet=_get_wallet(tx_out.chain, tx_out.address),
-                    note=_get_note(tx_out.data_row),
-                )
+                tx_out.data_row.t_record = _make_sell(TrType.LOAN_REPAYMENT, tx_out)
             elif tx_out.classification.startswith("transfer out"):
-                tx_out.data_row.t_record = TransactionOutRecord(
-                    TrType.WITHDRAWAL,
-                    tx_out.data_row.timestamp,
-                    sell_quantity=abs(tx_out.quantity),
-                    sell_asset=tx_out.asset,
-                    sell_value=abs(tx_out.value) if tx_out.value else None,
-                    wallet=_get_wallet(tx_out.chain, tx_out.address),
-                    note=_get_note(tx_out.data_row),
-                )
+                tx_out.data_row.t_record = _make_sell(TrType.WITHDRAWAL, tx_out)
             elif tx_out.classification.startswith(("deposit", "stake")):
-                tx_out.data_row.t_record = TransactionOutRecord(
-                    TrType.STAKE,
-                    tx_out.data_row.timestamp,
-                    sell_quantity=abs(tx_out.quantity),
-                    sell_asset=tx_out.asset,
-                    sell_value=abs(tx_out.value) if tx_out.value else None,
-                    wallet=_get_wallet(tx_out.chain, tx_out.address),
-                    note=_get_note(tx_out.data_row),
-                )
+                tx_out.data_row.t_record = _make_sell(TrType.STAKE, tx_out)
                 try:
                     _do_stake(tx_out, vaults)
                 except ValueError as e:
@@ -446,25 +373,18 @@ def _make_t_record(
         _do_fee_split(tx_fee, tx_rows)
     elif len(tx_ins) == 1 and tx_outs:
         # Single transfer in, multi transfer out
+        tx_in = tx_ins[0]
         if (
-            tx_ins[0]
-            .data_row.row_dict["classification"]
-            .startswith(("swap", "mint", "deposit with receipt"))
-            or not tx_ins[0].data_row.row_dict["classification"]
+            tx_in.data_row.row_dict["classification"].startswith(
+                ("swap", "mint", "deposit with receipt")
+            )
+            or not tx_in.data_row.row_dict["classification"]
         ):
-            _make_multi_sell(tx_ins[0], tx_outs, tx_rows)
+            _make_multi_sell(tx_in, tx_outs, tx_rows)
             _do_fee_split(tx_fee, tx_rows)
-        elif tx_ins[0].data_row.row_dict["classification"].startswith(("deposit", "stake")):
+        elif tx_in.data_row.row_dict["classification"].startswith(("deposit", "stake")):
             for tx_out in tx_outs:
-                tx_out.data_row.t_record = TransactionOutRecord(
-                    TrType.STAKE,
-                    tx_out.data_row.timestamp,
-                    sell_quantity=abs(tx_out.quantity),
-                    sell_asset=tx_out.asset,
-                    sell_value=abs(tx_out.value) if tx_out.value else None,
-                    wallet=_get_wallet(tx_out.chain, tx_out.address),
-                    note=_get_note(tx_out.data_row),
-                )
+                tx_out.data_row.t_record = _make_sell(TrType.STAKE, tx_out)
                 try:
                     _do_stake(tx_out, vaults)
                 except ValueError as e:
@@ -472,7 +392,7 @@ def _make_t_record(
                     raise MissingValueError(
                         parser.in_header.index("vault id"), "vault id", ""
                     ) from e
-            tx_ins[0].data_row.t_record = _make_buy(TrType.STAKING_REWARD, tx_ins[0], tx_fee)
+            tx_in.data_row.t_record = _make_buy(TrType.STAKING_REWARD, tx_in, tx_fee)
             _do_fee_split(tx_fee, tx_rows)
         else:
             raise UnexpectedTypeError(
@@ -480,49 +400,36 @@ def _make_t_record(
             )
     elif len(tx_outs) == 1 and tx_ins:
         # Single transfer out, multi transfer in
+        tx_out = tx_outs[0]
         if (
-            tx_outs[0]
-            .data_row.row_dict["classification"]
-            .startswith(("swap", "mint", "withdraw with receipt"))
-            or not tx_outs[0].data_row.row_dict["classification"]
+            tx_out.data_row.row_dict["classification"].startswith(
+                ("swap", "mint", "withdraw with receipt")
+            )
+            or not tx_out.data_row.row_dict["classification"]
         ):
-            _make_multi_buy(tx_outs[0], tx_ins, tx_rows)
+            _make_multi_buy(tx_out, tx_ins, tx_rows)
             _do_fee_split(tx_fee, tx_rows)
         else:
             raise UnexpectedTypeError(
                 parser.in_header.index("classification"),
                 "classification",
-                tx_outs[0].classification,
+                tx_out.classification,
             )
     else:
         # Multi transfer in/out
         for tx_in in tx_ins:
-            tx_in.data_row.t_record = TransactionOutRecord(
-                TrType.AIRDROP,
-                tx_in.data_row.timestamp,
-                buy_quantity=tx_in.quantity,
-                buy_asset=tx_in.asset,
-                buy_value=tx_in.value,
-                wallet=_get_wallet(tx_in.chain, tx_in.address),
-                note=_get_note(tx_in.data_row),
-            )
+            tx_in.data_row.t_record = _make_buy(TrType.AIRDROP, tx_in)
         for tx_out in tx_outs:
-            tx_out.data_row.t_record = TransactionOutRecord(
-                TrType.SPEND,
-                tx_out.data_row.timestamp,
-                sell_quantity=abs(tx_out.quantity),
-                sell_asset=tx_out.asset,
-                sell_value=abs(tx_out.value) if tx_out.value else None,
-                wallet=_get_wallet(tx_out.chain, tx_out.address),
-                note=_get_note(tx_out.data_row),
-            )
+            tx_out.data_row.t_record = _make_sell(TrType.SPEND, tx_out)
         _do_fee_split(tx_fee, tx_rows)
 
     for dr in tx_rows:
         dr.parsed = True
 
 
-def _make_buy(t_type: TrType, tx_in: TxRecord, tx_fee: Optional[TxRecord]) -> TransactionOutRecord:
+def _make_buy(
+    t_type: TrType, tx_in: TxRecord, tx_fee: Optional[TxRecord] = None
+) -> TransactionOutRecord:
     return TransactionOutRecord(
         t_type,
         tx_in.data_row.timestamp,
@@ -538,7 +445,7 @@ def _make_buy(t_type: TrType, tx_in: TxRecord, tx_fee: Optional[TxRecord]) -> Tr
 
 
 def _make_sell(
-    t_type: TrType, tx_out: TxRecord, tx_fee: Optional[TxRecord]
+    t_type: TrType, tx_out: TxRecord, tx_fee: Optional[TxRecord] = None
 ) -> TransactionOutRecord:
     return TransactionOutRecord(
         t_type,
@@ -893,7 +800,6 @@ def _do_bridge_out(
             wallet=_get_wallet(tx_in.chain, tx_in.address),
             note=_get_note(tx_in.data_row),
         )
-
         _next_free_row(tx_rows).t_record = TransactionOutRecord(
             TrType.TRADE,
             tx_in.data_row.timestamp,
