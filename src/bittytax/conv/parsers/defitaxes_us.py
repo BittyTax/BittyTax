@@ -274,7 +274,6 @@ def _make_t_record(
                     "wrap",
                     "unwrap",
                     "mint",
-                    "deposit",
                     "deposit with receipt",
                     "withdraw with receipt",
                     "transfer in",
@@ -284,7 +283,7 @@ def _make_t_record(
             or not tx_in.classification
         ):
             _next_free_row(tx_rows).t_record = _make_trade(tx_in, tx_out, tx_fee)
-        elif tx_in.classification.startswith(("stake", "stake & claim reward")):
+        elif tx_in.classification.startswith(("deposit", "stake", "stake & claim reward")):
             _next_free_row(tx_rows).t_record = _make_sell(TrType.STAKE, tx_out, tx_fee)
             _next_free_row(tx_rows).t_record = _make_buy(TrType.STAKING_REWARD, tx_in, tx_fee)
             _do_fee_split(tx_fee, tx_rows)
@@ -450,11 +449,30 @@ def _make_t_record(
         if (
             tx_ins[0]
             .data_row.row_dict["classification"]
-            .startswith(("swap", "mint", "deposit", "deposit with receipt", "stake"))
+            .startswith(("swap", "mint", "deposit with receipt"))
             or not tx_ins[0].data_row.row_dict["classification"]
         ):
-            # Treat the "deposit" as "deposit with receipt" as we are getting a token back here
             _make_multi_sell(tx_ins[0], tx_outs, tx_rows)
+            _do_fee_split(tx_fee, tx_rows)
+        elif tx_ins[0].data_row.row_dict["classification"].startswith(("deposit", "stake")):
+            for tx_out in tx_outs:
+                tx_out.data_row.t_record = TransactionOutRecord(
+                    TrType.STAKE,
+                    tx_out.data_row.timestamp,
+                    sell_quantity=abs(tx_out.quantity),
+                    sell_asset=tx_out.asset,
+                    sell_value=abs(tx_out.value) if tx_out.value else None,
+                    wallet=_get_wallet(tx_out.chain, tx_out.address),
+                    note=_get_note(tx_out.data_row),
+                )
+                try:
+                    _do_stake(tx_out, vaults)
+                except ValueError as e:
+                    _remove_t_records(tx_rows)
+                    raise MissingValueError(
+                        parser.in_header.index("vault id"), "vault id", ""
+                    ) from e
+            tx_ins[0].data_row.t_record = _make_buy(TrType.STAKING_REWARD, tx_ins[0], tx_fee)
             _do_fee_split(tx_fee, tx_rows)
         else:
             raise UnexpectedTypeError(
