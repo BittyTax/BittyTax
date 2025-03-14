@@ -218,7 +218,7 @@ def _make_t_record(
         elif tx_in.classification.startswith("spam"):
             # Ignore spam Airdrops
             pass
-        elif tx_in.classification.startswith("claim reward"):
+        elif tx_in.classification.startswith(("claim reward", "deposit")):
             tx_in.data_row.t_record = _make_buy(TrType.STAKING_REWARD, tx_in, tx_fee)
         elif tx_in.classification == "balance adjustment":
             tx_in.data_row.t_record = _make_buy(TrType.AIRDROP, tx_in, tx_fee)
@@ -252,6 +252,8 @@ def _make_t_record(
             tx_out.data_row.t_record = _make_sell(TrType.WITHDRAWAL, tx_out, tx_fee)
             if tx_out.data_row.row_dict["vault id"]:
                 _do_bridge_in(tx_out, vaults)
+        elif tx_out.classification.startswith(("claim reward", "withdraw with receipt")):
+            tx_out.data_row.t_record = _make_sell(TrType.SPEND, tx_out, tx_fee)
         elif tx_out.classification.startswith("repay"):
             tx_out.data_row.t_record = _make_sell(TrType.LOAN_REPAYMENT, tx_out, tx_fee)
         elif tx_out.classification == "fee":
@@ -408,6 +410,11 @@ def _make_t_record(
             or not tx_out.data_row.row_dict["classification"]
         ):
             _make_multi_buy(tx_out, tx_ins, tx_rows)
+            _do_fee_split(tx_fee, tx_rows)
+        elif tx_out.data_row.row_dict["classification"].startswith("claim reward"):
+            tx_out.data_row.t_record = _make_sell(TrType.SPEND, tx_out)
+            for tx_in in tx_ins:
+                tx_in.data_row.t_record = _make_buy(TrType.STAKING_REWARD, tx_in)
             _do_fee_split(tx_fee, tx_rows)
         else:
             raise UnexpectedTypeError(
