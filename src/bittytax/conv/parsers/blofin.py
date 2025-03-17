@@ -58,6 +58,64 @@ def parse_blofin_deposits(
     )
 
 
+def parse_blofin_withdrawals(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("txid"), tx_dest_pos=parser.in_header.index("Address")
+    )
+
+    if row_dict["State"] != "success":
+        return
+
+    data_row.t_record = TransactionOutRecord(
+        TrType.WITHDRAWAL,
+        data_row.timestamp,
+        buy_quantity=Decimal(row_dict["amount"]),
+        buy_asset=row_dict["Asset"],
+        wallet=WALLET,
+    )
+
+
+def parse_blofin_spot_trades_v2(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["order_time"])
+
+    if row_dict["Status"] == "canceled":
+        return
+
+    if row_dict["Side"] == "Buy":
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Filled(Quantity)"]),
+            buy_asset=row_dict["Underlying Asset"].split("-")[0],
+            sell_quantity=Decimal(row_dict["Filled(Value)"]),
+            sell_asset=row_dict["Underlying Asset"].split("-")[1],
+            fee_quantity=Decimal(row_dict["Fee"].split(" ")[0]),
+            fee_asset=row_dict["Fee"].split(" ")[1],
+            wallet=WALLET,
+        )
+    elif row_dict["Side"] == "Sell":
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Filled(Value)"]),
+            buy_asset=row_dict["Underlying Asset"].split("-")[1],
+            sell_quantity=Decimal(row_dict["Filled(Quantity)"]),
+            sell_asset=row_dict["Underlying Asset"].split("-")[0],
+            fee_quantity=Decimal(row_dict["Fee"].split(" ")[0]),
+            fee_asset=row_dict["Fee"].split(" ")[1],
+            wallet=WALLET,
+        )
+    else:
+        raise UnexpectedTypeError(parser.in_header.index("Side"), "Side", row_dict["Side"])
+
+
 def parse_blofin_spot_trades(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
@@ -424,6 +482,35 @@ DataParser(
     ["Asset", "amount", "chain_name", "txid", "Time", "State"],
     worksheet_name="BloFin D",
     row_handler=parse_blofin_deposits,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "BloFin Withdrawals",
+    ["Asset", "amount", "chain_name", "txid", "Address", "Tag", "Time", "State"],
+    worksheet_name="BloFin W",
+    row_handler=parse_blofin_withdrawals,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "BloFin Spot Trades",
+    [
+        "Underlying Asset",
+        "order_time",
+        "Side",
+        "Avg Filled price",
+        "Price",
+        "Filled(Quantity)",
+        "Filled(Total)",
+        "Filled(Value)",
+        "Filled(OrderValue)",
+        "Fee",
+        "Order options",
+        "Status",
+    ],
+    worksheet_name="BloFin S",
+    row_handler=parse_blofin_spot_trades_v2,
 )
 
 DataParser(
