@@ -38,7 +38,7 @@ from . import (
     cryptocom,
     cryptopia,
     cryptsy,
-    defitaxes_us,
+    defitaxes,
     deribit,
     easycrypto,
     electrum,
