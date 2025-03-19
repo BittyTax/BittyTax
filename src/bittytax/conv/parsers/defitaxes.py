@@ -16,7 +16,6 @@ from ...constants import WARNING
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..datarow import TxRawPos
 from ..exceptions import (
-    DataFilenameError,
     DataRowError,
     MissingValueError,
     UnexpectedContentError,
@@ -47,6 +46,7 @@ class TxRecord:
     address: str
     chain: Chain
     vault_id: VaultId
+    interaction: bool
     data_row: "DataRow"
 
 
@@ -57,11 +57,10 @@ class VaultRecord:
 
 
 def parse_defi_taxes(
-    data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     tx_ids: Dict[Chain, Dict[TxHash, List["DataRow"]]] = {}
     vaults: Dict[VaultId, Dict[AssetSymbol, VaultRecord]] = {}
-    my_addresses = []
 
     for dr in data_rows:
         if not dr.row_dict["timestamp"]:
@@ -85,14 +84,6 @@ def parse_defi_taxes(
             parser.in_header.index("destination address"),
         )
 
-        # Try to identify own addresses
-        if dr.row_dict["destination address"] == "network":
-            if dr.row_dict["source address"] not in my_addresses:
-                my_addresses.append(dr.row_dict["source address"])
-
-    if config.debug:
-        sys.stderr.write(f"{Fore.CYAN}conv: my addresses: {', '.join(my_addresses)}\n")
-
     for data_row in data_rows:
         if config.debug:
             if parser.in_header_row_num is None:
@@ -107,9 +98,7 @@ def parse_defi_taxes(
             continue
 
         try:
-            _parse_defi_taxes_row(
-                data_rows, tx_ids, vaults, parser, data_row, my_addresses, kwargs["filename"]
-            )
+            _parse_defi_taxes_row(data_rows, tx_ids, vaults, parser, data_row)
         except DataRowError as e:
             data_row.failure = e
         except (ValueError, AttributeError, ArithmeticError) as e:
@@ -125,8 +114,6 @@ def _parse_defi_taxes_row(
     vaults: Dict[VaultId, Dict[AssetSymbol, VaultRecord]],
     parser: DataParser,
     data_row: "DataRow",
-    my_addresses: List[str],
-    filename: str,
 ) -> None:
     row_dict = data_row.row_dict
 
@@ -139,11 +126,11 @@ def _parse_defi_taxes_row(
 
     if tx_hash:
         tx_rows = tx_ids[chain][tx_hash]
-        tx_ins, tx_outs, tx_fee = _get_ins_outs(tx_rows, my_addresses, filename)
     else:
         # Must be a manual transaction
         tx_rows = [data_row]
-        tx_ins, tx_outs, tx_fee = _get_ins_outs([data_row], my_addresses, filename)
+
+    tx_ins, tx_outs, tx_fee = _get_ins_outs(tx_rows)
 
     if config.debug:
         _output_tx_rows(tx_ins, tx_outs, tx_fee)
@@ -223,7 +210,7 @@ def _make_t_record(
         elif tx_in.classification == "balance adjustment":
             tx_in.data_row.t_record = _make_buy(TrType.AIRDROP, tx_in, tx_fee)
         elif tx_in.classification.startswith("transfer from your account elsewhere"):
-            if tx_in.data_row.row_dict["vault id"]:
+            if tx_in.vault_id:
                 _do_bridge_out(tx_in, vaults, tx_rows)
                 _do_fee_split(tx_fee, tx_rows)
             else:
@@ -250,7 +237,7 @@ def _make_t_record(
                 raise MissingValueError(parser.in_header.index("vault id"), "vault id", "") from e
         elif tx_out.classification.startswith("transfer to your account elsewhere"):
             tx_out.data_row.t_record = _make_sell(TrType.WITHDRAWAL, tx_out, tx_fee)
-            if tx_out.data_row.row_dict["vault id"]:
+            if tx_out.vault_id:
                 _do_bridge_in(tx_out, vaults)
         elif tx_out.classification.startswith(("claim reward", "withdraw with receipt")):
             tx_out.data_row.t_record = _make_sell(TrType.SPEND, tx_out, tx_fee)
@@ -321,7 +308,7 @@ def _make_t_record(
                     "deposit",
                 )
             ):
-                if tx_in.data_row.row_dict["vault id"]:
+                if tx_in.vault_id:
                     try:
                         _do_unstake(
                             tx_in, vaults, tx_rows, exit_vault="exit" in tx_in.classification
@@ -351,7 +338,7 @@ def _make_t_record(
     elif len(tx_outs) > 1 and not tx_ins:
         # Multi transfer out
         for tx_out in tx_outs:
-            if tx_out.classification.startswith("swap") or tx_out.classification == "":
+            if tx_out.classification.startswith("swap") or not tx_out.classification:
                 tx_out.data_row.t_record = _make_sell(TrType.SPEND, tx_out)
             elif tx_out.classification.startswith("repay"):
                 tx_out.data_row.t_record = _make_sell(TrType.LOAN_REPAYMENT, tx_out)
@@ -377,14 +364,12 @@ def _make_t_record(
         # Single transfer in, multi transfer out
         tx_in = tx_ins[0]
         if (
-            tx_in.data_row.row_dict["classification"].startswith(
-                ("swap", "mint", "deposit with receipt")
-            )
-            or not tx_in.data_row.row_dict["classification"]
+            tx_in.classification.startswith(("swap", "mint", "deposit with receipt"))
+            or not tx_in.classification
         ):
             _make_multi_sell(tx_in, tx_outs, tx_rows)
             _do_fee_split(tx_fee, tx_rows)
-        elif tx_in.data_row.row_dict["classification"].startswith(("deposit", "stake")):
+        elif tx_in.classification.startswith(("deposit", "stake")):
             for tx_out in tx_outs:
                 tx_out.data_row.t_record = _make_sell(TrType.STAKE, tx_out)
                 try:
@@ -396,6 +381,12 @@ def _make_t_record(
                     ) from e
             tx_in.data_row.t_record = _make_buy(TrType.STAKING_REWARD, tx_in, tx_fee)
             _do_fee_split(tx_fee, tx_rows)
+        elif tx_in.classification.startswith("interaction between your accounts"):
+            for tx_out in tx_outs:
+                if tx_out.interaction:
+                    _make_transfer(tx_in, tx_out, tx_fee, tx_rows)
+                else:
+                    tx_out.data_row.t_record = _make_sell(TrType.SPEND, tx_out)
         else:
             raise UnexpectedTypeError(
                 parser.in_header.index("classification"), "classification", tx_ins[0].classification
@@ -404,14 +395,12 @@ def _make_t_record(
         # Single transfer out, multi transfer in
         tx_out = tx_outs[0]
         if (
-            tx_out.data_row.row_dict["classification"].startswith(
-                ("swap", "mint", "withdraw with receipt")
-            )
-            or not tx_out.data_row.row_dict["classification"]
+            tx_out.classification.startswith(("swap", "mint", "withdraw with receipt"))
+            or not tx_out.classification
         ):
             _make_multi_buy(tx_out, tx_ins, tx_rows)
             _do_fee_split(tx_fee, tx_rows)
-        elif tx_out.data_row.row_dict["classification"].startswith("claim reward"):
+        elif tx_out.classification.startswith("claim reward"):
             tx_out.data_row.t_record = _make_sell(TrType.SPEND, tx_out)
             for tx_in in tx_ins:
                 tx_in.data_row.t_record = _make_buy(TrType.STAKING_REWARD, tx_in)
@@ -507,8 +496,8 @@ def _make_transfer(
         note=_get_note(tx_out.data_row),
     )
 
-    next_row = _next_free_row(tx_rows)
-    next_row.t_record = TransactionOutRecord(
+    dup_data_row = copy.copy(tx_out.data_row)
+    dup_data_row.t_record = TransactionOutRecord(
         TrType.DEPOSIT,
         tx_in.data_row.timestamp,
         buy_quantity=tx_in.quantity,
@@ -517,7 +506,8 @@ def _make_transfer(
         wallet=_get_wallet(tx_in.chain, tx_in.address),
         note=_get_note(tx_in.data_row),
     )
-    next_row.worksheet_name = _get_worksheet_name(tx_in.chain, tx_in.address)
+    dup_data_row.worksheet_name = _get_worksheet_name(tx_in.chain, tx_in.address)
+    tx_rows.append(dup_data_row)
 
 
 def _make_multi_sell(tx_in: TxRecord, tx_outs: List[TxRecord], tx_rows: List["DataRow"]) -> None:
@@ -863,7 +853,7 @@ def _next_free_row(tx_rows: List["DataRow"]) -> "DataRow":
 
 
 def _get_ins_outs(
-    tx_rows: List["DataRow"], my_addresses: List[str], filename: str
+    tx_rows: List["DataRow"],
 ) -> Tuple[List[TxRecord], List[TxRecord], Optional[TxRecord]]:
     tx_ins = []
     tx_outs = []
@@ -871,7 +861,6 @@ def _get_ins_outs(
 
     for dr in tx_rows:
         row_dict = dr.row_dict
-        my_address = False
 
         rate = DataParser.convert_currency(row_dict["USD rate"], "USD", dr.timestamp)
         quantity = Decimal(row_dict["amount transfered"])
@@ -880,6 +869,9 @@ def _get_ins_outs(
         classification = row_dict["classification"]
         vault_id = VaultId(row_dict["vault id"])
         chain = Chain(row_dict["chain"])
+        interaction = bool(
+            row_dict["destination is me"] == "True" and row_dict["source is me"] == "True"
+        )
 
         if row_dict["destination address"] == "network":
             tx_fees.append(
@@ -891,16 +883,14 @@ def _get_ins_outs(
                     row_dict["source address"],
                     chain,
                     vault_id,
+                    False,
                     dr,
                 )
             )
             dr.worksheet_name = _get_worksheet_name(chain, row_dict["source address"])
             continue
 
-        if (
-            row_dict["destination address"] in my_addresses
-            or row_dict["destination address"].lower()[0:10] in filename.lower()
-        ):
+        if row_dict["destination is me"] == "True":
             tx_ins.append(
                 TxRecord(
                     quantity,
@@ -910,16 +900,13 @@ def _get_ins_outs(
                     row_dict["destination address"],
                     chain,
                     vault_id,
+                    interaction,
                     dr,
                 )
             )
             dr.worksheet_name = _get_worksheet_name(chain, row_dict["destination address"])
-            my_address = True
 
-        if (
-            row_dict["source address"] in my_addresses
-            or row_dict["source address"].lower()[0:10] in filename.lower()
-        ):
+        if row_dict["source is me"] == "True":
             tx_outs.append(
                 TxRecord(
                     -abs(quantity),
@@ -929,14 +916,11 @@ def _get_ins_outs(
                     row_dict["source address"],
                     chain,
                     vault_id,
+                    interaction,
                     dr,
                 )
             )
             dr.worksheet_name = _get_worksheet_name(chain, row_dict["source address"])
-            my_address = True
-
-        if not my_address:
-            raise DataFilenameError(filename, f"{row_dict['chain']} address")
 
     if not tx_fees:
         tx_fee = None
@@ -954,7 +938,7 @@ def _consolidate_tx(
     tx_assets: Dict[AssetSymbol, TxRecord] = {}
 
     for tx_in in tx_ins:
-        if tx_in.classification.startswith("interaction between your accounts"):
+        if tx_in.interaction:
             return tx_ins, tx_outs
 
         if tx_in.asset not in tx_assets:
@@ -978,7 +962,7 @@ def _consolidate_tx(
                 )
 
     for tx_out in tx_outs:
-        if tx_out.classification.startswith("interaction between your accounts"):
+        if tx_out.interaction:
             return tx_ins, tx_outs
 
         if tx_out.asset not in tx_assets:
@@ -1093,7 +1077,9 @@ DataParser(
         "function hex signature",
         "operation (decoded hex signature)",
         "source address",
+        "source is me",
         "destination address",
+        "destination is me",
         "amount transfered",
         "token contract address",
         "token symbol",
@@ -1101,6 +1087,8 @@ DataParser(
         "transfer type",
         "tax treatment",
         "vault id",
+        "coingecko id",
+        "rate source",
         "USD rate",
     ],
     worksheet_name=WORKSHEET_NAME,
