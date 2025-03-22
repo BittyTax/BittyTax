@@ -397,6 +397,7 @@ def _parse_binance_statements_row(
         "Commission Rebate",
         "Commission Fee Shared With You",
         "Referral Kickback",
+        "Referral Commission",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.REFERRAL,
