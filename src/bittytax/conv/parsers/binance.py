@@ -691,7 +691,7 @@ def _parse_binance_statements_margin_row(
 ) -> None:
     row_dict = data_row.row_dict
 
-    if row_dict["Operation"] in ("Margin Loan", "Isolated Margin Loan"):
+    if row_dict["Operation"] in ("Margin loan", "Margin Loan", "Isolated Margin Loan"):
         data_row.t_record = TransactionOutRecord(
             TrType.LOAN,
             data_row.timestamp,
