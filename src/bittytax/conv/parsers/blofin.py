@@ -5,14 +5,16 @@ import copy
 import re
 import sys
 from dataclasses import dataclass
+from datetime import timedelta
 from decimal import Decimal
-from typing import TYPE_CHECKING, Dict, List, NewType
+from typing import TYPE_CHECKING, Dict, List, NewType, Optional
 
 from colorama import Fore
 from typing_extensions import Unpack
 
 from ...bt_types import AssetSymbol, TrType
 from ...config import config
+from ...constants import WARNING
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..datarow import TxRawPos
 from ..exceptions import DataRowError, UnexpectedContentError, UnexpectedTypeError
@@ -33,6 +35,8 @@ class Position:
     fee_asset: AssetSymbol
     size: Decimal = Decimal(0)
     trading_fees: Decimal = Decimal(0)
+    funding_fees: Decimal = Decimal(0)
+    data_row: Optional["DataRow"] = None
 
 
 def parse_blofin_deposits(
@@ -272,7 +276,11 @@ def _parse_blofin_futures_row(
             )
     elif row_dict["Side"] == "Close Short":
         if instrument not in positions:
-            raise RuntimeError(f"No position open for {instrument}")
+            sys.stderr.write(
+                f"{WARNING} No position open for {instrument} at "
+                f"{data_row.timestamp:%Y-%m-%dT%H:%M:%S}\n"
+            )
+            positions[instrument] = Position(fee_asset, -size)
 
         positions[instrument].size += size
         positions[instrument].trading_fees += trading_fee
@@ -287,10 +295,16 @@ def _parse_blofin_futures_row(
             )
 
         partial_close = 1 - (positions[instrument].size / (positions[instrument].size - size))
-        _close_position(data_rows, data_row, row_index, positions, instrument, partial_close)
+        _close_position_futures(
+            data_rows, data_row, row_index, positions, instrument, partial_close
+        )
     elif row_dict["Side"] == "Close Long":
         if instrument not in positions:
-            raise RuntimeError(f"No position open for {instrument}")
+            sys.stderr.write(
+                f"{WARNING} No position open for {instrument} at "
+                f"{data_row.timestamp:%Y-%m-%dT%H:%M:%S}\n"
+            )
+            positions[instrument] = Position(fee_asset, size)
 
         size = -abs(size)
         positions[instrument].size += size
@@ -304,7 +318,9 @@ def _parse_blofin_futures_row(
                 f"{positions[instrument].fee_asset} ({trading_fee.normalize():+0,f})\n"
             )
         partial_close = 1 - (positions[instrument].size / (positions[instrument].size - size))
-        _close_position(data_rows, data_row, row_index, positions, instrument, partial_close)
+        _close_position_futures(
+            data_rows, data_row, row_index, positions, instrument, partial_close
+        )
     else:
         raise UnexpectedTypeError(parser.in_header.index("Side"), "Side", row_dict["Side"])
 
@@ -317,7 +333,7 @@ def _get_asset(instrument: str) -> AssetSymbol:
     return AssetSymbol("")
 
 
-def _close_position(
+def _close_position_futures(
     data_rows: List["DataRow"],
     data_row: "DataRow",
     row_index: int,
@@ -476,6 +492,128 @@ def _parse_blofin_margin_trades_row(
         data_rows.insert(row_index + 1, dup_data_row)
 
 
+def parse_blofin_funding(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    positions: Dict[Instrument, Position] = {}
+
+    for data_row in reversed(data_rows):
+        if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
+            sys.stderr.write(
+                f"{Fore.YELLOW}conv: "
+                f" row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
+            )
+
+        if not data_row.row:
+            continue
+
+        data_row.timestamp = DataParser.parse_timestamp(data_row.row_dict["Time"])
+
+        if data_row.parsed:
+            continue
+
+        try:
+            _parse_blofin_funding_row(
+                parser,
+                data_row,
+                positions,
+            )
+        except DataRowError as e:
+            data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
+
+    for instrument in positions:
+        # Assume last funding fee recieved is for a position closed
+        _close_position_funding(positions, instrument)
+
+
+def _parse_blofin_funding_row(
+    parser: DataParser,
+    data_row: "DataRow",
+    positions: Dict[Instrument, Position],
+) -> None:
+    row_dict = data_row.row_dict
+    data_row.parsed = True
+
+    instrument = Instrument(row_dict["symbol"])
+    funding_fee = Decimal(row_dict["real_funding_amount"])
+    fee_asset = AssetSymbol(row_dict["symbol"].split("-")[1])
+    if not fee_asset:
+        raise UnexpectedContentError(parser.in_header.index("symbol"), "symbol", row_dict["symbol"])
+
+    if instrument in positions:
+        p_data_row = positions[instrument].data_row
+        if p_data_row is None:
+            raise RuntimeError("Missing data_row")
+
+        # Assume position closed if no funding fees after 1 day
+        if p_data_row.timestamp + timedelta(days=1) < data_row.timestamp:
+            _close_position_funding(positions, instrument)
+            del positions[instrument]
+
+    if instrument not in positions:
+        positions[instrument] = Position(fee_asset, data_row=data_row)
+
+    if row_dict["Funding type"] == "pay":
+        funding_fee = -funding_fee
+        positions[instrument].funding_fees += funding_fee
+    elif row_dict["Funding type"] == "receive":
+        positions[instrument].funding_fees += funding_fee
+    else:
+        raise UnexpectedTypeError(
+            parser.in_header.index("Funding type"), "Funding type", row_dict["Funding type"]
+        )
+
+    if config.debug:
+        sys.stderr.write(
+            f"{Fore.GREEN}conv: {instrument}:funding_fees="
+            f"{positions[instrument].funding_fees.normalize():0,f} "
+            f"{positions[instrument].fee_asset} ({funding_fee.normalize():+0,f})\n"
+        )
+
+    if instrument in positions:
+        positions[instrument].data_row = data_row
+
+
+def _close_position_funding(positions: Dict[Instrument, Position], instrument: Instrument) -> None:
+    if config.debug:
+        sys.stderr.write(
+            f"{Fore.CYAN}conv: Closed position: {instrument}:funding_fees="
+            f"{positions[instrument].funding_fees.normalize():0,f} "
+            f"{positions[instrument].fee_asset}\n"
+        )
+
+    p_data_row = positions[instrument].data_row
+    if p_data_row is None:
+        raise RuntimeError("Missing data_row")
+
+    if positions[instrument].funding_fees > 0:
+        p_data_row.t_record = TransactionOutRecord(
+            TrType.FEE_REBATE,
+            p_data_row.timestamp,
+            buy_quantity=positions[instrument].funding_fees,
+            buy_asset=positions[instrument].fee_asset,
+            wallet=WALLET,
+            note=instrument,
+        )
+    else:
+        p_data_row.t_record = TransactionOutRecord(
+            TrType.MARGIN_FEE,
+            p_data_row.timestamp,
+            sell_quantity=abs(positions[instrument].funding_fees),
+            sell_asset=positions[instrument].fee_asset,
+            wallet=WALLET,
+            note=instrument,
+        )
+
+
 DataParser(
     ParserType.EXCHANGE,
     "BloFin Deposits",
@@ -578,4 +716,12 @@ DataParser(
     ],
     worksheet_name="BloFin M",
     all_handler=parse_blofin_margin_trades,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "BloFin Funding",
+    ["symbol", "QTY", "Funding rate", "Funding type", "Funding Fee", "real_funding_amount", "Time"],
+    worksheet_name="BloFin F",
+    all_handler=parse_blofin_funding,
 )
