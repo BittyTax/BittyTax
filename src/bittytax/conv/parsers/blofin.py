@@ -530,7 +530,7 @@ def parse_blofin_funding(
             data_row.failure = e
 
     for instrument in positions:
-        # Assume last funding fee recieved is for a position closed
+        # Assume last funding fee received is for a position closed
         _close_position_funding(positions, instrument)
 
 
