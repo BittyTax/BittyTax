@@ -170,6 +170,7 @@
 - Kraken parser: added "allocation" subtype. ([#424](https://github.com/BittyTax/BittyTax/issues/424))
 - Ledger Live parser: added "UNBOND" and "WITHDRAW_UNBONDED" Operation Types. ([#426](https://github.com/BittyTax/BittyTax/issues/426))
 - Binance parser: added "Referral Commission" operation. ([#430](https://github.com/BittyTax/BittyTax/issues/430))
+- Nexo parser: added handling for "Transfer to Nexo User" and "Earn Interest Adjustment" in Details.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
