@@ -203,7 +203,63 @@ def parse_kucoin_trades_v1(
         )
 
 
-def parse_kucoin_deposits_withdrawals_v1(
+def parse_kucoin_fiat_trades(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+
+    timestamp_hdr = parser.args[0].group(1)
+    utc_offset = parser.args[0].group(2)
+    data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
+
+    if row_dict["Status"] != "DONE":
+        return
+
+    if row_dict["Fee Currency"]:
+        fee_quantity = Decimal(row_dict["Fee"])
+    else:
+        fee_quantity = None
+
+    data_row.t_record = TransactionOutRecord(
+        TrType.TRADE,
+        data_row.timestamp,
+        buy_quantity=Decimal(row_dict["Crypto Quantity,"]),
+        buy_asset=row_dict["Currency (Crypto)"],
+        sell_quantity=Decimal(row_dict["Fiat Amount"]),
+        sell_asset=row_dict["Currency (Fiat)"],
+        fee_quantity=fee_quantity,
+        fee_asset=row_dict["Fee Currency"],
+        wallet=WALLET,
+    )
+
+
+def parse_kucoin_fiat_trades_v2(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+
+    timestamp_hdr = parser.args[0].group(1)
+    utc_offset = parser.args[0].group(2)
+
+    data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
+
+    if row_dict["Status"] != "SUCCEEDED":
+        return
+
+    data_row.t_record = TransactionOutRecord(
+        TrType.TRADE,
+        data_row.timestamp,
+        buy_quantity=Decimal(row_dict["Crypto Quantity"]),
+        buy_asset=row_dict["Currency (Crypto)"],
+        sell_quantity=Decimal(row_dict["Fiat Amount"]),
+        sell_asset=row_dict["Currency (Fiat)"],
+        fee_quantity=Decimal(row_dict["Fee (Fiat)"]),
+        fee_asset=row_dict["Fee Currency (Fiat)"],
+        wallet=WALLET,
+    )
+
+
+def parse_kucoin_deposits_withdrawals_crypto_v1(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
@@ -230,7 +286,7 @@ def parse_kucoin_deposits_withdrawals_v1(
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
 
-def parse_kucoin_deposits(
+def parse_kucoin_deposits_crypto(
     data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
@@ -247,7 +303,7 @@ def parse_kucoin_deposits(
     )
 
 
-def parse_kucoin_withdrawals(
+def parse_kucoin_withdrawals_crypto(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
@@ -267,7 +323,7 @@ def parse_kucoin_withdrawals(
     )
 
 
-def parse_kucoin_deposits_withdrawals_v2(
+def parse_kucoin_deposits_withdrawals_crypto_v2(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
@@ -282,8 +338,14 @@ def parse_kucoin_deposits_withdrawals_v2(
     if row_dict["Status"] != "SUCCESS":
         return
 
+    tx_hash_pos = None
+    if "Hash" in row_dict:
+        tx_hash_pos = parser.in_header.index("Hash")
+
     if "Withdrawal Address/Account" in row_dict:
-        data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Withdrawal Address/Account"))
+        data_row.tx_raw = TxRawPos(
+            tx_hash_pos, tx_dest_pos=parser.in_header.index("Withdrawal Address/Account")
+        )
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -295,6 +357,11 @@ def parse_kucoin_deposits_withdrawals_v2(
             note=row_dict["Remarks"],
         )
     else:
+        tx_dest_pos = None
+        if "Deposit Address" in row_dict:
+            tx_dest_pos = parser.in_header.index("Deposit Address")
+
+        data_row.tx_raw = TxRawPos(tx_hash_pos, tx_dest_pos=tx_dest_pos)
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -313,7 +380,6 @@ def parse_kucoin_staking_income(
 
     timestamp_hdr = parser.args[0].group(1)
     utc_offset = parser.args[0].group(2)
-
     data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
 
     data_row.t_record = TransactionOutRecord(
@@ -440,7 +506,6 @@ def parse_kucoin_account_history_funding(
 
     timestamp_hdr = parser.args[0].group(1)
     utc_offset = parser.args[0].group(2)
-
     data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
 
     if "Distribution" in row_dict["Remark"]:
@@ -451,6 +516,29 @@ def parse_kucoin_account_history_funding(
             buy_asset=row_dict["Currency"],
             wallet=WALLET,
         )
+
+
+def parse_kucoin_deposits_fiat(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+
+    if row_dict["Status"] != "SUCCEEDED":
+        return
+
+    timestamp_hdr = parser.args[0].group(1)
+    utc_offset = parser.args[0].group(2)
+    data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
+
+    data_row.t_record = TransactionOutRecord(
+        TrType.DEPOSIT,
+        data_row.timestamp,
+        buy_quantity=Decimal(row_dict["Fiat Amount"]),
+        buy_asset=row_dict["Currency (Fiat)"],
+        fee_quantity=Decimal(row_dict["Fee"]),
+        fee_asset=row_dict["Currency (Fiat)"],
+        wallet=WALLET,
+    )
 
 
 DataParser(
@@ -543,7 +631,7 @@ DataParser(
     "KuCoin Deposits",
     ["Time", "Coin", "Network", "Amount", "Type", "Remark", "Fee"],
     worksheet_name="KuCoin D",
-    row_handler=parse_kucoin_deposits,
+    row_handler=parse_kucoin_deposits_crypto,
 )
 
 DataParser(
@@ -551,7 +639,7 @@ DataParser(
     "KuCoin Deposits",
     ["Time", "Coin", "Amount", "Type", "Remark"],
     worksheet_name="KuCoin D",
-    row_handler=parse_kucoin_deposits,
+    row_handler=parse_kucoin_deposits_crypto,
 )
 
 DataParser(
@@ -559,7 +647,7 @@ DataParser(
     "KuCoin Withdrawals",
     ["Time", "Coin", "Network", "Amount", "Type", "Wallet Address/Account", "Remark"],
     worksheet_name="KuCoin W",
-    row_handler=parse_kucoin_withdrawals,
+    row_handler=parse_kucoin_withdrawals_crypto,
 )
 
 DataParser(
@@ -567,7 +655,7 @@ DataParser(
     "KuCoin Withdrawals",
     ["Time", "Coin", "Amount", "Type", "Wallet Address", "Remark"],
     worksheet_name="KuCoin W",
-    row_handler=parse_kucoin_withdrawals,
+    row_handler=parse_kucoin_withdrawals_crypto,
 )
 
 DataParser(
@@ -575,7 +663,7 @@ DataParser(
     "KuCoin Deposits/Withdrawals",
     ["coin_type", "type", "add", "hash", "vol", "created_at"],
     worksheet_name="KuCoin D,W",
-    row_handler=parse_kucoin_deposits_withdrawals_v1,
+    row_handler=parse_kucoin_deposits_withdrawals_crypto_v1,
 )
 
 DataParser(
@@ -593,7 +681,27 @@ DataParser(
         "Remarks",
     ],
     worksheet_name="KuCoin D,W",
-    row_handler=parse_kucoin_deposits_withdrawals_v2,
+    row_handler=parse_kucoin_deposits_withdrawals_crypto_v2,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Deposits",
+    [
+        "UID",
+        "Account Type",
+        lambda c: re.match(r"(^Time\((UTC|UTC[-+]\d{2}:\d{2})\))", c),
+        "Coin",
+        "Amount",
+        "Fee",
+        "Hash",
+        "Deposit Address",
+        "Transfer Network",
+        "Status",
+        "Remarks",
+    ],
+    worksheet_name="KuCoin D,W",
+    row_handler=parse_kucoin_deposits_withdrawals_crypto_v2,
 )
 
 # Deposit_Withdrawal History_Deposit History (Bundle)
@@ -612,7 +720,7 @@ DataParser(
         "Transfer Network",
     ],
     worksheet_name="KuCoin D,W",
-    row_handler=parse_kucoin_deposits_withdrawals_v2,
+    row_handler=parse_kucoin_deposits_withdrawals_crypto_v2,
 )
 
 DataParser(
@@ -631,7 +739,27 @@ DataParser(
         "Remarks",
     ],
     worksheet_name="KuCoin D,W",
-    row_handler=parse_kucoin_deposits_withdrawals_v2,
+    row_handler=parse_kucoin_deposits_withdrawals_crypto_v2,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Withdrawals",
+    [
+        "UID",
+        "Account Type",
+        lambda c: re.match(r"(^Time\((UTC|UTC[-+]\d{2}:\d{2})\))", c),
+        "Coin",
+        "Amount",
+        "Fee",
+        "Hash",
+        "Withdrawal Address/Account",
+        "Transfer Network",
+        "Status",
+        "Remarks",
+    ],
+    worksheet_name="KuCoin D,W",
+    row_handler=parse_kucoin_deposits_withdrawals_crypto_v2,
 )
 
 # Deposit_Withdrawal History_Withdrawal Record (Bundle)
@@ -651,7 +779,7 @@ DataParser(
         "Remarks",
     ],
     worksheet_name="KuCoin D,W",
-    row_handler=parse_kucoin_deposits_withdrawals_v2,
+    row_handler=parse_kucoin_deposits_withdrawals_crypto_v2,
 )
 
 DataParser(
@@ -670,7 +798,7 @@ DataParser(
         "Withdrawal Address/Account",
     ],
     worksheet_name="KuCoin D,W",
-    row_handler=parse_kucoin_deposits_withdrawals_v2,
+    row_handler=parse_kucoin_deposits_withdrawals_crypto_v2,
 )
 
 # Earn Orders_Profit History (Bundle)
@@ -852,4 +980,61 @@ DataParser(
     ],
     worksheet_name="KuCoin T",
     row_handler=parse_kucoin_trades_v5,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Trades",
+    [
+        "Order ID",
+        "Order Type",
+        "Currency (Crypto)",
+        "Crypto Quantity,",
+        "Price",
+        "Currency (Fiat)",
+        "Fiat Amount",
+        "Fee Currency",
+        "Fee",
+        "Status",
+        lambda c: re.match(r"(^Time\((UTC|UTC[-+]\d{2}:\d{2})\))", c),
+    ],
+    worksheet_name="KuCoin T",
+    row_handler=parse_kucoin_fiat_trades,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Trades",
+    [
+        "Order ID",
+        "Currency (Crypto)",
+        "Crypto Quantity",
+        "Currency (Fiat)",
+        "Fiat Amount",
+        "Fee Currency (Fiat)",
+        "Fee (Fiat)",
+        "Fee Currency (Crypto)",
+        "Fee (Crypto)",
+        "Payment Method",
+        "Status",
+        lambda c: re.match(r"(^Time\((UTC|UTC[-+]\d{2}:\d{2})\))", c),
+    ],
+    worksheet_name="KuCoin T",
+    row_handler=parse_kucoin_fiat_trades_v2,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Deposits",
+    [
+        "Order ID",
+        "Currency (Fiat)",
+        "Fiat Amount",
+        "Fee",
+        "Deposit Method",
+        "Status",
+        lambda c: re.match(r"(^Time\((UTC|UTC[-+]\d{2}:\d{2})\))", c),
+    ],
+    worksheet_name="KuCoin D",
+    row_handler=parse_kucoin_deposits_fiat,
 )
