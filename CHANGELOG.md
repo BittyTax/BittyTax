@@ -183,6 +183,7 @@
 - Binance parser: added "Funding" Account, and "Send" and "Campaign Related Reward" Operations.
 - Coinbase parser: added "Donation" and "Admin Debit" transaction types.
 - Binance parser: added "Referral Commission" operation. ([#430](https://github.com/BittyTax/BittyTax/issues/430))
+- Nexo parser: added handling for "Transfer to Nexo User" and "Earn Interest Adjustment" in Details.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))

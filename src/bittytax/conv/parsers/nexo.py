@@ -112,6 +112,8 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
 
         if "Airdrop" in row_dict["Details"]:
             t_type = TrType.AIRDROP
+        elif "Earn Interest Adjustment" in row_dict["Details"]:
+            t_type = TrType.INTEREST
         else:
             t_type = TrType.DEPOSIT
             data_row.tx_raw = TxRawPos(parser.in_header.index("Details"))
@@ -221,13 +223,18 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
             note=_get_note(row_dict["Details"]),
         )
     elif row_dict["Type"] in ("Withdrawal", "WithdrawExchanged", "Withdraw Exchanged"):
+        if "Transfer to Nexo User" in row_dict["Details"]:
+            t_type = TrType.GIFT_SENT
+        else:
+            t_type = TrType.WITHDRAWAL
+
         if sell_asset == fee_asset:
             # Sell quantity should be the net amount
             if sell_quantity and fee_quantity:
                 sell_quantity -= fee_quantity
 
         data_row.t_record = TransactionOutRecord(
-            TrType.WITHDRAWAL,
+            t_type,
             data_row.timestamp,
             sell_quantity=sell_quantity,
             sell_asset=sell_asset,
