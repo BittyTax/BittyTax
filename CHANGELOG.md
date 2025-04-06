@@ -172,6 +172,7 @@
 - Binance parser: added "Referral Commission" operation. ([#430](https://github.com/BittyTax/BittyTax/issues/430))
 - Nexo parser: added handling for "Transfer to Nexo User" and "Earn Interest Adjustment" in Details.
 - KuCoin parser: added "Fiat Deposits", "Third-Party Payment", "Fast Trade Orders" files.
+- Binance parser: added "Funding" Account, and "Send" and "Campaign Related Reward" Operations.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))

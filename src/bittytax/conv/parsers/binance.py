@@ -388,7 +388,7 @@ def _parse_binance_statements_row(
         _parse_binance_statements_margin_row(tx_times, parser, data_row)
         return
 
-    if row_dict["Account"].lower() not in ("spot", "earn", "pool", "savings"):
+    if row_dict["Account"].lower() not in ("spot", "earn", "pool", "savings", "funding"):
         raise UnexpectedTypeError(parser.in_header.index("Account"), "Account", row_dict["Account"])
 
     if row_dict["Operation"] in (
@@ -410,6 +410,7 @@ def _parse_binance_statements_row(
         "Airdrop Assets",
         "Cash Voucher distribution",
         "Simple Earn Flexible Airdrop",
+        "Campaign Related Reward",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.AIRDROP,
@@ -554,6 +555,14 @@ def _parse_binance_statements_row(
         else:
             # Skip duplicate operations
             return
+    elif row_dict["Operation"] == "Send":
+        data_row.t_record = TransactionOutRecord(
+            TrType.WITHDRAWAL,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["Change"])),
+            sell_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
     elif row_dict["Operation"] in ("Withdraw", "Fiat Withdraw"):
         if config.binance_statements_only:
             data_row.t_record = TransactionOutRecord(
