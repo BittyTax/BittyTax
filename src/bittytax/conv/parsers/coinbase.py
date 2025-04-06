@@ -239,6 +239,24 @@ def _do_parse_coinbase(
             buy_value=total_ccy,
             wallet=WALLET,
         )
+    elif row_dict["Transaction Type"] == "Donation":
+        data_row.t_record = TransactionOutRecord(
+            TrType.CHARITY_SENT,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
+            sell_asset=row_dict["Asset"],
+            sell_value=abs(total_ccy) if total_ccy is not None else None,
+            wallet=WALLET,
+        )
+    elif row_dict["Transaction Type"] == "Admin Debit":
+        data_row.t_record = TransactionOutRecord(
+            TrType.SPEND,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
+            sell_asset=row_dict["Asset"],
+            sell_value=abs(total_ccy) if total_ccy is not None else None,
+            wallet=WALLET,
+        )
     elif row_dict["Transaction Type"] == "Send":
         # Crypto withdrawal
         data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Notes"))
