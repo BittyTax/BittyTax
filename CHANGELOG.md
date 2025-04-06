@@ -180,6 +180,7 @@
 - Kraken parser: added "allocation" subtype. ([#424](https://github.com/BittyTax/BittyTax/issues/424))
 - Ledger Live parser: added "UNBOND" and "WITHDRAW_UNBONDED" Operation Types. ([#426](https://github.com/BittyTax/BittyTax/issues/426))
 - Conversion tool: added parser for sFOX exchange.
+- Binance parser: added "Funding" Account, and "Send" and "Campaign Related Reward" Operations.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
