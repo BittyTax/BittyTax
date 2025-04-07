@@ -38,6 +38,29 @@ def parse_revolut(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Par
             fee_asset=config.ccy,
             wallet=WALLET,
         )
+    elif row_dict["Type"] == "Send":
+        data_row.t_record = TransactionOutRecord(
+            TrType.WITHDRAWAL,
+            data_row.timestamp,
+            sell_quantity=Decimal(row_dict["Quantity"].replace(",", "")),
+            sell_asset=row_dict["Symbol"],
+            sell_value=value,
+            fee_quantity=fee_value,
+            fee_asset=config.ccy,
+            wallet=WALLET,
+        )
+    elif row_dict["Type"] == "Buy":
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Quantity"].replace(",", "")),
+            buy_asset=row_dict["Symbol"],
+            sell_quantity=value,
+            sell_asset=config.ccy,
+            fee_quantity=fee_value,
+            fee_asset=config.ccy,
+            wallet=WALLET,
+        )
     elif row_dict["Type"] == "Sell":
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
@@ -50,11 +73,22 @@ def parse_revolut(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Par
             fee_asset=config.ccy,
             wallet=WALLET,
         )
+    elif row_dict["Type"] == "Learn reward":
+        data_row.t_record = TransactionOutRecord(
+            TrType.INCOME,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Quantity"].replace(",", "")),
+            buy_asset=row_dict["Symbol"],
+            wallet=WALLET,
+        )
     else:
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
 
 def _get_fiat_value(value_str: str, timestamp: datetime) -> Optional[Decimal]:
+    if not value_str:
+        return None
+
     match = re.match(r"^([£€$]?)([\d|,]+\.\d{2})$", value_str)
     if match:
         symbol = match.group(1)
