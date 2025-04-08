@@ -264,6 +264,9 @@
 - Conversion tool: moved sheet_name and table_name functions to OutputExcel.
 - Conversion tool: header in OutputBase now uses place holders for the currency.
 - Nexo parser: "Deposit To Exchange" and "Exchange To Withdraw" made trades.
+- Qt Wallet parser: added symbol to worksheet name instead of wallet name.
+- Electrum parser: added symbol to worksheet name instead of wallet name.
+- Blockscout parser: set the worksheet name the same as the wallet name.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
