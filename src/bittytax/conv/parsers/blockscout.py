@@ -69,12 +69,14 @@ def _parse_blockscout_row(data_row: "DataRow", parser: DataParser, symbol: str) 
     quantity = Decimal(row_dict["Value"]) / 10**18
 
     if row_dict["Type"] == "IN":
+        wallet = _get_wallet(row_dict["ToAddress"])
+        data_row.worksheet_name = wallet
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
             buy_quantity=quantity,
             buy_asset=symbol,
-            wallet=_get_wallet(row_dict["ToAddress"]),
+            wallet=wallet,
             note=_get_note(row_dict),
         )
     elif row_dict["Type"] == "OUT":
@@ -83,6 +85,8 @@ def _parse_blockscout_row(data_row: "DataRow", parser: DataParser, symbol: str) 
         else:
             t_type = TrType.SPEND
 
+        wallet = _get_wallet(row_dict["FromAddress"])
+        data_row.worksheet_name = wallet
         data_row.t_record = TransactionOutRecord(
             t_type,
             data_row.timestamp,
@@ -90,7 +94,7 @@ def _parse_blockscout_row(data_row: "DataRow", parser: DataParser, symbol: str) 
             sell_asset=symbol,
             fee_quantity=Decimal(row_dict["Fee"]) / 10**18,
             fee_asset=symbol,
-            wallet=_get_wallet(row_dict["FromAddress"]),
+            wallet=wallet,
             note=_get_note(row_dict),
         )
     else:
@@ -109,21 +113,25 @@ def parse_blockscout_tokens(
     )
 
     if row_dict["Type"] == "IN":
+        wallet = _get_wallet(row_dict["ToAddress"])
+        data_row.worksheet_name = wallet
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["TokensTransferred"]) / 10**18,
             buy_asset=row_dict["TokenSymbol"],
-            wallet=_get_wallet(row_dict["ToAddress"]),
+            wallet=wallet,
             note=_get_note(row_dict),
         )
     elif row_dict["Type"] == "OUT":
+        wallet = _get_wallet(row_dict["FromAddress"])
+        data_row.worksheet_name = wallet
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
             sell_quantity=Decimal(row_dict["TokensTransfered"]) / 10**18,
             sell_asset=row_dict["TokenSymbol"],
-            wallet=_get_wallet(row_dict["FromAddress"]),
+            wallet=wallet,
             note=_get_note(row_dict),
         )
     else:

@@ -264,6 +264,9 @@
 - Conversion tool: parsers use Staking-Reward instead of Staking (deprecated).
 - DeFiTaxes.us parser: output different worksheet for each wallet
 - StakeTax parser: output different worksheet for each wallet
+- Qt Wallet parser: added symbol to worksheet name instead of wallet name.
+- Electrum parser: added symbol to worksheet name instead of wallet name.
+- Blockscout parser: set the worksheet name the same as the wallet name.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
