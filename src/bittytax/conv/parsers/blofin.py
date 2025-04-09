@@ -596,7 +596,7 @@ def _close_position_funding(positions: Dict[Instrument, Position], instrument: I
 
     if positions[instrument].funding_fees > 0:
         p_data_row.t_record = TransactionOutRecord(
-            TrType.FEE_REBATE,
+            TrType.MARGIN_FEE_REBATE,
             p_data_row.timestamp,
             buy_quantity=positions[instrument].funding_fees,
             buy_asset=positions[instrument].fee_asset,

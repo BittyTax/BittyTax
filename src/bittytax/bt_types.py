@@ -43,6 +43,7 @@ class TrType(Enum):
     FEE_REBATE = "Fee-Rebate"
     LOAN = "Loan"
     MARGIN_GAIN = "Margin-Gain"
+    MARGIN_FEE_REBATE = "Margin-Fee-Rebate"
     WITHDRAWAL = "Withdrawal"
     STAKE = "Stake"
     SPEND = "Spend"
@@ -121,6 +122,7 @@ BUY_TYPES = (
     TrType.FEE_REBATE,
     TrType.LOAN,
     TrType.MARGIN_GAIN,
+    TrType.MARGIN_FEE_REBATE,
     TrType.TRADE,
     TrType.SWAP,
 )

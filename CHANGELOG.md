@@ -185,6 +185,7 @@
 - Binance parser: added "Referral Commission" operation. ([#430](https://github.com/BittyTax/BittyTax/issues/430))
 - Nexo parser: added handling for "Transfer to Nexo User" and "Earn Interest Adjustment" in Details.
 - KuCoin parser: added "Fiat Deposits", "Third-Party Payment", "Fast Trade Orders" files.
+- Accounting tool: new transaction type Margin-Fee-Rebate added.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -267,6 +268,10 @@
 - Qt Wallet parser: added symbol to worksheet name instead of wallet name.
 - Electrum parser: added symbol to worksheet name instead of wallet name.
 - Blockscout parser: set the worksheet name the same as the wallet name.
+- Binance parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
+- ByBit parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
+- Deribit parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
+- KuCoin parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.

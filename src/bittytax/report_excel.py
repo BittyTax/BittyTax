@@ -469,6 +469,7 @@ class Worksheet:
         "Gains",
         "Losses",
         "Fees",
+        "Fee Rebates",
     ]
     PRICE_HEADERS = [
         "Asset Symbol",
@@ -1876,6 +1877,12 @@ class Worksheet:
                         f'=HYPERLINK("{link}", {te.fee})',
                         self.workbook_formats.currency_link,
                     )
+                    self.worksheet.write_formula(
+                        self.row_num,
+                        6,
+                        f'=HYPERLINK("{link}", {te.fee_rebate})',
+                        self.workbook_formats.currency_link,
+                    )
                 else:
                     self.worksheet.write_number(
                         self.row_num, 3, te.gain, self.workbook_formats.currency
@@ -1885,6 +1892,9 @@ class Worksheet:
                     )
                     self.worksheet.write_number(
                         self.row_num, 5, te.fee, self.workbook_formats.currency
+                    )
+                    self.worksheet.write_number(
+                        self.row_num, 6, te.fee_rebate, self.workbook_formats.currency
                     )
 
                 self.worksheet.set_row(self.row_num, None, None, {"level": 2, "hidden": True})
@@ -1915,6 +1925,13 @@ class Worksheet:
                 f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_a_row, 5, end_a_row, 5)})",
                 self.workbook_formats.currency,
             )
+            # Subtotal Fee Rebates
+            self.worksheet.write_formula(
+                self.row_num,
+                6,
+                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_a_row, 6, end_a_row, 6)})",
+                self.workbook_formats.currency,
+            )
             self.worksheet.set_row(self.row_num, None, None, {"level": 1, "collapsed": True})
             self.row_num += 1
 
@@ -1942,10 +1959,18 @@ class Worksheet:
                 f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 5, end_a_row, 5)})",
                 self.workbook_formats.currency_bold,
             )
+            # Grand total Fee Rebates
+            self.worksheet.write_formula(
+                self.row_num,
+                6,
+                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 6, end_a_row, 6)})",
+                self.workbook_formats.currency_bold,
+            )
         else:
             self.worksheet.write_number(self.row_num, 3, 0, self.workbook_formats.currency_bold)
             self.worksheet.write_number(self.row_num, 4, 0, self.workbook_formats.currency_bold)
             self.worksheet.write_number(self.row_num, 5, 0, self.workbook_formats.currency_bold)
+            self.worksheet.write_number(self.row_num, 6, 0, self.workbook_formats.currency_bold)
 
         self.worksheet.add_table(
             start_row,
@@ -1966,6 +1991,9 @@ class Worksheet:
         )
         self.worksheet.ignore_errors(
             {"formula_differs": xlsxwriter.utility.xl_range(start_row + 1, 5, self.row_num, 5)}
+        )
+        self.worksheet.ignore_errors(
+            {"formula_differs": xlsxwriter.utility.xl_range(start_row + 1, 6, self.row_num, 6)}
         )
         self.row_num += 1
 

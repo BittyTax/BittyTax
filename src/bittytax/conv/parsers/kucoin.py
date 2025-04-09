@@ -456,7 +456,7 @@ def _parse_kucoin_futures_row(
 
     if total_fees > 0:
         dup_data_row.t_record = TransactionOutRecord(
-            TrType.FEE_REBATE,
+            TrType.MARGIN_FEE_REBATE,
             data_row.timestamp,
             buy_quantity=total_fees,
             buy_asset=asset,
