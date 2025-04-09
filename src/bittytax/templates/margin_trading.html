@@ -8,6 +8,7 @@
         <th align="right">Gains</th>
         <th align="right">Losses</th>
         <th align="right">Fees</th>
+        <th align="right">Fee Rebates</th>
     </tr>
     {% for (wallet, note) in margin.contract_totals|sort %}
         <tr>
@@ -16,6 +17,7 @@
             <td align="right">{{ margin.contract_totals[(wallet, note)]["gains"]|valuefilter }}</td>
             <td align="right">{{ margin.contract_totals[(wallet, note)]["losses"]|valuefilter }}</td>
             <td align="right">{{ margin.contract_totals[(wallet, note)]["fees"]|valuefilter }}</td>
+            <td align="right">{{ margin.contract_totals[(wallet, note)]["fee_rebates"]|valuefilter }}</td>
         </tr>
     {% endfor %}
 </table>
@@ -26,5 +28,6 @@
         <td align="right">{{ margin.totals['gains']|valuefilter }}</td>
         <td align="right">{{ margin.totals['losses']|valuefilter }}</td>
         <td align="right">{{ margin.totals['fees']|valuefilter }}</td>
+        <td align="right">{{ margin.totals['fee_rebates']|valuefilter }}</td>
     </tr>
 </table>

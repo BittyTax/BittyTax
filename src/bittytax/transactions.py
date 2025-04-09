@@ -338,6 +338,7 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
         TrType.FEE_REBATE,
         TrType.LOAN,
         TrType.MARGIN_GAIN,
+        TrType.MARGIN_FEE_REBATE,
         TrType.TRADE,
     }
 

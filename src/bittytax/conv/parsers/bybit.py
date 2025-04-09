@@ -450,7 +450,7 @@ def _close_position(
 
     if funding_fees - trading_fees > 0:
         dup_data_row.t_record = TransactionOutRecord(
-            TrType.FEE_REBATE,
+            TrType.MARGIN_FEE_REBATE,
             data_row.timestamp,
             buy_quantity=funding_fees - trading_fees,
             buy_asset=row_dict["Currency"],

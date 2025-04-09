@@ -300,7 +300,7 @@ def _parse_deribit_row(
                 positions[uid][instrument] = Position()
     elif row_dict["Type"] == "transfer from insurance":
         data_row.t_record = TransactionOutRecord(
-            TrType.FEE_REBATE,
+            TrType.MARGIN_FEE_REBATE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Change"]),
             buy_asset="BTC",
@@ -397,7 +397,7 @@ def _close_position(
 
     if funding_fees - trading_fees > 0:
         dup_data_row.t_record = TransactionOutRecord(
-            TrType.FEE_REBATE,
+            TrType.MARGIN_FEE_REBATE,
             data_row.timestamp,
             buy_quantity=funding_fees - trading_fees,
             buy_asset=asset,

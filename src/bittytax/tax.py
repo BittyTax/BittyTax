@@ -126,6 +126,7 @@ class MarginReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
     gains: Decimal
     losses: Decimal
     fees: Decimal
+    fee_rebates: Decimal
 
 
 class TaxCalculator:  # pylint: disable=too-many-instance-attributes
@@ -137,7 +138,12 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         TrType.INCOME,
     )
 
-    MARGIN_TYPES = (TrType.MARGIN_GAIN, TrType.MARGIN_LOSS, TrType.MARGIN_FEE)
+    MARGIN_TYPES = (
+        TrType.MARGIN_GAIN,
+        TrType.MARGIN_LOSS,
+        TrType.MARGIN_FEE,
+        TrType.MARGIN_FEE_REBATE,
+    )
 
     NO_GAIN_NO_LOSS_TYPES = (TrType.GIFT_SPOUSE, TrType.CHARITY_SENT)
 
@@ -951,6 +957,7 @@ class CalculateMarginTrading:
             "gains": Decimal(0),
             "losses": Decimal(0),
             "fees": Decimal(0),
+            "fee_rebates": Decimal(0),
         }
         self.contracts: Dict[Tuple[Wallet, Note], List[TaxEventMarginTrade]] = {}
         self.contract_totals: Dict[Tuple[Wallet, Note], MarginReportTotal] = {}
@@ -959,6 +966,7 @@ class CalculateMarginTrading:
         self.totals["gains"] += te.gain
         self.totals["losses"] += te.loss
         self.totals["fees"] += te.fee
+        self.totals["fee_rebates"] += te.fee_rebate
 
         if (te.wallet, te.note) not in self.contracts:
             self.contracts[(te.wallet, te.note)] = []
@@ -973,11 +981,13 @@ class CalculateMarginTrading:
                         "gains": te.gain,
                         "losses": te.loss,
                         "fees": te.fee,
+                        "fee_rebates": te.fee_rebate,
                     }
                 else:
                     self.contract_totals[(wallet, note)]["gains"] += te.gain
                     self.contract_totals[(wallet, note)]["losses"] += te.loss
                     self.contract_totals[(wallet, note)]["fees"] += te.fee
+                    self.contract_totals[(wallet, note)]["fee_rebates"] += te.fee_rebate
 
                 if config.debug:
                     print(f"{Fore.GREEN}margin: {te.t}")
@@ -987,5 +997,6 @@ class CalculateMarginTrading:
         return (
             f'{wallet} {note}: gains={config.sym()}{self.contract_totals[(wallet, note)]["gains"]} '
             f'losses={config.sym()}{self.contract_totals[(wallet, note)]["losses"]} '
-            f'fess={config.sym()}{self.contract_totals[(wallet, note)]["fees"]} '
+            f'fees={config.sym()}{self.contract_totals[(wallet, note)]["fees"]} '
+            f'fee_rebates={config.sym()}{self.contract_totals[(wallet, note)]["fee_rebates"]} '
         )

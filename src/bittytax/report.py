@@ -552,7 +552,10 @@ class ReportLog:
     def _margin_trading(self, margin: CalculateMarginTrading) -> None:
         print(f"\n{Fore.CYAN}Margin Trading\n")
         print("These figures are NOT included in the Summary or Tax Estimate above.\n")
-        header = f'{"Wallet":<30} {"Contract":<40} {"Gains":>13} {"Losses":>13} {"Fees":>13}'
+        header = (
+            f'{"Wallet":<30} {"Contract":<40} {"Gains":>13} {"Losses":>13} {"Fees":>13} '
+            f'{"Fee Rebates":>13}'
+        )
 
         print(f"{Fore.YELLOW}{header}")
         for wallet, note in sorted(
@@ -563,7 +566,8 @@ class ReportLog:
                 f"{Fore.WHITE}{self.format_note(note):<40} "
                 f'{self.format_value(margin.contract_totals[(wallet, note)]["gains"]):>13} '
                 f'{self.format_value(margin.contract_totals[(wallet, note)]["losses"]):>13} '
-                f'{self.format_value(margin.contract_totals[(wallet, note)]["fees"]):>13}'
+                f'{self.format_value(margin.contract_totals[(wallet, note)]["fees"]):>13} '
+                f'{self.format_value(margin.contract_totals[(wallet, note)]["fee_rebates"]):>13}'
                 f"{Style.NORMAL}"
             )
 
@@ -573,7 +577,8 @@ class ReportLog:
             f'{"":<40} '
             f'{self.format_value(margin.totals["gains"]):>13} '
             f'{self.format_value(margin.totals["losses"]):>13} '
-            f'{self.format_value(margin.totals["fees"]):>13}{Style.NORMAL}'
+            f'{self.format_value(margin.totals["fees"]):>13} '
+            f'{self.format_value(margin.totals["fee_rebates"]):>13}{Style.NORMAL}'
         )
 
     def _price_data(self, price_report: Dict[AssetSymbol, Dict[Date, VaPriceReport]]) -> None:
