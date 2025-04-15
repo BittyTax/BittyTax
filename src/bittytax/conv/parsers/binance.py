@@ -411,6 +411,9 @@ def _parse_binance_statements_row(
         "Cash Voucher distribution",
         "Simple Earn Flexible Airdrop",
         "Campaign Related Reward",
+        "Launchpool Airdrop",
+        "HODLer Airdrops Distribution",
+        "Megadrop Rewards",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.AIRDROP,
@@ -492,7 +495,11 @@ def _parse_binance_statements_row(
             sell_value=Decimal(0),
             wallet=WALLET,
         )
-    elif row_dict["Operation"] in ("Small assets exchange BNB", "Small Assets Exchange BNB"):
+    elif row_dict["Operation"] in (
+        "Small assets exchange BNB",
+        "Small Assets Exchange BNB",
+        "BNB Fee Deduction",
+    ):
         if config.binance_multi_bnb_split_even:
             _make_bnb_trade(
                 _get_op_rows(tx_times, data_row.timestamp, (row_dict["Operation"],)),
@@ -533,6 +540,7 @@ def _parse_binance_statements_row(
         "Transfer Between Spot Account and UM Futures Account",
         "Transfer Between Spot Account and CM Futures Account",
         "Transfer Between Main Account/Futures and Margin Account",
+        "Transfer Between Main and Funding Wallet",
         "Launchpool Subscription/Redemption",
         "Launchpad Subscribe",
         "Simple Earn Flexible Subscription",  # See merger
@@ -555,15 +563,50 @@ def _parse_binance_statements_row(
         else:
             # Skip duplicate operations
             return
-    elif row_dict["Operation"] == "Send":
+    elif row_dict["Operation"] in ("Send", "Binance Card Spending", "Crypto Box"):
+        if Decimal(row_dict["Change"]) > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.WITHDRAWAL,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["Change"])),
+                sell_asset=row_dict["Coin"],
+                wallet=WALLET,
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.WITHDRAWAL,
+                data_row.timestamp,
+                buy_quantity=abs(Decimal(row_dict["Change"])),
+                buy_asset=row_dict["Coin"],
+                wallet=WALLET,
+            )
+    elif row_dict["Operation"] == "Binance Card Cashback":
         data_row.t_record = TransactionOutRecord(
-            TrType.WITHDRAWAL,
+            TrType.CASHBACK,
             data_row.timestamp,
-            sell_quantity=abs(Decimal(row_dict["Change"])),
-            sell_asset=row_dict["Coin"],
+            buy_quantity=abs(Decimal(row_dict["Change"])),
+            buy_asset=row_dict["Coin"],
             wallet=WALLET,
+            note=row_dict["Remark"],
         )
-    elif row_dict["Operation"] in ("Withdraw", "Fiat Withdraw"):
+    elif row_dict["Operation"] in (
+        "Crypto - Asset Transfer",
+        "Fiat OCBS - Add Fiat and Fees",
+        "Asset - Transfer",
+    ):
+        data_row.t_record = TransactionOutRecord(
+            TrType.DEPOSIT,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Change"]),
+            buy_asset=row_dict["Coin"],
+            wallet=WALLET,
+            note=row_dict["Remark"],
+        )
+    elif row_dict["Operation"] in (
+        "Withdraw",
+        "Fiat Withdraw",
+        "Fiat Withdrawal",
+    ):
         if config.binance_statements_only:
             data_row.t_record = TransactionOutRecord(
                 TrType.WITHDRAWAL,
@@ -583,6 +626,10 @@ def _parse_binance_statements_row(
         else:
             # Skip duplicate operations
             return
+    elif row_dict["Operation"] == "Buy Crypto With Card":
+        _make_trade(
+            _get_op_rows(tx_times, data_row.timestamp, (row_dict["Operation"],)),
+        )
     elif row_dict["Operation"] in (
         "Buy",
         "Sell",
@@ -651,7 +698,7 @@ def _parse_binance_statements_futures_row(
             sell_asset=row_dict["Coin"],
             wallet=WALLET,
         )
-    elif row_dict["Operation"] == "Funding Fee":
+    elif row_dict["Operation"] in ("Funding Fee", "Insurance Fund Refund"):
         if Decimal(row_dict["Change"]) > 0:
             data_row.t_record = TransactionOutRecord(
                 TrType.MARGIN_FEE_REBATE,
@@ -708,7 +755,11 @@ def _parse_binance_statements_margin_row(
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
         )
-    elif row_dict["Operation"] in ("Margin Repayment", "Isolated Margin Repayment"):
+    elif row_dict["Operation"] in (
+        "Margin Repayment",
+        "Isolated Margin Repayment",
+        "Cross Margin Liquidation - Repayment",
+    ):
         data_row.t_record = TransactionOutRecord(
             TrType.LOAN_REPAYMENT,
             data_row.timestamp,
@@ -742,7 +793,19 @@ def _parse_binance_statements_margin_row(
                 ),
             ),
         )
-
+    elif row_dict["Operation"] in (
+        "Small assets exchange BNB",
+        "Small Assets Exchange BNB",
+        "BNB Fee Deduction",
+    ):
+        if config.binance_multi_bnb_split_even:
+            _make_bnb_trade(
+                _get_op_rows(tx_times, data_row.timestamp, (row_dict["Operation"],)),
+            )
+        else:
+            _make_trade(
+                _get_op_rows(tx_times, data_row.timestamp, (row_dict["Operation"],)),
+            )
     elif row_dict["Operation"] == "Transfer Between Main Account/Futures and Margin Account":
         # Skip not taxable events
         return
