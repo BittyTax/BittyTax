@@ -5,7 +5,7 @@
 import requests
 from colorama import Back
 
-from bittytax.conv.parsers.binance import BASE_ASSETS, QUOTE_ASSETS, _split_trading_pair
+from bittytax.conv.parsers.binance import BASE_ASSETS, QUOTE_ASSETS, split_trading_pair
 
 
 def get_assets() -> None:
@@ -29,7 +29,7 @@ def get_assets() -> None:
                 base_assets.append(base)
 
             # Validate split method
-            bt_base, bt_quote = _split_trading_pair(symbol)
+            bt_base, bt_quote = split_trading_pair(symbol)
 
             if bt_base == base and bt_quote == quote:
                 print(f"{symbol} = {bt_base}/{bt_quote} [OK]")
