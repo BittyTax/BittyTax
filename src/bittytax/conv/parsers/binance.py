@@ -572,7 +572,7 @@ def _parse_binance_statements_row(
             wallet=WALLET,
         )
     elif row_dict["Operation"] == "Binance Card Spending":
-        if row_dict["Change"] < 0:
+        if Decimal(row_dict["Change"]) < 0:
             data_row.t_record = TransactionOutRecord(
                 TrType.SPEND,
                 data_row.timestamp,
