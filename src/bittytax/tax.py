@@ -5,7 +5,7 @@
 import copy
 import datetime
 import sys
-from decimal import Decimal
+from decimal import Decimal, getcontext
 from typing import Dict, List, Optional, Tuple, Union
 
 import requests
@@ -35,6 +35,8 @@ from .tax_event import TaxEvent, TaxEventCapitalGains, TaxEventIncome, TaxEventM
 from .transactions import Buy, Sell
 
 PRECISION = Decimal("0.00")
+
+getcontext().prec = 30
 
 
 class TaxReportRecord(TypedDict):  # pylint: disable=too-few-public-methods
