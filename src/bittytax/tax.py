@@ -46,6 +46,7 @@ PRECISION = Decimal("0.00")
 
 getcontext().prec = 30
 
+
 class TaxReportRecord(TypedDict):  # pylint: disable=too-few-public-methods
     CapitalGains: "CalculateCapitalGains"
     Income: NotRequired["CalculateIncome"]
