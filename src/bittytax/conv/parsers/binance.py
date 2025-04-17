@@ -563,7 +563,7 @@ def _parse_binance_statements_row(
         else:
             # Skip duplicate operations
             return
-    elif row_dict["Operation"] in ("Send", "Crypto Box"):
+    elif row_dict["Operation"] == "Send":
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -595,7 +595,6 @@ def _parse_binance_statements_row(
             buy_quantity=abs(Decimal(row_dict["Change"])),
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
-            note=row_dict["Remark"],
         )
     elif row_dict["Operation"] in (
         "Crypto - Asset Transfer",
@@ -608,7 +607,14 @@ def _parse_binance_statements_row(
             buy_quantity=Decimal(row_dict["Change"]),
             buy_asset=row_dict["Coin"],
             wallet=WALLET,
-            note=row_dict["Remark"],
+        )
+    elif row_dict["Operation"] == "Crypto Box":
+        data_row.t_record = TransactionOutRecord(
+            TrType.GIFT_RECEIVED,
+            data_row.timestamp,
+            buy_quantity=abs(Decimal(row_dict["Change"])),
+            buy_asset=row_dict["Coin"],
+            wallet=WALLET,
         )
     elif row_dict["Operation"] in (
         "Withdraw",
