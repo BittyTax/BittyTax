@@ -6,7 +6,7 @@ import datetime
 import itertools
 import sys
 from dataclasses import dataclass, field
-from decimal import Decimal
+from decimal import Decimal, getcontext
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import requests
@@ -44,6 +44,7 @@ from .transactions import Buy, Sell
 
 PRECISION = Decimal("0.00")
 
+getcontext().prec = 30
 
 class TaxReportRecord(TypedDict):  # pylint: disable=too-few-public-methods
     CapitalGains: "CalculateCapitalGains"
