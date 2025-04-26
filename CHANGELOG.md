@@ -174,6 +174,8 @@
 - KuCoin parser: added "Fiat Deposits", "Third-Party Payment", "Fast Trade Orders" files.
 - Binance parser: added "Funding" Account, and "Send" and "Campaign Related Reward" Operations.
 - Coinbase parser: added "Donation" and "Admin Debit" transaction types.
+- Accounting tool: split tax rates for 2024/25. ([#429](https://github.com/BittyTax/BittyTax/issues/429))
+- Accounting tool: tax rates and allowance for 2025/26.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))

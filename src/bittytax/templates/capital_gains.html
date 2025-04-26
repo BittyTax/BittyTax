@@ -77,7 +77,7 @@
     </tr>
     <tr>
         <td>Disposal proceeds:</td>
-        {% if cgains.cgt_estimate.proceeds_warning %}
+        {% if cgains.summary['proceeds_warning'] %}
             <td align="right">*{{ cgains.totals['proceeds']|valuefilter }}</td>
         {% else %}
             <td align="right">{{ cgains.totals['proceeds']|valuefilter }}</td>
@@ -100,8 +100,31 @@
         <td></td>
     </tr>
 </table>
-{% if cgains.cgt_estimate.proceeds_warning %}
+{% if cgains.split_date %}
+    </br>
+    <table width="75%">
+        <tr>
+            <td>Gains before {{ cgains.split_date|datefilter2 }}:</td>
+            {% if cgains.split_totals['gain_before'] >= 0 %}
+                <td align="right">{{ cgains.split_totals['gain_before']|valuefilter }}</td>
+            {% else %}
+                <td align="right" class="red-font">{{ cgains.split_totals['gain_before']|valuefilter }}</td>
+            {% endif %}
+            <td></td>
+        </tr>
+        <tr>
+            <td>Gains on or after {{ cgains.split_date|datefilter2 }}:</td>
+            {% if cgains.split_totals['gain_after'] >= 0 %}
+                <td align="right">{{ cgains.split_totals['gain_after']|valuefilter }}</td>
+            {% else %}
+                <td align="right" class="red-font">{{ cgains.split_totals['gain_after']|valuefilter }}</td>
+            {% endif %}
+            <td></td>
+        </tr>
+    </table>
+{% endif %}
+{% if cgains.summary['proceeds_warning'] %}
     <p>
-        *Assets sold are more than {{ cgains.cgt_estimate['proceeds_limit']|valuefilter }}, this needs to be reported to HMRC if you already complete a Self Assessment
+        *Assets sold are more than {{ cgains.summary['proceeds_limit']|valuefilter }}, this needs to be reported to HMRC if you already complete a Self Assessment
     </p>
 {% endif %}

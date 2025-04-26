@@ -14,9 +14,9 @@ from colorama import Fore
 
 from .audit import AuditRecords
 from .audit_excel import AuditLogExcel
-from .bt_types import AssetSymbol, DisposalType, Year
+from .bt_types import TAX_RULES_UK_COMPANY, AssetSymbol, DisposalType, TaxRules, Year
 from .config import config
-from .constants import ERROR, TAX_RULES_UK_COMPANY, TAX_RULES_UK_INDIVIDUAL, WARNING
+from .constants import ERROR, WARNING
 from .exceptions import ImportFailureError
 from .export_records import ExportRecords
 from .holdings import Holdings
@@ -62,10 +62,10 @@ def main() -> None:
     )
     parser.add_argument(
         "--taxrules",
-        choices=[TAX_RULES_UK_INDIVIDUAL] + TAX_RULES_UK_COMPANY,
+        choices=[tax_rules.name for tax_rules in TaxRules],
         metavar="{UK_INDIVIDUAL, UK_COMPANY_XXX} "
         "where XXX is the month which starts the financial year, i.e. JAN, FEB, etc.",
-        default=TAX_RULES_UK_INDIVIDUAL,
+        default=TaxRules.UK_INDIVIDUAL.name,
         type=str.upper,
         dest="tax_rules",
         help="specify tax rules to use, default: UK_INDIVIDUAL",
@@ -106,6 +106,11 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+    try:
+        args.tax_rules = TaxRules[args.tax_rules]
+    except KeyError as e:
+        raise RuntimeError(f"Unrecognised args.tax_rules: {args.tax_rules}") from e
+
     config.debug = args.debug
 
     if config.debug:
@@ -210,7 +215,7 @@ def _do_import(filename: str) -> List[TransactionRecord]:
 
 
 def _do_tax(
-    transaction_records: List[TransactionRecord], tax_rules: str, skip_integrity_check: bool
+    transaction_records: List[TransactionRecord], tax_rules: TaxRules, skip_integrity_check: bool
 ) -> Tuple[TaxCalculator, ValueAsset]:
     value_asset = ValueAsset()
     transaction_history = TransactionHistory(transaction_records, value_asset)
@@ -219,7 +224,7 @@ def _do_tax(
     tax.pool_same_day()
     tax.match_sell(DisposalType.SAME_DAY)
 
-    if tax_rules == TAX_RULES_UK_INDIVIDUAL:
+    if tax_rules is TaxRules.UK_INDIVIDUAL:
         tax.match_buyback(DisposalType.BED_AND_BREAKFAST)
     elif tax_rules in TAX_RULES_UK_COMPANY:
         tax.match_sell(DisposalType.TEN_DAY)
