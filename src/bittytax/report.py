@@ -449,7 +449,7 @@ class ReportLog:
                     f'{"":<14} '
                     f"{self.format_value(proceeds):>18} "
                     f"{self.format_value(cost):>18} "
-                    f"{Fore.RED if gain < 0 else Fore.WHITE}{self.format_value(gain):>18}"
+                    f"{Fore.RED if gain < 0 else Fore.YELLOW}{self.format_value(gain):>18}"
                 )
 
         print(f'{Fore.YELLOW}{"_" * len(header)}')
