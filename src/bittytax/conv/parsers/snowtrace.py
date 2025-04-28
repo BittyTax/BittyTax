@@ -42,6 +42,7 @@ def parse_snowtrace(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
                 wallet=_get_wallet(row_dict["To"]),
                 note=_get_note(row_dict),
             )
+        data_row.worksheet_name = _get_worksheet_name(parser, row_dict["To"])
     elif Decimal(row_dict["Value_OUT(ETH)"]) > 0:
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
@@ -53,6 +54,7 @@ def parse_snowtrace(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
             wallet=_get_wallet(row_dict["From"]),
             note=_get_note(row_dict),
         )
+        data_row.worksheet_name = _get_worksheet_name(parser, row_dict["From"])
     else:
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
@@ -64,10 +66,16 @@ def parse_snowtrace(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
             wallet=_get_wallet(row_dict["From"]),
             note=_get_note(row_dict),
         )
+        data_row.worksheet_name = _get_worksheet_name(parser, row_dict["From"])
 
 
 def _get_wallet(address: str) -> str:
     return f"{WALLET}-{address.lower()[0 : TransactionOutRecord.WALLET_ADDR_LEN]}"
+
+
+def _get_worksheet_name(parser: DataParser, address: str) -> str:
+    wallet = _get_wallet(address)
+    return f"{parser.worksheet_name} {wallet}"
 
 
 def parse_snowtrace_tokens(
@@ -97,6 +105,7 @@ def parse_snowtrace_tokens(
             buy_asset=asset,
             wallet=_get_wallet(row_dict["to"]),
         )
+        data_row.worksheet_name = _get_worksheet_name(parser, row_dict["to"])
     elif row_dict["from"].lower() in kwargs["filename"].lower():
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
@@ -105,6 +114,7 @@ def parse_snowtrace_tokens(
             sell_asset=asset,
             wallet=_get_wallet(row_dict["from"]),
         )
+        data_row.worksheet_name = _get_worksheet_name(parser, row_dict["from"])
     else:
         raise DataFilenameError(kwargs["filename"], "Ethereum address")
 
@@ -182,6 +192,6 @@ avax_tokens = DataParser(
         "token_name",
         "token_symbol",
     ],
-    worksheet_name="Snowtrace",
+    worksheet_name="Snowtrace Tokens",
     row_handler=parse_snowtrace_tokens,
 )

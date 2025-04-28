@@ -28,8 +28,8 @@ KOINLY_D_MAPPING = {
     "fork": TrType.FORK,
     "Mining": TrType.MINING,
     "mining": TrType.MINING,
-    "Reward": TrType.STAKING,
-    "reward": TrType.STAKING,
+    "Reward": TrType.STAKING_REWARD,
+    "reward": TrType.STAKING_REWARD,
     "Income": TrType.INCOME,
     "income": TrType.INCOME,
     "Other income": TrType.INCOME,
@@ -48,10 +48,6 @@ KOINLY_D_MAPPING = {
     "margin_loan": TrType.LOAN,
     "Realized gain": TrType.MARGIN_GAIN,
     "realized_gain": TrType.MARGIN_GAIN,
-    "Loan interest": TrType.INTEREST,
-    "loan_interest": TrType.INTEREST,
-    "Staking": TrType.STAKING_REWARD,
-    "staking": TrType.STAKING_REWARD,
 }
 
 KOINLY_W_MAPPING = {

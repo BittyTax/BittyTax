@@ -15,7 +15,14 @@ import xlsxwriter
 from colorama import Fore
 from typing_extensions import TypedDict
 
-from ..bt_types import BUY_TYPES, DEPRECATED_TYPES, SELL_TYPES, TrType, UnmappedType
+from ..bt_types import (
+    BUY_AND_SELL_TYPES,
+    BUY_TYPES,
+    DEPRECATED_TYPES,
+    SELL_TYPES,
+    TrType,
+    UnmappedType,
+)
 from ..config import config
 from ..constants import (
     EXCEL_PRECISION,
@@ -170,6 +177,38 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             }
         )
 
+    def sheet_name(self, worksheet_name: str) -> str:
+        # Remove special characters
+        name = re.sub(r"[/\\\?\*\[\]:]", "", worksheet_name)
+        name = name[: self.SHEETNAME_MAX_LEN] if len(name) > self.SHEETNAME_MAX_LEN else name
+
+        if name.lower() not in self.sheet_names:
+            self.sheet_names[name.lower()] = 1
+            sheet_name = name
+        else:
+            self.sheet_names[name.lower()] += 1
+            sheet_name = f"{name}({self.sheet_names[name.lower()]})"
+            if len(sheet_name) > self.SHEETNAME_MAX_LEN:
+                sheet_name = (
+                    f"{name[: len(name) - (len(sheet_name) - self.SHEETNAME_MAX_LEN)]}"
+                    f"({self.sheet_names[name.lower()]})"
+                )
+
+        return sheet_name
+
+    def table_name(self, worksheet_name: str) -> str:
+        # Remove characters which are not allowed
+        name = worksheet_name.replace(" ", "_")
+        name = re.sub(r"[^a-zA-Z0-9\._]", "", name)
+
+        if name.lower() not in self.table_names:
+            self.table_names[name.lower()] = 1
+        else:
+            self.table_names[name.lower()] += 1
+            name += str(self.table_names[name.lower()])
+
+        return name
+
     def write_excel(self) -> None:
         data_files = sorted(self.data_files, key=lambda df: df.parser.worksheet_name, reverse=False)
 
@@ -190,6 +229,9 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
 
                 for ws_name in worksheet_names:
                     worksheets[ws_name].make_table()
+                    if not config.large_data:
+                        # Lots of conditional formatting can slow down Excel
+                        worksheets[ws_name].conditional_formatting()
                     worksheets[ws_name].autofit()
             else:
                 # No rows, just add worksheet with headings
@@ -198,90 +240,6 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
                 )
                 worksheet.add_headings()
                 worksheet.autofit()
-
-        self.workbook.close()
-        sys.stderr.write(
-            f"{Fore.WHITE}output EXCEL file created: "
-            f"{Fore.YELLOW}{os.path.abspath(self.filename)}\n"
-        )
-
-
-class Worksheet:
-    SHEETNAME_MAX_LEN = 31
-    MAX_COL_WIDTH = 30
-
-    sheet_names: Dict[str, int] = {}
-    table_names: Dict[str, int] = {}
-
-    def __init__(
-        self,
-        output: OutputExcel,
-        worksheet_name: str,
-        in_header: List[str],
-        data_rows: List[DataRow],
-    ) -> None:
-        self.output = output
-        self.worksheet = output.workbook.add_worksheet(self._sheet_name(worksheet_name))
-        self.worksheet_name = worksheet_name
-        self.col_width: Dict[int, int] = {}
-        self.columns = self._make_columns(in_header)
-        self.row_num = 1
-        self.microseconds, self.milliseconds = self._is_microsecond_timestamp(data_rows)
-
-        self.worksheet.freeze_panes(1, len(self.output.BITTYTAX_OUT_HEADER))
-
-    def _sheet_name(self, parser_name: str) -> str:
-        # Remove special characters
-        name = re.sub(r"[/\\\?\*\[\]:]", "", parser_name)
-        name = name[: self.SHEETNAME_MAX_LEN] if len(name) > self.SHEETNAME_MAX_LEN else name
-
-        if name.lower() not in self.sheet_names:
-            self.sheet_names[name.lower()] = 1
-            sheet_name = name
-        else:
-            self.sheet_names[name.lower()] += 1
-            sheet_name = f"{name}({self.sheet_names[name.lower()]})"
-            if len(sheet_name) > self.SHEETNAME_MAX_LEN:
-                sheet_name = (
-                    f"{name[: len(name) - (len(sheet_name) - self.SHEETNAME_MAX_LEN)]}"
-                    f"({self.sheet_names[name.lower()]})"
-                )
-
-        return sheet_name
-
-    def _table_name(self) -> str:
-        # Remove characters which are not allowed
-        name = self.worksheet_name.replace(" ", "_")
-        name = re.sub(r"[^a-zA-Z0-9\._]", "", name)
-
-        if name.lower() not in self.table_names:
-            self.table_names[name.lower()] = 1
-        else:
-            self.table_names[name.lower()] += 1
-            name += str(self.table_names[name.lower()])
-
-        return name
-
-    def write_excel(self) -> None:
-        data_files = sorted(self.data_files, key=lambda df: df.parser.worksheet_name, reverse=False)
-        for data_file in data_files:
-            worksheet = Worksheet(self, data_file)
-
-            data_rows = sorted(data_file.data_rows, key=lambda dr: dr.timestamp, reverse=False)
-            for data_row in data_rows:
-                worksheet.add_row(data_row)
-
-            if data_rows:
-                worksheet.make_table(data_file.parser.worksheet_name)
-                if not config.large_data:
-                    # Lots of conditional formatting can slow down Excel
-                    worksheet.conditional_formatting()
-            else:
-                # Just add headings
-                for i, columns in enumerate(worksheet.columns):
-                    worksheet.worksheet.write(0, i, columns["header"], columns["header_format"])
-
-            worksheet.autofit()
 
         self.workbook.close()
         if self.filename:
@@ -294,15 +252,20 @@ class Worksheet:
 class Worksheet:
     MAX_COL_WIDTH = 30
 
-    def __init__(self, output: OutputExcel, data_file: DataFile) -> None:
+    def __init__(
+        self,
+        output: OutputExcel,
+        worksheet_name: str,
+        in_header: List[str],
+        data_rows: List[DataRow],
+    ) -> None:
         self.output = output
-        self.worksheet = output.workbook.add_worksheet(
-            self.output.sheet_name(data_file.parser.worksheet_name)
-        )
+        self.worksheet = output.workbook.add_worksheet(self.output.sheet_name(worksheet_name))
+        self.worksheet_name = worksheet_name
         self.col_width: Dict[int, int] = {}
-        self.columns = self._make_columns(data_file.parser.in_header)
+        self.columns = self._make_columns(in_header)
         self.row_num = 1
-        self.microseconds, self.milliseconds = self._is_microsecond_timestamp(data_file.data_rows)
+        self.microseconds, self.milliseconds = self._is_microsecond_timestamp(data_rows)
 
         self.worksheet.freeze_panes(1, len(self.output.BITTYTAX_OUT_HEADER))
 
@@ -409,13 +372,16 @@ class Worksheet:
         col_num: int,
         t_record: TransactionOutRecord,
     ) -> None:
-        if t_type is TrType.TRADE or t_record.buy_asset and t_record.sell_asset:
+        if t_type in BUY_AND_SELL_TYPES or t_record.buy_asset and t_record.sell_asset:
             self.worksheet.data_validation(
                 row_num,
                 col_num,
                 row_num,
                 col_num,
-                {"validate": "list", "source": [TrType.TRADE.value]},
+                {
+                    "validate": "list",
+                    "source": [t.value for t in BUY_AND_SELL_TYPES if t not in DEPRECATED_TYPES],
+                },
             )
         elif t_type in BUY_TYPES or t_record.buy_asset and not t_record.sell_asset:
             self.worksheet.data_validation(
@@ -562,7 +528,7 @@ class Worksheet:
                 "autofilter": False,
                 "style": "Table Style Medium 13",
                 "columns": self.columns,
-                "name": self._table_name(),
+                "name": self.output.table_name(self.worksheet_name),
             },
         )
 

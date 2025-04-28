@@ -40,7 +40,6 @@ from . import (
     defitaxes,
     deribit,
     easycrypto,
-    defitaxes_us,
     electrum,
     eternl,
     etherscan,

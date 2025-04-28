@@ -45,7 +45,7 @@ def parse_eternl(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Pars
     elif not row_dict["TxType"]:
         if row_dict["Label"] == "reward":
             data_row.t_record = TransactionOutRecord(
-                TrType.STAKING,
+                TrType.STAKING_REWARD,
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Received Amount"].replace(",", ".")),
                 buy_asset=row_dict["Received Currency"],

@@ -28,9 +28,8 @@ ACCOINTING_D_MAPPING = {
     "liquidity_pool": TrType.STAKING_REWARD,
     "master_node": TrType.STAKING_REWARD,
     "mined": TrType.MINING,
-    "staked": TrType.STAKING,
-    "margin_gain": TrType.MARGIN_GAIN,
     "staked": TrType.STAKING_REWARD,
+    "margin_gain": TrType.MARGIN_GAIN,
 }
 
 ACCOINTING_W_MAPPING = {

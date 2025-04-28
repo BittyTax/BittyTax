@@ -120,7 +120,10 @@ SELL_TYPES = (
     TrType.TRADE,
 )
 
+BUY_AND_SELL_TYPES = [t for t in BUY_TYPES if t in SELL_TYPES]
+
 TRANSFER_TYPES = (TrType.DEPOSIT, TrType.WITHDRAWAL)
+
 DEPRECATED_TYPES = (TrType.STAKING,)
 
 UnmappedType = NewType("UnmappedType", str)
