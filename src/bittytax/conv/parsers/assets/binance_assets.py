@@ -5,7 +5,7 @@
 import requests
 from colorama import Back
 
-from bittytax.conv.parsers.binance import BASE_ASSETS, QUOTE_ASSETS, _split_trading_pair
+from ..binance import BASE_ASSETS, QUOTE_ASSETS, _split_trading_pair
 
 
 def get_assets() -> None:
