@@ -14,38 +14,31 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{matrix.python-version}}
-      - name: Install BittyTax
+      - name: Install BittyTax with development extras
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
+          pip install -e ".[dev]"
       - name: Mypy
         run: |
-          pip install mypy
           mypy . --install-types --non-interactive
       - name: Pylint
         run: |
-          pip install pylint
           pylint .
       - name: Flake8
         run: |
-          pip install flake8
           flake8 .
       - name: isort
         run: |
-          pip install isort
           isort .
       - name: Black
         run: |
-          pip install black
           black .
       - name: Djlint
         run: |
-          pip install djlint
           djlint --check .
           djlint .
       - name: Test with pytest
         run: |
-          pip install pytest
           pytest tests
   spell:
     runs-on: ubuntu-latest
@@ -58,11 +51,11 @@ jobs:
       - name: Install BittyTax
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
+          pip install -e ".[dev]"
       - name: Install libenchant packages
         run: |
           sudo apt-get -y install --no-install-recommends libenchant-2-dev aspell-en libaspell-dev
       - name: Pylint (with spelling check)
         run: |
-          pip install pylint pyenchant
-          pylint --spelling-dict=en_GB $(git ls-files '*.py')
+          pip install pyenchant
+          pylint --spelling-dict=en_GB .
