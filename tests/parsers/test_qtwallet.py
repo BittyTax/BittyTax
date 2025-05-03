@@ -11,9 +11,9 @@ from bittytax.conv.datarow import DataRow
 from bittytax.conv.exceptions import UnknownCryptoassetError
 from bittytax.conv.parsers.qtwallet import _get_amount, parse_qt_wallet
 
-# Priority for identifing the asset symbol name
-# 1. Row, i.e. "0.00178181 WDC"
-# 2. Header, i.e. "Amount (LTC)"
+# Priority for identifying the asset symbol name
+# 1. Row, i.e. "0.00178181 BTC"
+# 2. Header, i.e. "Amount (BTC)"
 # 3. Argument, i.e. -ca BTC
 
 row_deposit = [
