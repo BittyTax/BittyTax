@@ -43,6 +43,10 @@ jobs:
           pip install djlint
           djlint --check .
           djlint .
+      - name: Test with pytest
+        run: |
+          pip install pytest
+          pytest tests
   spell:
     runs-on: ubuntu-latest
     steps:
