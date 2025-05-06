@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from ...dataparser import DataParser, ParserArgs
     from ...datarow import DataRow
 
+
 def _get_op_rows(
     tx_times: Dict[datetime, List["DataRow"]],
     timestamp: datetime,
