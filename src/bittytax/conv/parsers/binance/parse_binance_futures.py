@@ -90,7 +90,7 @@ def _parse_binance_futures_row(
     elif row_dict["type"] == "FUNDING_FEE":
         if Decimal(row_dict["Amount"]) > 0:
             data_row.t_record = TransactionOutRecord(
-                TrType.FEE_REBATE,
+                TrType.MARGIN_FEE_REBATE,
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Amount"]),
                 buy_asset=row_dict["Asset"],

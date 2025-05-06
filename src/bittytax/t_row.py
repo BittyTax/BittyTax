@@ -237,6 +237,18 @@ class TransactionRow:
             fee_asset=FieldRequired.OPTIONAL,
             fee_value=FieldRequired.OPTIONAL,
         ),
+        TrType.MARGIN_FEE_REBATE: FieldValidation(
+            t_type=FieldRequired.MANDATORY,
+            buy_quantity=FieldRequired.MANDATORY,
+            buy_asset=FieldRequired.MANDATORY,
+            buy_value=FieldRequired.OPTIONAL,
+            sell_quantity=FieldRequired.NOT_REQUIRED,
+            sell_asset=FieldRequired.NOT_REQUIRED,
+            sell_value=FieldRequired.NOT_REQUIRED,
+            fee_quantity=FieldRequired.OPTIONAL,
+            fee_asset=FieldRequired.OPTIONAL,
+            fee_value=FieldRequired.OPTIONAL,
+        ),
         TrType.WITHDRAWAL: FieldValidation(
             t_type=FieldRequired.MANDATORY,
             buy_quantity=FieldRequired.NOT_REQUIRED,

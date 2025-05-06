@@ -5,7 +5,7 @@
 import copy
 import datetime
 import sys
-from decimal import Decimal
+from decimal import Decimal, getcontext
 from typing import Dict, List, Optional, Tuple, Union
 
 import requests
@@ -14,6 +14,7 @@ from tqdm import tqdm
 from typing_extensions import NotRequired, TypedDict
 
 from .bt_types import (
+    TAX_RULES_UK_COMPANY,
     TRANSFER_TYPES,
     AssetName,
     AssetSymbol,
@@ -21,18 +22,21 @@ from .bt_types import (
     DisposalType,
     FixedValue,
     Note,
+    TaxRules,
     TrType,
     Wallet,
     Year,
 )
 from .config import config
-from .constants import TAX_RULES_UK_COMPANY, WARNING
+from .constants import WARNING
 from .holdings import Holdings
 from .price.valueasset import ValueAsset
 from .tax_event import TaxEvent, TaxEventCapitalGains, TaxEventIncome, TaxEventMarginTrade
 from .transactions import Buy, Sell
 
 PRECISION = Decimal("0.00")
+
+getcontext().prec = 30
 
 
 class TaxReportRecord(TypedDict):  # pylint: disable=too-few-public-methods
@@ -67,6 +71,11 @@ class CapitalGainsIndividual(TypedDict):  # pylint: disable=too-few-public-metho
     proceeds_limit: NotRequired[Decimal]
 
 
+class CapitalGainsIndividualSplitYear(TypedDict):  # pylint: disable=too-few-public-methods
+    basic_rate: Decimal
+    higher_rate: Decimal
+
+
 class ChargableGainsCompany(TypedDict):  # pylint: disable=too-few-public-methods
     small_rate: Optional[Decimal]
     main_rate: Decimal
@@ -79,10 +88,17 @@ class CapitalGainsReportTotal(TypedDict):  # pylint: disable=too-few-public-meth
     gain: Decimal
 
 
+class CapitalGainsReportTotalSplitYear(TypedDict):  # pylint: disable=too-few-public-methods
+    gain_before: Decimal
+    gain_after: Decimal
+
+
 class CapitalGainsReportSummary(TypedDict):  # pylint: disable=too-few-public-methods
     disposals: Decimal
     total_gain: Decimal
     total_loss: Decimal
+    proceeds_limit: Optional[Decimal]
+    proceeds_warning: bool
 
 
 class CapitalGainsReportEstimate(TypedDict):  # pylint: disable=too-few-public-methods
@@ -93,8 +109,6 @@ class CapitalGainsReportEstimate(TypedDict):  # pylint: disable=too-few-public-m
     taxable_gain: Decimal
     cgt_basic: Decimal
     cgt_higher: Decimal
-    proceeds_limit: Decimal
-    proceeds_warning: bool
 
 
 class ChargableGainsReportEstimate(TypedDict):  # pylint: disable=too-few-public-methods
@@ -114,6 +128,7 @@ class MarginReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
     gains: Decimal
     losses: Decimal
     fees: Decimal
+    fee_rebates: Decimal
 
 
 class TaxCalculator:  # pylint: disable=too-many-instance-attributes
@@ -125,14 +140,19 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         TrType.INCOME,
     )
 
-    MARGIN_TYPES = (TrType.MARGIN_GAIN, TrType.MARGIN_LOSS, TrType.MARGIN_FEE)
+    MARGIN_TYPES = (
+        TrType.MARGIN_GAIN,
+        TrType.MARGIN_LOSS,
+        TrType.MARGIN_FEE,
+        TrType.MARGIN_FEE_REBATE,
+    )
 
     NO_GAIN_NO_LOSS_TYPES = (TrType.GIFT_SPOUSE, TrType.CHARITY_SENT)
 
     # These transactions are except from the "same day" & "b&b" rule
     NO_MATCH_TYPES = (TrType.GIFT_SPOUSE, TrType.CHARITY_SENT, TrType.LOST)
 
-    def __init__(self, transactions: List[Union[Buy, Sell]], tax_rules: str) -> None:
+    def __init__(self, transactions: List[Union[Buy, Sell]], tax_rules: TaxRules) -> None:
         self.transactions = transactions
         self.tax_rules = tax_rules
         self.buys_ordered: List[Buy] = []
@@ -496,7 +516,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         return self.buys_ordered + self.sells_ordered + self.other_transactions
 
     def calculate_capital_gains(self, tax_year: Year) -> "CalculateCapitalGains":
-        calc_cgt = CalculateCapitalGains(tax_year)
+        calc_cgt = CalculateCapitalGains(tax_year, self.tax_rules)
 
         if tax_year in self.tax_events:
             for te in sorted(self.tax_events[tax_year]):
@@ -506,8 +526,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         if self.tax_rules in TAX_RULES_UK_COMPANY:
             calc_cgt.tax_estimate_ct(tax_year)
         else:
-            calc_cgt.tax_estimate_cgt(tax_year)
-
+            calc_cgt.set_proceeds_warning()
+            calc_cgt.tax_estimate_cgt()
         return calc_cgt
 
     def calculate_income(self, tax_year: Year) -> "CalculateIncome":
@@ -686,6 +706,18 @@ class CalculateCapitalGains:
             "higher_rate": Decimal(20),
             "proceeds_limit": Decimal(50000),
         },
+        Year(2026): {
+            "allowance": Decimal(3000),
+            "basic_rate": Decimal(18),
+            "higher_rate": Decimal(24),
+            "proceeds_limit": Decimal(50000),
+        },
+    }
+    CG_DATA_INDIVIDUAL_SPLIT_YEAR: Dict[Year, Tuple[Date, CapitalGainsIndividualSplitYear]] = {
+        Year(2025): (
+            Date(datetime.date(2024, 10, 30)),
+            {"basic_rate": Decimal(18), "higher_rate": Decimal(24)},
+        )
     }
 
     # Rate changes start from 1st April
@@ -706,9 +738,11 @@ class CalculateCapitalGains:
         Year(2022): {"small_rate": None, "main_rate": Decimal(19)},
         Year(2023): {"small_rate": Decimal(19), "main_rate": Decimal(25)},
         Year(2024): {"small_rate": Decimal(19), "main_rate": Decimal(25)},
+        Year(2025): {"small_rate": Decimal(19), "main_rate": Decimal(25)},
     }
 
-    def __init__(self, tax_year: Year) -> None:
+    def __init__(self, tax_year: Year, tax_rules: TaxRules) -> None:
+        self.tax_rules = tax_rules
         self.totals: CapitalGainsReportTotal = {
             "cost": Decimal(0),
             "fees": Decimal(0),
@@ -719,6 +753,8 @@ class CalculateCapitalGains:
             "disposals": Decimal(0),
             "total_gain": Decimal(0),
             "total_loss": Decimal(0),
+            "proceeds_limit": self.get_proceeds_limit(tax_year),
+            "proceeds_warning": False,
         }
 
         self.cgt_estimate: CapitalGainsReportEstimate = {
@@ -729,8 +765,6 @@ class CalculateCapitalGains:
             "taxable_gain": Decimal(0),
             "cgt_basic": Decimal(0),
             "cgt_higher": Decimal(0),
-            "proceeds_limit": self.get_proceeds_limit(tax_year),
-            "proceeds_warning": False,
         }
 
         self.ct_estimate: ChargableGainsReportEstimate = {
@@ -741,9 +775,32 @@ class CalculateCapitalGains:
             "ct_main": Decimal(0),
         }
 
+        self.split_date = None
+        if (
+            self.tax_rules is TaxRules.UK_INDIVIDUAL
+            and tax_year in self.CG_DATA_INDIVIDUAL_SPLIT_YEAR
+        ):
+            self.split_date, cg_split_data = self.CG_DATA_INDIVIDUAL_SPLIT_YEAR[tax_year]
+            self.split_totals: CapitalGainsReportTotalSplitYear = {
+                "gain_before": Decimal(0),
+                "gain_after": Decimal(0),
+            }
+            self.cgt_estimate_split: CapitalGainsReportEstimate = {
+                "allowance": Decimal(self.CG_DATA_INDIVIDUAL[tax_year]["allowance"]),
+                "cgt_basic_rate": cg_split_data["basic_rate"],
+                "cgt_higher_rate": cg_split_data["higher_rate"],
+                "allowance_used": Decimal(0),
+                "taxable_gain": Decimal(0),
+                "cgt_basic": Decimal(0),
+                "cgt_higher": Decimal(0),
+            }
+
         self.assets: Dict[AssetSymbol, List[TaxEventCapitalGains]] = {}
 
-    def get_proceeds_limit(self, tax_year: Year) -> Decimal:
+    def get_proceeds_limit(self, tax_year: Year) -> Optional[Decimal]:
+        if self.tax_rules is not TaxRules.UK_INDIVIDUAL:
+            return None
+
         if "proceeds_limit" in self.CG_DATA_INDIVIDUAL[tax_year]:
             # For 2023 HMRC has introduced a fixed CGT reporting proceeds limit
             return Decimal(self.CG_DATA_INDIVIDUAL[tax_year]["proceeds_limit"])
@@ -774,30 +831,58 @@ class CalculateCapitalGains:
         else:
             self.summary["total_loss"] += te.gain
 
+        if self.split_date:
+            if te.date < self.split_date:
+                self.split_totals["gain_before"] += te.gain
+            else:
+                self.split_totals["gain_after"] += te.gain
+
         if te.asset not in self.assets:
             self.assets[te.asset] = []
 
         self.assets[te.asset].append(te)
 
-    def tax_estimate_cgt(self, tax_year: Year) -> None:
-        if self.totals["gain"] > self.cgt_estimate["allowance"]:
-            self.cgt_estimate["allowance_used"] = self.cgt_estimate["allowance"]
-            self.cgt_estimate["taxable_gain"] = self.totals["gain"] - self.cgt_estimate["allowance"]
-            self.cgt_estimate["cgt_basic"] = (
-                self.cgt_estimate["taxable_gain"]
-                * self.CG_DATA_INDIVIDUAL[tax_year]["basic_rate"]
-                / 100
-            )
-            self.cgt_estimate["cgt_higher"] = (
-                self.cgt_estimate["taxable_gain"]
-                * self.CG_DATA_INDIVIDUAL[tax_year]["higher_rate"]
-                / 100
-            )
-        elif self.totals["gain"] > 0:
-            self.cgt_estimate["allowance_used"] = self.totals["gain"]
+    def set_proceeds_warning(self) -> None:
+        if (
+            self.summary["proceeds_limit"] is not None
+            and self.totals["proceeds"] >= self.summary["proceeds_limit"]
+        ):
+            self.summary["proceeds_warning"] = True
 
-        if self.totals["proceeds"] >= self.cgt_estimate["proceeds_limit"]:
-            self.cgt_estimate["proceeds_warning"] = True
+    def tax_estimate_cgt(self) -> None:
+        if not self.split_date:
+            self._tax_estimate_cgt2(
+                self.cgt_estimate, self.totals["gain"], self.cgt_estimate["allowance"]
+            )
+        else:
+            # Use the allowance for gains on or after the split date first
+            self._tax_estimate_cgt2(
+                self.cgt_estimate_split,
+                self.split_totals["gain_after"],
+                self.cgt_estimate_split["allowance"],
+            )
+            # Use any remaining allowance for gains before the split date
+            remaining_allowance = (
+                self.cgt_estimate_split["allowance"] - self.cgt_estimate_split["allowance_used"]
+            )
+            self._tax_estimate_cgt2(
+                self.cgt_estimate, self.split_totals["gain_before"], remaining_allowance
+            )
+
+    def _tax_estimate_cgt2(
+        self, cgt_estimate: CapitalGainsReportEstimate, gain: Decimal, allowance: Decimal
+    ) -> None:
+        if gain > allowance:
+            cgt_estimate["allowance_used"] = allowance
+            cgt_estimate["taxable_gain"] = gain - allowance
+            cgt_estimate["cgt_basic"] = (
+                cgt_estimate["taxable_gain"] * cgt_estimate["cgt_basic_rate"] / 100
+            )
+            cgt_estimate["cgt_higher"] = (
+                cgt_estimate["taxable_gain"] * cgt_estimate["cgt_higher_rate"] / 100
+            )
+        elif gain > 0:
+            cgt_estimate["allowance_used"] = gain
 
     def tax_estimate_ct(self, tax_year: Year) -> None:
         if self.totals["gain"] > 0:
@@ -874,6 +959,7 @@ class CalculateMarginTrading:
             "gains": Decimal(0),
             "losses": Decimal(0),
             "fees": Decimal(0),
+            "fee_rebates": Decimal(0),
         }
         self.contracts: Dict[Tuple[Wallet, Note], List[TaxEventMarginTrade]] = {}
         self.contract_totals: Dict[Tuple[Wallet, Note], MarginReportTotal] = {}
@@ -882,6 +968,7 @@ class CalculateMarginTrading:
         self.totals["gains"] += te.gain
         self.totals["losses"] += te.loss
         self.totals["fees"] += te.fee
+        self.totals["fee_rebates"] += te.fee_rebate
 
         if (te.wallet, te.note) not in self.contracts:
             self.contracts[(te.wallet, te.note)] = []
@@ -896,11 +983,13 @@ class CalculateMarginTrading:
                         "gains": te.gain,
                         "losses": te.loss,
                         "fees": te.fee,
+                        "fee_rebates": te.fee_rebate,
                     }
                 else:
                     self.contract_totals[(wallet, note)]["gains"] += te.gain
                     self.contract_totals[(wallet, note)]["losses"] += te.loss
                     self.contract_totals[(wallet, note)]["fees"] += te.fee
+                    self.contract_totals[(wallet, note)]["fee_rebates"] += te.fee_rebate
 
                 if config.debug:
                     print(f"{Fore.GREEN}margin: {te.t}")
@@ -910,5 +999,6 @@ class CalculateMarginTrading:
         return (
             f'{wallet} {note}: gains={config.sym()}{self.contract_totals[(wallet, note)]["gains"]} '
             f'losses={config.sym()}{self.contract_totals[(wallet, note)]["losses"]} '
-            f'fess={config.sym()}{self.contract_totals[(wallet, note)]["fees"]} '
+            f'fees={config.sym()}{self.contract_totals[(wallet, note)]["fees"]} '
+            f'fee_rebates={config.sym()}{self.contract_totals[(wallet, note)]["fee_rebates"]} '
         )

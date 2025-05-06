@@ -25,7 +25,7 @@ jobs:
       - name: Pylint
         run: |
           pip install pylint
-          pylint $(git ls-files '*.py')
+          pylint .
       - name: Flake8
         run: |
           pip install flake8
@@ -33,11 +33,11 @@ jobs:
       - name: isort
         run: |
           pip install isort
-          isort --check $(git ls-files '*.py')
+          isort .
       - name: Black
         run: |
           pip install black
-          black --check $(git ls-files '*.py')
+          black .
       - name: Djlint
         run: |
           pip install djlint

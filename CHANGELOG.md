@@ -174,6 +174,9 @@
 - KuCoin parser: added "Fiat Deposits", "Third-Party Payment", "Fast Trade Orders" files.
 - Binance parser: added "Funding" Account, and "Send" and "Campaign Related Reward" Operations.
 - Coinbase parser: added "Donation" and "Admin Debit" transaction types.
+- Accounting tool: split tax rates for 2024/25. ([#429](https://github.com/BittyTax/BittyTax/issues/429))
+- Accounting tool: tax rates and allowance for 2025/26.
+- Accounting tool: new transaction type Margin-Fee-Rebate added. ([#415](https://github.com/BittyTax/BittyTax/issues/415))
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -250,6 +253,11 @@
 - Conversion tool: moved sheet_name and table_name functions to OutputExcel.
 - Conversion tool: header in OutputBase now uses place holders for the currency.
 - Nexo parser: "Deposit To Exchange" and "Exchange To Withdraw" made trades.
+- Binance parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
+- ByBit parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
+- Deribit parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
+- KuCoin parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
+- Accounting tool: increased precision for Decimals from 28 to 30 digits.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.

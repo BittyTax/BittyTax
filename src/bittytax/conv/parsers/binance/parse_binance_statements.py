@@ -17,7 +17,6 @@ if TYPE_CHECKING:
     from ...dataparser import DataParser, ParserArgs
     from ...datarow import DataRow
 
-
 def _get_op_rows(
     tx_times: Dict[datetime, List["DataRow"]],
     timestamp: datetime,
@@ -506,7 +505,7 @@ def _parse_binance_statements_futures_row(
     elif row_dict["Operation"] in ("Funding Fee", "Insurance Fund Refund"):
         if Decimal(row_dict["Change"]) > 0:
             data_row.t_record = TransactionOutRecord(
-                TrType.FEE_REBATE,
+                TrType.MARGIN_FEE_REBATE,
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["Change"]),
                 buy_asset=row_dict["Coin"],
