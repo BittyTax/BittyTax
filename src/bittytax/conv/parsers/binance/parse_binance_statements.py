@@ -387,7 +387,6 @@ def _parse_binance_statements_row(
             wallet=WALLET,
         )
     elif row_dict["Operation"] in (
-        "Crypto - Asset Transfer",
         "Fiat OCBS - Add Fiat and Fees",
         "Asset - Transfer",
     ):
