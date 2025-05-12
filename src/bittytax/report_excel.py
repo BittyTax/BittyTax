@@ -6,6 +6,7 @@ import os
 import platform
 from dataclasses import dataclass
 from decimal import Decimal
+from enum import Enum
 from typing import Dict, List, Optional, Tuple, Union
 
 import xlsxwriter
@@ -47,6 +48,15 @@ else:
 FONT_COLOR_GREY = "#808080"
 
 PRECISION = Decimal("0.00")
+
+
+class TaxYearTableType(Enum):
+    CAPITAL_GAINS_SHORT_TERM = "Capital_Gains_Short_Term"
+    CAPITAL_GAINS_LONG_TERM = "Capital_Gains_Long_Term"
+    NON_TAXABLE_TRANSACTIONS = "Non_Taxable_Transactions"
+    INCOME_ASSET = "Income_Asset"
+    INCOME_TYPE = "Income_Type"
+    MARGIN_TRADING = "Margin_Trading"
 
 
 @dataclass
@@ -299,37 +309,37 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
             worksheet.capital_gains(
                 "Capital Gains - Short Term",
                 tax_report[tax_year]["CapitalGains"].short_term,
-                f"Tax_Year_{tax_year_table_str}_Capital_Gains_Short_Term",
+                f"Tax_Year_{tax_year_table_str}_{TaxYearTableType.CAPITAL_GAINS_SHORT_TERM.value}",
                 row_tracker,
             )
             worksheet.capital_gains(
                 "Capital Gains - Long Term",
                 tax_report[tax_year]["CapitalGains"].long_term,
-                f"Tax_Year_{tax_year_table_str}_Capital_Gains_Long_Term",
+                f"Tax_Year_{tax_year_table_str}_{TaxYearTableType.CAPITAL_GAINS_LONG_TERM.value}",
                 row_tracker,
             )
             worksheet.no_gain_no_loss(
                 "Non-Taxable Transactions",
                 tax_report[tax_year]["CapitalGains"],
-                f"Tax_Year_{tax_year_table_str}_Non_Taxable_Transactions",
+                f"Tax_Year_{tax_year_table_str}_{TaxYearTableType.NON_TAXABLE_TRANSACTIONS.value}",
                 row_tracker,
             )
             worksheet.income_by_asset(
                 "Income - by Asset",
                 tax_report[tax_year]["Income"],
-                f"Tax_Year_{tax_year_table_str}_Income_Asset",
+                f"Tax_Year_{tax_year_table_str}_{TaxYearTableType.INCOME_ASSET.value}",
                 row_tracker,
             )
             worksheet.income_by_type(
                 "Income - by Type",
                 tax_report[tax_year]["Income"],
-                f"Tax_Year_{tax_year_table_str}_Income_Type",
+                f"Tax_Year_{tax_year_table_str}_{TaxYearTableType.INCOME_TYPE.value}",
                 row_tracker,
             )
             worksheet.margin_trading(
                 "Margin Trading",
                 tax_report[tax_year]["MarginTrading"],
-                f"Tax_Year_{tax_year_table_str}_Margin_Trading",
+                f"Tax_Year_{tax_year_table_str}_{TaxYearTableType.MARGIN_TRADING.value}",
                 row_tracker,
             )
             worksheet.worksheet.autofit()
