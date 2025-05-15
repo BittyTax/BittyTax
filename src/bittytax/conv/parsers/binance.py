@@ -424,6 +424,7 @@ def _parse_binance_statements_row(
         )
     elif row_dict["Operation"] in (
         "Distribution",
+        "Asset - Transfer",
         "Token Swap - Redenomination/Rebranding",
         "Token Swap - Distribution",
     ):
@@ -495,6 +496,39 @@ def _parse_binance_statements_row(
             sell_value=Decimal(0),
             wallet=WALLET,
         )
+    elif row_dict["Operation"] == "Binance Card Spending":
+        if Decimal(row_dict["Change"]) < 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.SPEND,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["Change"])),
+                sell_asset=row_dict["Coin"],
+                wallet=WALLET,
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.FEE_REBATE,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["Change"]),
+                buy_asset=row_dict["Coin"],
+                wallet=WALLET,
+            )
+    elif row_dict["Operation"] == "Binance Card Cashback":
+        data_row.t_record = TransactionOutRecord(
+            TrType.CASHBACK,
+            data_row.timestamp,
+            buy_quantity=abs(Decimal(row_dict["Change"])),
+            buy_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
+    elif row_dict["Operation"] == "Crypto Box":
+        data_row.t_record = TransactionOutRecord(
+            TrType.INCOME,
+            data_row.timestamp,
+            buy_quantity=abs(Decimal(row_dict["Change"])),
+            buy_asset=row_dict["Coin"],
+            wallet=WALLET,
+        )
     elif row_dict["Operation"] in (
         "Small assets exchange BNB",
         "Small Assets Exchange BNB",
@@ -551,7 +585,11 @@ def _parse_binance_statements_row(
     ):
         # Skip non-taxable events and those which are handled by the merger
         return
-    elif row_dict["Operation"] in ("Deposit", "Fiat Deposit"):
+    elif row_dict["Operation"] in (
+        "Deposit",
+        "Fiat Deposit",
+        "Fiat OCBS - Add Fiat and Fees",
+    ):
         if config.binance_statements_only:
             data_row.t_record = TransactionOutRecord(
                 TrType.DEPOSIT,
@@ -563,64 +601,7 @@ def _parse_binance_statements_row(
         else:
             # Skip duplicate operations
             return
-    elif row_dict["Operation"] == "Send":
-        data_row.t_record = TransactionOutRecord(
-            TrType.WITHDRAWAL,
-            data_row.timestamp,
-            sell_quantity=abs(Decimal(row_dict["Change"])),
-            sell_asset=row_dict["Coin"],
-            wallet=WALLET,
-        )
-    elif row_dict["Operation"] == "Binance Card Spending":
-        if Decimal(row_dict["Change"]) < 0:
-            data_row.t_record = TransactionOutRecord(
-                TrType.SPEND,
-                data_row.timestamp,
-                sell_quantity=abs(Decimal(row_dict["Change"])),
-                sell_asset=row_dict["Coin"],
-                wallet=WALLET,
-            )
-        else:
-            data_row.t_record = TransactionOutRecord(
-                TrType.CASHBACK,
-                data_row.timestamp,
-                buy_quantity=Decimal(row_dict["Change"]),
-                buy_asset=row_dict["Coin"],
-                wallet=WALLET,
-            )
-    elif row_dict["Operation"] == "Binance Card Cashback":
-        data_row.t_record = TransactionOutRecord(
-            TrType.CASHBACK,
-            data_row.timestamp,
-            buy_quantity=abs(Decimal(row_dict["Change"])),
-            buy_asset=row_dict["Coin"],
-            wallet=WALLET,
-        )
-    elif row_dict["Operation"] in (
-        "Crypto - Asset Transfer",
-        "Fiat OCBS - Add Fiat and Fees",
-        "Asset - Transfer",
-    ):
-        data_row.t_record = TransactionOutRecord(
-            TrType.DEPOSIT,
-            data_row.timestamp,
-            buy_quantity=Decimal(row_dict["Change"]),
-            buy_asset=row_dict["Coin"],
-            wallet=WALLET,
-        )
-    elif row_dict["Operation"] == "Crypto Box":
-        data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_RECEIVED,
-            data_row.timestamp,
-            buy_quantity=abs(Decimal(row_dict["Change"])),
-            buy_asset=row_dict["Coin"],
-            wallet=WALLET,
-        )
-    elif row_dict["Operation"] in (
-        "Withdraw",
-        "Fiat Withdraw",
-        "Fiat Withdrawal",
-    ):
+    elif row_dict["Operation"] in ("Withdraw", "Fiat Withdraw", "Fiat Withdrawal", "Send"):
         if config.binance_statements_only:
             data_row.t_record = TransactionOutRecord(
                 TrType.WITHDRAWAL,
@@ -632,7 +613,7 @@ def _parse_binance_statements_row(
         else:
             # Skip duplicate operations
             return
-    elif row_dict["Operation"] in ("Binance Convert", "Large OTC trading"):
+    elif row_dict["Operation"] in ("Binance Convert", "Large OTC trading", "Buy Crypto With Card"):
         if config.binance_statements_only:
             _make_trade(
                 _get_op_rows(tx_times, data_row.timestamp, (row_dict["Operation"],)),
@@ -640,10 +621,6 @@ def _parse_binance_statements_row(
         else:
             # Skip duplicate operations
             return
-    elif row_dict["Operation"] == "Buy Crypto With Card":
-        _make_trade(
-            _get_op_rows(tx_times, data_row.timestamp, (row_dict["Operation"],)),
-        )
     elif row_dict["Operation"] in (
         "Buy",
         "Sell",
