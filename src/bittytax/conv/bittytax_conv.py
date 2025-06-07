@@ -13,23 +13,18 @@ from typing import Optional, Tuple
 import colorama
 from colorama import Fore
 
-from ..config import config
-from ..constants import CONV_FORMAT_CSV, CONV_FORMAT_EXCEL, CONV_FORMAT_RECAP
-from ..version import __version__
-from .datafile import DataFile
-from .datamerge import DataMerge
-from .dataparser import DataParser
-from .exceptions import (
-    DataFilenameError,
-    DataFormatNotSupported,
-    DataFormatUnrecognised,
-    UnknownCryptoassetError,
-    UnknownUsernameError,
-)
-from .mergers import *  # pylint: disable=wildcard-import, unused-wildcard-import
-from .output_csv import OutputCsv
-from .output_excel import OutputExcel
-from .parsers import *  # type: ignore[no-redef] # pylint: disable=wildcard-import, unused-wildcard-import # noqa: E501
+from bittytax.config import config
+from bittytax.constants import CONV_FORMAT_CSV, CONV_FORMAT_EXCEL, CONV_FORMAT_RECAP
+from bittytax.version import __version__
+from bittytax.conv.datafile import DataFile
+from bittytax.conv.datamerge import DataMerge
+from bittytax.conv.dataparser import DataParser
+from bittytax.conv.exceptions import DataFilenameError, DataFormatNotSupported, DataFormatUnrecognised, \
+    UnknownCryptoassetError, UnknownUsernameError
+from bittytax.conv.mergers import *
+from bittytax.conv.output_csv import OutputCsv
+from bittytax.conv.output_excel import OutputExcel
+from bittytax.conv.parsers import *
 
 if sys.stderr.encoding != "UTF-8":
     sys.stderr.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
