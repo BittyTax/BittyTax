@@ -16,7 +16,7 @@ from ...config import config
 from ...constants import WARNING
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..datarow import TxRawPos
-from ..exceptions import DataRowError, UnexpectedTypeError, UnknownCryptoassetError
+from ..exceptions import DataRowError, UnexpectedTypeError, UnknownCryptoassetError, UnexpectedTradingPairError
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -31,6 +31,8 @@ Instrument = NewType("Instrument", str)
 
 balance: Dict[Uid, Decimal] = {}
 
+spot_trades = []
+
 
 @dataclass
 class Position:
@@ -40,7 +42,7 @@ class Position:
 
 
 def parse_deribit(
-    data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
+        data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     positions: Dict[Uid, Dict[Instrument, Position]] = {}
     uid, asset = _get_uid_and_asset(kwargs["filename"])
@@ -57,7 +59,7 @@ def parse_deribit(
                 raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet", ""))
 
     for data_row in sorted(
-        data_rows, key=lambda dr: Decimal(dr.row_dict["UserSeq"]), reverse=False
+            data_rows, key=lambda dr: Decimal(dr.row_dict["UserSeq"]), reverse=False
     ):
         if config.debug:
             if parser.in_header_row_num is None:
@@ -115,12 +117,12 @@ def parse_deribit(
 
 
 def _parse_deribit_row(
-    data_rows: List["DataRow"],
-    parser: DataParser,
-    data_row: "DataRow",
-    positions: Dict[Uid, Dict[Instrument, Position]],
-    uid: Uid,
-    asset: str,
+        data_rows: List["DataRow"],
+        parser: DataParser,
+        data_row: "DataRow",
+        positions: Dict[Uid, Dict[Instrument, Position]],
+        uid: Uid,
+        asset: str,
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(
@@ -163,7 +165,6 @@ def _parse_deribit_row(
             balance[uid] -= data_row.t_record.sell_quantity
             if data_row.t_record.fee_quantity:
                 balance[uid] -= data_row.t_record.fee_quantity
-
     elif row_dict["Type"] == "transfer":
         if Decimal(row_dict["Change"]) > 0:
             data_row.t_record = TransactionOutRecord(
@@ -185,13 +186,96 @@ def _parse_deribit_row(
             )
             if data_row.t_record.sell_quantity:
                 balance[uid] -= data_row.t_record.sell_quantity
-    elif row_dict["Type"] in ("trade", "delivery"):
+    # the following is to handle Spot transactions which are not currently handles in this parser
+    # currently Deribit charges no commissions for Spot
+    # Spot trades are recorded both in the base asset file and the quote asset file
+    # this def ensures spot trades are only counted once but that the balance[uid] is correctly recorded
+    # in both base and quote files
+    elif (row_dict["Type"] in ("trade", "delivery")) and \
+            (not re.search('(?i)([0-3][0-9](JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[0-9][0-9])|(PERPETUAL)', row_dict["Instrument"])):
+        instrument = Instrument(row_dict["Instrument"])
+        if (row_dict["Trade ID"] in spot_trades):
+            balance[uid] += Decimal(row_dict["Change"])
+            if config.debug:
+                sys.stderr.write(
+                    f"{Fore.GREEN}conv: (uid: {uid}) spot trade {row_dict.get('Side')} : {row_dict.get('Change')} {asset} \n"
+                )
+        if (row_dict["Side"] in ("close buy", "liquidation buy")) and (row_dict["Trade ID"] not in spot_trades):
+            if asset == instrument.split("_")[0]:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.TRADE,
+                    data_row.timestamp,
+                    buy_quantity=Decimal(row_dict["Amount"]),
+                    buy_asset=asset,
+                    sell_quantity=Decimal(row_dict["Amount"]) * Decimal(row_dict["Price"]),
+                    sell_asset=instrument.split("_")[1],
+                    fee_quantity=Decimal(row_dict["Fee Charged"]),
+                    fee_asset=asset,
+                    wallet=WALLET,
+                )
+            else:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.TRADE,
+                    data_row.timestamp,
+                    buy_quantity=Decimal(row_dict["Amount"]),
+                    buy_asset=asset,
+                    sell_quantity=round(Decimal(row_dict["Amount"]) / Decimal(row_dict["Price"]), 8),
+                    sell_asset=instrument.split("_")[0],
+                    fee_quantity=Decimal(row_dict["Fee Charged"]),
+                    fee_asset=asset,
+                    wallet=WALLET,
+                )
+            spot_trades.append(row_dict["Trade ID"])
+            balance[uid] += data_row.t_record.buy_quantity
+            if config.debug:
+                sys.stderr.write(
+                    f"{Fore.GREEN}conv: (uid: {uid}) spot trade bought: ({data_row.t_record.buy_quantity}) ({data_row.t_record.buy_asset}) \n"
+                    f"{Fore.GREEN}conv: (uid: {uid}) spot trade sold: ({data_row.t_record.sell_quantity}) ({data_row.t_record.sell_asset})\n"
+                )
+        elif (row_dict["Side"] in ["close sell", "liquidation sell"]) and (row_dict["Trade ID"] not in spot_trades):
+            if asset == instrument.split("_")[0]:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.TRADE,
+                    data_row.timestamp,
+                    buy_quantity=Decimal(row_dict["Amount"]) * Decimal(row_dict["Price"]),
+                    buy_asset=instrument.split("_")[1],
+                    sell_quantity=Decimal(row_dict["Amount"]),
+                    sell_asset=asset,
+                    fee_quantity=Decimal(row_dict["Fee Charged"]),
+                    fee_asset=asset,
+                    wallet=WALLET,
+                )
+            else:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.TRADE,
+                    data_row.timestamp,
+                    # buy_quantity=Decimal(row_dict["Amount"]),
+                    buy_quantity=round(Decimal(row_dict["Amount"]) / Decimal(row_dict["Price"]), 8),
+                    buy_asset=instrument.split("_")[0],
+                    # sell_quantity=round(Decimal(row_dict["Amount"]) / Decimal(row_dict["Price"]),8),
+                    sell_quantity=Decimal(row_dict["Amount"]),
+                    sell_asset=asset,
+                    fee_quantity=Decimal(row_dict["Fee Charged"]),
+                    fee_asset=asset,
+                    wallet=WALLET,
+                )
+            spot_trades.append(row_dict["Trade ID"])
+            balance[uid] -= data_row.t_record.sell_quantity
+            if config.debug:
+                sys.stderr.write(
+                    f"{Fore.GREEN}conv: (uid: {uid}) spot trade sold: ({data_row.t_record.sell_quantity} {data_row.t_record.sell_asset})\n"
+                    f"{Fore.GREEN}conv: (uid: {uid}) spot trade bought: ({data_row.t_record.buy_quantity} {data_row.t_record.buy_asset})\n "
+                )
+    elif row_dict["Type"] in ("trade", "delivery") and \
+            re.search('(?i)([0-3][0-9](JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[0-9][0-9])|(PERPETUAL)', row_dict["Instrument"]):
         instrument = Instrument(row_dict["Instrument"])
         if uid not in positions:
             positions[uid] = {}
         if instrument not in positions[uid]:
             positions[uid][instrument] = Position()
-
+        #  it should be noted that funding fees sometimes appear
+        #  in lines with Type "trade" but don't seem to be included
+        #  in Deribit P&L or equity?
         trading_fee = Decimal(row_dict["Fee Charged"])
         unrealised_pnl = Decimal(row_dict["Cash Flow"])
         change = Decimal(row_dict["Change"])
@@ -239,24 +323,42 @@ def _parse_deribit_row(
                 )
 
             _close_position(data_rows, data_row, positions, uid, asset, partial_close)
-    elif row_dict["Type"] == "settlement":
-        instrument = Instrument(row_dict["Instrument"])
+        # in a cross currency margin account you can use many different currencies as margin - this can lead to negative
+        # balances e.g your margin money is in ETH and you short the ETH_USDC-PERPETUAL. If ETH goes up, the short
+        # position becomes negative in USDC. Deribit and other exchanges charge a rate of interest on negative balances
+        # so we need to add negative balances to funding fee and adjust balance[uid]
+    elif row_dict["Type"] in ("settlement", "negative_balance_fee", "correction"):
+        if row_dict["Type"] == "settlement":
+            instrument = Instrument(row_dict["Instrument"])
+        else:
+            # rows / lines where "Type" is negative_balance_fee  or "correction" have a blank '' for Instrument
+            # therefore have to look back to previous row(s)
+            # however, it has to be said that negative_balance_fee may well apply to a number of positions
+            # I only have one position per account but it would probably be better to generalise it
+            # into a new column of row.t_record
+            # "correction" has a note explaining which instrument it applies to
+            # but in this draft I just apply it to the closest listed row
+            instrument = Instrument(row_dict["Instrument"])
+            counter = 1
+            if not re.search('(?i)([0-3][0-9](JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[0-9][0-9])|(PERPETUAL)', instrument):
+                while (data_row.line_num+counter) <= len(data_rows):
+                    instrument = data_rows[data_row.line_num + counter].row_dict["Instrument"]
+                    counter += 1
+                    if re.search('(?i)([0-3][0-9](JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[0-9][0-9])|(PERPETUAL)', instrument):
+                        break
         if row_dict["Side"] in ("long", "short"):
             if uid not in positions:
                 raise RuntimeError(f"No position open for {instrument}")
             if instrument not in positions[uid]:
                 raise RuntimeError(f"No position open for {instrument}")
-
             # Accumulate funding fees
             funding_fee = Decimal(row_dict["Funding"])
             positions[uid][instrument].funding_fees += funding_fee
             balance[uid] += funding_fee
-
             # Accumulate unrealised profit and loss
             unrealised_pnl = Decimal(row_dict["Cash Flow"]) - funding_fee
             positions[uid][instrument].unrealised_pnl += unrealised_pnl
             balance[uid] += unrealised_pnl
-
             if config.debug:
                 sys.stderr.write(
                     f"{Fore.GREEN}conv: (uid: {uid}) {instrument}:unrealised_pnl="
@@ -268,7 +370,31 @@ def _parse_deribit_row(
                     f"{positions[uid][instrument].funding_fees.normalize():0,f} "
                     f"({funding_fee.normalize():+0,f})\n"
                 )
-        elif row_dict["Side"] == "-":
+        # account fr negative balance fees
+        if row_dict["Side"] == "-" and row_dict["Type"] == "negative_balance_fee":
+            # Accumulate for negative balance fees
+            # Deduct them from funding fees
+            negative_balance_fee = Decimal(row_dict["Cash Flow"])
+            positions[uid][instrument].funding_fees += negative_balance_fee
+            balance[uid] += negative_balance_fee
+            if config.debug:
+                sys.stderr.write(
+                    f"{Fore.GREEN}conv: (uid: {uid}) {instrument}:negative_balance_fee="
+                    f"{negative_balance_fee}\n"
+                )
+        if row_dict["Side"] == "-" and row_dict["Type"] == "correction":
+            # Accumulate for corrections
+            # Add / Deduct them from funding fees
+            correction = Decimal(row_dict["Cash Flow"])
+            positions[uid][instrument].funding_fees += correction
+            balance[uid] += correction
+            if config.debug:
+                sys.stderr.write(
+                    f"{Fore.GREEN}conv: (uid: {uid}) {instrument}:correction="
+                    f"{correction}\n"
+                )
+        if row_dict["Side"] == "-" and row_dict["Type"] != "negative_balance_fee"\
+                and row_dict["Type"] != "correction":
             # Position has already closed, final settlement
             unrealised_pnl = Decimal(row_dict["Cash Flow"])
             balance[uid] += unrealised_pnl
@@ -323,12 +449,12 @@ def _parse_deribit_row(
 
 
 def _close_position(
-    data_rows: List["DataRow"],
-    data_row: "DataRow",
-    positions: Dict[Uid, Dict[Instrument, Position]],
-    uid: Uid,
-    asset: str,
-    partial_close: Decimal,
+        data_rows: List["DataRow"],
+        data_row: "DataRow",
+        positions: Dict[Uid, Dict[Instrument, Position]],
+        uid: Uid,
+        asset: str,
+        partial_close: Decimal,
 ) -> None:
     row_dict = data_row.row_dict
     instrument = Instrument(row_dict["Instrument"])
@@ -462,7 +588,6 @@ DataParser(
     worksheet_name="Deribit",
     all_handler=parse_deribit,
 )
-
 
 DataParser(
     ParserType.EXCHANGE,
