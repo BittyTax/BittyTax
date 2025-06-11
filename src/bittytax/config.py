@@ -7,11 +7,15 @@ import platform
 import sys
 from typing import Any, TextIO
 
-import pkg_resources
 import yaml
 from colorama import Fore
 
 from .constants import BITTYTAX_PATH, ERROR
+
+if sys.version_info < (3, 9):
+    import importlib_resources as pkg_resources
+else:
+    import importlib.resources as pkg_resources
 
 
 class Config:
@@ -82,7 +86,11 @@ class Config:
             os.mkdir(BITTYTAX_PATH)
 
         if not os.path.exists(os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG)):
-            default_conf = pkg_resources.resource_string(__name__, "config/" + self.BITTYTAX_CONFIG)
+            default_conf = (
+                pkg_resources.files(__package__)
+                .joinpath(f"config/{self.BITTYTAX_CONFIG}")
+                .read_bytes()
+            )
             with open(os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG), "wb") as config_file:
                 config_file.write(default_conf)
 
