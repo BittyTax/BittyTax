@@ -61,4 +61,4 @@ jobs:
       - name: Pylint (with spelling check)
         run: |
           pip install pylint pyenchant
-          pylint --spelling-dict=en_GB $(git ls-files '*.py')
+          pylint --spelling-dict=en_GB .
