@@ -27,7 +27,14 @@ class ImportRecords:
 
     def import_excel_xlsx(self, filename: str) -> None:
         warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
-        workbook = openpyxl.load_workbook(filename=filename, read_only=True, data_only=True)
+        workbook = openpyxl.load_workbook(
+            filename=filename,
+            read_only=True,
+            data_only=True,
+            keep_vba=False,
+            keep_links=False,
+            rich_text=False,
+        )
         print(f"{Fore.WHITE}Excel file: {Fore.YELLOW}{filename}")
 
         for sheet_name in workbook.sheetnames:
