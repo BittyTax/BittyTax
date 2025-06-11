@@ -13,7 +13,6 @@ from types import TracebackType
 from typing import Dict, List, Optional, Tuple, Type
 
 import jinja2
-import pkg_resources
 from colorama import Fore, Style
 from xhtml2pdf import pisa
 
@@ -31,6 +30,11 @@ from .tax import (
     TaxReportRecord,
 )
 from .version import __version__
+
+if sys.version_info < (3, 9):
+    import importlib_resources as pkg_resources
+else:
+    import importlib.resources as pkg_resources
 
 
 class ReportPdf:
@@ -52,7 +56,7 @@ class ReportPdf:
         price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
     ) -> None:
-        self.env = jinja2.Environment(loader=jinja2.PackageLoader("bittytax", "templates"))
+        self.env = jinja2.Environment(loader=jinja2.PackageLoader(__package__, "templates"))
 
         self.env.filters["datefilter"] = self.datefilter
         self.env.filters["datefilter2"] = self.datefilter2
@@ -65,7 +69,7 @@ class ReportPdf:
         self.env.filters["audittotalsfilter"] = self.audittotalsfilter
         self.env.filters["mismatchfilter"] = self.mismatchfilter
         self.env.globals["TAX_RULES_UK_COMPANY"] = TAX_RULES_UK_COMPANY
-        self.env.globals["TEMPLATE_PATH"] = pkg_resources.resource_filename(__name__, "templates")
+        self.env.globals["TEMPLATE_PATH"] = pkg_resources.files(__package__).joinpath("templates")
 
         if args.audit_only:
             filename = self.get_output_filename(args.output_filename, self.AUDIT_FILENAME)
