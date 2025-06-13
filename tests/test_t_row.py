@@ -1,10 +1,12 @@
 from bittytax.config import config
 from bittytax.t_row import TransactionRow
 
+config.ccy = "GBP"
+config.config["local_timezone"] = "Europe/London"
+config.config["date_is_day_first"] = True
+
 
 def test_parse() -> None:
-    config.ccy = "GBP"
-
     t_row = TransactionRow(
         [
             "Withdrawal",
