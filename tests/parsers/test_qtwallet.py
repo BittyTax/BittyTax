@@ -6,10 +6,15 @@ import pytest
 from dateutil.tz import tzutc
 
 from bittytax.bt_types import TrType
+from bittytax.config import config
 from bittytax.conv.dataparser import DataParser
 from bittytax.conv.datarow import DataRow
 from bittytax.conv.exceptions import UnknownCryptoassetError
 from bittytax.conv.parsers.qtwallet import _get_amount, parse_qt_wallet
+
+config.ccy = "GBP"
+config.config["local_timezone"] = "Europe/London"
+config.config["date_is_day_first"] = True
 
 # Priority for identifying the asset symbol name
 # 1. Row, i.e. "0.00178181 BTC"
