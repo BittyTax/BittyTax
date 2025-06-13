@@ -64,6 +64,7 @@ ALT_ASSETS = {
     "XXMR": "XMR",
     "XXRP": "XRP",
     "XZEC": "ZEC",
+    "ZARS": "ARS",
     "ZAUD": "AUD",
     "ZCAD": "CAD",
     "ZEUR": "EUR",
