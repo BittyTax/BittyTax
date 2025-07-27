@@ -3,10 +3,10 @@
 
 import os
 import re
+import sys
 from decimal import Decimal
 from typing import Dict, List, Optional
 
-import pkg_resources
 from colorama import Fore
 from pypdf import PageObject, PdfReader, PdfWriter
 from pypdf.generic import NameObject, create_string_object
@@ -17,6 +17,11 @@ from .constants import WARNING
 from .report import ProgressSpinner
 from .tax import CapitalGainsReportTotal, TaxReportRecord
 from .tax_event import TaxEventCapitalGains
+
+if sys.version_info < (3, 9):
+    import importlib_resources as pkg_resources
+else:
+    import importlib.resources as pkg_resources
 
 
 class RowFieldNames(TypedDict):  # pylint: disable=too-few-public-methods
@@ -164,7 +169,7 @@ class OutputIrs:
     FILE_EXTENSION = "pdf"
     OUTPUT_FORMAT = "Form 8949"
 
-    IRS_FORMS_DIR = pkg_resources.resource_filename(__name__, "irs_forms")
+    IRS_FORMS_DIR = pkg_resources.files(__package__).joinpath("irs_forms")
     F8949_PDF: Dict[Year, str] = {
         Year(2018): f"{IRS_FORMS_DIR}/f8949--2018.pdf",
         Year(2019): f"{IRS_FORMS_DIR}/f8949--2019.pdf",
