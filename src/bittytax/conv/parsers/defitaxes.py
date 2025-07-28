@@ -153,7 +153,7 @@ def _parse_defi_taxes_row(
     if config.debug:
         for dr in tx_rows:
             if dr.t_record:
-                print(f"{Fore.CYAN}conv:    TR {dr.t_record}")
+                sys.stderr.write(f"{Fore.CYAN}conv:    TR {dr.t_record}\n")
 
 
 def _make_t_record(
