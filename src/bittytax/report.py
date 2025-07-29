@@ -857,5 +857,5 @@ class ProgressSpinner:
             sys.stderr.write("\r")
 
     def _disable(self) -> bool:
-        # Disable the spinner if it's not a terminal, or not using the Powershell GUI
+        # Disable the spinner if it's not a terminal, or not using the PowerShell GUI
         return bool(not sys.stdout.isatty() and config.terminal != TERMINAL_POWERSHELL_GUI)
