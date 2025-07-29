@@ -3,6 +3,7 @@
 # (c) Nano Nano Ltd 2019
 
 import argparse
+import builtins
 import io
 import os
 import platform
@@ -16,7 +17,7 @@ from .audit import AuditRecords
 from .audit_excel import AuditLogExcel
 from .bt_types import TAX_RULES_UK_COMPANY, AssetSymbol, DisposalType, TaxRules, Year
 from .config import config
-from .constants import ERROR, WARNING
+from .constants import ERROR, TERMINAL_POWERSHELL_GUI, WARNING
 from .exceptions import ImportFailureError
 from .export_records import ExportRecords
 from .holdings import Holdings
@@ -28,6 +29,7 @@ from .t_record import TransactionRecord
 from .tax import CalculateCapitalGains as CCG
 from .tax import TaxCalculator
 from .transactions import TransactionHistory
+from .utils import bt_print
 from .version import __version__
 
 if sys.stdout.encoding != "UTF-8":
@@ -35,7 +37,12 @@ if sys.stdout.encoding != "UTF-8":
 
 
 def main() -> None:
-    colorama.init()
+    if config.terminal == TERMINAL_POWERSHELL_GUI:
+        colorama.init(strip=False)
+        builtins.print = bt_print  # type: ignore[assignment]
+    else:
+        colorama.init()
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "filename",

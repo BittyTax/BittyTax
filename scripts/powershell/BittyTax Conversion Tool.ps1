@@ -123,6 +123,24 @@ function Show-SuccessMessageBox {
     return $form.Tag
 }
 
+function Search-Success {
+    param (
+        [string]$line
+    )
+
+    $patterns = @(
+        "^output EXCEL file created: (.+)$",
+        "^output CSV file created: (.+)$"
+    )
+
+    foreach ($pattern in $patterns) {
+        if ($line -match $pattern) {
+            return @{ Success = $true; Filename = $matches[1].Trim() }
+        }
+    }
+    return @{ Success = $false; Filename = $null }
+}
+
 function BittyTaxConversionTool {
     $host.UI.RawUI.WindowTitle = 'BittyTax Conversion Tool'
 
@@ -164,16 +182,20 @@ function BittyTaxConversionTool {
     # Ensure output is recognised as UTF-8
     [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+    $env:BITTYTAX_TERMINAL = 'POWERSHELL_GUI'
     Invoke-Expression $command | Tee-Object -Variable output
+
+    # Remove ANSI colour codes
+    $output = $output | ForEach-Object { $_ -replace "\x1b\[\d+(;\d+)*m", "" }
 
     # Check for success message in the command output
     $success = $false
     $outputFilePath = ""
     foreach ($line in $output) {
-        if ($line -match "output EXCEL file created: (.+)") {
+        $result = Search-Success -line $line
+        if ($result.Success) {
             $success = $true
-            $outputFilePath = $matches[1]
-            break
+            $outputFilePath = $result.Filename
         }
     }
     

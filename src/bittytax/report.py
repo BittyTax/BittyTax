@@ -19,7 +19,7 @@ from xhtml2pdf import pisa
 from .audit import AuditRecords, AuditTotals
 from .bt_types import TAX_RULES_UK_COMPANY, AssetName, AssetSymbol, Date, Note, TaxRules, Year
 from .config import config
-from .constants import _H1, ERROR, H1
+from .constants import _H1, ERROR, H1, TERMINAL_POWERSHELL_GUI
 from .price.valueasset import VaPriceReport
 from .tax import (
     CalculateCapitalGains,
@@ -116,7 +116,9 @@ class ReportPdf:
                 status = pisa.CreatePDF(html, dest=pdf_file)
 
         if not status.err:
-            print(f"{Fore.WHITE}PDF report created: {Fore.YELLOW}{os.path.abspath(filename)}")
+            sys.stdout.write(
+                f"{Fore.WHITE}PDF report created: {Fore.YELLOW}{os.path.abspath(filename)}\n"
+            )
         else:
             print(f"{ERROR} Failed to create PDF report")
 
@@ -722,17 +724,17 @@ class ProgressSpinner:
 
     def do_spinner(self) -> None:
         while self.busy:
-            sys.stdout.write(next(self.spinner))
-            sys.stdout.flush()
+            sys.stderr.write(next(self.spinner))
+            sys.stderr.flush()
             time.sleep(0.1)
             if self.busy:
-                sys.stdout.write("\b")
-                sys.stdout.flush()
+                sys.stderr.write("\b")
+                sys.stderr.flush()
 
     def __enter__(self) -> None:
-        if sys.stdout.isatty():
+        if not self._disable():
             self.busy = True
-            sys.stdout.write(self.message)
+            sys.stderr.write(self.message)
             threading.Thread(target=self.do_spinner).start()
 
     def __exit__(
@@ -741,6 +743,10 @@ class ProgressSpinner:
         exc_val: Optional[BaseException],
         exc_traceback: Optional[TracebackType],
     ) -> None:
-        if sys.stdout.isatty():
+        if not self._disable():
             self.busy = False
-            sys.stdout.write("\r")
+            sys.stderr.write("\r")
+
+    def _disable(self) -> bool:
+        # Disable the spinner if it's not a terminal, or not using the Powershell GUI
+        return bool(not sys.stdout.isatty() and config.terminal != TERMINAL_POWERSHELL_GUI)

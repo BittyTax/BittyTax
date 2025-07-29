@@ -4,6 +4,7 @@
 import os
 import platform
 import re
+import sys
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
@@ -166,7 +167,10 @@ class AuditLogExcel:  # pylint: disable=too-few-public-methods, too-many-instanc
 
             self.workbook.close()
 
-        print(f"{Fore.WHITE}EXCEL audit log created: {Fore.YELLOW}{os.path.abspath(self.filename)}")
+        sys.stdout.write(
+            f"{Fore.WHITE}EXCEL audit log created: "
+            f"{Fore.YELLOW}{os.path.abspath(self.filename)}\n"
+        )
 
 
 class Worksheet:

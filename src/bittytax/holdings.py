@@ -4,11 +4,11 @@
 from decimal import Decimal
 
 from colorama import Fore
-from tqdm import tqdm
 
 from .bt_types import AssetSymbol
 from .config import config
 from .constants import WARNING
+from .utils import bt_tqdm_write
 
 
 class Holdings:
@@ -61,7 +61,7 @@ class Holdings:
 
     def check_transfer_mismatch(self) -> None:
         if self.withdrawals > 0 and self.withdrawals != self.deposits:
-            tqdm.write(
+            bt_tqdm_write(
                 f"{WARNING} Disposal detected between a Withdrawal and a Deposit "
                 f"({self.withdrawals}:{self.deposits}) for {self.asset}, cost basis will be wrong"
             )

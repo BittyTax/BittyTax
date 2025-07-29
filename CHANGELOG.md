@@ -178,6 +178,7 @@
 - Accounting tool: tax rates and allowance for 2025/26.
 - Accounting tool: new transaction type Margin-Fee-Rebate added. ([#415](https://github.com/BittyTax/BittyTax/issues/415))
 - Nexo parser: added "Transfer From Pro Wallet" type. ([#442](https://github.com/BittyTax/BittyTax/issues/442))
+- Accounting tool/Conversion tool: added BITTYTAX_TERMINAL environment variable.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))

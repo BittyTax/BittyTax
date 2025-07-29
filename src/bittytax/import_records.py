@@ -3,7 +3,6 @@
 
 import csv
 import re
-import sys
 import warnings
 from typing import List, Optional, TextIO
 
@@ -17,6 +16,7 @@ from .constants import ERROR, FONT_COLOR_TX_DEST, FONT_COLOR_TX_HASH, FONT_COLOR
 from .exceptions import TransactionParserError
 from .t_record import TransactionRecord
 from .t_row import TransactionRow, TxRaw
+from .utils import bt_tqdm_write, disable_tqdm
 
 
 class ImportRecords:
@@ -60,7 +60,7 @@ class ImportRecords:
                     total=worksheet.max_row,
                     unit=" row",
                     desc=f"{Fore.CYAN}importing '{worksheet.title}' rows{Fore.GREEN}",
-                    disable=bool(config.debug or not sys.stdout.isatty()),
+                    disable=disable_tqdm(),
                 )
             ):
                 if row_num == 0:
@@ -81,10 +81,10 @@ class ImportRecords:
                     t_row.tx_raw = self.get_tx_raw_xlsx(worksheet_row)
 
                 if config.debug or t_row.failure:
-                    tqdm.write(f"{Fore.YELLOW}import: {t_row}")
+                    bt_tqdm_write(f"{Fore.YELLOW}import: {t_row}")
 
                 if t_row.failure:
-                    tqdm.write(f"{ERROR} {t_row.failure}")
+                    bt_tqdm_write(f"{ERROR} {t_row.failure}")
 
                 self.t_rows.append(t_row)
                 self.update_cnts(t_row)
@@ -109,7 +109,7 @@ class ImportRecords:
                 worksheet.nrows,
                 unit=" row",
                 desc=f"{Fore.CYAN}importing '{worksheet.name}' rows{Fore.GREEN}",
-                disable=bool(config.debug or not sys.stdout.isatty()),
+                disable=disable_tqdm(),
             ):
                 if row_num == 0:
                     # Skip headers
@@ -130,10 +130,10 @@ class ImportRecords:
                     t_row.failure = e
 
                 if config.debug or t_row.failure:
-                    tqdm.write(f"{Fore.YELLOW}import: {t_row}")
+                    bt_tqdm_write(f"{Fore.YELLOW}import: {t_row}")
 
                 if t_row.failure:
-                    tqdm.write(f"{ERROR} {t_row.failure}")
+                    bt_tqdm_write(f"{ERROR} {t_row.failure}")
 
                 self.t_rows.append(t_row)
                 self.update_cnts(t_row)
@@ -203,7 +203,7 @@ class ImportRecords:
             reader,
             unit=" row",
             desc=f"{Fore.CYAN}importing{Fore.GREEN}",
-            disable=bool(config.debug or not sys.stdout.isatty()),
+            disable=disable_tqdm(),
         ):
             if reader.line_num == 1:
                 # Skip headers
@@ -216,10 +216,10 @@ class ImportRecords:
                 t_row.failure = e
 
             if config.debug or t_row.failure:
-                tqdm.write(f"{Fore.YELLOW}import: {t_row}")
+                bt_tqdm_write(f"{Fore.YELLOW}import: {t_row}")
 
             if t_row.failure:
-                tqdm.write(f"{ERROR} {t_row.failure}")
+                bt_tqdm_write(f"{ERROR} {t_row.failure}")
 
             self.t_rows.append(t_row)
             self.update_cnts(t_row)

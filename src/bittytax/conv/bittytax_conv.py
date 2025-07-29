@@ -14,7 +14,12 @@ import colorama
 from colorama import Fore
 
 from ..config import config
-from ..constants import CONV_FORMAT_CSV, CONV_FORMAT_EXCEL, CONV_FORMAT_RECAP
+from ..constants import (
+    CONV_FORMAT_CSV,
+    CONV_FORMAT_EXCEL,
+    CONV_FORMAT_RECAP,
+    TERMINAL_POWERSHELL_GUI,
+)
 from ..version import __version__
 from .datafile import DataFile
 from .datamerge import DataMerge
@@ -36,7 +41,11 @@ if sys.stderr.encoding != "UTF-8":
 
 
 def main() -> None:
-    colorama.init()
+    if config.terminal == TERMINAL_POWERSHELL_GUI:
+        colorama.init(strip=False)
+    else:
+        colorama.init()
+
     parser = argparse.ArgumentParser(
         epilog=f"supported data file formats:\n{DataParser.format_parsers()}",
         formatter_class=argparse.RawDescriptionHelpFormatter,
