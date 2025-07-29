@@ -226,16 +226,19 @@ class OutputIrs:
                     with open(filename, "wb") as output_stream:
                         self.writer.write(output_stream)
 
-            print(
-                f"{Fore.WHITE}{self.OUTPUT_FORMAT} for {tax_year} created: {Fore.YELLOW}{filename}"
+            sys.stdout.write(
+                f"{Fore.WHITE}{self.OUTPUT_FORMAT} for {tax_year} created: "
+                f"{Fore.YELLOW}{filename}\n"
             )
 
     def _get_name_ssn(self) -> None:
         if not self.name:
-            self.name = input("Enter Name: ")
+            print("Enter Name: ", end="")
+            self.name = input()
 
         if not self.ssn:
-            self.ssn = input("Enter SSN or TIN: ")
+            print("Enter SSN or TIN: ", end="")
+            self.ssn = input()
 
     def _make_f8949_pdf(self, tax_year: Year) -> None:
         self.reader = PdfReader(self.F8949_PDF[tax_year])

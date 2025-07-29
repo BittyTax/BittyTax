@@ -125,12 +125,20 @@ function Search-Success {
     param (
         [string]$line
     )
-    
-    $resultSuccessList = @("PDF report created: ", "EXCEL report created: ", "export file created: ")
-    foreach ($resultSuccess in $resultSuccessList) {
-        if ($line.StartsWith($resultSuccess)) {
-            $filename = $line.Substring($resultSuccess.Length).Trim()
-            return @{ Success = $true; Filename = $filename }
+
+    $patterns = @(
+        "^PDF report created: (.+)$",
+        "^EXCEL report created: (.+)$",
+        "^Form 8949 for \d{4} created: (.+)$",
+        "^TurboTax CSV file created: (.+)$",
+        "^TurboTax TXF file created: (.+)$",
+        "^TaxAct file created: (.+)$",
+        "^export file created: (.+)$"
+    )
+
+    foreach ($pattern in $patterns) {
+        if ($line -match $pattern) {
+            return @{ Success = $true; Filename = $matches[1].Trim() }
         }
     }
     return @{ Success = $false; Filename = $null }
@@ -177,6 +185,7 @@ function BittyTaxAccountingTool {
     # Ensure output is recognised as UTF-8
     [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+    $env:BITTYTAX_TERMINAL = 'POWERSHELL_GUI'
     Invoke-Expression $command | Tee-Object -Variable output
 
     # Remove ANSI colour codes
@@ -190,7 +199,6 @@ function BittyTaxAccountingTool {
         if ($result.Success) {
             $success = $true
             $outputFilePath = $result.Filename
-            break
         }
     }
 

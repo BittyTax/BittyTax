@@ -3,6 +3,7 @@
 # (c) Nano Nano Ltd 2019
 
 import argparse
+import builtins
 import io
 import os
 import platform
@@ -31,6 +32,7 @@ from .constants import (
     ACCT_FORMAT_TURBOTAX_CSV,
     ACCT_FORMAT_TURBOTAX_TXF,
     ERROR,
+    TERMINAL_POWERSHELL_GUI,
     WARNING,
 )
 from .exceptions import ImportFailureError
@@ -48,6 +50,7 @@ from .t_record import TransactionRecord
 from .tax import CalculateCapitalGains as CCG
 from .tax import TaxCalculator
 from .transactions import TransactionHistory
+from .utils import bt_print
 from .version import __version__
 
 if sys.stdout.encoding != "UTF-8":
@@ -55,7 +58,12 @@ if sys.stdout.encoding != "UTF-8":
 
 
 def main() -> None:
-    colorama.init()
+    if config.terminal == TERMINAL_POWERSHELL_GUI:
+        colorama.init(strip=False)
+        builtins.print = bt_print  # type: ignore[assignment]
+    else:
+        colorama.init()
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "filename",
@@ -206,7 +214,8 @@ def main() -> None:
             if not args.skip_integrity:
                 int_passed = _do_integrity_check(audit, tax.holdings)
                 if not int_passed:
-                    if input(f"{Fore.RESET}Do you want to continue? [y/N] ") != "y":
+                    print(f"{Fore.RESET}Do you want to continue? [y/N] ", end="")
+                    if input() != "y":
                         parser.exit()
 
             _do_each_tax_year(tax, args.tax_year, args.summary_only, value_asset)

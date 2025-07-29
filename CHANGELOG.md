@@ -186,6 +186,7 @@
 - Nexo parser: added handling for "Transfer to Nexo User" and "Earn Interest Adjustment" in Details.
 - KuCoin parser: added "Fiat Deposits", "Third-Party Payment", "Fast Trade Orders" files.
 - Accounting tool: new transaction type Margin-Fee-Rebate added.
+- Accounting tool/Conversion tool: added BITTYTAX_TERMINAL environment variable.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))

@@ -134,7 +134,7 @@ class OutputCsv(OutputBase):
                 writer = csv.writer(csv_file, lineterminator="\n")
                 self.write_rows(writer)
 
-            sys.stderr.write(
+            sys.stdout.write(
                 f"{Fore.WHITE}output CSV file created: "
                 f"{Fore.YELLOW}{os.path.abspath(self.filename)}\n"
             )

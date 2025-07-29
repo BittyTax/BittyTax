@@ -3,6 +3,7 @@
 
 import datetime
 import os
+import sys
 from typing import Dict, TextIO
 
 from colorama import Fore
@@ -58,7 +59,9 @@ class OutputTurboTaxTxf:  # pylint: disable=too-few-public-methods
                         for te in self.tax_report[tax_year]["CapitalGains"].long_term[asset]:
                             self._write_data_record(txt_file, te, self.TAX_REF_LONG_TERM)
 
-            print(f"{Fore.WHITE}{self.OUTPUT_FORMAT} file created: {Fore.YELLOW}{self.filename}")
+            sys.stdout.write(
+                f"{Fore.WHITE}{self.OUTPUT_FORMAT} file created: {Fore.YELLOW}{self.filename}\n"
+            )
 
     def _write_header_record(self, txt_file: TextIO) -> None:
         txt_file.write(f"V{self.TXF_VERSION}\n")

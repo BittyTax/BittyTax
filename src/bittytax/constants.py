@@ -13,6 +13,8 @@ PROJECT_URL = "https://github.com/BittyTax/BittyTax"
 BITTYTAX_PATH = os.path.expanduser("~/.bittytax")
 CACHE_DIR = os.path.join(BITTYTAX_PATH, "cache")
 
+TERMINAL_POWERSHELL_GUI = "POWERSHELL_GUI"
+
 CONV_FORMAT_CSV = "CSV"
 CONV_FORMAT_EXCEL = "EXCEL"
 CONV_FORMAT_RECAP = "RECAP"

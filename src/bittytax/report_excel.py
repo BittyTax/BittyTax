@@ -4,6 +4,7 @@
 import argparse
 import os
 import platform
+import sys
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import Enum
@@ -157,7 +158,9 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
                 )
             self.workbook.close()
 
-        print(f"{Fore.WHITE}EXCEL report created: {Fore.YELLOW}{os.path.abspath(filename)}")
+        sys.stdout.write(
+            f"{Fore.WHITE}EXCEL report created: {Fore.YELLOW}{os.path.abspath(filename)}\n"
+        )
 
     def _create_workbook(self, filename: str) -> xlsxwriter.Workbook:
         workbook = xlsxwriter.Workbook(filename, {"remove_timezone": True})

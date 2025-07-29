@@ -3,6 +3,7 @@
 
 import csv
 import os
+import sys
 from abc import ABC, abstractmethod
 from typing import Dict, List
 
@@ -63,7 +64,9 @@ class OutputCapitalGainsCsv(ABC):
                 writer = csv.writer(csv_file, lineterminator="\n")
                 self._write_rows(writer)
 
-            print(f"{Fore.WHITE}{self.output_format} file created: {Fore.YELLOW}{self.filename}")
+            sys.stdout.write(
+                f"{Fore.WHITE}{self.output_format} file created: {Fore.YELLOW}{self.filename}\n"
+            )
 
     def _write_rows(self, writer: "_csv._writer") -> None:
         writer.writerow(self.header)

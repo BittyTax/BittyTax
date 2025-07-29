@@ -7,7 +7,6 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Dict, Optional, Tuple, Union
 
 from colorama import Fore, Style
-from tqdm import tqdm
 
 from ..bt_types import (
     AssetName,
@@ -21,6 +20,7 @@ from ..bt_types import (
 )
 from ..config import config
 from ..constants import WARNING
+from ..utils import bt_tqdm_write
 from .pricedata import PriceData
 
 if TYPE_CHECKING:
@@ -71,7 +71,7 @@ class ValueAsset:
                 )
             return value, ValueOrigin(t, price_record)
 
-        tqdm.write(
+        bt_tqdm_write(
             f"{WARNING} Price for {t.asset} on {t.timestamp:%Y-%m-%d} is not available, "
             f"using price of {config.sym()}{0:0,.2f}"
         )
@@ -92,7 +92,7 @@ class ValueAsset:
         asset_price_ccy = None
 
         if not self.price_tool and timestamp.date() >= datetime.now().date():
-            tqdm.write(
+            bt_tqdm_write(
                 f"{WARNING} Price for {asset} on {timestamp:%Y-%m-%d}, "
                 f"no historic price available, using latest price"
             )
