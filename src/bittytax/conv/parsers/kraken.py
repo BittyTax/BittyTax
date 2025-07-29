@@ -34,6 +34,7 @@ QUOTE_ASSETS = [
     "POL",
     "PYUSD",
     "RLUSD",
+    "SOL",
     "USD",
     "USDC",
     "USDD",
@@ -90,6 +91,8 @@ STAKED_SUFFIX = [
 TRADINGPAIR_TO_QUOTE_ASSET = {
     "AI16ZEUR": "EUR",
     "AI16ZUSD": "USD",
+    "AIOZEUR": "EUR",
+    "AIOZUSD": "USD",
     "BLZEUR": "EUR",
     "BLZUSD": "USD",
     "CHZEUR": "EUR",
