@@ -30,6 +30,7 @@ lookups
 nano
 openpyxl
 parsers
+powershell
 rebase
 repr
 snowtrace

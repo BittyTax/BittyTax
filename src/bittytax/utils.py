@@ -8,7 +8,7 @@ from .constants import TERMINAL_POWERSHELL_GUI
 
 
 def disable_tqdm() -> bool:
-    # Disable progress bar if debug is on, or it's not a terminal, or not using the Powershell GUI
+    # Disable progress bar if debug is on, or it's not a terminal, or not using the PowerShell GUI
     return bool(
         config.debug or not sys.stdout.isatty() and config.terminal != TERMINAL_POWERSHELL_GUI
     )
