@@ -63,13 +63,14 @@ def test_parser() -> None:
         1,
         row_deposit,
         parser.in_header,
+        "Qt Wallet",
     )
 
     parse_qt_wallet([data_row], parser, unconfirmed=False, cryptoasset="")
 
     assert (
         str(data_row.t_record)
-        == "Deposit 0.00178181 BTC 'Qt Wallet (BTC)' 2019-01-03T16:40:36 UTC 'Referral'"
+        == "Deposit 0.00178181 BTC 'Qt Wallet' 2019-01-03T16:40:36 UTC 'Referral'"
     )
 
     assert str(data_row.timestamp) == "2019-01-03 16:40:36+00:00"
@@ -87,7 +88,7 @@ def test_parser() -> None:
     assert data_row.t_record.fee_quantity is None
     assert data_row.t_record.fee_asset == ""
     assert data_row.t_record.fee_value is None
-    assert data_row.t_record.wallet == "Qt Wallet (BTC)"
+    assert data_row.t_record.wallet == "Qt Wallet"
     assert data_row.t_record.note == "Referral"
 
 
@@ -98,11 +99,7 @@ def test_parse_qt_wallet_header_contains_symbol() -> None:
     assert parser.all_handler is parse_qt_wallet
     assert parser.args[0].group(2) == "LTC"
 
-    data_row = DataRow(
-        1,
-        row_deposit,
-        parser.in_header,
-    )
+    data_row = DataRow(1, row_deposit, parser.in_header, "Qt Wallet")
 
     parse_qt_wallet(
         [data_row], parser, unconfirmed=False, cryptoasset="FTC", filename="qtwallet.csv"
@@ -110,7 +107,7 @@ def test_parse_qt_wallet_header_contains_symbol() -> None:
 
     assert (
         str(data_row.t_record)
-        == "Deposit 0.00178181 LTC 'Qt Wallet (LTC)' 2019-01-03T16:40:36 UTC 'Referral'"
+        == "Deposit 0.00178181 LTC 'Qt Wallet' 2019-01-03T16:40:36 UTC 'Referral'"
     )
 
 
@@ -121,11 +118,7 @@ def test_parse_qt_wallet_row_contains_symbol() -> None:
     assert parser.all_handler is parse_qt_wallet
     assert parser.args[0].group(2) == "LTC"
 
-    data_row = DataRow(
-        1,
-        row_deposit_with_symbol,
-        parser.in_header,
-    )
+    data_row = DataRow(1, row_deposit_with_symbol, parser.in_header, "Qt Wallet")
 
     parse_qt_wallet(
         [data_row], parser, unconfirmed=False, cryptoasset="FTC", filename="qtwallet.csv"
@@ -133,7 +126,7 @@ def test_parse_qt_wallet_row_contains_symbol() -> None:
 
     assert (
         str(data_row.t_record)
-        == "Deposit 0.00178181 WDC 'Qt Wallet (WDC)' 2019-01-03T16:40:36 UTC 'Referral'"
+        == "Deposit 0.00178181 WDC 'Qt Wallet' 2019-01-03T16:40:36 UTC 'Referral'"
     )
 
 
@@ -144,11 +137,7 @@ def test_parse_qt_wallet_header_no_symbol_no_input(monkeypatch: pytest.MonkeyPat
     assert parser.all_handler is parse_qt_wallet
     assert not parser.args
 
-    data_row = DataRow(
-        1,
-        row_deposit,
-        parser.in_header,
-    )
+    data_row = DataRow(1, row_deposit, parser.in_header, "Qt Wallet")
 
     monkeypatch.setattr("sys.stdin", io.StringIO("\n"))
 
@@ -165,11 +154,7 @@ def test_parse_qt_wallet_header_no_symbol_symbol_input(monkeypatch: pytest.Monke
     assert parser.all_handler is parse_qt_wallet
     assert not parser.args
 
-    data_row = DataRow(
-        1,
-        row_deposit,
-        parser.in_header,
-    )
+    data_row = DataRow(1, row_deposit, parser.in_header, "Qt Wallet")
 
     monkeypatch.setattr("sys.stdin", io.StringIO("DOGE\n"))
 
@@ -177,7 +162,7 @@ def test_parse_qt_wallet_header_no_symbol_symbol_input(monkeypatch: pytest.Monke
 
     assert (
         str(data_row.t_record)
-        == "Deposit 0.00178181 DOGE 'Qt Wallet (DOGE)' 2019-01-03T16:40:36 UTC 'Referral'"
+        == "Deposit 0.00178181 DOGE 'Qt Wallet' 2019-01-03T16:40:36 UTC 'Referral'"
     )
 
 
@@ -188,11 +173,7 @@ def test_parse_qt_wallet_header_no_symbol_crytoasset_specified() -> None:
     assert parser.all_handler is parse_qt_wallet
     assert not parser.args
 
-    data_row = DataRow(
-        1,
-        row_deposit,
-        parser.in_header,
-    )
+    data_row = DataRow(1, row_deposit, parser.in_header, "Qt Wallet")
 
     parse_qt_wallet(
         [data_row], parser, unconfirmed=False, cryptoasset="FTC", filename="qtwallet.csv"
@@ -200,7 +181,7 @@ def test_parse_qt_wallet_header_no_symbol_crytoasset_specified() -> None:
 
     assert (
         str(data_row.t_record)
-        == "Deposit 0.00178181 FTC 'Qt Wallet (FTC)' 2019-01-03T16:40:36 UTC 'Referral'"
+        == "Deposit 0.00178181 FTC 'Qt Wallet' 2019-01-03T16:40:36 UTC 'Referral'"
     )
 
 
