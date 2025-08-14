@@ -27,7 +27,7 @@ config.config["local_timezone"] = "America/New_York"
 config.config["date_is_day_first"] = True
 config.config["cost_basis_zero_if_missing"] = True
 
-# Remove all datasources since no price looks are required
+# Remove all data sources since no price looks are required
 config.config["data_source_fiat"] = []
 config.config["data_source_crypto"] = []
 config.config["data_source_select"] = {}
