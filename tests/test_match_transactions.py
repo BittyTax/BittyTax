@@ -1,6 +1,6 @@
 import copy
 from decimal import Decimal
-from typing import List, Optional, Union, cast
+from typing import List, Optional, Tuple, Union, cast
 
 from bittytax.bt_types import (
     AssetSymbol,
@@ -11,7 +11,6 @@ from bittytax.bt_types import (
     Timestamp,
     TrType,
     Wallet,
-    Year,
 )
 from bittytax.config import config
 from bittytax.price.valueasset import ValueAsset
@@ -127,6 +126,29 @@ def make_buy(
     return buy
 
 
+def do_match(
+    transactions: List[Union[Buy, Sell]], tax_rules: TaxRules
+) -> Tuple[TaxCalculator, List[TaxEventCapitalGains]]:
+    tax = TaxCalculator(transactions, tax_rules)
+    tax.order_transactions()
+    if tax_rules is TaxRules.US_INDIVIDUAL_FIFO:
+        tax.match_transactions(CostBasisMethod.FIFO)
+    elif tax_rules is TaxRules.US_INDIVIDUAL_LIFO:
+        tax.match_transactions(CostBasisMethod.LIFO)
+    elif tax_rules is TaxRules.US_INDIVIDUAL_HIFO:
+        tax.match_transactions(CostBasisMethod.HIFO)
+    elif tax_rules is TaxRules.US_INDIVIDUAL_LOFO:
+        tax.match_transactions(CostBasisMethod.LOFO)
+    else:
+        raise RuntimeError(f"Unexpected tax_rules: {tax_rules}")
+
+    tax_events = []
+    for _, events in tax.tax_events.items():
+        tax_events.extend(cast(List[TaxEventCapitalGains], events))
+
+    return tax, tax_events
+
+
 def test_fifo_1() -> None:
     tr_buy1 = add_buy(1, "BTC", 18000, "Main", "2023-02-27 12:00:00")
     tr_buy2 = add_buy(1, "BTC", 50000, "Main", "2024-01-01 12:00:00")
@@ -150,34 +172,27 @@ def test_fifo_1() -> None:
     assert buy3
     assert buy4
 
-    tax_calc = TaxCalculator(transactions, TaxRules.US_INDIVIDUAL_FIFO)
-    tax_calc.order_transactions()
-    tax_calc.match_transactions(CostBasisMethod.FIFO)
-    [tax_event_1, tax_event_2] = cast(
-        List[TaxEventCapitalGains], tax_calc.tax_events[Year(sell1.timestamp.year)]
-    )
-    [tax_event_3] = cast(
-        List[TaxEventCapitalGains], tax_calc.tax_events[Year(sell2.timestamp.year)]
-    )
+    tax, tax_events = do_match(transactions, TaxRules.US_INDIVIDUAL_FIFO)
 
-    assert tax_event_1.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_1.cost == 18000
-    assert tax_event_1.proceeds == 50000
-    assert str(tax_event_1.sell) == str(sell1)
+    assert len(tax_events) == 3
+    assert tax_events[0].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[0].cost == 18000
+    assert tax_events[0].proceeds == 50000
+    assert str(tax_events[0].sell) == str(sell1)
     z_buy1 = make_buy(1.5, "BTC", 0, "", sell1.timestamp)
-    assert [str(b) for b in tax_event_1.buys] == [str(buy1), str(z_buy1)]
+    assert [str(b) for b in tax_events[0].buys] == [str(buy1), str(z_buy1)]
 
-    assert tax_event_2.disposal_type is DisposalType.LONG_TERM
-    assert tax_event_2.cost == 18000
-    assert tax_event_2.proceeds == 20000
-    assert str(tax_event_2.sell) == str(sell1)
-    assert [str(b) for b in tax_event_2.buys] == [str(buy4)]
+    assert tax_events[1].disposal_type is DisposalType.LONG_TERM
+    assert tax_events[1].cost == 18000
+    assert tax_events[1].proceeds == 20000
+    assert str(tax_events[1].sell) == str(sell1)
+    assert [str(b) for b in tax_events[1].buys] == [str(buy4)]
 
-    assert tax_event_3.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_3.cost == 50000
-    assert tax_event_3.proceeds == 70000
-    assert str(tax_event_3.sell) == str(sell2)
-    assert [str(b) for b in tax_event_3.buys] == [str(buy2)]
+    assert tax_events[2].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[2].cost == 50000
+    assert tax_events[2].proceeds == 70000
+    assert str(tax_events[2].sell) == str(sell2)
+    assert [str(b) for b in tax_events[2].buys] == [str(buy2)]
 
     assert tr_buy1.buy and tr_buy1.buy.matched is True
     assert tr_buy2.buy and tr_buy2.buy.matched is True
@@ -186,7 +201,7 @@ def test_fifo_1() -> None:
     assert tr_buy3.buy and tr_buy3.buy.matched is False
     assert tr_buy4.buy and tr_buy4.buy.matched is True
 
-    assert [str(b) for b in tax_calc.buy_queue[AssetSymbol("BTC")].buys] == [
+    assert [str(b) for b in tax.buy_queue[AssetSymbol("BTC")].buys] == [
         str(buy4),
         str(buy1),
         str(buy2),
@@ -218,36 +233,29 @@ def test_fifo_2() -> None:
     assert buy3
     assert buy4
 
-    tax_calc = TaxCalculator(transactions, TaxRules.US_INDIVIDUAL_FIFO)
-    tax_calc.order_transactions()
-    tax_calc.match_transactions(CostBasisMethod.FIFO)
-    [tax_event_1, tax_event_2] = cast(
-        List[TaxEventCapitalGains], tax_calc.tax_events[Year(sell1.timestamp.year)]
-    )
-    [tax_event_3] = cast(
-        List[TaxEventCapitalGains], tax_calc.tax_events[Year(sell2.timestamp.year)]
-    )
+    tax, tax_events = do_match(transactions, TaxRules.US_INDIVIDUAL_FIFO)
 
-    assert tax_event_1.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_1.cost == 18000
-    assert tax_event_1.proceeds == 50000
-    assert str(tax_event_1.sell) == str(sell1)
+    assert len(tax_events) == 3
+    assert tax_events[0].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[0].cost == 18000
+    assert tax_events[0].proceeds == 50000
+    assert str(tax_events[0].sell) == str(sell1)
     z_buy1 = make_buy(1.5, "BTC", 0, "", sell1.timestamp)
-    assert [str(b) for b in tax_event_1.buys] == [str(buy1), str(z_buy1)]
+    assert [str(b) for b in tax_events[0].buys] == [str(buy1), str(z_buy1)]
 
-    assert tax_event_2.disposal_type is DisposalType.LONG_TERM
-    assert tax_event_2.cost == 18000
-    assert tax_event_2.proceeds == 20000
-    assert str(tax_event_1.sell) == str(sell1)
-    assert [str(b) for b in tax_event_2.buys] == [str(buy4)]
+    assert tax_events[1].disposal_type is DisposalType.LONG_TERM
+    assert tax_events[1].cost == 18000
+    assert tax_events[1].proceeds == 20000
+    assert str(tax_events[1].sell) == str(sell1)
+    assert [str(b) for b in tax_events[1].buys] == [str(buy4)]
 
-    assert tax_event_3.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_3.cost == 50000
-    assert tax_event_3.proceeds == 70000
-    assert str(tax_event_3.sell) == str(sell2)
+    assert tax_events[2].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[2].cost == 50000
+    assert tax_events[2].proceeds == 70000
+    assert str(tax_events[2].sell) == str(sell2)
     s_buy2_1 = make_buy(1, "BTC", 50000, buy2.wallet, buy2.timestamp, tid=[4, 3])
     s_buy2_2 = make_buy(3, "BTC", 150000, buy2.wallet, buy2.timestamp, tid=[4, 4])
-    assert [str(b) for b in tax_event_3.buys] == [str(s_buy2_1)]
+    assert [str(b) for b in tax_events[2].buys] == [str(s_buy2_1)]
 
     assert tr_buy1.buy and tr_buy1.buy.matched is True
     assert tr_buy2.buy and tr_buy2.buy.matched is True
@@ -256,7 +264,7 @@ def test_fifo_2() -> None:
     assert tr_buy3.buy and tr_buy3.buy.matched is False
     assert tr_buy4.buy and tr_buy4.buy.matched is True
 
-    assert [str(b) for b in tax_calc.buy_queue[AssetSymbol("BTC")].buys] == [
+    assert [str(b) for b in tax.buy_queue[AssetSymbol("BTC")].buys] == [
         str(buy4),
         str(buy1),
         str(s_buy2_1),
@@ -289,41 +297,37 @@ def test_hifo_1() -> None:
     assert sell2
     assert sell3
 
-    tax_calc = TaxCalculator(transactions, TaxRules.US_INDIVIDUAL_HIFO)
-    tax_calc.order_transactions()
-    tax_calc.match_transactions(CostBasisMethod.FIFO)
-    [tax_event_1, tax_event_2, tax_event_3] = cast(
-        List[TaxEventCapitalGains], tax_calc.tax_events[Year(sell1.timestamp.year)]
-    )
+    tax, tax_events = do_match(transactions, TaxRules.US_INDIVIDUAL_HIFO)
 
-    assert tax_event_1.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_1.cost == 2500
-    assert tax_event_1.proceeds == 4000
-    assert str(tax_event_1.sell) == str(sell1)
+    assert len(tax_events) == 3
+    assert tax_events[0].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[0].cost == 8000
+    assert tax_events[0].proceeds == 4000
+    assert str(tax_events[0].sell) == str(sell1)
+    assert [str(b) for b in tax_events[0].buys] == [str(buy3)]
+
+    assert tax_events[1].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[1].cost == 2500
+    assert tax_events[1].proceeds == 6000
+    assert str(tax_events[1].sell) == str(sell2)
     s_buy1_1 = make_buy(1, "BTC", 2475, buy1.wallet, buy1.timestamp, fee=25, tid=[1, 4])
     s_buy1_2 = make_buy(1, "BTC", 2475, buy1.wallet, buy1.timestamp, fee=25, tid=[1, 5])
-    assert [str(b) for b in tax_event_1.buys] == [str(s_buy1_1)]
+    assert [str(b) for b in tax_events[1].buys] == [str(s_buy1_1)]
 
-    assert tax_event_2.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_2.cost == 2500
-    assert tax_event_2.proceeds == 6000
-    assert str(tax_event_2.sell) == str(sell2)
-    assert [str(b) for b in tax_event_2.buys] == [str(s_buy1_2)]
-
-    assert tax_event_3.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_3.cost == 2000
-    assert tax_event_3.proceeds == 2000
-    assert str(tax_event_3.sell) == str(sell3)
-    assert [str(b) for b in tax_event_3.buys] == [str(buy2)]
+    assert tax_events[2].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[2].cost == 2500
+    assert tax_events[2].proceeds == 2000
+    assert str(tax_events[2].sell) == str(sell3)
+    assert [str(b) for b in tax_events[2].buys] == [str(s_buy1_2)]
 
     assert tr_buy1.buy and tr_buy1.buy.matched is True
-    assert tr_buy2.buy and tr_buy2.buy.matched is True
-    assert tr_buy3.buy and tr_buy3.buy.matched is False
+    assert tr_buy2.buy and tr_buy2.buy.matched is False
+    assert tr_buy3.buy and tr_buy3.buy.matched is True
     assert tr_sell1.sell and tr_sell1.sell.matched is True
     assert tr_sell2.sell and tr_sell2.sell.matched is True
     assert tr_sell3.sell and tr_sell3.sell.matched is True
 
-    assert [str(b) for b in tax_calc.buy_queue[AssetSymbol("BTC")].buys] == [
+    assert [str(b) for b in tax.buy_queue[AssetSymbol("BTC")].buys] == [
         str(s_buy1_1),
         str(buy2),
         str(buy3),
@@ -354,41 +358,37 @@ def test_hifo_2() -> None:
     assert sell2
     assert sell3
 
-    tax_calc = TaxCalculator(transactions, TaxRules.US_INDIVIDUAL_HIFO)
-    tax_calc.order_transactions()
-    tax_calc.match_transactions(CostBasisMethod.FIFO)
-    [tax_event_1, tax_event_2, tax_event_3] = cast(
-        List[TaxEventCapitalGains], tax_calc.tax_events[Year(sell1.timestamp.year)]
-    )
+    tax, tax_events = do_match(transactions, TaxRules.US_INDIVIDUAL_HIFO)
 
-    assert tax_event_1.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_1.cost == 2500
-    assert tax_event_1.proceeds == 4000
-    assert str(tax_event_1.sell) == str(sell1)
+    assert len(tax_events) == 3
+    assert tax_events[0].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[0].cost == 8000
+    assert tax_events[0].proceeds == 4000
+    assert str(tax_events[0].sell) == str(sell1)
+    assert [str(b) for b in tax_events[0].buys] == [str(buy3)]
+
+    assert tax_events[1].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[1].cost == 2500
+    assert tax_events[1].proceeds == 6000
+    assert str(tax_events[1].sell) == str(sell2)
     s_buy1_1 = make_buy(1, "BTC", 2500, buy1.wallet, buy1.timestamp, tid=[1, 3])
     s_buy1_2 = make_buy(1, "BTC", 2500, buy1.wallet, buy1.timestamp, tid=[1, 4])
-    assert [str(b) for b in tax_event_1.buys] == [str(s_buy1_1)]
+    assert [str(b) for b in tax_events[1].buys] == [str(s_buy1_1)]
 
-    assert tax_event_2.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_2.cost == 2500
-    assert tax_event_2.proceeds == 6000
-    assert str(tax_event_2.sell) == str(sell2)
-    assert [str(b) for b in tax_event_2.buys] == [str(s_buy1_2)]
-
-    assert tax_event_3.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_3.cost == 2000
-    assert tax_event_3.proceeds == 2000
-    assert str(tax_event_3.sell) == str(sell3)
-    assert [str(b) for b in tax_event_3.buys] == [str(buy2)]
+    assert tax_events[2].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[2].cost == 2500
+    assert tax_events[2].proceeds == 2000
+    assert str(tax_events[2].sell) == str(sell3)
+    assert [str(b) for b in tax_events[2].buys] == [str(s_buy1_2)]
 
     assert tr_buy1.buy and tr_buy1.buy.matched is True
-    assert tr_buy2.buy and tr_buy2.buy.matched is True
-    assert tr_buy3.buy and tr_buy3.buy.matched is False
+    assert tr_buy2.buy and tr_buy2.buy.matched is False
+    assert tr_buy3.buy and tr_buy3.buy.matched is True
     assert tr_sell1.sell and tr_sell1.sell.matched is True
     assert tr_sell2.sell and tr_sell2.sell.matched is True
     assert tr_sell3.sell and tr_sell3.sell.matched is True
 
-    assert [str(b) for b in tax_calc.buy_queue[AssetSymbol("BTC")].buys] == [
+    assert [str(b) for b in tax.buy_queue[AssetSymbol("BTC")].buys] == [
         str(s_buy1_1),
         str(buy2),
         str(buy3),
@@ -396,7 +396,7 @@ def test_hifo_2() -> None:
     ]
 
 
-def test_hifo_3() -> None:
+def test_lifo_1() -> None:
     tr_buy1 = add_buy(2, "BTC", 4950, "Main", "2017-09-22 12:00:00", 50)
     tr_buy2 = add_buy(1, "BTC", 1990, "Main", "2018-01-06 12:00:00", 10)
     tr_buy3 = add_buy(1, "BTC", 7920, "Main", "2018-04-19 12:00:00", 80)
@@ -419,41 +419,37 @@ def test_hifo_3() -> None:
     assert sell2
     assert sell3
 
-    tax_calc = TaxCalculator(transactions, TaxRules.US_INDIVIDUAL_HIFO)
-    tax_calc.order_transactions()
-    tax_calc.match_transactions(CostBasisMethod.FIFO)
-    [tax_event_1, tax_event_2, tax_event_3] = cast(
-        List[TaxEventCapitalGains], tax_calc.tax_events[Year(sell1.timestamp.year)]
-    )
+    tax, tax_events = do_match(transactions, TaxRules.US_INDIVIDUAL_LIFO)
 
-    assert tax_event_1.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_1.cost == 2500
-    assert tax_event_1.proceeds == 4000
-    assert str(tax_event_1.sell) == str(sell1)
+    assert len(tax_events) == 3
+    assert tax_events[0].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[0].cost == 8000
+    assert tax_events[0].proceeds == 4000
+    assert str(tax_events[0].sell) == str(sell1)
+    assert [str(b) for b in tax_events[0].buys] == [str(buy3)]
+
+    assert tax_events[1].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[1].cost == 2000
+    assert tax_events[1].proceeds == 6000
+    assert str(tax_events[1].sell) == str(sell2)
+    assert [str(b) for b in tax_events[1].buys] == [str(buy2)]
+
+    assert tax_events[2].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[2].cost == 2500
+    assert tax_events[2].proceeds == 2000
     s_buy1_1 = make_buy(1, "BTC", 2475, buy1.wallet, buy1.timestamp, fee=25, tid=[1, 4])
     s_buy1_2 = make_buy(1, "BTC", 2475, buy1.wallet, buy1.timestamp, fee=25, tid=[1, 5])
-    assert [str(b) for b in tax_event_1.buys] == [str(s_buy1_1)]
-
-    assert tax_event_2.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_2.cost == 2500
-    assert tax_event_2.proceeds == 6000
-    assert str(tax_event_2.sell) == str(sell2)
-    assert [str(b) for b in tax_event_2.buys] == [str(s_buy1_2)]
-
-    assert tax_event_3.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_3.cost == 2000
-    assert tax_event_3.proceeds == 2000
-    assert str(tax_event_3.sell) == str(sell3)
-    assert [str(b) for b in tax_event_3.buys] == [str(buy2)]
+    assert str(tax_events[2].sell) == str(sell3)
+    assert [str(b) for b in tax_events[2].buys] == [str(s_buy1_1)]
 
     assert tr_buy1.buy and tr_buy1.buy.matched is True
     assert tr_buy2.buy and tr_buy2.buy.matched is True
-    assert tr_buy3.buy and tr_buy3.buy.matched is False
+    assert tr_buy3.buy and tr_buy3.buy.matched is True
     assert tr_sell1.sell and tr_sell1.sell.matched is True
     assert tr_sell2.sell and tr_sell2.sell.matched is True
     assert tr_sell3.sell and tr_sell3.sell.matched is True
 
-    assert [str(b) for b in tax_calc.buy_queue[AssetSymbol("BTC")].buys] == [
+    assert [str(b) for b in tax.buy_queue[AssetSymbol("BTC")].buys] == [
         str(s_buy1_1),
         str(buy2),
         str(buy3),
@@ -461,7 +457,7 @@ def test_hifo_3() -> None:
     ]
 
 
-def test_hifo_4() -> None:
+def test_lofo_1() -> None:
     tr_buy1 = add_buy(2, "BTC", 5000, "Main", "2017-09-22 12:00:00")
     tr_buy2 = add_buy(1, "BTC", 2000, "Main", "2018-01-06 12:00:00")
     tr_buy3 = add_buy(1, "BTC", 8000, "Main", "2018-04-19 12:00:00")
@@ -484,32 +480,28 @@ def test_hifo_4() -> None:
     assert sell2
     assert sell3
 
-    tax_calc = TaxCalculator(transactions, TaxRules.US_INDIVIDUAL_HIFO)
-    tax_calc.order_transactions()
-    tax_calc.match_transactions(CostBasisMethod.FIFO)
-    [tax_event_1, tax_event_2, tax_event_3] = cast(
-        List[TaxEventCapitalGains], tax_calc.tax_events[Year(sell1.timestamp.year)]
-    )
+    tax, tax_events = do_match(transactions, TaxRules.US_INDIVIDUAL_LOFO)
 
-    assert tax_event_1.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_1.cost == 2500
-    assert tax_event_1.proceeds == 4000
-    assert str(tax_event_1.sell) == str(sell1)
+    assert len(tax_events) == 3
+    assert tax_events[0].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[0].cost == 2000
+    assert tax_events[0].proceeds == 4000
+    assert str(tax_events[0].sell) == str(sell1)
+    assert [str(b) for b in tax_events[0].buys] == [str(buy2)]
+
+    assert tax_events[1].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[1].cost == 2500
+    assert tax_events[1].proceeds == 6000
+    assert str(tax_events[1].sell) == str(sell2)
     s_buy1_1 = make_buy(1, "BTC", 2500, buy1.wallet, buy1.timestamp, tid=[1, 3])
     s_buy1_2 = make_buy(1, "BTC", 2500, buy1.wallet, buy1.timestamp, tid=[1, 4])
-    assert [str(b) for b in tax_event_1.buys] == [str(s_buy1_1)]
+    assert [str(b) for b in tax_events[1].buys] == [str(s_buy1_1)]
 
-    assert tax_event_2.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_2.cost == 2500
-    assert tax_event_2.proceeds == 6000
-    assert str(tax_event_2.sell) == str(sell2)
-    assert [str(b) for b in tax_event_2.buys] == [str(s_buy1_2)]
-
-    assert tax_event_3.disposal_type is DisposalType.SHORT_TERM
-    assert tax_event_3.cost == 2000
-    assert tax_event_3.proceeds == 2000
-    assert str(tax_event_3.sell) == str(sell3)
-    assert [str(b) for b in tax_event_3.buys] == [str(buy2)]
+    assert tax_events[2].disposal_type is DisposalType.SHORT_TERM
+    assert tax_events[2].cost == 2500
+    assert tax_events[2].proceeds == 2000
+    assert str(tax_events[2].sell) == str(sell3)
+    assert [str(b) for b in tax_events[2].buys] == [str(s_buy1_2)]
 
     assert tr_buy1.buy and tr_buy1.buy.matched is True
     assert tr_buy2.buy and tr_buy2.buy.matched is True
@@ -518,7 +510,7 @@ def test_hifo_4() -> None:
     assert tr_sell2.sell and tr_sell2.sell.matched is True
     assert tr_sell3.sell and tr_sell3.sell.matched is True
 
-    assert [str(b) for b in tax_calc.buy_queue[AssetSymbol("BTC")].buys] == [
+    assert [str(b) for b in tax.buy_queue[AssetSymbol("BTC")].buys] == [
         str(s_buy1_1),
         str(buy2),
         str(buy3),
