@@ -34,6 +34,7 @@ QUOTE_ASSETS = [
     "SGD",
     "SOL",
     "USD",
+    "USDC",
     "USDT",
 ]
 
