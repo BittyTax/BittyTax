@@ -37,6 +37,7 @@ QUOTE_ASSETS = [
     "RLUSD",
     "SOL",
     "USD",
+    "USD1",
     "USDC",
     "USDD",
     "USDQ",
