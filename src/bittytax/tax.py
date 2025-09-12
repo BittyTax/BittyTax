@@ -377,7 +377,6 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 sell.t_record.buy.cost = short_term.cost + long_term.cost
                 if short_term.fee_value + long_term.fee_value:
                     sell.t_record.buy.fee_value = short_term.fee_value + long_term.fee_value
-                sell.t_record.buy.cost_origin = ValueOrigin(sell)
             else:
                 raise RuntimeError("Missing t_record.buy for SWAP")
 
