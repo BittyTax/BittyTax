@@ -31,7 +31,7 @@ from .bt_types import (
 from .config import config
 from .constants import COST_BASIS_ZERO_NOTE, WARNING
 from .holdings import Holdings
-from .price.valueasset import ValueAsset, ValueOrigin
+from .price.valueasset import ValueAsset
 from .tax_event import (
     TaxEvent,
     TaxEventCapitalGains,
