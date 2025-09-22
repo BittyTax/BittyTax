@@ -29,37 +29,40 @@ def parse_bitfinex_trades(
         row_dict["DATE"], dayfirst=config.date_is_day_first
     )
 
-    if row_dict["FEE CURRENCY"]:
-        fee_quantity = abs(Decimal(row_dict["FEE"]).quantize(PRECISION))
-    else:
-        fee_quantity = None
-
     if Decimal(row_dict["AMOUNT"]) > 0:
-        sell_quantity = Decimal(row_dict["PRICE"]) * Decimal(row_dict["AMOUNT"])
+        # Buy
+
+        buy_quantity = Decimal(row_dict["AMOUNT"])
+        buy_asset = row_dict["PAIR"].split("/")[0]
+
+        sell_quantity = (Decimal(row_dict["PRICE"]) * buy_quantity).quantize(PRECISION)
+        sell_asset = row_dict["PAIR"].split("/")[1]
 
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=Decimal(row_dict["AMOUNT"]),
-            buy_asset=row_dict["PAIR"].split("/")[0],
-            sell_quantity=sell_quantity.quantize(PRECISION),
-            sell_asset=row_dict["PAIR"].split("/")[1],
-            fee_quantity=fee_quantity,
-            fee_asset=row_dict["FEE CURRENCY"],
+            buy_quantity=buy_quantity,
+            buy_asset=buy_asset,
+            sell_quantity=sell_quantity,
+            sell_asset=sell_asset,
             wallet=WALLET,
         )
     else:
-        buy_quantity = Decimal(row_dict["PRICE"]) * abs(Decimal(row_dict["AMOUNT"]))
+        # Sell
+
+        sell_quantity = abs(Decimal(row_dict["AMOUNT"]))
+        sell_asset = row_dict["PAIR"].split("/")[0]
+
+        buy_quantity = (Decimal(row_dict["PRICE"]) * sell_quantity).quantize(PRECISION)
+        buy_asset = row_dict["PAIR"].split("/")[1]
 
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
-            buy_quantity=buy_quantity.quantize(PRECISION),
-            buy_asset=row_dict["PAIR"].split("/")[1],
-            sell_quantity=abs(Decimal(row_dict["AMOUNT"])),
-            sell_asset=row_dict["PAIR"].split("/")[0],
-            fee_quantity=fee_quantity,
-            fee_asset=row_dict["FEE CURRENCY"],
+            buy_quantity=buy_quantity,
+            buy_asset=buy_asset,
+            sell_quantity=sell_quantity,
+            sell_asset=sell_asset,
             wallet=WALLET,
         )
 
@@ -109,7 +112,55 @@ def parse_bitfinex_ledger(
         row_dict["DATE"], dayfirst=config.date_is_day_first
     )
 
-    if _is_referral(row_dict["DESCRIPTION"]):
+    if "Settlement" in row_dict["DESCRIPTION"]:
+
+        if Decimal(row_dict["AMOUNT"]) > 0.0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.TRADE,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["AMOUNT"]),
+                buy_asset=row_dict["CURRENCY"],
+                sell_quantity=Decimal(0.0),
+                sell_asset=row_dict["CURRENCY"],
+                wallet=WALLET,
+            )
+        elif Decimal(row_dict["AMOUNT"]) < 0.0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.TRADE,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["AMOUNT"])),
+                sell_asset=row_dict["CURRENCY"],
+                buy_quantity=Decimal(0.0),
+                buy_asset=row_dict["CURRENCY"],
+                wallet=WALLET,
+            )
+
+    if "Trading fees" in row_dict["DESCRIPTION"]:
+
+        if Decimal(row_dict["AMOUNT"]) > 0.0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.TRADE,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["AMOUNT"]),
+                buy_asset=row_dict["CURRENCY"],
+                sell_quantity=Decimal(0.0),
+                sell_asset=row_dict["CURRENCY"],
+                wallet=WALLET,
+            )
+        elif Decimal(row_dict["AMOUNT"]) < 0.0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.TRADE,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["AMOUNT"])),
+                sell_asset=row_dict["CURRENCY"],
+                buy_quantity=Decimal(0.0),
+                buy_asset=row_dict["CURRENCY"],
+                wallet=WALLET,
+            )
+
+
+
+    elif _is_referral(row_dict["DESCRIPTION"]):
         data_row.t_record = TransactionOutRecord(
             TrType.REFERRAL,
             data_row.timestamp,
@@ -118,6 +169,23 @@ def parse_bitfinex_ledger(
             wallet=WALLET,
         )
 
+    elif row_dict["DESCRIPTION"] == "Staking reward on wallet exchange":
+        data_row.t_record = TransactionOutRecord(
+            TrType.STAKING,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["AMOUNT"]),
+            buy_asset=row_dict["CURRENCY"],
+            wallet=WALLET,
+        )
+
+    elif row_dict["DESCRIPTION"] == "Delist adjustment on wallet exchange":
+        data_row.t_record = TransactionOutRecord(
+            TrType.LOST,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["AMOUNT"])),
+            sell_asset=row_dict["CURRENCY"],
+            wallet=WALLET,
+        )
 
 def _is_referral(description: str) -> bool:
     if re.match(
@@ -145,14 +213,6 @@ DataParser(
     worksheet_name="Bitfinex T",
     row_handler=parse_bitfinex_trades,
     consolidate_type=ConsolidateType.HEADER_MATCH,
-)
-
-DataParser(
-    ParserType.EXCHANGE,
-    "Bitfinex Trades",
-    ["#", "PAIR", "AMOUNT", "PRICE", "FEE", "FEE CURRENCY", "DATE", "ORDER ID"],
-    worksheet_name="Bitfinex T",
-    row_handler=parse_bitfinex_trades,
 )
 
 DataParser(
