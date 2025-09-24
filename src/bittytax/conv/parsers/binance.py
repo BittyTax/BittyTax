@@ -76,6 +76,7 @@ QUOTE_ASSETS = [
 ]
 
 BASE_ASSETS = [
+    "0G",
     "1000CAT",
     "1000CHEEMS",
     "1000SATS",
