@@ -29,6 +29,7 @@ QUOTE_ASSETS = [
     "DOT",
     "ETH",
     "EUR",
+    "EURC",
     "EUROP",
     "GBP",
     "JPY",
