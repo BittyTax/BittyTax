@@ -55,13 +55,13 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
+      - name: Install Enchant and Cairo Libraries
+        run: |
+          sudo apt-get -y install --no-install-recommends libenchant-2-dev aspell-en libaspell-dev libcairo2-dev
       - name: Install BittyTax
         run: |
           python -m pip install --upgrade pip
           pip install -e .
-      - name: Install libenchant packages
-        run: |
-          sudo apt-get -y install --no-install-recommends libenchant-2-dev aspell-en libaspell-dev libcairo2-dev
       - name: Pylint (with spelling check)
         run: |
           pip install pylint pyenchant
