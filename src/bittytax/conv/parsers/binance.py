@@ -84,6 +84,7 @@ BASE_ASSETS = [
     "1INCHDOWN",
     "1INCHUP",
     "1MBABYDOGE",
+    "2Z",
 ]
 
 TRADINGPAIR_TO_QUOTE_ASSET = {
