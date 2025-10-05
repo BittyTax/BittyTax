@@ -92,6 +92,8 @@ STAKED_SUFFIX = [
 ]
 
 TRADINGPAIR_TO_QUOTE_ASSET = {
+    "2ZEUR": "EUR",
+    "2ZUSD": "USD",
     "AI16ZEUR": "EUR",
     "AI16ZUSD": "USD",
     "AIOZEUR": "EUR",
