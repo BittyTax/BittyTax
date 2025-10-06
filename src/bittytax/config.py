@@ -10,6 +10,7 @@ from typing import Any, TextIO
 import yaml
 from colorama import Fore
 
+from .bt_types import CostBasisMethod, CostTrackingMethod, TaxRules, UniversalOrdering
 from .constants import BITTYTAX_PATH, ERROR
 
 if sys.version_info < (3, 9):
@@ -40,6 +41,8 @@ class Config:
         "local_timezone": "America/New_York",
         "date_is_day_first": False,
         "default_tax_rules": "US_INDIVIDUAL_FIFO",
+        "cost_tracking_method": CostTrackingMethod.UNIVERSAL,
+        "universal_ordering": UniversalOrdering.TID,
         "fiat_list": FIAT_LIST,
         "crypto_list": CRYPTO_LIST,
         "trade_asset_type": TRADE_ASSET_TYPE_PRIORITY,
@@ -111,6 +114,20 @@ class Config:
         if self.config is None:
             self.config = {}
 
+        try:
+            self.config["cost_tracking_method"] = CostTrackingMethod(
+                self.config.get("cost_tracking_method")
+            )
+        except ValueError:
+            self.config["cost_tracking_method"] = self.DEFAULT_CONFIG["cost_tracking_method"]
+
+        try:
+            self.config["universal_ordering"] = UniversalOrdering(
+                self.config.get("universal_ordering")
+            )
+        except ValueError:
+            self.config["universal_ordering"] = self.DEFAULT_CONFIG["universal_ordering"]
+
         for name, default in self.DEFAULT_CONFIG.items():
             if name not in self.config:
                 self.config[name] = default
@@ -173,6 +190,32 @@ class Config:
             self.start_of_year_month,
             self.start_of_year_day,
         ) - datetime.timedelta(days=1)
+
+    def get_cost_method(self, tax_rules: TaxRules, tax_year: int) -> str:
+        if tax_rules is TaxRules.US_INDIVIDUAL_FIFO:
+            cost_basis_method = CostBasisMethod.FIFO
+        elif tax_rules is TaxRules.US_INDIVIDUAL_LIFO:
+            cost_basis_method = CostBasisMethod.LIFO
+        elif tax_rules is TaxRules.US_INDIVIDUAL_HIFO:
+            cost_basis_method = CostBasisMethod.HIFO
+        elif tax_rules is TaxRules.US_INDIVIDUAL_LOFO:
+            cost_basis_method = CostBasisMethod.LOFO
+        else:
+            raise RuntimeError("Unexpected tax_rules")
+
+        if self.is_per_wallet(tax_year):
+            return f"{cost_basis_method.value} Per-Wallet"
+        return f"{cost_basis_method.value} Universal"
+
+    def is_per_wallet(self, tax_year: int) -> bool:
+        if config.cost_tracking_method is CostTrackingMethod.UNIVERSAL:
+            return False
+        if (
+            config.cost_tracking_method is CostTrackingMethod.PER_WALLET_1JAN2025
+            and tax_year < 2025
+        ):
+            return False
+        return True
 
     def format_tax_year(self, tax_year: int) -> str:
         start = self.get_tax_year_start(tax_year)

@@ -4,6 +4,7 @@
 
 import datetime
 import itertools
+from collections import deque
 from dataclasses import dataclass, field
 from decimal import Decimal, getcontext
 from typing import Dict, Iterator, List, Optional, Tuple, Union
@@ -20,11 +21,14 @@ from .bt_types import (
     AssetName,
     AssetSymbol,
     CostBasisMethod,
+    CostTrackingMethod,
     Date,
     DisposalType,
     Note,
     TaxRules,
+    Tid,
     TrType,
+    UniversalOrdering,
     Wallet,
     Year,
 )
@@ -68,8 +72,9 @@ class HoldingsReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
 
 
 class HoldingsReportRecord(TypedDict):  # pylint: disable=too-few-public-methods
-    holdings: Dict[AssetSymbol, HoldingsReportAsset]
-    totals: HoldingsReportTotal
+    holdings_per_wallet: Dict[Wallet, Dict[AssetSymbol, HoldingsReportAsset]]
+    holdings_per_asset: Dict[AssetSymbol, HoldingsReportAsset]
+    total: HoldingsReportTotal
 
 
 class CapitalGainsIndividual(TypedDict):  # pylint: disable=too-few-public-methods
@@ -129,6 +134,12 @@ class BuyAccumulator:
     buys: List[Buy] = field(default_factory=list)
 
 
+@dataclass
+class CurrentPrice:
+    price_ccy: Decimal
+    name: AssetName
+
+
 class MarginReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
     gains: Decimal
     losses: Decimal
@@ -172,11 +183,13 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         self.buys_ordered: Dict[AssetSymbol, List[Buy]] = {}
         self.sells_ordered: List[Sell] = []
         self.other_transactions: List[Union[Buy, Sell]] = []
-        self.buy_queue: Dict[AssetSymbol, BuyQueue] = {}
+        self.buy_list: Dict[AssetSymbol, BuyList] = {}
 
         self.match_missing = False
         self.tax_events: Dict[Year, List[TaxEvent]] = {}
-        self.holdings: Dict[AssetSymbol, Holdings] = {}
+
+        self.holdings_per_asset: Dict[AssetSymbol, Holdings] = {}
+        self.holdings_per_wallet: Dict[Wallet, Dict[AssetSymbol, Holdings]] = {}
 
         self.tax_report: Dict[Year, TaxReportRecord] = {}
         self.holdings_report: Optional[HoldingsReportRecord] = None
@@ -202,7 +215,11 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
 
                 self.buys_ordered[t.asset].append(t)
             elif (
-                isinstance(t, Sell) and t.is_crypto() and t.disposal and (t.quantity or t.fee_value)
+                isinstance(t, Sell)
+                and t.is_crypto()
+                and t.disposal
+                and (t.quantity or t.fee_value)
+                or self._include_transfers(t)
             ):
                 self.sells_ordered.append(t)
             else:
@@ -216,69 +233,139 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             for t in self.sells_ordered:
                 print(f"{Fore.GREEN}sells: {t}")
 
+    def _include_transfers(self, t: Union[Buy, Sell]) -> bool:
+        if not t.is_crypto() or t.t_type not in TRANSFER_TYPES:
+            return False
+
+        if config.cost_tracking_method is not CostTrackingMethod.UNIVERSAL:
+            return True
+        return False
+
     def match_transactions(self, method: CostBasisMethod) -> None:
         if config.debug:
             print(f"{Fore.CYAN}match transactions ({method.value.lower()})")
 
         for asset, buys in self.buys_ordered.items():
-            self.buy_queue[asset] = BuyQueue(buys, method)
+            self.buy_list[asset] = BuyList(buys, method)
 
-        for s in tqdm(
+        for t in tqdm(
             self.sells_ordered,
             unit="t",
             desc=f"{Fore.CYAN}match transactions ({method.value.lower()}){Fore.GREEN}",
             disable=disable_tqdm(),
         ):
-            matches = []
-            s_quantity_remaining = s.quantity
-
             if config.debug:
-                print(f"{Fore.GREEN}match: {s}")
+                print(f"{Fore.GREEN}match: {t}")
 
-            if s.asset not in self.buy_queue:
-                self.buy_queue[s.asset] = BuyQueue([], method)
+            if t.asset not in self.buy_list:
+                self.buy_list[t.asset] = BuyList([], method)
 
-            while s_quantity_remaining > 0:
-                b = self.buy_queue[s.asset].get_buy(s.date())
-
-                if not b:
+            if t.t_type not in TRANSFER_TYPES:
+                buy_queue = self.buy_list[t.asset].make_queue(t)
+                matches = self._match_sell(t, buy_queue)
+                if matches:
+                    self.buy_list[t.asset].matched.extend(matches)
+                    self.buy_list[t.asset].do_rebuild()
+                    t.matched = True
+                    self._create_disposal(t, matches)
+                else:
                     break
-
-                if b.quantity > s_quantity_remaining:
-                    b_remainder = b.split_buy(s_quantity_remaining)
-                    self.buy_queue[s.asset].insert_buy(s.date(), b_remainder)
-
-                    if config.debug:
-                        print(f"{Fore.GREEN}match: {b} <-- split")
-                        print(f"{Fore.YELLOW}match:   {b_remainder} <-- split")
+            elif t.t_type is TrType.WITHDRAWAL:
+                buy_queue = self.buy_list[t.asset].make_queue(t)
+                out_transfers = self._match_sell(t, buy_queue)
+                if out_transfers:
+                    self.buy_list[t.asset].transfer_queue.push_buys(out_transfers)
                 else:
-                    if config.debug:
-                        print(f"{Fore.GREEN}match: {b}")
+                    break
+            elif t.t_type is TrType.DEPOSIT:
+                self._match_deposit(t, self.buy_list[t.asset].transfer_queue)
+                self.buy_list[t.asset].do_rebuild()
 
-                b.matched = True
-                matches.append(b)
-                s_quantity_remaining -= b.quantity
+    def _match_sell(self, s: Sell, buy_queue: "BuyQueue") -> List[Buy]:
+        matches = []
+        s_quantity_remaining = s.quantity
 
-            if s_quantity_remaining > 0:
-                bt_tqdm_write(
-                    f"{WARNING} No matching Buy of {s_quantity_remaining.normalize():0,f} "
-                    f"{s.asset} for Sell of {s.format_quantity()} {s.asset}"
-                )
-                if config.cost_basis_zero_if_missing:
-                    buy_match = Buy(TrType.TRADE, s_quantity_remaining, s.asset, Decimal(0))
-                    buy_match.timestamp = s.timestamp
-                    buy_match.note = Note(COST_BASIS_ZERO_NOTE)
-                    buy_match.matched = True
-                    bt_tqdm_write(f"{Fore.GREEN}match: {buy_match}")
-                    self.buy_queue[s.asset].add_buy(buy_match)
-                    matches.append(buy_match)
-                    s.matched = True
-                    self._create_disposal(s, matches)
-                else:
-                    self.match_missing = True
+        while s_quantity_remaining > 0:
+            b = buy_queue.pop_buy()
+
+            if not b:
+                break
+
+            if b.quantity > s_quantity_remaining:
+                b_remainder = b.split_buy(s_quantity_remaining)
+                buy_queue.push_split_buy(b_remainder)
+
+                if config.debug:
+                    print(f"{Fore.GREEN}match:   {b} <-- split")
+                    print(f"{Fore.YELLOW}match:   {b_remainder} <-- split")
             else:
-                s.matched = True
-                self._create_disposal(s, matches)
+                if config.debug:
+                    print(f"{Fore.GREEN}match:   {b}")
+
+            if s.t_type in TRANSFER_TYPES and config.is_per_wallet(self._which_tax_year(s.date())):
+                b.matched = True
+            elif s.t_type not in TRANSFER_TYPES:
+                b.matched = True
+
+            matches.append(b)
+            s_quantity_remaining -= b.quantity
+
+        if s_quantity_remaining > 0:
+            bt_tqdm_write(
+                f"{WARNING} No matching Buy of {s_quantity_remaining.normalize():0,f} "
+                f"{s.asset} for Sell of {s.format_quantity()} {s.asset}"
+            )
+            if config.cost_basis_zero_if_missing:
+                dummy_buy = Buy(TrType.TRADE, s_quantity_remaining, s.asset, Decimal(0))
+                dummy_buy.wallet = s.wallet
+                dummy_buy.timestamp = s.timestamp
+                dummy_buy.note = Note(COST_BASIS_ZERO_NOTE)
+                # Set TID so dummy buy is before the sell/withdrawal
+                dummy_buy.tid = Tid((s.tid[0] - 1, s.tid[1] + 3, 0)) if s.tid else None
+                dummy_buy.matched = True
+                bt_tqdm_write(f"{Fore.GREEN}match:   {dummy_buy}")
+                matches.append(dummy_buy)
+            else:
+                matches = []
+                self.match_missing = True
+
+        return matches
+
+    def _match_deposit(self, d: Buy, transfer_queue: "TransferQueue") -> None:
+        d_quantity_remaining = d.quantity
+
+        while d_quantity_remaining > 0:
+            b = transfer_queue.pop_buy()
+
+            if not b:
+                break
+
+            if b.quantity > d_quantity_remaining:
+                b_remainder = b.split_buy(d_quantity_remaining)
+                transfer_queue.push_split_buy(b_remainder)
+                b.wallet_path.append(b.wallet)
+                b.wallet = d.wallet
+
+                if config.debug:
+                    print(f"{Fore.GREEN}match:   {b} <-- split")
+                    print(f"{Fore.YELLOW}match:   {b_remainder} <-- split")
+            else:
+                b.wallet_path.append(b.wallet)
+                b.wallet = d.wallet
+
+                if config.debug:
+                    print(f"{Fore.GREEN}match:   {b}")
+
+            if config.is_per_wallet(self._which_tax_year(d.date())):
+                b.matched = False
+
+            d_quantity_remaining -= b.quantity
+
+        if d_quantity_remaining > 0:
+            bt_tqdm_write(
+                f"{WARNING} No matching transfer of {d_quantity_remaining.normalize():0,f} "
+                f"{d.asset} for Deposit of {d.format_quantity()} {d.asset}"
+            )
 
     def _create_disposal(self, sell: Sell, matches: List[Buy]) -> None:
         short_term = BuyAccumulator()
@@ -331,7 +418,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     cost,
                     proceeds,
                 )
-            self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
+            self.tax_events[self._tax_event_year(tax_event.date)].append(tax_event)
 
             if config.debug:
                 print(f"{Fore.CYAN}match: {tax_event}")
@@ -366,7 +453,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     cost,
                     proceeds,
                 )
-            self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
+            self.tax_events[self._tax_event_year(tax_event.date)].append(tax_event)
 
             if config.debug:
                 print(f"{Fore.CYAN}match: {tax_event}")
@@ -390,8 +477,16 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             desc=f"{Fore.CYAN}process holdings{Fore.GREEN}",
             disable=disable_tqdm(),
         ):
-            if t.is_crypto() and t.asset not in self.holdings:
-                self.holdings[t.asset] = Holdings(t.asset)
+            if t.is_crypto():
+                if t.asset not in self.holdings_per_asset:
+                    self.holdings_per_asset[t.asset] = Holdings(t.asset)
+
+                if config.cost_tracking_method is not CostTrackingMethod.UNIVERSAL:
+                    if t.wallet not in self.holdings_per_wallet:
+                        self.holdings_per_wallet[t.wallet] = {}
+
+                    if t.asset not in self.holdings_per_wallet[t.wallet]:
+                        self.holdings_per_wallet[t.wallet][t.asset] = Holdings(t.asset, t.wallet)
 
             if t.matched:
                 if config.debug:
@@ -427,13 +522,24 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             cost = t.cost
             fees = t.fee_value or Decimal(0)
 
-        self.holdings[t.asset].add_tokens(t.quantity, cost, fees, t.t_type is TrType.DEPOSIT)
+            self.holdings_per_asset[t.asset].add_tokens(
+                t.quantity, cost, fees, t.t_type is TrType.DEPOSIT
+            )
+
+            if config.cost_tracking_method is not CostTrackingMethod.UNIVERSAL:
+                self.holdings_per_wallet[t.wallet][t.asset].add_tokens(
+                    t.quantity, cost, fees, t.t_type is TrType.DEPOSIT
+                )
 
     def _subtract_tokens(self, t: Sell) -> None:
         if not t.disposal:
-            self.holdings[t.asset].subtract_tokens(
+            self.holdings_per_asset[t.asset].subtract_tokens(
                 t.quantity, Decimal(0), Decimal(0), t.t_type is TrType.WITHDRAWAL
             )
+            if config.cost_tracking_method is not CostTrackingMethod.UNIVERSAL:
+                self.holdings_per_wallet[t.wallet][t.asset].subtract_tokens(
+                    t.quantity, Decimal(0), Decimal(0), t.t_type is TrType.WITHDRAWAL
+                )
         else:
             raise RuntimeError("Unmatched disposal in holdings")
 
@@ -453,11 +559,11 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 and (t.quantity or t.fee_value)
             ):
                 tax_event = TaxEventIncome(t)
-                self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
+                self.tax_events[self._tax_event_year(tax_event.date)].append(tax_event)
 
     def _all_transactions(self) -> Iterator[Union[Buy, Sell]]:
         return itertools.chain(
-            *[b.buys for _, b in self.buy_queue.items()],
+            *[bl.all() for _, bl in self.buy_list.items()],
             self.sells_ordered,
             self.other_transactions,
         )
@@ -474,7 +580,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         ):
             if t.t_type in self.MARGIN_TYPES and (t.quantity or t.fee_value):
                 tax_event = TaxEventMarginTrade(t)
-                self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
+                self.tax_events[self._tax_event_year(tax_event.date)].append(tax_event)
 
     def calculate_capital_gains(self, tax_year: Year) -> "CalculateCapitalGains":
         calc_cgt = CalculateCapitalGains(tax_year)
@@ -516,65 +622,92 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         return calc_margin_trading
 
     def calculate_holdings(self, value_asset: ValueAsset) -> None:
-        holdings: Dict[AssetSymbol, HoldingsReportAsset] = {}
-        totals: HoldingsReportTotal = {"cost": Decimal(0), "value": Decimal(0), "gain": Decimal(0)}
+        holdings_per_wallet: Dict[Wallet, Dict[AssetSymbol, HoldingsReportAsset]] = {}
+        holdings_per_asset: Dict[AssetSymbol, HoldingsReportAsset] = {}
+        total: HoldingsReportTotal = {"cost": Decimal(0), "value": Decimal(0), "gain": Decimal(0)}
+        current_price: Dict[AssetSymbol, CurrentPrice] = {}
 
         if config.debug:
             print(f"{Fore.CYAN}calculating holdings")
 
-        for h in tqdm(
-            self.holdings,
+        for a in tqdm(
+            self.holdings_per_asset,
             unit="h",
             desc=f"{Fore.CYAN}calculating holdings{Fore.GREEN}",
             disable=disable_tqdm(),
         ):
-            if self.holdings[h].quantity > 0 or config.show_empty_wallets:
+            if self.holdings_per_asset[a].quantity > 0 or config.show_empty_wallets:
                 try:
-                    value, name, _ = value_asset.get_current_value(
-                        self.holdings[h].asset, self.holdings[h].quantity
-                    )
+                    price, name, _ = value_asset.get_latest_price(a)
+                    if price is not None:
+                        current_price[a] = CurrentPrice(price, name)
                 except requests.exceptions.HTTPError as e:
                     bt_tqdm_write(
-                        f"{WARNING} Skipping valuation of {self.holdings[h].asset} "
+                        f"{WARNING} Skipping valuation of {a} "
                         f"due to API failure ({e.response.status_code})"
                     )
-                    value = None
-                    name = AssetName("")
 
-                value = value.quantize(PRECISION) if value is not None else None
-                cost = (self.holdings[h].cost + self.holdings[h].fees).quantize(PRECISION)
+                holdings_per_asset[a] = self._calculate_holding(
+                    self.holdings_per_asset[a], current_price.get(a)
+                )
 
-                if value is not None:
-                    holdings[h] = {
-                        "name": name,
-                        "quantity": self.holdings[h].quantity,
-                        "cost": cost,
-                        "value": value,
-                        "gain": value - cost,
-                    }
+                total["cost"] += holdings_per_asset[a]["cost"]
+                value = holdings_per_asset[a]["value"]
+                if value:
+                    total["value"] += value
+                    total["gain"] += holdings_per_asset[a]["gain"]
 
-                    totals["value"] += value
-                    totals["gain"] += value - cost
-                else:
-                    holdings[h] = {
-                        "name": name,
-                        "quantity": self.holdings[h].quantity,
-                        "cost": cost,
-                        "value": None,
-                    }
+        if config.cost_tracking_method is not CostTrackingMethod.UNIVERSAL:
+            for w, holdings in self.holdings_per_wallet.items():
+                for a, holding in holdings.items():
+                    if holding.quantity > 0 or config.show_empty_wallets:
+                        if w not in holdings_per_wallet:
+                            holdings_per_wallet[w] = {}
 
-                totals["cost"] += holdings[h]["cost"]
+                        holdings_per_wallet[w][a] = self._calculate_holding(
+                            holding, current_price.get(a)
+                        )
 
-        self.holdings_report = {"holdings": holdings, "totals": totals}
+        self.holdings_report = {
+            "holdings_per_wallet": holdings_per_wallet,
+            "holdings_per_asset": holdings_per_asset,
+            "total": total,
+        }
+
+    def _calculate_holding(
+        self, holding: Holdings, current_price: Optional[CurrentPrice]
+    ) -> HoldingsReportAsset:
+        if current_price is not None:
+            value = (current_price.price_ccy * holding.quantity).quantize(PRECISION)
+            cost = (holding.cost + holding.fees).quantize(PRECISION)
+
+            return {
+                "name": current_price.name,
+                "quantity": holding.quantity,
+                "cost": cost,
+                "value": value,
+                "gain": value - cost,
+            }
+        return {
+            "name": AssetName(""),
+            "quantity": holding.quantity,
+            "cost": cost,
+            "value": None,
+        }
+
+    def _tax_event_year(self, date: Date) -> Year:
+        tax_year = self._which_tax_year(date)
+
+        if tax_year not in self.tax_events:
+            self.tax_events[tax_year] = []
+
+        return tax_year
 
     def _which_tax_year(self, date: Date) -> Year:
         if date > config.get_tax_year_end(date.year):
             tax_year = Year(date.year + 1)
         else:
             tax_year = Year(date.year)
-
-        if tax_year not in self.tax_events:
-            self.tax_events[tax_year] = []
 
         return tax_year
 
@@ -936,54 +1069,28 @@ class CalculateMarginTrading:
         )
 
 
-class BuyQueue:
+class BuyList:
+    REBUILD_PERIOD = 100
+
     def __init__(self, buys: List[Buy], method: CostBasisMethod) -> None:
         self.method = method
         self.buys = buys
-        self.buy_ranges: Dict[Date, List[Buy]] = {}
-        self.buy_index = 0
-        self.buys_matched: List[Buy] = []
+        self.matched: List[Buy] = []
+        self.transfer_queue = TransferQueue(self)
 
-    def get_buy(self, s_date: Date) -> Optional[Buy]:
-        if s_date not in self.buy_ranges:
-            self.buy_ranges[s_date] = list(
-                filter(lambda b: b.date() <= s_date and not b.matched, self.buys)
-            )
-            self._sort_by_method(self.buy_ranges[s_date])
+    def make_queue(self, sell: Sell) -> "BuyQueue":
+        return BuyQueue(self, sell)
 
-            if config.debug:
-                for i, b in enumerate(self.buy_ranges[s_date]):
-                    if b.t_type is TrType.SWAP:
-                        print(
-                            f"{Fore.BLUE}match:   [{i}] {b}{' S' if b.is_split else ''} "
-                            f"{'<- swapped' if self._is_swapped(b) else '<- not swapped'}"
-                        )
-                    else:
-                        print(f"{Fore.BLUE}match:   [{i}] {b}{' S' if b.is_split else ''}")
+    def all(self) -> List[Buy]:
+        unmatched = [b for b in self.buys if not b.matched or b in self.transfer_queue.in_transit]
+        return sorted(self.matched + unmatched)
 
-        buy = None
-        i = 0
-        while i < len(self.buy_ranges[s_date]):
-            b = self.buy_ranges[s_date][i]
+    def all_ordered_by_method(self) -> List[Buy]:
+        unmatched = [b for b in self.buys if not b.matched or b in self.transfer_queue.in_transit]
+        self.sort_by_method(unmatched)
+        return self.matched + unmatched
 
-            if not b.matched:
-                if b.t_type is TrType.SWAP and not self._is_swapped(b):
-                    # Don't use Swap until cost basis has been transferred
-                    i += 1
-                    continue
-
-                buy = b
-                self.buy_index = i
-                break
-
-            i += 1
-
-        if buy:
-            self.buys_matched.append(buy)
-
-        return buy
-
-    def _sort_by_method(self, buy_list: List[Buy]) -> None:
+    def sort_by_method(self, buy_list: List[Buy]) -> None:
         if self.method == CostBasisMethod.FIFO:
             buy_list.sort()
         elif self.method == CostBasisMethod.LIFO:
@@ -992,6 +1099,89 @@ class BuyQueue:
             buy_list.sort(key=lambda b: b.price(), reverse=True)
         elif self.method == CostBasisMethod.LOFO:
             buy_list.sort(key=lambda b: b.price())
+
+    def do_rebuild(self) -> None:
+        # Periodically filter the matched buys to shrink the list
+        if len(self.matched) % BuyList.REBUILD_PERIOD == 0:
+            self.buys = [
+                b for b in self.buys if not b.matched or b in self.transfer_queue.in_transit
+            ]
+
+
+class BuyQueue:
+    def __init__(self, buy_list: BuyList, sell: Sell) -> None:
+        self.buy_list = buy_list
+
+        if sell.tid is None:
+            raise RuntimeError("Missing sell.tid")
+
+        if config.cost_tracking_method is CostTrackingMethod.UNIVERSAL:
+            buys_filtered = self._universal_filter(sell)
+        elif config.cost_tracking_method is CostTrackingMethod.PER_WALLET:
+            buys_filtered = self._filter_by_wallet_and_tid(sell.wallet, sell.tid)
+        elif config.cost_tracking_method is CostTrackingMethod.PER_WALLET_1JAN2025:
+            if sell.date() <= datetime.date(2025, 1, 1):
+                buys_filtered = self._universal_filter(sell)
+            else:
+                buys_filtered = self._filter_by_wallet_and_tid(sell.wallet, sell.tid)
+        else:
+            raise RuntimeError("Unexpected config.cost_tracking_method")
+
+        self.buy_list.sort_by_method(buys_filtered)
+        self.buy_queue = deque(buys_filtered)
+
+    def _universal_filter(self, sell: Sell) -> List[Buy]:
+        if config.universal_ordering is UniversalOrdering.DATE:
+            # Legacy filter to remain backwards compatible
+            return self._filter_by_date(sell.date())
+
+        if sell.tid is None:
+            raise RuntimeError("Missing sell.tid")
+
+        # Faster and more accurate to use TIDs for ordering transactions
+        return self._filter_by_tid(sell.tid)
+
+    def _filter_by_date(self, s_date: datetime.date) -> List[Buy]:
+        return [b for b in self.buy_list.buys if b.date() <= s_date and not b.matched]
+
+    def _filter_by_tid(self, s_tid: Tid) -> List[Buy]:
+        return [
+            b for b in self.buy_list.buys if b.tid is not None and b.tid < s_tid and not b.matched
+        ]
+
+    def _filter_by_wallet_and_tid(self, s_wallet: Wallet, s_tid: Tid) -> List[Buy]:
+        return [
+            b
+            for b in self.buy_list.buys
+            if b.wallet == s_wallet and b.tid is not None and b.tid < s_tid and not b.matched
+        ]
+
+    def pop_buy(self) -> Optional[Buy]:
+        if not self.buy_queue:
+            return None
+
+        if config.debug:
+            for i, b in enumerate(self.buy_queue):
+                print(f"{Fore.BLUE}match:   [{i}] {b}{' S' if b.is_split else ''}")
+
+        buy: Optional[Buy] = self.buy_queue.popleft()
+        if (
+            buy
+            and buy.t_type is TrType.SWAP
+            and config.universal_ordering is UniversalOrdering.DATE
+        ):
+            not_swapped = []
+            while buy and not self._is_swapped(buy):
+                not_swapped.append(buy)
+                if self.buy_queue:
+                    buy = self.buy_queue.popleft()
+                else:
+                    buy = None
+
+            if not_swapped:
+                self.buy_queue.extendleft(reversed(not_swapped))
+
+        return buy
 
     def _is_swapped(self, buy: Buy) -> bool:
         if buy.t_type is not TrType.SWAP:
@@ -1004,15 +1194,30 @@ class BuyQueue:
             return True
         return False
 
-    def insert_buy(self, s_date: Date, buy: Buy) -> None:
-        self.buy_ranges[s_date].insert(self.buy_index + 1, buy)
-        self.buys.append(buy)
+    def push_split_buy(self, buy: Buy) -> None:
+        self.buy_queue.appendleft(buy)
+        self.buy_list.buys.append(buy)
 
-    def add_buy(self, buy: Buy) -> None:
-        self.buys_matched.append(buy)
-        self.buys.append(buy)
 
-    def ordered_by_method(self) -> List[Buy]:
-        buys_unmatched = list(filter(lambda b: not b.matched, self.buys))
-        self._sort_by_method(buys_unmatched)
-        return self.buys_matched + buys_unmatched
+class TransferQueue:
+    def __init__(self, buy_list: BuyList) -> None:
+        self.buy_list = buy_list
+        self.in_transit: deque[Buy] = deque()
+
+    def pop_buy(self) -> Optional[Buy]:
+        if not self.in_transit:
+            return None
+
+        if config.debug:
+            for i, b in enumerate(self.in_transit):
+                print(f"{Fore.BLUE}match:   [{i}] {b}{' S' if b.is_split else ''}")
+
+        buy = self.in_transit.popleft()
+        return buy
+
+    def push_buys(self, buys: List[Buy]) -> None:
+        self.in_transit.extendleft(reversed(buys))
+
+    def push_split_buy(self, buy: Buy) -> None:
+        self.in_transit.appendleft(buy)
+        self.buy_list.buys.append(buy)

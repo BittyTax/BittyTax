@@ -3,6 +3,7 @@
     <table repeat="1" width="100%" class="asset-table mt mb">
         <tr>
             <th align="left">Asset</th>
+            <th align="left">Wallet</th>
             <th align="left">Quantity</th>
             <th align="left">Description</th>
             <th align="left">Date Disposed</th>
@@ -14,7 +15,8 @@
     <table class="total-table mt">
         <tr>
             <td align="left">Total</td>
-            <td align="right"></td>
+            <td align="left"></td>
+            <td align="left"></td>
             <td align="left"></td>
             <td align="left"></td>
             <td align="left"></td>
@@ -28,6 +30,7 @@
     <table repeat="1" width="100%" class="asset-table mt mb">
         <tr>
             <th align="left">Asset</th>
+            <th align="left">Wallet</th>
             <th align="left">Quantity</th>
             <th align="left">Description</th>
             <th align="left">Date Disposed</th>
@@ -38,6 +41,7 @@
         {% for te in cgains["non_tax_by_type"][t_type] %}
             <tr>
                 <td>{{ te.asset }}</td>
+                <td>{{ te.sell.wallet|walletfilter(tax_year) }}</td>
                 <td>{{ te.quantity|quantityfilter }}</td>
                 <td>{{ te.note }}</td>
                 <td>{{ te.date|datefilter }}</td>
@@ -50,7 +54,8 @@
     <table class="total-table mt">
         <tr>
             <td align="left">Total</td>
-            <td align="right"></td>
+            <td align="left"></td>
+            <td align="left"></td>
             <td align="left"></td>
             <td align="left"></td>
             <td align="left"></td>

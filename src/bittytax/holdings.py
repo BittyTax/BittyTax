@@ -2,17 +2,19 @@
 # (c) Nano Nano Ltd 2019
 
 from decimal import Decimal
+from typing import Optional
 
 from colorama import Fore
 
-from .bt_types import AssetSymbol
+from .bt_types import AssetSymbol, Wallet
 from .config import config
 from .constants import WARNING
 from .utils import bt_tqdm_write
 
 
 class Holdings:
-    def __init__(self, asset: AssetSymbol) -> None:
+    def __init__(self, asset: AssetSymbol, wallet: Optional[Wallet] = None) -> None:
+        self.wallet = wallet
         self.asset = asset
         self.quantity = Decimal(0)
         self.cost = Decimal(0)
@@ -30,9 +32,10 @@ class Holdings:
             self.deposits += 1
 
         if config.debug:
+            wallet = f"{self.wallet}:" if self.wallet else ""
             print(
-                f"{Fore.YELLOW}holdings:   "
-                f"{self.asset}={self.quantity.normalize():0,f} (+{quantity.normalize():0,f}) "
+                f"{Fore.YELLOW}holdings:   {wallet}{self.asset}="
+                f"{self.quantity.normalize():0,f} (+{quantity.normalize():0,f}) "
                 f"cost={config.sym()}{self.cost:0,.2f} {config.ccy} "
                 f"(+{config.sym()}{cost:0,.2f} {config.ccy}) "
                 f"fees={config.sym()}{self.fees:0,.2f} {config.ccy} "

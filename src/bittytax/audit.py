@@ -117,7 +117,7 @@ class AuditRecords:
 
         self.totals[buy.asset].total += buy.quantity
 
-        if buy.t_type == TrType.DEPOSIT and buy.is_crypto():
+        if buy.t_type is TrType.DEPOSIT and buy.is_crypto():
             self.totals[buy.asset].transfers_mismatch += buy.quantity
 
         if config.debug:
@@ -141,7 +141,7 @@ class AuditRecords:
 
         self.totals[sell.asset].total -= sell.quantity
 
-        if sell.t_type == TrType.WITHDRAWAL and sell.is_crypto():
+        if sell.t_type is TrType.WITHDRAWAL and sell.is_crypto():
             self.totals[sell.asset].transfers_mismatch -= sell.quantity
 
         if config.debug:

@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from colorama import Fore, Style
 from tqdm import tqdm
 
-from .bt_types import TRANSFER_TYPES, AssetSymbol, Date, Note, Timestamp, TrType, Wallet
+from .bt_types import TRANSFER_TYPES, AssetSymbol, Date, Note, Tid, Timestamp, TrType, Wallet
 from .config import config
 from .price.valueasset import ValueAsset, ValueOrigin
 from .t_record import TransactionRecord
@@ -222,7 +222,7 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
     POOLED = "<pooled>"
 
     def __init__(self, t_type: TrType, asset: AssetSymbol, quantity: Decimal) -> None:
-        self.tid: Optional[List[int]] = None
+        self.tid: Optional[Tid] = None
         self.t_record: Optional[TransactionRecord] = None
         self.t_type = t_type
         self.asset = asset
@@ -234,6 +234,7 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
         self.is_split = False
         self.matched = False
         self.pooled: List[Union[Buy, Sell]] = []
+        self.wallet_path: List[Wallet] = []
 
     def name(self) -> str:
         return self.__class__.__name__
@@ -246,6 +247,8 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
 
     def _format_tid(self) -> str:
         if self.tid:
+            if self.is_split:
+                return f"[TID:{self.tid[0]}.{self.tid[1]}.{self.tid[2]}]"
             return f"[TID:{self.tid[0]}.{self.tid[1]}]"
         return ""
 
@@ -294,6 +297,13 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
 
         return ""
 
+    def _format_wallet(self) -> str:
+        if self.wallet_path:
+            wallet_path = "->".join(f"'{wallet}'" for wallet in self.wallet_path)
+            return f"{wallet_path}->'{self.wallet}' "
+
+        return f"'{self.wallet}' "
+
     def _format_timestamp(self) -> str:
         if not self.timestamp:
             raise RuntimeError("Missing timestamp")
@@ -308,20 +318,19 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
         return ""
 
     def __hash__(self) -> int:
-        return hash(str(self.tid))
+        return hash(self.tid)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TransactionBase):
             return NotImplemented
-        return (self.asset, self.timestamp, self.tid) == (other.asset, other.timestamp, other.tid)
+        return (self.asset, self.tid) == (other.asset, other.tid)
 
     def __ne__(self, other: object) -> bool:
         return not self == other
 
     def __lt__(self, other: "TransactionBase") -> bool:
-        return (self.asset, self.timestamp, self.tid if self.tid else []) < (
+        return (self.asset, self.tid if self.tid else []) < (
             other.asset,
-            other.timestamp,
             other.tid if other.tid else [],
         )
 
@@ -411,36 +420,39 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
         return self
 
     def split_buy(self, sell_quantity: Decimal) -> "Buy":
-        remainder = copy.deepcopy(self)
+        remain = copy.deepcopy(self)
 
-        if self.cost is None or remainder.cost is None:
+        if self.cost is None or remain.cost is None:
             raise RuntimeError("Missing cost")
 
-        self.cost = self.cost * (sell_quantity / self.quantity)
+        self.cost *= sell_quantity / self.quantity
 
         if self.fee_value:
-            self.fee_value = self.fee_value * (sell_quantity / self.quantity)
+            self.fee_value *= sell_quantity / self.quantity
 
         self.quantity = sell_quantity
-        self.set_tid()
         self.is_split = True
 
         # pylint: disable=attribute-defined-outside-init
-        remainder.cost = remainder.cost - self.cost
+        remain.cost -= self.cost
         # pylint: enable=attribute-defined-outside-init
 
-        if self.fee_value and remainder.fee_value:
-            remainder.fee_value = remainder.fee_value - self.fee_value
+        if self.fee_value and remain.fee_value:
+            remain.fee_value -= self.fee_value
 
-        remainder.quantity = remainder.quantity - sell_quantity
+        remain.quantity -= sell_quantity
 
-        remainder.cost_origin = copy.copy(self.cost_origin)
-        if remainder.cost_origin and self.cost_origin and self.cost_origin.origin is self:
-            remainder.cost_origin.origin = remainder
+        remain.cost_origin = copy.copy(self.cost_origin)
+        if remain.cost_origin and self.cost_origin and self.cost_origin.origin is self:
+            remain.cost_origin.origin = remain
 
-        remainder.set_tid()
-        remainder.is_split = True
-        return remainder
+        if remain.tid is not None:
+            remain.tid = Tid((remain.tid[0], remain.tid[1], remain.tid[2] + 1))
+        else:
+            raise RuntimeError("Missing remain.tid")
+
+        remain.is_split = True
+        return remain
 
     def price(self) -> Decimal:
         if self.cost is not None and self.fee_value is not None and self.quantity:
@@ -473,7 +485,7 @@ class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
             f"{self._format_cost()}"
             f"{self._format_fee()}"
             f"{self._format_price(self.price())} "
-            f"'{self.wallet}' "
+            f"{self._format_wallet()}"
             f"{self._format_timestamp()} "
             f"{self._format_note()}"
             f"{self._format_tid()}"
@@ -551,39 +563,38 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
         return self
 
     def split_sell(self, buy_quantity: Decimal) -> "Sell":
-        remainder = copy.deepcopy(self)
+        remain = copy.deepcopy(self)
 
-        if self.proceeds is None or remainder.proceeds is None:
+        if self.proceeds is None or remain.proceeds is None:
             raise RuntimeError("Missing proceeds")
 
-        self.proceeds = self.proceeds * (buy_quantity / self.quantity)
+        self.proceeds *= buy_quantity / self.quantity
 
         if self.fee_value:
-            self.fee_value = self.fee_value * (buy_quantity / self.quantity)
+            self.fee_value *= buy_quantity / self.quantity
 
         self.quantity = buy_quantity
-        self.set_tid()
 
         # pylint: disable=attribute-defined-outside-init
-        remainder.proceeds = remainder.proceeds - self.proceeds
+        remain.proceeds -= self.proceeds
         # pylint: enable=attribute-defined-outside-init
 
-        if self.fee_value and remainder.fee_value:
-            remainder.fee_value = remainder.fee_value - self.fee_value
+        if self.fee_value and remain.fee_value:
+            remain.fee_value -= self.fee_value
 
-        remainder.quantity = remainder.quantity - buy_quantity
+        remain.quantity -= buy_quantity
 
-        remainder.proceeds_origin = copy.copy(self.proceeds_origin)
-        if (
-            remainder.proceeds_origin
-            and self.proceeds_origin
-            and self.proceeds_origin.origin is self
-        ):
-            remainder.proceeds_origin.origin = remainder
+        remain.proceeds_origin = copy.copy(self.proceeds_origin)
+        if remain.proceeds_origin and self.proceeds_origin and self.proceeds_origin.origin is self:
+            remain.proceeds_origin.origin = remain
 
-        remainder.set_tid()
-        remainder.is_split = True
-        return remainder
+        if remain.tid is not None:
+            remain.tid = Tid((remain.tid[0], remain.tid[1], remain.tid[2] + 1))
+        else:
+            raise RuntimeError("Missing remain.tid")
+
+        remain.is_split = True
+        return remain
 
     def price(self) -> Decimal:
         if self.proceeds is not None and self.fee_value is not None and self.quantity:
@@ -616,7 +627,7 @@ class Sell(TransactionBase):  # pylint: disable=too-many-instance-attributes
             f"{self._format_proceeds()}"
             f"{self._format_fee()}"
             f"{self._format_price(self.price())} "
-            f"'{self.wallet}' "
+            f"{self._format_wallet()}"
             f"{self._format_timestamp()} "
             f"{self._format_note()}"
             f"{self._format_tid()}"

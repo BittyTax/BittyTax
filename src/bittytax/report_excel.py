@@ -27,12 +27,13 @@ from .bt_types import (
 from .config import config
 from .constants import ACQUISITIONS_VARIOUS, COST_BASIS_ZERO_NOTE, EXCEL_PRECISION, PROJECT_URL
 from .price.valueasset import VaPriceRecord
-from .report import ProgressSpinner
+from .report import ProgressSpinner, ReportLog
 from .tax import (
-    BuyQueue,
+    BuyList,
     CalculateCapitalGains,
     CalculateIncome,
     CalculateMarginTrading,
+    HoldingsReportAsset,
     HoldingsReportRecord,
     TaxReportRecord,
 )
@@ -98,7 +99,7 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
         progname: str,
         args: argparse.Namespace,
         audit: AuditRecords,
-        buy_queue: Optional[Dict[AssetSymbol, BuyQueue]] = None,
+        buy_list: Optional[Dict[AssetSymbol, BuyList]] = None,
         sells_ordered: Optional[List[Sell]] = None,
         other_transactions: Optional[List[Union[Buy, Sell]]] = None,
         tax_report: Optional[Dict[Year, TaxReportRecord]] = None,
@@ -137,8 +138,8 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
                 if price_report is None:
                     raise RuntimeError("Missing price_report")
 
-                if buy_queue is None:
-                    raise RuntimeError("Missing buy_queue")
+                if buy_list is None:
+                    raise RuntimeError("Missing buy_list")
 
                 if sells_ordered is None:
                     raise RuntimeError("Missing sells_ordered")
@@ -149,7 +150,7 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
                 self._tax_full(
                     args.tax_rules,
                     audit,
-                    buy_queue,
+                    buy_list,
                     sells_ordered,
                     other_transactions,
                     tax_report,
@@ -308,24 +309,27 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
                 self.workbook_formats,
                 f"Tax Year {config.format_tax_year(tax_year)}",
             )
-            worksheet.tax_rules(tax_rules)
+            worksheet.tax_year_heading(tax_year, tax_rules)
             worksheet.capital_gains(
                 "Capital Gains - Short Term",
                 tax_report[tax_year]["CapitalGains"].short_term,
                 f"Tax_Year_{tax_year_table_str}_{TaxYearTableType.CAPITAL_GAINS_SHORT_TERM.value}",
                 row_tracker,
+                tax_year,
             )
             worksheet.capital_gains(
                 "Capital Gains - Long Term",
                 tax_report[tax_year]["CapitalGains"].long_term,
                 f"Tax_Year_{tax_year_table_str}_{TaxYearTableType.CAPITAL_GAINS_LONG_TERM.value}",
                 row_tracker,
+                tax_year,
             )
             worksheet.no_gain_no_loss(
                 "Non-Taxable Transactions",
                 tax_report[tax_year]["CapitalGains"],
                 f"Tax_Year_{tax_year_table_str}_{TaxYearTableType.NON_TAXABLE_TRANSACTIONS.value}",
                 row_tracker,
+                tax_year,
             )
             worksheet.income_by_asset(
                 "Income - by Asset",
@@ -351,7 +355,7 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
         self,
         tax_rules: TaxRules,
         audit: AuditRecords,
-        buy_queue: Dict[AssetSymbol, BuyQueue],
+        buy_list: Dict[AssetSymbol, BuyList],
         sells_ordered: List[Sell],
         other_transactions: List[Union[Buy, Sell]],
         tax_report: Dict[Year, TaxReportRecord],
@@ -369,13 +373,13 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
 
         all_buys = [
             b
-            for asset in sorted(buy_queue, key=str.lower)
-            for b in buy_queue[asset].ordered_by_method()
-        ] + sorted([t for t in other_transactions if isinstance(t, Buy)])
+            for asset in sorted(buy_list, key=str.lower)
+            for b in buy_list[asset].all_ordered_by_method()
+        ] + sorted([t for t in sells_ordered + other_transactions if isinstance(t, Buy)])
         for row, buy in enumerate(all_buys, 2):
             row_tracker.set_row(buy, row)
 
-        all_sells = sorted(sells_ordered + [t for t in other_transactions if isinstance(t, Sell)])
+        all_sells = sorted([t for t in sells_ordered + other_transactions if isinstance(t, Sell)])
         for row, sell in enumerate(all_sells, 2):
             row_tracker.set_row(sell, row)
 
@@ -389,7 +393,9 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
 
         if holdings_report:
             worksheet = Worksheet(self.workbook, self.workbook_formats, "Current Holdings")
-            worksheet.holdings("Current Holdings", holdings_report, "Holdings")
+            if holdings_report["holdings_per_wallet"]:
+                worksheet.holdings_by_wallet(holdings_report["holdings_per_wallet"])
+            worksheet.holdings_by_asset(holdings_report["holdings_per_asset"])
             worksheet.worksheet.autofit()
 
     @staticmethod
@@ -435,12 +441,14 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
 
 class Worksheet:
     TABLE_STYLE = "Table Style Medium 9"
+    SUBTOTAL_FUNC_SUM_HIDDEN = 9
 
     AUD_WALLET_HEADERS = ["Wallet", "Asset", "Balance"]
     AUD_CRYPTO_HEADERS = ["Asset", "Balance", "Transfers Mismatch"]
     AUD_FIAT_HEADERS = ["Asset", "Balance"]
     CG_HEADERS = [
         "Asset",
+        "Wallet",
         "Quantity",
         "Date Acquired",
         "Date Sold",
@@ -450,6 +458,7 @@ class Worksheet:
     ]
     IN_ASSET_HEADERS = [
         "Asset",
+        "Wallet",
         "Quantity",
         "Description",
         "Date Acquired",
@@ -468,6 +477,7 @@ class Worksheet:
     ]
     NON_TAX_HEADERS = [
         "Asset",
+        "Wallet",
         "Quantity",
         "Description",
         "Date Disposed",
@@ -493,7 +503,16 @@ class Worksheet:
         f"Price ({config.ccy})",
         "Price (BTC)",
     ]
-    HOLDINGS_HEADERS = [
+    HOLD_WALLET_HEADERS = [
+        "Wallet",
+        "Asset Symbol",
+        "Asset Name",
+        "Quantity",
+        "Cost Basis",
+        "Market Value",
+        "Gain or (Loss)",
+    ]
+    HOLD_ASSET_HEADERS = [
         "Asset Symbol",
         "Asset Name",
         "Quantity",
@@ -511,6 +530,7 @@ class Worksheet:
         f"Price ({config.ccy})",
         "Wallet",
         "Note",
+        "Wallet Path",
         "TxHash",
         "Category",
         "Matched",
@@ -893,8 +913,15 @@ class Worksheet:
 
             self.worksheet.write_string(self.row_num, 7, buy.wallet)
             self.worksheet.write_string(self.row_num, 8, buy.note)
+
+            if buy.wallet_path:
+                wallet_path = " -> ".join(f"'{wallet}'" for wallet in buy.wallet_path)
+                self.worksheet.write_string(self.row_num, 9, f"{wallet_path} -> '{buy.wallet}'")
+            else:
+                self.worksheet.write_string(self.row_num, 9, f"'{buy.wallet}'")
+
             if buy.t_record and buy.t_record.t_row.tx_raw:
-                self.worksheet.write_string(self.row_num, 9, buy.t_record.t_row.tx_raw.tx_hash)
+                self.worksheet.write_string(self.row_num, 10, buy.t_record.t_row.tx_raw.tx_hash)
 
             if not buy.is_crypto():
                 category = "Fiat"
@@ -902,8 +929,8 @@ class Worksheet:
                 category = "Transfer"
             else:
                 category = "Crypto"
-            self.worksheet.write_string(self.row_num, 10, category)
-            self.worksheet.write_boolean(self.row_num, 11, buy.matched)
+            self.worksheet.write_string(self.row_num, 11, category)
+            self.worksheet.write_boolean(self.row_num, 12, buy.matched)
 
         self.worksheet.add_table(
             start_row,
@@ -1244,13 +1271,17 @@ class Worksheet:
         self.row_num += 1
         return price_to_row
 
-    def tax_rules(self, tax_rules: TaxRules) -> None:
+    def tax_year_heading(self, tax_year: int, tax_rules: TaxRules) -> None:
         self.worksheet.merge_range(
             self.row_num,
             0,
             self.row_num,
             len(self.CG_HEADERS) - 1,
-            f"{tax_rules.value} Tax Rules",
+            (
+                f"{ReportLog.format_date2(Date(config.get_tax_year_start(tax_year)))} to "
+                f"{ReportLog.format_date2(Date(config.get_tax_year_end(tax_year)))} - "
+                f"{config.get_cost_method(tax_rules, tax_year)}"
+            ),
             self.workbook_formats.title,
         )
         self.row_num += 1
@@ -1261,6 +1292,7 @@ class Worksheet:
         cgains: Dict[AssetSymbol, List[TaxEventCapitalGains]],
         table_name: str,
         row_tracker: Optional["RowTracker"],
+        tax_year: int,
     ) -> None:
         self.worksheet.merge_range(
             self.row_num,
@@ -1280,8 +1312,11 @@ class Worksheet:
             start_a_row = self.row_num
             for te in cgains[asset]:
                 self.worksheet.write_string(self.row_num, 0, te.asset)
+                self.worksheet.write_string(
+                    self.row_num, 1, ReportLog.format_wallet(te.sell.wallet, tax_year)
+                )
                 self.worksheet.write_number(
-                    self.row_num, 1, te.quantity.normalize(), self.workbook_formats.quantity
+                    self.row_num, 2, te.quantity.normalize(), self.workbook_formats.quantity
                 )
                 if te.acquisition_dates:
                     if len(te.acquisition_dates) > 1 and not all(
@@ -1289,28 +1324,28 @@ class Worksheet:
                     ):
                         self.worksheet.write_string(
                             self.row_num,
-                            2,
+                            3,
                             ACQUISITIONS_VARIOUS,
                             self.workbook_formats.string_right,
                         )
                         self.worksheet.write_comment(
                             self.row_num,
-                            2,
+                            3,
                             ", ".join([f"{d:%m/%d/%Y}" for d in sorted(set(te.acquisition_dates))]),
                             {"font_size": FONT_SIZE - 1, "x_scale": 2},
                         )
                     else:
                         self.worksheet.write_datetime(
-                            self.row_num, 2, te.acquisition_dates[0], self.workbook_formats.date
+                            self.row_num, 3, te.acquisition_dates[0], self.workbook_formats.date
                         )
-                self.worksheet.write_datetime(self.row_num, 3, te.date, self.workbook_formats.date)
+                self.worksheet.write_datetime(self.row_num, 4, te.date, self.workbook_formats.date)
 
                 quantity = sum(buy.quantity for buy in te.buys)
                 if quantity != te.sell.quantity:
                     proceeds_percent = quantity / te.sell.quantity
                     self.worksheet.write_comment(
                         self.row_num,
-                        4,
+                        5,
                         (
                             f"Disposal is short-term and long-term\nProceeds is "
                             f"{proceeds_percent:.0%} ({quantity:,} / {te.sell.quantity:,})"
@@ -1322,7 +1357,7 @@ class Worksheet:
                 if zero_basis:
                     self.worksheet.write_comment(
                         self.row_num,
-                        5,
+                        6,
                         "Cost basis zero used",
                         {"font_size": FONT_SIZE - 1, "x_scale": 2},
                     )
@@ -1331,27 +1366,27 @@ class Worksheet:
                     link = row_tracker.get_row(te.sell)
                     hyperlink = f'=HYPERLINK("{link}", {te.proceeds})'
                     self.worksheet.write_formula(
-                        self.row_num, 4, hyperlink, self.workbook_formats.currency_link
+                        self.row_num, 5, hyperlink, self.workbook_formats.currency_link
                     )
 
                     link = row_tracker.get_rows_from_list(te.buys)
                     hyperlink = f'=HYPERLINK("{link}", {te.cost})'
                     self.worksheet.write_formula(
-                        self.row_num, 5, hyperlink, self.workbook_formats.currency_link
+                        self.row_num, 6, hyperlink, self.workbook_formats.currency_link
                     )
                 else:
                     self.worksheet.write_number(
-                        self.row_num, 4, te.proceeds, self.workbook_formats.currency
+                        self.row_num, 5, te.proceeds, self.workbook_formats.currency
                     )
                     self.worksheet.write_number(
-                        self.row_num, 5, te.cost, self.workbook_formats.currency
+                        self.row_num, 6, te.cost, self.workbook_formats.currency
                     )
 
-                cell_proceeds = xlsxwriter.utility.xl_rowcol_to_cell(self.row_num, 4)
-                cell_cost_basis = xlsxwriter.utility.xl_rowcol_to_cell(self.row_num, 5)
+                cell_proceeds = xlsxwriter.utility.xl_rowcol_to_cell(self.row_num, 5)
+                cell_cost_basis = xlsxwriter.utility.xl_rowcol_to_cell(self.row_num, 6)
                 self.worksheet.write_formula(
                     self.row_num,
-                    6,
+                    7,
                     f"={cell_proceeds}-{cell_cost_basis}",
                     self.workbook_formats.currency,
                 )
@@ -1365,32 +1400,36 @@ class Worksheet:
             # Subtotal Quantity
             self.worksheet.write_formula(
                 self.row_num,
-                1,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_a_row, 1, end_a_row, 1)})",
+                2,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_a_row, 2, end_a_row, 2)})",
                 self.workbook_formats.quantity,
             )
             # Subtotal Proceeds
             self.worksheet.write_formula(
                 self.row_num,
-                4,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_a_row, 4, end_a_row, 4)})",
+                5,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_a_row, 5, end_a_row, 5)})",
                 self.workbook_formats.currency,
             )
             # Subtotal Cost
             self.worksheet.write_formula(
                 self.row_num,
-                5,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_a_row, 5, end_a_row, 5)})",
+                6,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_a_row, 6, end_a_row, 6)})",
                 self.workbook_formats.currency,
             )
             # Subtotal Gain/Loss
             self.worksheet.write_formula(
                 self.row_num,
-                6,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_a_row, 6, end_a_row, 6)})",
+                7,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_a_row, 7, end_a_row, 7)})",
                 self.workbook_formats.currency,
             )
-            self.worksheet.set_row(self.row_num, None, None, {"level": 1, "collapsed": True})
+            self.worksheet.set_row(self.row_num, None, None, {"level": 1})
             self.row_num += 1
 
         self.worksheet.write_string(self.row_num, 0, "Grand Total", self.workbook_formats.bold)
@@ -1399,28 +1438,31 @@ class Worksheet:
             # Grand total Proceeds
             self.worksheet.write_formula(
                 self.row_num,
-                4,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 4, end_a_row, 4)})",
+                5,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 5, end_a_row, 5)})",
                 self.workbook_formats.currency_bold,
             )
             # Grand total Cost
             self.worksheet.write_formula(
                 self.row_num,
-                5,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 5, end_a_row, 5)})",
+                6,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 6, end_a_row, 6)})",
                 self.workbook_formats.currency_bold,
             )
             # Grand total Gain/Loss
             self.worksheet.write_formula(
                 self.row_num,
-                6,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 6, end_a_row, 6)})",
+                7,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 7, end_a_row, 7)})",
                 self.workbook_formats.currency_bold,
             )
         else:
-            self.worksheet.write_number(self.row_num, 4, 0, self.workbook_formats.currency_bold)
             self.worksheet.write_number(self.row_num, 5, 0, self.workbook_formats.currency_bold)
             self.worksheet.write_number(self.row_num, 6, 0, self.workbook_formats.currency_bold)
+            self.worksheet.write_number(self.row_num, 7, 0, self.workbook_formats.currency_bold)
 
         self.worksheet.add_table(
             start_row,
@@ -1433,12 +1475,12 @@ class Worksheet:
                 "name": table_name,
             },
         )
-        cell = xlsxwriter.utility.xl_rowcol_to_cell(start_row + 1, 1, col_abs=True)
+        cell = xlsxwriter.utility.xl_rowcol_to_cell(start_row + 1, 2, col_abs=True)
         self.worksheet.conditional_format(
             start_row + 1,
-            1,
+            2,
             self.row_num,
-            1,
+            2,
             {
                 "type": "formula",
                 "criteria": f"=INT({cell})={cell}",
@@ -1446,10 +1488,10 @@ class Worksheet:
             },
         )
         self.worksheet.ignore_errors(
-            {"formula_differs": xlsxwriter.utility.xl_range(start_row + 1, 4, self.row_num, 4)}
+            {"formula_differs": xlsxwriter.utility.xl_range(start_row + 1, 5, self.row_num, 5)}
         )
         self.worksheet.ignore_errors(
-            {"formula_differs": xlsxwriter.utility.xl_range(start_row + 1, 5, self.row_num, 5)}
+            {"formula_differs": xlsxwriter.utility.xl_range(start_row + 1, 6, self.row_num, 6)}
         )
         self.row_num += 1
 
@@ -1459,6 +1501,7 @@ class Worksheet:
         cgains: CalculateCapitalGains,
         table_name: str,
         row_tracker: Optional["RowTracker"],
+        tax_year: int,
     ) -> None:
         if not cgains.non_tax_by_type:
             self.worksheet.merge_range(
@@ -1473,8 +1516,8 @@ class Worksheet:
             start_row = self.row_num
             self.row_num += 1
             self.worksheet.write_string(self.row_num, 0, "Grand Total", self.workbook_formats.bold)
-            self.worksheet.write_number(self.row_num, 5, 0, self.workbook_formats.currency_bold)
             self.worksheet.write_number(self.row_num, 6, 0, self.workbook_formats.currency_bold)
+            self.worksheet.write_number(self.row_num, 7, 0, self.workbook_formats.currency_bold)
             self.worksheet.add_table(
                 start_row,
                 0,
@@ -1503,31 +1546,34 @@ class Worksheet:
             self.row_num += 1
             for te in cgains.non_tax_by_type[t_type]:
                 self.worksheet.write_string(self.row_num, 0, te.asset)
-                self.worksheet.write_number(
-                    self.row_num, 1, te.quantity.normalize(), self.workbook_formats.quantity
+                self.worksheet.write_string(
+                    self.row_num, 1, ReportLog.format_wallet(te.sell.wallet, tax_year)
                 )
-                self.worksheet.write_string(self.row_num, 2, te.note)
-                self.worksheet.write_datetime(self.row_num, 3, te.date, self.workbook_formats.date)
-                self.worksheet.write_string(self.row_num, 4, te.disposal_type.value)
+                self.worksheet.write_number(
+                    self.row_num, 2, te.quantity.normalize(), self.workbook_formats.quantity
+                )
+                self.worksheet.write_string(self.row_num, 3, te.note)
+                self.worksheet.write_datetime(self.row_num, 4, te.date, self.workbook_formats.date)
+                self.worksheet.write_string(self.row_num, 5, te.disposal_type.value)
 
                 if row_tracker:
                     link = row_tracker.get_row(te.sell)
                     hyperlink = f'=HYPERLINK("{link}", {te.market_value})'
                     self.worksheet.write_formula(
-                        self.row_num, 5, hyperlink, self.workbook_formats.currency_link
+                        self.row_num, 6, hyperlink, self.workbook_formats.currency_link
                     )
 
                     link = row_tracker.get_rows_from_list(te.buys)
                     hyperlink = f'=HYPERLINK("{link}", {te.cost})'
                     self.worksheet.write_formula(
-                        self.row_num, 6, hyperlink, self.workbook_formats.currency_link
+                        self.row_num, 7, hyperlink, self.workbook_formats.currency_link
                     )
                 else:
                     self.worksheet.write_number(
-                        self.row_num, 5, te.market_value, self.workbook_formats.currency
+                        self.row_num, 6, te.market_value, self.workbook_formats.currency
                     )
                     self.worksheet.write_number(
-                        self.row_num, 6, te.cost, self.workbook_formats.currency
+                        self.row_num, 7, te.cost, self.workbook_formats.currency
                     )
 
                 self.worksheet.set_row(self.row_num, None, None, {"level": 1, "hidden": True})
@@ -1538,15 +1584,17 @@ class Worksheet:
             # Grand total Market Value
             self.worksheet.write_formula(
                 self.row_num,
-                5,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 5, end_row, 5)})",
+                6,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 6, end_row, 6)})",
                 self.workbook_formats.currency_bold,
             )
             # Grand total Cost Basis
             self.worksheet.write_formula(
                 self.row_num,
-                6,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 6, end_row, 6)})",
+                7,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 7, end_row, 7)})",
                 self.workbook_formats.currency_bold,
             )
             self.worksheet.add_table(
@@ -1560,12 +1608,12 @@ class Worksheet:
                     "name": f"{table_name}_{t_type.replace('-', '_')}",
                 },
             )
-            cell = xlsxwriter.utility.xl_rowcol_to_cell(start_row + 1, 1, col_abs=True)
+            cell = xlsxwriter.utility.xl_rowcol_to_cell(start_row + 1, 2, col_abs=True)
             self.worksheet.conditional_format(
                 start_row + 1,
-                1,
+                2,
                 self.row_num,
-                1,
+                2,
                 {
                     "type": "formula",
                     "criteria": f"=INT({cell})={cell}",
@@ -1573,10 +1621,10 @@ class Worksheet:
                 },
             )
             self.worksheet.ignore_errors(
-                {"formula_differs": xlsxwriter.utility.xl_range(start_row + 1, 5, self.row_num, 5)}
+                {"formula_differs": xlsxwriter.utility.xl_range(start_row + 1, 6, self.row_num, 6)}
             )
             self.worksheet.ignore_errors(
-                {"formula_differs": xlsxwriter.utility.xl_range(start_row + 1, 6, self.row_num, 6)}
+                {"formula_differs": xlsxwriter.utility.xl_range(start_row + 1, 7, self.row_num, 7)}
             )
             self.row_num += 1
 
@@ -1605,29 +1653,30 @@ class Worksheet:
             start_a_row = self.row_num
             for te in income.assets[asset]:
                 self.worksheet.write_string(self.row_num, 0, te.asset)
+                self.worksheet.write_string(self.row_num, 1, te.buy.wallet)
                 self.worksheet.write_number(
-                    self.row_num, 1, te.quantity.normalize(), self.workbook_formats.quantity
+                    self.row_num, 2, te.quantity.normalize(), self.workbook_formats.quantity
                 )
-                self.worksheet.write_string(self.row_num, 2, te.note)
-                self.worksheet.write_datetime(self.row_num, 3, te.date, self.workbook_formats.date)
-                self.worksheet.write_string(self.row_num, 4, te.type.value)
+                self.worksheet.write_string(self.row_num, 3, te.note)
+                self.worksheet.write_datetime(self.row_num, 4, te.date, self.workbook_formats.date)
+                self.worksheet.write_string(self.row_num, 5, te.type.value)
 
                 if row_tracker:
                     link = row_tracker.get_row(te.buy)
                     hyperlink = f'=HYPERLINK("{link}", {te.amount})'
                     self.worksheet.write_formula(
-                        self.row_num, 5, hyperlink, self.workbook_formats.currency_link
+                        self.row_num, 6, hyperlink, self.workbook_formats.currency_link
                     )
                     hyperlink = f'=HYPERLINK("{link}", {te.fees})'
                     self.worksheet.write_formula(
-                        self.row_num, 6, hyperlink, self.workbook_formats.currency_link
+                        self.row_num, 7, hyperlink, self.workbook_formats.currency_link
                     )
                 else:
                     self.worksheet.write_number(
-                        self.row_num, 5, te.amount, self.workbook_formats.currency
+                        self.row_num, 6, te.amount, self.workbook_formats.currency
                     )
                     self.worksheet.write_number(
-                        self.row_num, 6, te.fees, self.workbook_formats.currency
+                        self.row_num, 7, te.fees, self.workbook_formats.currency
                     )
 
                 self.worksheet.set_row(self.row_num, None, None, {"level": 2, "hidden": True})
@@ -1640,25 +1689,28 @@ class Worksheet:
             # Subtotal Quantity
             self.worksheet.write_formula(
                 self.row_num,
-                1,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_a_row, 1, end_a_row, 1)})",
+                2,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_a_row, 2, end_a_row, 2)})",
                 self.workbook_formats.quantity,
             )
             # Subtotal Market Value
             self.worksheet.write_formula(
                 self.row_num,
-                5,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_a_row, 5, end_a_row, 5)})",
+                6,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_a_row, 6, end_a_row, 6)})",
                 self.workbook_formats.currency,
             )
             # Subtotal Fees
             self.worksheet.write_formula(
                 self.row_num,
-                6,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_a_row, 6, end_a_row, 6)})",
+                7,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_a_row, 7, end_a_row, 7)})",
                 self.workbook_formats.currency,
             )
-            self.worksheet.set_row(self.row_num, None, None, {"level": 1, "collapsed": True})
+            self.worksheet.set_row(self.row_num, None, None, {"level": 1})
             self.row_num += 1
 
         self.worksheet.write_string(self.row_num, 0, "Grand Total", self.workbook_formats.bold)
@@ -1667,20 +1719,22 @@ class Worksheet:
             # Grand total Market Value
             self.worksheet.write_formula(
                 self.row_num,
-                5,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 5, end_a_row, 5)})",
+                6,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 6, end_a_row, 6)})",
                 self.workbook_formats.currency_bold,
             )
             # Grand total Fees
             self.worksheet.write_formula(
                 self.row_num,
-                6,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 6, end_a_row, 6)})",
+                7,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 7, end_a_row, 7)})",
                 self.workbook_formats.currency_bold,
             )
         else:
-            self.worksheet.write_number(self.row_num, 5, 0, self.workbook_formats.currency_bold)
             self.worksheet.write_number(self.row_num, 6, 0, self.workbook_formats.currency_bold)
+            self.worksheet.write_number(self.row_num, 7, 0, self.workbook_formats.currency_bold)
 
         self.worksheet.add_table(
             start_row,
@@ -1693,12 +1747,12 @@ class Worksheet:
                 "name": table_name,
             },
         )
-        cell = xlsxwriter.utility.xl_rowcol_to_cell(start_row + 1, 1, col_abs=True)
+        cell = xlsxwriter.utility.xl_rowcol_to_cell(start_row + 1, 2, col_abs=True)
         self.worksheet.conditional_format(
             start_row + 1,
-            1,
+            2,
             self.row_num,
-            1,
+            2,
             {
                 "type": "formula",
                 "criteria": f"=INT({cell})={cell}",
@@ -1706,10 +1760,10 @@ class Worksheet:
             },
         )
         self.worksheet.ignore_errors(
-            {"formula_differs": xlsxwriter.utility.xl_range(start_row + 1, 5, self.row_num, 5)}
+            {"formula_differs": xlsxwriter.utility.xl_range(start_row + 1, 6, self.row_num, 6)}
         )
         self.worksheet.ignore_errors(
-            {"formula_differs": xlsxwriter.utility.xl_range(start_row + 1, 6, self.row_num, 6)}
+            {"formula_differs": xlsxwriter.utility.xl_range(start_row + 1, 7, self.row_num, 7)}
         )
         self.row_num += 1
 
@@ -1774,17 +1828,19 @@ class Worksheet:
             self.worksheet.write_formula(
                 self.row_num,
                 5,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_a_row, 5, end_a_row, 5)})",
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_a_row, 5, end_a_row, 5)})",
                 self.workbook_formats.currency,
             )
             # Subtotal Fees
             self.worksheet.write_formula(
                 self.row_num,
                 6,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_a_row, 6, end_a_row, 6)})",
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_a_row, 6, end_a_row, 6)})",
                 self.workbook_formats.currency,
             )
-            self.worksheet.set_row(self.row_num, None, None, {"level": 1, "collapsed": True})
+            self.worksheet.set_row(self.row_num, None, None, {"level": 1})
             self.row_num += 1
 
         self.worksheet.write_string(self.row_num, 0, "Grand Total", self.workbook_formats.bold)
@@ -1794,14 +1850,16 @@ class Worksheet:
             self.worksheet.write_formula(
                 self.row_num,
                 5,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 5, end_a_row, 5)})",
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 5, end_a_row, 5)})",
                 self.workbook_formats.currency_bold,
             )
             # Grand total Fees
             self.worksheet.write_formula(
                 self.row_num,
                 6,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 6, end_a_row, 6)})",
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 6, end_a_row, 6)})",
                 self.workbook_formats.currency_bold,
             )
         else:
@@ -1921,31 +1979,35 @@ class Worksheet:
             self.worksheet.write_formula(
                 self.row_num,
                 3,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_a_row, 3, end_a_row, 3)})",
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_a_row, 3, end_a_row, 3)})",
                 self.workbook_formats.currency,
             )
             # Subtotal Losses
             self.worksheet.write_formula(
                 self.row_num,
                 4,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_a_row, 4, end_a_row, 4)})",
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_a_row, 4, end_a_row, 4)})",
                 self.workbook_formats.currency,
             )
             # Subtotal Fees
             self.worksheet.write_formula(
                 self.row_num,
                 5,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_a_row, 5, end_a_row, 5)})",
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_a_row, 5, end_a_row, 5)})",
                 self.workbook_formats.currency,
             )
             # Subtotal Fee Rebates
             self.worksheet.write_formula(
                 self.row_num,
                 6,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_a_row, 6, end_a_row, 6)})",
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_a_row, 6, end_a_row, 6)})",
                 self.workbook_formats.currency,
             )
-            self.worksheet.set_row(self.row_num, None, None, {"level": 1, "collapsed": True})
+            self.worksheet.set_row(self.row_num, None, None, {"level": 1})
             self.row_num += 1
 
         self.worksheet.write_string(self.row_num, 0, "Grand Total", self.workbook_formats.bold)
@@ -1955,28 +2017,32 @@ class Worksheet:
             self.worksheet.write_formula(
                 self.row_num,
                 3,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 3, end_a_row, 3)})",
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 3, end_a_row, 3)})",
                 self.workbook_formats.currency_bold,
             )
             # Grand total Losses
             self.worksheet.write_formula(
                 self.row_num,
                 4,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 4, end_a_row, 4)})",
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 4, end_a_row, 4)})",
                 self.workbook_formats.currency_bold,
             )
             # Grand total Fees
             self.worksheet.write_formula(
                 self.row_num,
                 5,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 5, end_a_row, 5)})",
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 5, end_a_row, 5)})",
                 self.workbook_formats.currency_bold,
             )
             # Grand total Fee Rebates
             self.worksheet.write_formula(
                 self.row_num,
                 6,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 6, end_a_row, 6)})",
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 6, end_a_row, 6)})",
                 self.workbook_formats.currency_bold,
             )
         else:
@@ -2010,18 +2076,144 @@ class Worksheet:
         )
         self.row_num += 1
 
-    def holdings(
-        self,
-        title: str,
-        holdings_report: HoldingsReportRecord,
-        table_name: str,
+    def holdings_by_wallet(
+        self, holdings: Dict[Wallet, Dict[AssetSymbol, HoldingsReportAsset]]
     ) -> None:
         self.worksheet.merge_range(
             self.row_num,
             0,
             self.row_num,
-            len(self.HOLDINGS_HEADERS) - 1,
-            title,
+            len(self.HOLD_WALLET_HEADERS) - 1,
+            "Current Holdings - Wallet Balances",
+            self.workbook_formats.title,
+        )
+        self.row_num += 1
+        start_row = self.row_num
+        end_w_row = None
+
+        self.row_num += 1
+
+        for wallet in sorted(holdings, key=str.lower):
+            start_w_row = self.row_num
+            for asset in sorted(holdings[wallet], key=str.lower):
+                holding = holdings[wallet][asset]
+                self.worksheet.write_string(self.row_num, 0, wallet)
+                self.worksheet.write_string(self.row_num, 1, asset)
+                self.worksheet.write_string(self.row_num, 2, holding["name"])
+                self.worksheet.write_number(
+                    self.row_num, 3, holding["quantity"].normalize(), self.workbook_formats.quantity
+                )
+                self.worksheet.write_number(
+                    self.row_num, 4, holding["cost"], self.workbook_formats.currency
+                )
+                if holding["value"] is not None:
+                    self.worksheet.write_number(
+                        self.row_num, 5, holding["value"], self.workbook_formats.currency
+                    )
+                    self.worksheet.write_number(
+                        self.row_num, 6, holding["gain"], self.workbook_formats.currency
+                    )
+                else:
+                    self.worksheet.write_string(
+                        self.row_num, 5, "NOT AVAILABLE", self.workbook_formats.string_right
+                    )
+                self.worksheet.set_row(self.row_num, None, None, {"level": 2, "hidden": False})
+                end_w_row = self.row_num
+                self.row_num += 1
+            self.worksheet.write_string(
+                self.row_num, 0, f"{wallet} Total", self.workbook_formats.bold
+            )
+            # Subtotal Cost
+            self.worksheet.write_formula(
+                self.row_num,
+                4,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_w_row, 4, end_w_row, 4)})",
+                self.workbook_formats.currency,
+            )
+            # Subtotal Value
+            self.worksheet.write_formula(
+                self.row_num,
+                5,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_w_row, 5, end_w_row, 5)})",
+                self.workbook_formats.currency,
+            )
+            # Subtotal Gain/Loss
+            self.worksheet.write_formula(
+                self.row_num,
+                6,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_w_row, 6, end_w_row, 6)})",
+                self.workbook_formats.currency,
+            )
+            self.worksheet.set_row(self.row_num, None, None, {"level": 1})
+            self.row_num += 1
+
+        self.worksheet.write_string(self.row_num, 0, "Grand Total", self.workbook_formats.bold)
+
+        if end_w_row is not None:
+            # Grand total Cost
+            self.worksheet.write_formula(
+                self.row_num,
+                4,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 4, end_w_row, 4)})",
+                self.workbook_formats.currency_bold,
+            )
+            # Grand total Value
+            self.worksheet.write_formula(
+                self.row_num,
+                5,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 5, end_w_row, 5)})",
+                self.workbook_formats.currency_bold,
+            )
+            # Grand total Gain/Loss
+            self.worksheet.write_formula(
+                self.row_num,
+                6,
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 6, end_w_row, 6)})",
+                self.workbook_formats.currency_bold,
+            )
+        else:
+            self.worksheet.write_number(self.row_num, 4, 0, self.workbook_formats.currency_bold)
+            self.worksheet.write_number(self.row_num, 5, 0, self.workbook_formats.currency_bold)
+            self.worksheet.write_number(self.row_num, 6, 0, self.workbook_formats.currency_bold)
+
+        self.worksheet.add_table(
+            start_row,
+            0,
+            self.row_num,
+            len(self.HOLD_WALLET_HEADERS) - 1,
+            {
+                "style": self.TABLE_STYLE,
+                "columns": self._get_columns(self.HOLD_WALLET_HEADERS),
+                "name": "Holdings_Wallet",
+            },
+        )
+        cell = xlsxwriter.utility.xl_rowcol_to_cell(start_row + 1, 2, col_abs=True)
+        self.worksheet.conditional_format(
+            start_row + 1,
+            3,
+            self.row_num,
+            3,
+            {
+                "type": "formula",
+                "criteria": f"=INT({cell})={cell}",
+                "format": self.workbook_formats.num_int,
+            },
+        )
+        self.row_num += 1
+
+    def holdings_by_asset(self, holdings: Dict[AssetSymbol, HoldingsReportAsset]) -> None:
+        self.worksheet.merge_range(
+            self.row_num,
+            0,
+            self.row_num,
+            len(self.HOLD_ASSET_HEADERS) - 1,
+            "Current Holdings - Asset Balances",
             self.workbook_formats.title,
         )
         self.row_num += 1
@@ -2030,9 +2222,9 @@ class Worksheet:
 
         self.row_num += 1
 
-        for h in sorted(holdings_report["holdings"], key=str.lower):
-            holding = holdings_report["holdings"][h]
-            self.worksheet.write_string(self.row_num, 0, h)
+        for asset in sorted(holdings, key=str.lower):
+            holding = holdings[asset]
+            self.worksheet.write_string(self.row_num, 0, asset)
             self.worksheet.write_string(self.row_num, 1, holding["name"])
             self.worksheet.write_number(
                 self.row_num, 2, holding["quantity"].normalize(), self.workbook_formats.quantity
@@ -2061,21 +2253,24 @@ class Worksheet:
             self.worksheet.write_formula(
                 self.row_num,
                 3,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 3, end_a_row, 3)})",
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 3, end_a_row, 3)})",
                 self.workbook_formats.currency_bold,
             )
             # Total Market Value
             self.worksheet.write_formula(
                 self.row_num,
                 4,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 4, end_a_row, 4)})",
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 4, end_a_row, 4)})",
                 self.workbook_formats.currency_bold,
             )
             # Total Gain/Loss
             self.worksheet.write_formula(
                 self.row_num,
                 5,
-                f"=SUBTOTAL(9,{xlsxwriter.utility.xl_range(start_row + 1, 5, end_a_row, 5)})",
+                f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                f"{xlsxwriter.utility.xl_range(start_row + 1, 5, end_a_row, 5)})",
                 self.workbook_formats.currency_bold,
             )
         else:
@@ -2087,11 +2282,11 @@ class Worksheet:
             start_row,
             0,
             self.row_num,
-            len(self.HOLDINGS_HEADERS) - 1,
+            len(self.HOLD_ASSET_HEADERS) - 1,
             {
                 "style": self.TABLE_STYLE,
-                "columns": self._get_columns(self.HOLDINGS_HEADERS),
-                "name": table_name,
+                "columns": self._get_columns(self.HOLD_ASSET_HEADERS),
+                "name": "Holdings_Asset",
             },
         )
         cell = xlsxwriter.utility.xl_rowcol_to_cell(start_row + 1, 2, col_abs=True)
@@ -2110,6 +2305,9 @@ class Worksheet:
 
 
 class RowTracker:
+    BUY_WIDTH = len(Worksheet.BUYS_HEADERS) - 1
+    SELL_WIDTH = len(Worksheet.SELLS_HEADERS) - 1
+
     def __init__(self) -> None:
         self.buys_to_row: Dict[Buy, int] = {}
         self.sells_to_row: Dict[Sell, int] = {}
@@ -2133,18 +2331,20 @@ class RowTracker:
         if buy_matches:
             min_row = min(buy_matches)
             max_row = max(buy_matches)
-            return f"#Buys!{xlsxwriter.utility.xl_range(min_row, 0, max_row, 11)}"
+            return f"#Buys!{xlsxwriter.utility.xl_range(min_row, 0, max_row, self.BUY_WIDTH)}"
         raise RuntimeError("Buy missing in buys_to_row")
 
     def get_row(self, t: Union[Buy, Sell]) -> str:
         if isinstance(t, Buy):
             buy_row = self.buys_to_row.get(t)
             if buy_row:
-                return f"#Buys!{xlsxwriter.utility.xl_range(buy_row, 0, buy_row, 11)}"
+                return f"#Buys!{xlsxwriter.utility.xl_range(buy_row, 0, buy_row, self.BUY_WIDTH)}"
             raise RuntimeError("Buy missing in buys_to_row")
         if isinstance(t, Sell):
             sell_row = self.sells_to_row.get(t)
             if sell_row:
-                return f"#Sells!{xlsxwriter.utility.xl_range(sell_row, 0, sell_row, 11)}"
+                return (
+                    f"#Sells!{xlsxwriter.utility.xl_range(sell_row, 0, sell_row, self.SELL_WIDTH)}"
+                )
             raise RuntimeError("Sell missing in sells_to_row")
         raise RuntimeError("Unexpected transaction type")

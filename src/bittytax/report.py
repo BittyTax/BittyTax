@@ -25,6 +25,7 @@ from .bt_types import (
     Date,
     Note,
     TaxRules,
+    Wallet,
     Year,
 )
 from .config import config
@@ -35,6 +36,7 @@ from .tax import (
     CalculateIncome,
     CalculateMarginTrading,
     CapitalGainsReportTotal,
+    HoldingsReportAsset,
     HoldingsReportRecord,
     TaxReportRecord,
 )
@@ -78,6 +80,7 @@ class ReportPdf:
         self.env.filters["lenfilter"] = self.lenfilter
         self.env.filters["audittotalsfilter"] = self.audittotalsfilter
         self.env.filters["mismatchfilter"] = self.mismatchfilter
+        self.env.filters["walletfilter"] = self.walletfilter
         self.env.globals["TAX_RULES_UK_COMPANY"] = TAX_RULES_UK_COMPANY
         self.env.globals["TEMPLATE_PATH"] = pkg_resources.files(__package__).joinpath("templates")
 
@@ -132,6 +135,12 @@ class ReportPdf:
             )
         else:
             print(f"{ERROR} Failed to create PDF report")
+
+    @staticmethod
+    def walletfilter(wallet: Wallet, tax_year: int) -> str:
+        if config.is_per_wallet(tax_year):
+            return wallet
+        return "UNIVERSAL"
 
     @staticmethod
     def datefilter(date: Date) -> str:
@@ -267,7 +276,8 @@ class ReportLog:
             print(
                 f"{H1}Tax Year - {config.format_tax_year(tax_year)} "
                 f"({self.format_date2(Date(config.get_tax_year_start(tax_year)))} to "
-                f"{self.format_date2(Date(config.get_tax_year_end(tax_year)))}){_H1}"
+                f"{self.format_date2(Date(config.get_tax_year_end(tax_year)))} - "
+                f"{config.get_cost_method(tax_rules, tax_year)}){_H1}"
             )
             if tax_rules in TAX_RULES_UK_COMPANY:
                 print(f"{Fore.CYAN}Chargeable Gains")
@@ -282,13 +292,15 @@ class ReportLog:
                 self._capital_gains(
                     tax_report[tax_year]["CapitalGains"].short_term,
                     tax_report[tax_year]["CapitalGains"].short_term_totals,
+                    tax_year,
                 )
                 print(f"\n{Fore.CYAN}Capital Gains (Long-Term)")
                 self._capital_gains(
                     tax_report[tax_year]["CapitalGains"].long_term,
                     tax_report[tax_year]["CapitalGains"].long_term_totals,
+                    tax_year,
                 )
-                self._no_gain_no_loss(tax_report[tax_year]["CapitalGains"])
+                self._no_gain_no_loss(tax_report[tax_year]["CapitalGains"], tax_year)
             else:
                 raise RuntimeError("Unexpected tax_rules")
 
@@ -325,7 +337,8 @@ class ReportLog:
             print(
                 f"{H1}Tax Year - {config.format_tax_year(tax_year)} "
                 f"({self.format_date2(Date(config.get_tax_year_start(tax_year)))} to "
-                f"{self.format_date2(Date(config.get_tax_year_end(tax_year)))}){_H1}"
+                f"{self.format_date2(Date(config.get_tax_year_end(tax_year)))} - "
+                f"{config.get_cost_method(tax_rules, tax_year)}){_H1}"
             )
             if tax_rules in TAX_RULES_UK_COMPANY:
                 print(f"{Fore.CYAN}Chargeable Gains")
@@ -340,18 +353,24 @@ class ReportLog:
                 self._capital_gains(
                     tax_report[tax_year]["CapitalGains"].short_term,
                     tax_report[tax_year]["CapitalGains"].short_term_totals,
+                    tax_year,
                 )
                 print(f"\n{Fore.CYAN}Capital Gains (Long-Term)")
                 self._capital_gains(
                     tax_report[tax_year]["CapitalGains"].long_term,
                     tax_report[tax_year]["CapitalGains"].long_term_totals,
+                    tax_year,
                 )
-                self._no_gain_no_loss(tax_report[tax_year]["CapitalGains"])
+                self._no_gain_no_loss(tax_report[tax_year]["CapitalGains"], tax_year)
             else:
                 raise RuntimeError("Unexpected tax_rules")
 
             self._income(tax_report[tax_year]["Income"])
             self._margin_trading(tax_report[tax_year]["MarginTrading"])
+
+        if holdings_report:
+            print(f"{H1}Current Holdings{_H1}")
+            self._holdings(holdings_report)
 
         print(f"{H1}Appendix{_H1}")
         for tax_year in sorted(tax_report):
@@ -368,9 +387,6 @@ class ReportLog:
                 self._price_data(price_report[tax_year])
 
             print("")
-
-        if holdings_report:
-            self._holdings(holdings_report)
 
     def _audit(self, audit: AuditRecords) -> None:
         print(f"{H1}Audit{_H1}")
@@ -415,9 +431,11 @@ class ReportLog:
         self,
         cgains: Dict[AssetSymbol, List[TaxEventCapitalGains]],
         cgains_totals: CapitalGainsReportTotal,
+        tax_year: int,
     ) -> None:
         header = (
             f'{"Asset":<{self.MAX_SYMBOL_LEN}} '
+            f'{"Wallet":<30} '
             f'{"Quantity":<25} '
             f'{"Date Acq.":<14} '
             f'{"Date Sold":<14} '
@@ -439,6 +457,7 @@ class ReportLog:
                 gain += te.gain
                 print(
                     f"{Fore.WHITE}{te.asset:<{self.MAX_SYMBOL_LEN}} "
+                    f"{self.format_wallet(te.sell.wallet, tax_year):<30} "
                     f"{self.format_quantity(te.quantity):<25} "
                     f"{te.a_date():<14} "
                     f"{self.format_date(te.date):<14} "
@@ -450,6 +469,7 @@ class ReportLog:
             if disposals > 1:
                 print(
                     f'{Fore.YELLOW}{"Total":<{self.MAX_SYMBOL_LEN}} '
+                    f'{"":<30} '
                     f"{self.format_quantity(quantity):<25} "
                     f'{"":<14} '
                     f'{"":<14} '
@@ -461,6 +481,7 @@ class ReportLog:
         print(f'{Fore.YELLOW}{"_" * len(header)}')
         print(
             f'{Fore.YELLOW}{Style.BRIGHT}{"Total":<{self.MAX_SYMBOL_LEN}} '
+            f'{"":<30} '
             f'{"":<25} '
             f'{"":<14} '
             f'{"":<14} '
@@ -470,9 +491,10 @@ class ReportLog:
             f'{self.format_value(cgains_totals["gain"]):>18}{Style.NORMAL}'
         )
 
-    def _no_gain_no_loss(self, cgains: CalculateCapitalGains) -> None:
+    def _no_gain_no_loss(self, cgains: CalculateCapitalGains, tax_year: int) -> None:
         header = (
             f'{"Asset":<{self.MAX_SYMBOL_LEN}} '
+            f'{"Wallet":<30} '
             f'{"Quantity":<25} '
             f'{"Description":<40} '
             f'{"Date Disp.":<14} '
@@ -486,6 +508,7 @@ class ReportLog:
             print(f'{Fore.YELLOW}{"_" * len(header)}')
             print(
                 f'{Fore.YELLOW}{Style.BRIGHT}{"Total":<{self.MAX_SYMBOL_LEN}} '
+                f'{"":<30} '
                 f'{"":<25} '
                 f'{"":<40} '
                 f'{"":<14} '
@@ -501,6 +524,7 @@ class ReportLog:
             for te in cgains.non_tax_by_type[t_type]:
                 print(
                     f"{Fore.WHITE}{te.asset:<{self.MAX_SYMBOL_LEN}} "
+                    f"{self.format_wallet(te.sell.wallet, tax_year):<30} "
                     f"{self.format_quantity(te.quantity):<25} "
                     f"{self.format_note(te.note):<40} "
                     f"{self.format_date(te.date):<14} "
@@ -512,6 +536,7 @@ class ReportLog:
             print(f'{Fore.YELLOW}{"_" * len(header)}')
             print(
                 f'{Fore.YELLOW}{Style.BRIGHT}{"Total":<{self.MAX_SYMBOL_LEN}} '
+                f'{"":<30} '
                 f'{"":<25} '
                 f'{"":<40} '
                 f'{"":<14} '
@@ -591,6 +616,7 @@ class ReportLog:
         print(f"\n{Fore.CYAN}Income\n")
         header = (
             f'{"Asset":<{self.MAX_SYMBOL_LEN}} '
+            f'{"Wallet":<30} '
             f'{"Quantity":<25} '
             f'{"Description":<40} '
             f'{"Date Acq.":<14} '
@@ -609,6 +635,7 @@ class ReportLog:
                 fees += te.fees
                 print(
                     f"{Fore.WHITE}{te.asset:<{self.MAX_SYMBOL_LEN}} "
+                    f"{te.buy.wallet:<30} "
                     f"{self.format_quantity(te.quantity):<25} "
                     f"{self.format_note(te.note):<40} "
                     f"{self.format_date(te.date):<14} "
@@ -619,6 +646,7 @@ class ReportLog:
             if events > 1:
                 print(
                     f'{Fore.YELLOW}{"Total":<{self.MAX_SYMBOL_LEN}} '
+                    f'{"":<30} '
                     f"{self.format_quantity(quantity):<25} "
                     f'{"":<40} '
                     f'{"":<14} '
@@ -628,7 +656,8 @@ class ReportLog:
                 )
 
         print(
-            f'{Fore.YELLOW}{"Income Type":<{self.MAX_SYMBOL_LEN+25}}  '
+            f'{Fore.YELLOW}{"Income Type":<{self.MAX_SYMBOL_LEN+30}}  '
+            f'{"":<25} '
             f'{"":<40} '
             f'{"":<14} '
             f'{"":<14} '
@@ -639,6 +668,7 @@ class ReportLog:
         for i_type in sorted(income.type_totals):
             print(
                 f"{Fore.WHITE}{i_type:<{self.MAX_SYMBOL_LEN}} "
+                f'{"":<30} '
                 f'{"":<25} '
                 f'{"":<40} '
                 f'{"":<14} '
@@ -650,6 +680,7 @@ class ReportLog:
         print(f'{Fore.YELLOW}{"_" * len(header)}')
         print(
             f'{Fore.YELLOW}{Style.BRIGHT}{"Total":<{self.MAX_SYMBOL_LEN}} '
+            f'{"":<30} '
             f'{"":<25} '
             f'{"":<40} '
             f'{"":<14} '
@@ -718,8 +749,6 @@ class ReportLog:
             print(f"{Fore.BLUE}*Price of {self.format_value(Decimal(0))} used")
 
     def _holdings(self, holdings_report: HoldingsReportRecord) -> None:
-        print(f"{Fore.CYAN}Current Holdings\n")
-
         header = (
             f'{"Asset":<{self.ASSET_WIDTH}} '
             f'{"Quantity":<25} '
@@ -728,13 +757,51 @@ class ReportLog:
             f'{"Gain or (Loss)":>18}'
         )
 
+        if holdings_report["holdings_per_wallet"]:
+            for wallet in sorted(holdings_report["holdings_per_wallet"], key=str.lower):
+                print(f"{Fore.CYAN}Wallet Balance ({wallet})\n")
+                print(f"{Fore.YELLOW}{header}")
+                cost = value = gain = Decimal(0)
+                self._print_holdings_table(holdings_report["holdings_per_wallet"][wallet])
+                for asset in holdings_report["holdings_per_wallet"][wallet]:
+                    holding = holdings_report["holdings_per_wallet"][wallet][asset]
+                    cost += holding["cost"]
+                    if holding["value"] is not None:
+                        value += holding["value"]
+                        gain += holding["gain"]
+
+                print(f'{Fore.YELLOW}{"_" * len(header)}')
+                print(
+                    f"{Fore.YELLOW}{Style.BRIGHT}"
+                    f'{"Total":<{self.ASSET_WIDTH}} {"":<25} '
+                    f"{self.format_value(cost):>18} "
+                    f"{self.format_value(value):>18} "
+                    f"{Fore.RED if gain < 0 else Fore.YELLOW}"
+                    f"{self.format_value(gain):>18}{Style.NORMAL}"
+                )
+                print("")
+
+        print(f"{Fore.CYAN}Asset Balances\n")
         print(f"{Fore.YELLOW}{header}")
-        for h in sorted(holdings_report["holdings"]):
-            holding = holdings_report["holdings"][h]
+        self._print_holdings_table(holdings_report["holdings_per_asset"])
+
+        print(f'{Fore.YELLOW}{"_" * len(header)}')
+        print(
+            f"{Fore.YELLOW}{Style.BRIGHT}"
+            f'{"Total":<{self.ASSET_WIDTH}} {"":<25} '
+            f'{self.format_value(holdings_report["total"]["cost"]):>18} '
+            f'{self.format_value(holdings_report["total"]["value"]):>18} '
+            f'{Fore.RED if holdings_report["total"]["gain"] < 0 else Fore.YELLOW}'
+            f'{self.format_value(holdings_report["total"]["gain"]):>18}{Style.NORMAL}'
+        )
+
+    def _print_holdings_table(self, holdings: Dict[AssetSymbol, HoldingsReportAsset]) -> None:
+        for asset in sorted(holdings):
+            holding = holdings[asset]
             if holding["value"] is not None:
                 print(
                     f"{Fore.WHITE}"
-                    f'{self.format_asset(h, holding["name"]):<{self.ASSET_WIDTH}} '
+                    f'{self.format_asset(asset, holding["name"]):<{self.ASSET_WIDTH}} '
                     f'{self.format_quantity(holding["quantity"]):<25} '
                     f'{self.format_value(holding["cost"]):>18} '
                     f'{self.format_value(holding["value"]):>18} '
@@ -744,22 +811,18 @@ class ReportLog:
             else:
                 print(
                     f"{Fore.WHITE}"
-                    f'{self.format_asset(h, holding["name"]):<{self.ASSET_WIDTH}} '
+                    f'{self.format_asset(asset, holding["name"]):<{self.ASSET_WIDTH}} '
                     f'{self.format_quantity(holding["quantity"]):<25} '
                     f'{self.format_value(holding["cost"]):>18} '
                     f'{Fore.BLUE}{"Not available":>18} '
                     f'{"":>18}'
                 )
 
-        print(f'{Fore.YELLOW}{"_" * len(header)}')
-        print(
-            f"{Fore.YELLOW}{Style.BRIGHT}"
-            f'{"Total":<{self.ASSET_WIDTH}} {"":<25} '
-            f'{self.format_value(holdings_report["totals"]["cost"]):>18} '
-            f'{self.format_value(holdings_report["totals"]["value"]):>18} '
-            f'{Fore.RED if holdings_report["totals"]["gain"] < 0 else Fore.YELLOW}'
-            f'{self.format_value(holdings_report["totals"]["gain"]):>18}{Style.NORMAL}'
-        )
+    @staticmethod
+    def format_wallet(wallet: Wallet, tax_year: int) -> str:
+        if config.is_per_wallet(tax_year):
+            return wallet
+        return "UNIVERSAL"
 
     @staticmethod
     def format_date(date: Date) -> str:

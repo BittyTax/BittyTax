@@ -12,7 +12,8 @@ from pypdf import PageObject, PdfReader, PdfWriter
 from pypdf.generic import NameObject, create_string_object
 from typing_extensions import TypedDict
 
-from .bt_types import AssetSymbol, Year
+from .bt_types import AssetSymbol, Wallet, Year
+from .config import config
 from .constants import WARNING
 from .report import ProgressSpinner
 from .tax import CapitalGainsReportTotal, TaxReportRecord
@@ -251,7 +252,7 @@ class OutputIrs:
         fn = FormFieldNames(1)
         self._fill_header(fn)
         fn = self._fill_table(
-            self.tax_report[tax_year]["CapitalGains"].short_term, fn, self.reader.pages[0]
+            self.tax_report[tax_year]["CapitalGains"].short_term, fn, self.reader.pages[0], tax_year
         )
         self._fill_totals(self.tax_report[tax_year]["CapitalGains"].short_term_totals, fn)
 
@@ -259,7 +260,7 @@ class OutputIrs:
         fn = FormFieldNames(2)
         self._fill_header(fn)
         fn = self._fill_table(
-            self.tax_report[tax_year]["CapitalGains"].long_term, fn, self.reader.pages[1]
+            self.tax_report[tax_year]["CapitalGains"].long_term, fn, self.reader.pages[1], tax_year
         )
         self._fill_totals(self.tax_report[tax_year]["CapitalGains"].long_term_totals, fn)
 
@@ -294,6 +295,7 @@ class OutputIrs:
         cgains: Dict[AssetSymbol, List[TaxEventCapitalGains]],
         fn: FormFieldNames,
         source_page: PageObject,
+        tax_year: int,
     ) -> FormFieldNames:
         row_num = 0
 
@@ -312,16 +314,21 @@ class OutputIrs:
                     fn = FormFieldNames(self.f_num)
                     self._fill_header(fn)
 
-                self._fill_row(te, fn, row_num)
+                self._fill_row(te, fn, row_num, tax_year)
                 row_num += 1
         return fn
 
-    def _fill_row(self, te: TaxEventCapitalGains, fn: FormFieldNames, row_num: int) -> None:
+    def _fill_row(
+        self, te: TaxEventCapitalGains, fn: FormFieldNames, row_num: int, tax_year: int
+    ) -> None:
         if self.writer:
+            wallet = self.format_wallet(te.sell.wallet, tax_year)
             self.writer.update_page_form_field_values(
                 self.writer.pages[self.page_num],
                 {
-                    fn.row(row_num)["description"]: f"\n{te.quantity.normalize():0,f} {te.asset}",
+                    fn.row(row_num)[
+                        "description"
+                    ]: f"{wallet}\n{te.quantity.normalize():0,f} {te.asset}",
                     fn.row(row_num)["date_acq"]: te.a_date("%m/%d/%Y"),
                     fn.row(row_num)["date_sold"]: f"{te.date:%m/%d/%Y}",
                     fn.row(row_num)["proceeds"]: self.format_value(te.proceeds),
@@ -348,3 +355,9 @@ class OutputIrs:
         if value < 0:
             return f"({abs(value):0,.2f})"
         return f"{value:0,.2f}"
+
+    @staticmethod
+    def format_wallet(wallet: Wallet, tax_year: int) -> str:
+        if config.is_per_wallet(tax_year):
+            return wallet
+        return ""

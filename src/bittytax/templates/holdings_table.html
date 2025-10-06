@@ -1,0 +1,33 @@
+<table repeat="1" width="100%" class="asset-table">
+    <tr>
+        <th align="left">Asset</th>
+        <th align="left">Quantity</th>
+        <th align="right">Cost Basis</th>
+        <th align="right">Market Value</th>
+        <th align="right">Gain or (Loss)</th>
+    </tr>
+    {% for asset in holdings|sort %}
+        <tr>
+            {% if holdings[asset]['name'] %}
+                <td>{{ asset }} ({{ holdings[asset]['name'] }})</td>
+            {% else %}
+                <td>{{ assset }}</td>
+            {% endif %}
+            <td align="left">{{ holdings[asset]['quantity']|quantityfilter }}</td>
+            <td align="right">{{ holdings[asset]['cost']|valuefilter }}</td>
+            {% if holdings[asset]['value'] is not none %}
+                <td align="right">{{ holdings[asset]['value']|valuefilter }}</td>
+                {% if holdings[asset]['gain'] >= 0 %}
+                    <td align="right">{{ holdings[asset]['gain']|valuefilter }}</td>
+                {% else %}
+                    <td align="right" class="red-font">{{ holdings[asset]['gain']|valuefilter }}</td>
+                {% endif %}
+            {% else %}
+                <td align="right">
+                    <i>Not available</i>
+                </td>
+                <td></td>
+            {% endif %}
+        </tr>
+    {% endfor %}
+</table>

@@ -5,6 +5,7 @@
     <table repeat="1" width="100%" class="asset-table">
         <tr>
             <th align="left">Asset</th>
+            <th align="left">Wallet</th>
             <th align="left">Quantity</th>
             <th align="left">Description</th>
             <th align="left">Date Acquired</th>
@@ -16,6 +17,7 @@
             {% set asset_totals.events = asset_totals.events + 1 %}
             <tr>
                 <td>{{ te.asset }}</td>
+                <td>{{ te.buy.wallet }}</td>
                 <td>{{ te.quantity|quantityfilter }}</td>
                 <td>{{ te.note }}</td>
                 <td>{{ te.date|datefilter }}</td>
@@ -30,6 +32,7 @@
         {% if asset_totals.events > 1 %}
             <tr>
                 <td align="left">Total</td>
+                <td></td>
                 <td align="left">{{ asset_totals.quantity|quantityfilter }}</td>
                 <td></td>
                 <td></td>
@@ -48,12 +51,14 @@
         <th></th>
         <th></th>
         <th></th>
+        <th></th>
         <th align="right">Market Value</th>
         <th align="right">Fees</th>
     </tr>
     {% for i_type in income.type_totals|sort %}
         <tr>
             <td>{{ i_type }}</td>
+            <td></td>
             <td></td>
             <td></td>
             <td></td>
@@ -66,6 +71,7 @@
 <table class="total-table">
     <tr>
         <td align="left">Total</td>
+        <td></td>
         <td></td>
         <td></td>
         <td></td>

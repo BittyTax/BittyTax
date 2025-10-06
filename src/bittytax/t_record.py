@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 import dateutil.tz
 
-from .bt_types import Note, Timestamp, TrType, Wallet
+from .bt_types import Note, Tid, Timestamp, TrType, Wallet
 from .config import config
 
 if TYPE_CHECKING:
@@ -31,7 +31,7 @@ class TransactionRecord:
         note: Note,
         t_row: "TransactionRow",
     ) -> None:
-        self.tid: Optional[List[int]] = None
+        self.tid: Optional[Tid] = None
         self.t_type = t_type
         self.buy = buy
         self.sell = sell
@@ -57,14 +57,14 @@ class TransactionRecord:
             self.fee.wallet = self.wallet
             self.fee.note = self.note
 
-    def set_tid(self) -> List[int]:
+    def set_tid(self) -> Tid:
         if self.tid is None:
             TransactionRecord.cnt += 1
-            self.tid = [TransactionRecord.cnt, 0]
+            self.tid = Tid((TransactionRecord.cnt, 0, 0))
         else:
-            self.tid[1] += 1
+            self.tid = Tid((self.tid[0], self.tid[1] + 1, 0))
 
-        return list(self.tid)
+        return self.tid
 
     def _format_tid(self) -> str:
         if self.tid:
@@ -106,6 +106,9 @@ class TransactionRecord:
         if decimal is None:
             return ""
         return f"{decimal.normalize():0f}"
+
+    def __hash__(self) -> int:
+        return hash(self.tid)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TransactionRecord):

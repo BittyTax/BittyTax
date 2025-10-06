@@ -212,7 +212,7 @@ def main() -> None:
                 )
 
             if not args.skip_integrity:
-                int_passed = _do_integrity_check(audit, tax.holdings)
+                int_passed = _do_integrity_check(audit, tax.holdings_per_asset)
                 if not int_passed:
                     print(f"{Fore.RESET}Do you want to continue? [y/N] ", end="")
                     if input() != "y":
@@ -240,7 +240,7 @@ def main() -> None:
                     parser.prog,
                     args,
                     audit,
-                    tax.buy_queue,
+                    tax.buy_list,
                     tax.sells_ordered,
                     tax.other_transactions,
                     tax.tax_report,

@@ -2,6 +2,7 @@
     <table repeat="1" width="100%" class="asset-table mt mb">
         <tr>
             <th align="left">Asset</th>
+            <th align="left">Wallet</th>
             <th align="left">Quantity</th>
             <th align="left">Date Acquired</th>
             <th align="left">Date Sold</th>
@@ -16,6 +17,7 @@
     <table repeat="1" width="100%" class="asset-table mt mb">
         <tr>
             <th align="left">Asset</th>
+            <th align="left">Wallet</th>
             <th align="left">Quantity</th>
             <th align="left">Date Acquired</th>
             <th align="left">Date Sold</th>
@@ -27,6 +29,7 @@
             {% set asset_totals.disposals = asset_totals.disposals + 1 %}
             <tr>
                 <td>{{ te.asset }}</td>
+                <td>{{ te.sell.wallet|walletfilter(tax_year) }}</td>
                 <td>{{ te.quantity|quantityfilter }}</td>
                 {% set asset_totals.quantity = asset_totals.quantity + te.quantity %}
                 <td>{{ te.a_date() }}</td>
@@ -46,6 +49,7 @@
         {% if asset_totals.disposals > 1 %}
             <tr>
                 <td align="left">Total</td>
+                <td align="left"></td>
                 <td align="left">{{ asset_totals.quantity|quantityfilter }}</td>
                 <td align="left"></td>
                 <td align="left"></td>
@@ -63,7 +67,8 @@
 <table class="total-table mt">
     <tr>
         <td align="left">Total</td>
-        <td align="right"></td>
+        <td align="left"></td>
+        <td align="left"></td>
         <td align="left"></td>
         <td align="left"></td>
         <td align="right">{{ totals['proceeds']|valuefilter }}</td>

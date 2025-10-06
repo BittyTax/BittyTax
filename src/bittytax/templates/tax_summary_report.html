@@ -4,11 +4,13 @@
     <body>
         {% include "header_footer.html" %}
         {% include "cover_page.html" %}
+        <pdf:nexttemplate name="default-landscape" />
+        <pdf:nextpage />
         {% for tax_year in tax_report|sort %}
             {% set cgains = tax_report[tax_year]['CapitalGains'] %}
             <h1 class="tax-year">Tax Year - {{ config.format_tax_year(tax_year) }}</h1>
             <h2 class="date-range">
-                {{ config.get_tax_year_start(tax_year) |datefilter2 }} to {{ config.get_tax_year_end(tax_year) |datefilter2 }}
+                {{ config.get_tax_year_start(tax_year) |datefilter2 }} to {{ config.get_tax_year_end(tax_year) |datefilter2 }} - {{ config.get_cost_method(args.tax_rules, tax_year) }}
             </h2>
             <h2>Capital Gains</h2>
             <h3>Short-Term</h3>
@@ -25,6 +27,7 @@
             {% include "margin_trading.html" %}
             {% if not loop.last %}<pdf:nextpage />{% endif %}
         {% endfor %}
+        <pdf:nexttemplate name="default-portrait" />
         <pdf:nextpage />
         <h1>Appendix</h1>
         {% for tax_year in tax_report|sort %}

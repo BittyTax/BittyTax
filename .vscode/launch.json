@@ -37,6 +37,17 @@
             "args": "historic ${input:getAsset} ${input:getDate} ${input:getQuantity} -ds ${input:getDataSource} --nocache --debug"
         },
         {
+            "name": "Python Debugger: pytest",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "-vv",
+                "tests"
+            ],
+            "justMyCode": false
+        },
+        {
             "name": "PowerShell: BittyTax Conversion Tool",
             "type": "PowerShell",
             "request": "launch",
@@ -47,8 +58,8 @@
             "name": "PowerShell: BittyTax Accounting Tool",
             "type": "PowerShell",
             "request": "launch",
-            "script": "${workspaceFolder}/scripts/powershell/BittyTax Accounting Tool.ps1",
-        },
+            "script": "${workspaceFolder}/scripts/powershell/BittyTax Accounting Tool.ps1"
+        }
     ],
     "inputs": [
         {

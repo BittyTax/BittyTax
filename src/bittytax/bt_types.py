@@ -3,7 +3,18 @@
 
 from datetime import date, datetime
 from enum import Enum
-from typing import NewType
+from typing import NewType, Tuple
+
+
+class CostTrackingMethod(Enum):
+    UNIVERSAL = 0
+    PER_WALLET = 1
+    PER_WALLET_1JAN2025 = 2
+
+
+class UniversalOrdering(Enum):
+    TID = 0
+    DATE = 1  # Legacy (for backwards compatible)
 
 
 class TaxRules(Enum):
@@ -81,6 +92,21 @@ class TrRecordPart(Enum):
     BUY = "Buy"
     SELL = "Sell"
     FEE = "Fee"
+
+
+class Tid(tuple):
+    def __new__(cls, value: Tuple[int, int, int]) -> "Tid":
+        if not (isinstance(value, tuple) and len(value) == 3):
+            raise ValueError("Tid must be a tuple of 3 ints")
+        return super().__new__(cls, value)
+
+    def increment(self, by: int = 1) -> "Tid":
+        # Return a new TID with the 3rd value incremented by 'by'
+        return Tid((self[0], self[1], self[2] + by))
+
+    @property
+    def counter(self) -> int:
+        return self[2]
 
 
 TAX_RULES_US_INDIVIDUAL = [
