@@ -275,6 +275,7 @@
 - KuCoin parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
 - Accounting tool: increased precision for Decimals from 28 to 30 digits.
 - Accounting/Conversion tool: openpyxl.load_workbook set all parameters.
+- Accounting/Conversion/Price tool: changed --version to include compiled state.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.

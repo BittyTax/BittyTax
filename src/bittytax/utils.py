@@ -36,3 +36,7 @@ def bt_print(
         file.write(text)
         if flush:
             file.flush()
+
+
+def is_compiled() -> bool:
+    return "__compiled__" in globals()
