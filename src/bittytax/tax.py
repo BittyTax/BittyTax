@@ -677,9 +677,10 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
     def _calculate_holding(
         self, holding: Holdings, current_price: Optional[CurrentPrice]
     ) -> HoldingsReportAsset:
+        cost = (holding.cost + holding.fees).quantize(PRECISION)
+
         if current_price is not None:
             value = (current_price.price_ccy * holding.quantity).quantize(PRECISION)
-            cost = (holding.cost + holding.fees).quantize(PRECISION)
 
             return {
                 "name": current_price.name,
