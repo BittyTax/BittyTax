@@ -20,6 +20,7 @@ from ..constants import (
     CONV_FORMAT_RECAP,
     TERMINAL_POWERSHELL_GUI,
 )
+from ..utils import is_compiled
 from ..version import __version__
 from .datafile import DataFile
 from .datamerge import DataMerge
@@ -51,11 +52,17 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("filename", type=str, nargs="+", help="filename of data file")
+
+    if is_compiled():
+        version_str = f"{parser.prog} v{__version__} (compiled)"
+    else:
+        version_str = f"{parser.prog} v{__version__}"
+
     parser.add_argument(
         "-v",
         "--version",
         action="version",
-        version=f"{parser.prog} v{__version__}",
+        version=version_str,
     )
     parser.add_argument("-d", "--debug", action="store_true", help="enable debug logging")
     parser.add_argument(

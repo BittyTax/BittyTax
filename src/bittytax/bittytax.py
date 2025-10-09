@@ -29,7 +29,7 @@ from .t_record import TransactionRecord
 from .tax import CalculateCapitalGains as CCG
 from .tax import TaxCalculator
 from .transactions import TransactionHistory
-from .utils import bt_print
+from .utils import bt_print, is_compiled
 from .version import __version__
 
 if sys.stdout.encoding != "UTF-8":
@@ -50,11 +50,17 @@ def main() -> None:
         nargs="?",
         help="filename of transaction records, or can read CSV data from standard input",
     )
+
+    if is_compiled():
+        version_str = f"{parser.prog} v{__version__} (compiled)"
+    else:
+        version_str = f"{parser.prog} v{__version__}"
+
     parser.add_argument(
         "-v",
         "--version",
         action="version",
-        version=f"{parser.prog} v{__version__}",
+        version=version_str,
     )
     parser.add_argument("-d", "--debug", action="store_true", help="enable debug logging")
     parser.add_argument(

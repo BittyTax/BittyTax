@@ -15,6 +15,7 @@ from colorama import Fore
 from ..bt_types import AssetSymbol, Timestamp
 from ..config import config
 from ..constants import ERROR, TZ_UTC, WARNING
+from ..utils import is_compiled
 from ..version import __version__
 from .assetdata import AsPriceRecord, AsRecord, AssetData
 from .datasource import DataSourceBase
@@ -32,11 +33,17 @@ if sys.stdout.encoding != "UTF-8":
 def main() -> None:
     colorama.init()
     parser = argparse.ArgumentParser()
+
+    if is_compiled():
+        version_str = f"{parser.prog} v{__version__} (compiled)"
+    else:
+        version_str = f"{parser.prog} v{__version__}"
+
     parser.add_argument(
         "-v",
         "--version",
         action="version",
-        version=f"{parser.prog} v{__version__}",
+        version=version_str,
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
