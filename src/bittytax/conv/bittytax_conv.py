@@ -125,7 +125,7 @@ def main() -> None:
         config.config["binance_multi_bnb_split_even"] = True
 
     if config.debug:
-        sys.stderr.write(f"{Fore.YELLOW}{parser.prog} v{__version__}\n")
+        sys.stderr.write(f"{Fore.YELLOW}{version_str}\n")
         sys.stderr.write(f"{Fore.GREEN}python: v{platform.python_version()}\n")
         sys.stderr.write(
             f"{Fore.GREEN}system: {platform.system()}, release: {platform.release()}\n"
