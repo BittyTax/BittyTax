@@ -147,7 +147,7 @@ def main() -> None:
     config.debug = args.debug
 
     if config.debug:
-        print(f"{Fore.YELLOW}{parser.prog} v{__version__}")
+        print(f"{Fore.YELLOW}{version_str}")
         print(f"{Fore.GREEN}python: v{platform.python_version()}")
         print(f"{Fore.GREEN}system: {platform.system()}, release: {platform.release()}")
         for arg in vars(args):
