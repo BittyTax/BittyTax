@@ -408,11 +408,10 @@ def _get_trade_info(notes: str) -> Tuple[str, Optional[Decimal], Optional[Decima
         quote_amount = Decimal(match.group(3))
         quote_asset = match.group(4)
         trading_pair = match.group(5)
+        rate = match.group(6)
+        rate_pair = match.group(7)
 
-        if trading_pair is not None:
-            rate = Decimal(match.group(6))
-            rate_pair = match.group(7)
-
+        if trading_pair is not None and rate is not None and rate_pair is not None:
             # Advanced Trade
             if trading_pair.split("-")[1] != quote_asset:
                 raise RuntimeError(
@@ -424,7 +423,7 @@ def _get_trade_info(notes: str) -> Tuple[str, Optional[Decimal], Optional[Decima
                     f"Trading pair and rate pair mismatch: {trading_pair} and {rate_pair}"
                 )
 
-            subtotal = base_amount * rate
+            subtotal = base_amount * Decimal(rate)
             fees = abs(subtotal - quote_amount)
 
             return quote_asset, subtotal, fees
