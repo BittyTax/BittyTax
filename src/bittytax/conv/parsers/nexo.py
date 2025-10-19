@@ -308,6 +308,7 @@ def parse_nexo(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Parser
         "UnlockingTermDeposit",
         "Unlocking Term Deposit",
         "Transfer To Pro Wallet",
+        "Transfer From Pro Wallet",
     ):
         # Skip internal operations
         return

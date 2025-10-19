@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import sys
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Dict, List, Optional
@@ -16,6 +15,7 @@ from .constants import WARNING
 from .holdings import Holdings
 from .t_record import TransactionRecord
 from .transactions import Buy, Sell
+from .utils import bt_tqdm_write, disable_tqdm
 
 
 @dataclass
@@ -55,7 +55,7 @@ class AuditRecords:
             transaction_records,
             unit="tr",
             desc=f"{Fore.CYAN}audit transaction records{Fore.GREEN}",
-            disable=bool(config.debug or not sys.stdout.isatty()),
+            disable=disable_tqdm(),
         ):
             if config.debug:
                 print(f"{Fore.MAGENTA}audit: TR {tr}")
@@ -151,7 +151,7 @@ class AuditRecords:
                 f"(-{sell.quantity.normalize():0,f})"
             )
         if self.wallets[wallet][sell.asset] < 0 and sell.is_crypto():
-            tqdm.write(
+            bt_tqdm_write(
                 f"{WARNING} Balance at {wallet}:{sell.asset} "
                 f"is negative {self.wallets[wallet][sell.asset].normalize():0,f}"
             )

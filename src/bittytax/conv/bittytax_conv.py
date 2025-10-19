@@ -14,7 +14,13 @@ import colorama
 from colorama import Fore
 
 from ..config import config
-from ..constants import CONV_FORMAT_CSV, CONV_FORMAT_EXCEL, CONV_FORMAT_RECAP
+from ..constants import (
+    CONV_FORMAT_CSV,
+    CONV_FORMAT_EXCEL,
+    CONV_FORMAT_RECAP,
+    TERMINAL_POWERSHELL_GUI,
+)
+from ..utils import is_compiled
 from ..version import __version__
 from .datafile import DataFile
 from .datamerge import DataMerge
@@ -36,17 +42,27 @@ if sys.stderr.encoding != "UTF-8":
 
 
 def main() -> None:
-    colorama.init()
+    if config.terminal == TERMINAL_POWERSHELL_GUI:
+        colorama.init(strip=False)
+    else:
+        colorama.init()
+
     parser = argparse.ArgumentParser(
         epilog=f"supported data file formats:\n{DataParser.format_parsers()}",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("filename", type=str, nargs="+", help="filename of data file")
+
+    if is_compiled():
+        version_str = f"{parser.prog} v{__version__} (compiled)"
+    else:
+        version_str = f"{parser.prog} v{__version__}"
+
     parser.add_argument(
         "-v",
         "--version",
         action="version",
-        version=f"{parser.prog} v{__version__}",
+        version=version_str,
     )
     parser.add_argument("-d", "--debug", action="store_true", help="enable debug logging")
     parser.add_argument(
@@ -109,7 +125,7 @@ def main() -> None:
         config.config["binance_multi_bnb_split_even"] = True
 
     if config.debug:
-        sys.stderr.write(f"{Fore.YELLOW}{parser.prog} v{__version__}\n")
+        sys.stderr.write(f"{Fore.YELLOW}{version_str}\n")
         sys.stderr.write(f"{Fore.GREEN}python: v{platform.python_version()}\n")
         sys.stderr.write(
             f"{Fore.GREEN}system: {platform.system()}, release: {platform.release()}\n"

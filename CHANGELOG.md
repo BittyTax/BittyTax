@@ -25,6 +25,7 @@
 - Accounting tool: in PDF reports only word-wrap for asset-table and total-table.
 - KuCoin parser: Fee can be empty for deposits and withdrawals.
 - KuCoin parser: UTC can be without an offset.
+- Coinbase parser: fixed advanced trades without the "at" exchange rate specified. ([#458](https://github.com/BittyTax/BittyTax/issues/458))
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
@@ -178,6 +179,9 @@
 - Accounting tool: tax rates and allowance for 2025/26.
 - Accounting tool: new transaction type Margin-Fee-Rebate added. ([#415](https://github.com/BittyTax/BittyTax/issues/415))
 - CoinTracker parser: added "STAKING_REWARD", "INTEREST_PAYMENT" and "INCOME" types.
+- Nexo parser: added "Transfer From Pro Wallet" type. ([#442](https://github.com/BittyTax/BittyTax/issues/442))
+- Accounting tool/Conversion tool: added BITTYTAX_TERMINAL environment variable.
+- KuCoin parser: added "Convert Dust to KCS" type in Account History.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -259,6 +263,8 @@
 - Deribit parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
 - KuCoin parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
 - Accounting tool: increased precision for Decimals from 28 to 30 digits.
+- Accounting/Conversion tool: openpyxl.load_workbook set all parameters.
+- Accounting/Conversion/Price tool: changed --version to include compiled state.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.

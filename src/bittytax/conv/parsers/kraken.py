@@ -29,12 +29,16 @@ QUOTE_ASSETS = [
     "DOT",
     "ETH",
     "EUR",
+    "EURC",
+    "EUROP",
     "GBP",
     "JPY",
     "POL",
     "PYUSD",
     "RLUSD",
+    "SOL",
     "USD",
+    "USD1",
     "USDC",
     "USDD",
     "USDQ",
@@ -64,11 +68,13 @@ ALT_ASSETS = {
     "XXMR": "XMR",
     "XXRP": "XRP",
     "XZEC": "ZEC",
+    "ZARS": "ARS",
     "ZAUD": "AUD",
     "ZCAD": "CAD",
     "ZEUR": "EUR",
     "ZGBP": "GBP",
     "ZJPY": "JPY",
+    "ZMXN": "MXN",
     "ZUSD": "USD",
 }
 
@@ -86,8 +92,12 @@ STAKED_SUFFIX = [
 ]
 
 TRADINGPAIR_TO_QUOTE_ASSET = {
+    "2ZEUR": "EUR",
+    "2ZUSD": "USD",
     "AI16ZEUR": "EUR",
     "AI16ZUSD": "USD",
+    "AIOZEUR": "EUR",
+    "AIOZUSD": "USD",
     "BLZEUR": "EUR",
     "BLZUSD": "USD",
     "CHZEUR": "EUR",
