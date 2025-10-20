@@ -1,27 +1,16 @@
 {% set cgains = tax_report[tax_year]['CapitalGains'] %}
 <h3>Tax Estimate</h3>
-<p>The figures below are only an estimate, they do not take into consideration other gains and losses in the same tax year, always consult with a professional accountant before filing.</p>
-<table width="75%">
-    <tr>
-        {% if cgains.totals['gain'] > 0 %}
-            <td>Taxable gain*:</td>
-        {% else %}
-            <td>Taxable gain:</td>
-        {% endif %}
-        <td align="right">{{cgains.cgt_estimate['taxable_gain']|valuefilter}}</td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>Capital Gains Tax (Basic rate):</td>
-        <td align="right">{{cgains.cgt_estimate['cgt_basic']|valuefilter}}</td>
-        <td align="left" style="padding-left:2px">({{cgains.cgt_estimate['cgt_basic_rate']|ratefilter}})</td>
-    </tr>
-    <tr>
-        <td>Capital Gains Tax (Higher rate):</td>
-        <td align="right">{{cgains.cgt_estimate['cgt_higher']|valuefilter}}</td>
-        <td align="left" style="padding-left:2px">({{cgains.cgt_estimate['cgt_higher_rate']|ratefilter}})</td>
-    </tr>
-</table>
-{% if cgains.cgt_estimate['allowance_used'] %}
-    <p>*{{cgains.cgt_estimate['allowance_used']|valuefilter}} of the tax-free allowance ({{cgains.cgt_estimate['allowance']|valuefilter}}) used</p>
+<p>
+    The figures below are only an estimate, they do not take into consideration other gains and losses in the same tax year, always consult with a professional accountant before filing.
+</p>
+{% if not cgains.split_date %}
+    {% set cgt_estimate = cgains.cgt_estimate %}
+    {% include "cgt_estimate2.html" %}
+{% else %}
+    <h4>Gains before {{ cgains.split_date|datefilter2 }}</h4>
+    {% set cgt_estimate = cgains.cgt_estimate %}
+    {% include "cgt_estimate2.html" %}
+    <h4>Gains on or after {{ cgains.split_date|datefilter2 }}</h4>
+    {% set cgt_estimate = cgains.cgt_estimate_split %}
+    {% include "cgt_estimate2.html" %}
 {% endif %}

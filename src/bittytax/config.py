@@ -6,11 +6,15 @@ import os
 import sys
 from typing import Any, TextIO
 
-import pkg_resources
 import yaml
 from colorama import Fore
 
 from .constants import BITTYTAX_PATH, ERROR
+
+if sys.version_info < (3, 9):
+    import importlib_resources as pkg_resources
+else:
+    import importlib.resources as pkg_resources
 
 
 class Config:
@@ -38,6 +42,7 @@ class Config:
         "crypto_list": CRYPTO_LIST,
         "trade_asset_type": TRADE_ASSET_TYPE_PRIORITY,
         "trade_allowable_cost_type": TRADE_ALLOWABLE_COST_SPLIT,
+        "transaction_fee_allowable_cost": True,
         "audit_hide_empty": False,
         "show_empty_wallets": False,
         "transfers_include": False,
@@ -56,7 +61,15 @@ class Config:
         "binance_statements_only": False,
     }
 
+    OPTIONAL_CONFIG = (
+        "coingecko_pro_api_key",
+        "coingecko_demo_api_key",
+        "cryptocompare_api_key",
+        "coinpaprika_api_key",
+    )
+
     def __init__(self) -> None:
+        self.terminal = os.getenv("BITTYTAX_TERMINAL")
         self.debug = False
         self.start_of_year_month = 4
         self.start_of_year_day = 6
@@ -65,7 +78,11 @@ class Config:
             os.mkdir(BITTYTAX_PATH)
 
         if not os.path.exists(os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG)):
-            default_conf = pkg_resources.resource_string(__name__, "config/" + self.BITTYTAX_CONFIG)
+            default_conf = (
+                pkg_resources.files(__package__)
+                .joinpath(f"config/{self.BITTYTAX_CONFIG}")
+                .read_bytes()
+            )
             with open(os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG), "wb") as config_file:
                 config_file.write(default_conf)
 
@@ -82,6 +99,9 @@ class Config:
             sys.stderr.write(f"{ERROR}Config file contains an error:\n{e}\n")
             sys.exit(1)
 
+        if self.config is None:
+            self.config = {}
+
         for name, default in self.DEFAULT_CONFIG.items():
             if name not in self.config:
                 self.config[name] = default
@@ -92,19 +112,26 @@ class Config:
     def __getattr__(self, name: str) -> Any:
         return self.config[name]
 
-    def output_config(self, sys_out: TextIO) -> None:
-        sys_out.write(
-            f'{Fore.GREEN}config: "{os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG)}"\n'
-        )
+    def output_config(self, file: TextIO) -> None:
+        if config.terminal:
+            if sys.__stderr__ is not None:
+                file = sys.__stderr__
+            file.write(f"{Fore.GREEN}config: env BITTYTAX_TERMINAL={self.terminal}\n")
+
+        file.write(f'{Fore.GREEN}config: "{os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG)}"\n')
 
         for name in self.DEFAULT_CONFIG:
-            sys_out.write(f"{Fore.GREEN}config: {name}: {self.config[name]}\n")
+            file.write(f"{Fore.GREEN}config: {name}: {self.config[name]}\n")
+
+        for name in self.OPTIONAL_CONFIG:
+            if name in self.config:
+                file.write(f"{Fore.GREEN}config: {name}: {self._mask_data(self.config[name])}\n")
 
     def sym(self) -> str:
         if self.ccy == "GBP":
-            return "\xA3"  # £
+            return "\xa3"  # £
         if self.ccy == "EUR":
-            return "\u20AC"  # €
+            return "\u20ac"  # €
         if self.ccy in ("USD", "AUD", "NZD"):
             return "$"
         if self.ccy in ("DKK", "NOK", "SEK"):
@@ -145,6 +172,10 @@ class Config:
         if start.year == end.year:
             return f"{start:%Y}"
         return f"{start:%Y}/{end:%y}"
+
+    @staticmethod
+    def _mask_data(data: str, show: int = 4) -> str:
+        return data[-show:].rjust(len(data), "#")
 
 
 config = Config()

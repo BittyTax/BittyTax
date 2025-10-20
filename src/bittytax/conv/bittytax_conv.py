@@ -14,7 +14,13 @@ import colorama
 from colorama import Fore
 
 from ..config import config
-from ..constants import FORMAT_CSV, FORMAT_EXCEL, FORMAT_RECAP
+from ..constants import (
+    CONV_FORMAT_CSV,
+    CONV_FORMAT_EXCEL,
+    CONV_FORMAT_RECAP,
+    TERMINAL_POWERSHELL_GUI,
+)
+from ..utils import is_compiled
 from ..version import __version__
 from .datafile import DataFile
 from .datamerge import DataMerge
@@ -26,25 +32,37 @@ from .exceptions import (
     UnknownCryptoassetError,
     UnknownUsernameError,
 )
+from .mergers import *  # pylint: disable=wildcard-import, unused-wildcard-import
 from .output_csv import OutputCsv
 from .output_excel import OutputExcel
+from .parsers import *  # type: ignore[no-redef] # pylint: disable=wildcard-import, unused-wildcard-import # noqa: E501
 
 if sys.stderr.encoding != "UTF-8":
-    sys.stderr.reconfigure(encoding="utf-8")  # type: ignore[attr-defined]
+    sys.stderr.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
 
 
 def main() -> None:
-    colorama.init()
+    if config.terminal == TERMINAL_POWERSHELL_GUI:
+        colorama.init(strip=False)
+    else:
+        colorama.init()
+
     parser = argparse.ArgumentParser(
         epilog=f"supported data file formats:\n{DataParser.format_parsers()}",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("filename", type=str, nargs="+", help="filename of data file")
+
+    if is_compiled():
+        version_str = f"{parser.prog} v{__version__} (compiled)"
+    else:
+        version_str = f"{parser.prog} v{__version__}"
+
     parser.add_argument(
         "-v",
         "--version",
         action="version",
-        version=f"{parser.prog} v{__version__}",
+        version=version_str,
     )
     parser.add_argument("-d", "--debug", action="store_true", help="enable debug logging")
     parser.add_argument(
@@ -55,7 +73,7 @@ def main() -> None:
     )
     parser.add_argument(
         "-ca",
-        dest="cryptoasset",
+        "--cryptoasset",
         type=str,
         help="specify a cryptoasset symbol, if it cannot be identified automatically",
     )
@@ -79,8 +97,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--format",
-        choices=[FORMAT_EXCEL, FORMAT_CSV, FORMAT_RECAP],
-        default=FORMAT_EXCEL,
+        choices=[CONV_FORMAT_EXCEL, CONV_FORMAT_CSV, CONV_FORMAT_RECAP],
+        default=CONV_FORMAT_EXCEL,
         type=str.upper,
         help="specify the output format, default: EXCEL",
     )
@@ -107,22 +125,26 @@ def main() -> None:
         config.config["binance_multi_bnb_split_even"] = True
 
     if config.debug:
-        sys.stderr.write(f"{Fore.YELLOW}{parser.prog} v{__version__}\n")
+        sys.stderr.write(f"{Fore.YELLOW}{version_str}\n")
         sys.stderr.write(f"{Fore.GREEN}python: v{platform.python_version()}\n")
         sys.stderr.write(
             f"{Fore.GREEN}system: {platform.system()}, release: {platform.release()}\n"
         )
+        for arg in vars(args):
+            sys.stderr.write(f"{Fore.GREEN}args: {arg}: {getattr(args, arg)}\n")
         config.output_config(sys.stderr)
 
     file_hashes = set()
     for filename in args.filename:
+        if os.path.isdir(filename):
+            filename = os.path.join(filename, "**", "*")
+
         pathnames = glob.glob(filename, recursive=True)
         if not pathnames:
             pathnames = [filename]
 
         for pathname in pathnames:
             if os.path.isdir(pathname):
-                sys.stderr.write(_file_msg(pathname, None, msg="is a directory"))
                 continue
 
             try:
@@ -158,7 +180,7 @@ def main() -> None:
     if DataFile.data_files:
         DataMerge.match_merge(DataFile.data_files)
 
-        if args.format == FORMAT_EXCEL:
+        if args.format == CONV_FORMAT_EXCEL:
             output_excel = OutputExcel(parser.prog, DataFile.data_files_ordered, args)
             output_excel.write_excel()
         else:
@@ -194,9 +216,9 @@ def _get_file_info(filename: str) -> Tuple[str, str]:
     with open(filename, "rb") as df:
         file_hash = hashlib.sha1()
         chunk = df.read(8192)
-        if chunk[0:8] == b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1":
+        if chunk[0:8] == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1":
             file_type = "xls"
-        elif chunk[0:4] == b"\x50\x4B\x03\x04":
+        elif chunk[0:4] == b"\x50\x4b\x03\x04":
             # xlsx is a zip file, let openpyxl unpack and check
             file_type = "zip"
 

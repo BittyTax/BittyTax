@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -20,6 +21,16 @@ WALLET = "AdaLite"
 def parse_adalite(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
+
+    if "Received from (disclaimer: may not be accurate - first sender address only)" in row_dict:
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("Transaction ID"),
+            parser.in_header.index(
+                "Received from (disclaimer: may not be accurate - first sender address only)"
+            ),
+        )
+    else:
+        data_row.tx_raw = TxRawPos(parser.in_header.index("Transaction ID"))
 
     if row_dict["Type"] == "Received":
         data_row.t_record = TransactionOutRecord(
@@ -50,6 +61,25 @@ def parse_adalite(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Par
     else:
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
+
+DataParser(
+    ParserType.WALLET,
+    "AdaLite",
+    [
+        "Date",
+        "Transaction ID",
+        "Type",
+        "Received from (disclaimer: may not be accurate - first sender address only)",
+        "Received amount",
+        "Received currency",
+        "Sent amount",
+        "Sent currency",
+        "Fee amount",
+        "Fee currency",
+    ],
+    worksheet_name="AdaLite",
+    row_handler=parse_adalite,
+)
 
 DataParser(
     ParserType.WALLET,

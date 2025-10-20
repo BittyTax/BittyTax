@@ -2,6 +2,8 @@
 # (c) Nano Nano Ltd 2019
 
 import argparse
+import io
+import os
 import platform
 import re
 import sys
@@ -12,11 +14,17 @@ from typing import Dict, List, Optional, Tuple, Union
 import xlsxwriter
 from colorama import Fore
 from typing_extensions import TypedDict
-from xlsxwriter.utility import xl_rowcol_to_cell
 
 from ..bt_types import BUY_AND_SELL_TYPES, BUY_TYPES, SELL_TYPES, TrType, UnmappedType
 from ..config import config
-from ..constants import TZ_UTC
+from ..constants import (
+    EXCEL_PRECISION,
+    FONT_COLOR_TX_DEST,
+    FONT_COLOR_TX_HASH,
+    FONT_COLOR_TX_SRC,
+    PROJECT_URL,
+    TZ_UTC,
+)
 from ..version import __version__
 from .datafile import DataFile
 from .datarow import DataRow
@@ -37,27 +45,45 @@ class Column(TypedDict):  # pylint: disable=too-few-public-methods
 
 
 class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
-    EXCEL_PRECISION = 15
     FILE_EXTENSION = "xlsx"
     DATE_FORMAT = "yyyy-mm-dd hh:mm:ss"
     DATE_FORMAT_MS = "yyyy-mm-dd hh:mm:ss.000"  # Excel can only display milliseconds
     STR_FORMAT_MS = "%Y-%m-%dT%H:%M:%S.%f"
     FONT_COLOR_IN_DATA = "#808080"
+    SHEETNAME_MAX_LEN = 31
 
     TITLE = "BittyTax Records"
-    PROJECT_URL = "https://github.com/BittyTax/BittyTax"
 
-    def __init__(self, progname: str, data_files: List[DataFile], args: argparse.Namespace) -> None:
+    def __init__(
+        self,
+        progname: str,
+        data_files: List[DataFile],
+        args: Optional[argparse.Namespace] = None,
+        stream: Optional[io.BytesIO] = None,
+    ) -> None:
         super().__init__(data_files)
-        self.filename = self.get_output_filename(args.output_filename, self.FILE_EXTENSION)
-        self.workbook = xlsxwriter.Workbook(self.filename)
+        self.sheet_names: Dict[str, int] = {}
+        self.table_names: Dict[str, int] = {}
+
+        if not stream:
+            if not args:
+                raise RuntimeError("Missing args")
+
+            self.filename: Optional[str] = self.get_output_filename(
+                args.output_filename, self.FILE_EXTENSION
+            )
+            self.workbook = xlsxwriter.Workbook(self.filename)
+        else:
+            self.filename = None
+            self.workbook = xlsxwriter.Workbook(stream, {"in_memory": True})
+
         self.workbook.set_size(1800, 1200)
         self.workbook.formats[0].set_font_size(FONT_SIZE)
         self.workbook.set_properties(
             {
                 "title": self.TITLE,
                 "author": f"{progname} v{__version__}",
-                "comments": self.PROJECT_URL,
+                "comments": PROJECT_URL,
             }
         )
 
@@ -89,6 +115,15 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
         )
         self.format_in_data = self.workbook.add_format(
             {"font_size": FONT_SIZE, "font_color": self.FONT_COLOR_IN_DATA}
+        )
+        self.format_in_data_tx_hash = self.workbook.add_format(
+            {"font_size": FONT_SIZE, "font_color": f"#{FONT_COLOR_TX_HASH}"}
+        )
+        self.format_in_data_tx_src = self.workbook.add_format(
+            {"font_size": FONT_SIZE, "font_color": f"#{FONT_COLOR_TX_SRC}"}
+        )
+        self.format_in_data_tx_dest = self.workbook.add_format(
+            {"font_size": FONT_SIZE, "font_color": f"#{FONT_COLOR_TX_DEST}"}
         )
         self.format_in_data_col_err = self.workbook.add_format(
             {
@@ -135,47 +170,7 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             }
         )
 
-    def write_excel(self) -> None:
-        data_files = sorted(self.data_files, key=lambda df: df.parser.worksheet_name, reverse=False)
-        for data_file in data_files:
-            worksheet = Worksheet(self, data_file)
-
-            data_rows = sorted(data_file.data_rows, key=lambda dr: dr.timestamp, reverse=False)
-            for i, data_row in enumerate(data_rows):
-                worksheet.add_row(data_row, i + 1)
-
-            if data_rows:
-                worksheet.make_table(len(data_rows), data_file.parser.worksheet_name)
-            else:
-                # Just add headings
-                for i, columns in enumerate(worksheet.columns):
-                    worksheet.worksheet.write(0, i, columns["header"], columns["header_format"])
-
-            worksheet.autofit()
-
-        self.workbook.close()
-        sys.stderr.write(f"{Fore.WHITE}output EXCEL file created: {Fore.YELLOW}{self.filename}\n")
-
-
-class Worksheet:
-    SHEETNAME_MAX_LEN = 31
-    MAX_COL_WIDTH = 30
-
-    sheet_names: Dict[str, int] = {}
-    table_names: Dict[str, int] = {}
-
-    def __init__(self, output: OutputExcel, data_file: DataFile) -> None:
-        self.output = output
-        self.worksheet = output.workbook.add_worksheet(
-            self._sheet_name(data_file.parser.worksheet_name)
-        )
-        self.col_width: Dict[int, int] = {}
-        self.columns = self._make_columns(data_file.parser.in_header)
-        self.microseconds, self.milliseconds = self._is_microsecond_timestamp(data_file.data_rows)
-
-        self.worksheet.freeze_panes(1, len(self.output.BITTYTAX_OUT_HEADER))
-
-    def _sheet_name(self, parser_name: str) -> str:
+    def sheet_name(self, parser_name: str) -> str:
         # Remove special characters
         name = re.sub(r"[/\\\?\*\[\]:]", "", parser_name)
         name = name[: self.SHEETNAME_MAX_LEN] if len(name) > self.SHEETNAME_MAX_LEN else name
@@ -194,7 +189,7 @@ class Worksheet:
 
         return sheet_name
 
-    def _table_name(self, parser_name: str) -> str:
+    def table_name(self, parser_name: str) -> str:
         # Remove characters which are not allowed
         name = parser_name.replace(" ", "_")
         name = re.sub(r"[^a-zA-Z0-9\._]", "", name)
@@ -207,11 +202,56 @@ class Worksheet:
 
         return name
 
+    def write_excel(self) -> None:
+        data_files = sorted(self.data_files, key=lambda df: df.parser.worksheet_name, reverse=False)
+        for data_file in data_files:
+            worksheet = Worksheet(self, data_file)
+
+            data_rows = sorted(data_file.data_rows, key=lambda dr: dr.timestamp, reverse=False)
+            for data_row in data_rows:
+                worksheet.add_row(data_row)
+
+            if data_rows:
+                worksheet.make_table(data_file.parser.worksheet_name)
+                if not config.large_data:
+                    # Lots of conditional formatting can slow down Excel
+                    worksheet.conditional_formatting()
+            else:
+                # Just add headings
+                for i, columns in enumerate(worksheet.columns):
+                    worksheet.worksheet.write(0, i, columns["header"], columns["header_format"])
+
+            worksheet.autofit()
+
+        self.workbook.close()
+        if self.filename:
+            sys.stdout.write(
+                f"{Fore.WHITE}output EXCEL file created: "
+                f"{Fore.YELLOW}{os.path.abspath(self.filename)}\n"
+            )
+
+
+class Worksheet:
+    MAX_COL_WIDTH = 30
+
+    def __init__(self, output: OutputExcel, data_file: DataFile) -> None:
+        self.output = output
+        self.worksheet = output.workbook.add_worksheet(
+            self.output.sheet_name(data_file.parser.worksheet_name)
+        )
+        self.col_width: Dict[int, int] = {}
+        self.columns = self._make_columns(data_file.parser.in_header)
+        self.row_num = 1
+        self.microseconds, self.milliseconds = self._is_microsecond_timestamp(data_file.data_rows)
+
+        self.worksheet.freeze_panes(1, len(self.output.BITTYTAX_OUT_HEADER))
+
     def _make_columns(self, in_header: List[str]) -> List[Column]:
         col_names = {}
         columns = []
 
         for col_num, col_name in enumerate(self.output.BITTYTAX_OUT_HEADER + in_header):
+            col_name = col_name.replace("{{currency}}", config.ccy)
             if col_name.lower() not in col_names:
                 col_names[col_name.lower()] = 1
             else:
@@ -250,24 +290,24 @@ class Worksheet:
 
         return milliseconds, microseconds
 
-    def add_row(self, data_row: DataRow, row_num: int) -> None:
-        self.worksheet.set_row(row_num, None, self.output.format_out_data)
+    def add_row(self, data_row: DataRow) -> None:
+        self.worksheet.set_row(self.row_num, None, self.output.format_out_data)
 
         # Add transaction record
         if data_row.t_record:
-            self._xl_type(data_row.t_record.t_type, row_num, 0, data_row.t_record)
-            self._xl_quantity(data_row.t_record.buy_quantity, row_num, 1)
-            self._xl_asset(data_row.t_record.buy_asset, row_num, 2)
-            self._xl_value(data_row.t_record.buy_value, row_num, 3)
-            self._xl_quantity(data_row.t_record.sell_quantity, row_num, 4)
-            self._xl_asset(data_row.t_record.sell_asset, row_num, 5)
-            self._xl_value(data_row.t_record.sell_value, row_num, 6)
-            self._xl_quantity(data_row.t_record.fee_quantity, row_num, 7)
-            self._xl_asset(data_row.t_record.fee_asset, row_num, 8)
-            self._xl_value(data_row.t_record.fee_value, row_num, 9)
-            self._xl_wallet(data_row.t_record.wallet, row_num, 10)
-            self._xl_timestamp(data_row.t_record.timestamp, row_num, 11)
-            self._xl_note(data_row.t_record.note, row_num, 12)
+            self._xl_type(data_row.t_record.t_type, self.row_num, 0, data_row.t_record)
+            self._xl_quantity(data_row.t_record.buy_quantity, self.row_num, 1)
+            self._xl_asset(data_row.t_record.buy_asset, self.row_num, 2)
+            self._xl_value(data_row.t_record.buy_value, self.row_num, 3)
+            self._xl_quantity(data_row.t_record.sell_quantity, self.row_num, 4)
+            self._xl_asset(data_row.t_record.sell_asset, self.row_num, 5)
+            self._xl_value(data_row.t_record.sell_value, self.row_num, 6)
+            self._xl_quantity(data_row.t_record.fee_quantity, self.row_num, 7)
+            self._xl_asset(data_row.t_record.fee_asset, self.row_num, 8)
+            self._xl_value(data_row.t_record.fee_value, self.row_num, 9)
+            self._xl_wallet(data_row.t_record.wallet, self.row_num, 10)
+            self._xl_timestamp(data_row.t_record.timestamp, self.row_num, 11)
+            self._xl_note(data_row.t_record.note, self.row_num, 12)
 
         # Add original data
         for col_num, col_data in enumerate(data_row.row):
@@ -279,17 +319,28 @@ class Worksheet:
                 cell_format = self.output.format_in_data_col_err
             elif data_row.failure and not isinstance(data_row.failure, DataRowError):
                 cell_format = self.output.format_in_data_err
+            elif data_row.tx_raw:
+                if data_row.tx_raw.tx_hash_pos == col_num:
+                    cell_format = self.output.format_in_data_tx_hash
+                elif data_row.tx_raw.tx_src_pos == col_num:
+                    cell_format = self.output.format_in_data_tx_src
+                elif data_row.tx_raw.tx_dest_pos == col_num:
+                    cell_format = self.output.format_in_data_tx_dest
+                else:
+                    cell_format = self.output.format_in_data
             else:
                 cell_format = self.output.format_in_data
 
             self.worksheet.write(
-                row_num,
+                self.row_num,
                 len(self.output.BITTYTAX_OUT_HEADER) + col_num,
                 col_data,
                 cell_format,
             )
 
             self._autofit_calc(len(self.output.BITTYTAX_OUT_HEADER) + col_num, len(col_data))
+
+        self.row_num += 1
 
     def _xl_type(
         self,
@@ -344,32 +395,17 @@ class Worksheet:
 
     def _xl_quantity(self, quantity: Optional[Decimal], row_num: int, col_num: int) -> None:
         if quantity is not None:
-            if len(quantity.normalize().as_tuple().digits) > self.output.EXCEL_PRECISION:
+            if len(quantity.normalize().as_tuple().digits) > EXCEL_PRECISION:
                 self.worksheet.write_string(
                     row_num,
                     col_num,
-                    f"{quantity.normalize():0f}",
+                    f"{quantity.normalize():0,f}",
                     self.output.format_num_string,
                 )
             else:
                 self.worksheet.write_number(
                     row_num, col_num, quantity.normalize(), self.output.format_num_float
                 )
-                cell = xl_rowcol_to_cell(row_num, col_num)
-
-                if not config.large_data:
-                    # Lots of conditional formatting can slow down Excel
-                    self.worksheet.conditional_format(
-                        row_num,
-                        col_num,
-                        row_num,
-                        col_num,
-                        {
-                            "type": "formula",
-                            "criteria": f"=INT({cell})={cell}",
-                            "format": self.output.format_num_int,
-                        },
-                    )
 
             self._autofit_calc(col_num, len(f"{quantity.normalize():0,f}"))
 
@@ -431,16 +467,35 @@ class Worksheet:
         for col_num, col_width in self.col_width.items():
             self.worksheet.set_column(col_num, col_num, col_width)
 
-    def make_table(self, rows: int, parser_name: str) -> None:
+    def conditional_formatting(self) -> None:
+        self._format_integer(1, 1)
+        self._format_integer(1, 4)
+        self._format_integer(1, 7)
+
+    def _format_integer(self, row_num: int, col_num: int) -> None:
+        cell = xlsxwriter.utility.xl_rowcol_to_cell(row_num, col_num, col_abs=True)
+        self.worksheet.conditional_format(
+            row_num,
+            col_num,
+            self.row_num - 1,
+            col_num,
+            {
+                "type": "formula",
+                "criteria": f"=INT({cell})={cell}",
+                "format": self.output.format_num_int,
+            },
+        )
+
+    def make_table(self, parser_name: str) -> None:
         self.worksheet.add_table(
             0,
             0,
-            rows,
+            self.row_num - 1,
             len(self.columns) - 1,
             {
                 "autofilter": False,
                 "style": "Table Style Medium 13",
                 "columns": self.columns,
-                "name": self._table_name(parser_name),
+                "name": self.output.table_name(parser_name),
             },
         )

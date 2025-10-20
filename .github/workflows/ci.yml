@@ -1,59 +1,85 @@
-name: CI 
+name: CI
 on: [push, pull_request]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{matrix.os}} 
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python ${{matrix.python-version}}
+
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
-          python-version: ${{matrix.python-version}}
-      - name: Install BittyTax
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Cairo library (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get -y install --no-install-recommends libcairo2-dev
+
+      - name: Install BittyTax with development extras
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
+          pip install -e ".[dev]"
+
       - name: Mypy
         run: |
-          pip install mypy
           mypy . --install-types --non-interactive
+
       - name: Pylint
         run: |
-          pip install pylint
-          pylint $(git ls-files '*.py')
+          pylint .
+
       - name: Flake8
         run: |
-          pip install flake8
           flake8 .
+
       - name: isort
         run: |
-          pip install isort
-          isort --check $(git ls-files '*.py')
+          isort --check-only .
+
       - name: Black
         run: |
-          pip install black
-          black --check $(git ls-files '*.py')
+          black --check .
+
+      - name: Djlint
+        run: |
+          djlint --check .
+
+      - name: Test with pytest
+        run: |
+          pytest -q --maxfail=1 tests
+
   spell:
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-      - name: Install BittyTax
+
+      - name: Install Enchant and Cairo Libraries
+        run: |
+          sudo apt-get -y install --no-install-recommends libenchant-2-dev aspell-en libaspell-dev libcairo2-dev
+
+      - name: Install BittyTax with development extras
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
-      - name: Install libenchant packages
-        run: |
-          sudo apt-get -y install --no-install-recommends libenchant-2-dev aspell-en libaspell-dev
+          pip install -e ".[dev]"
+
       - name: Pylint (with spelling check)
         run: |
-          pip install pylint pyenchant
-          pylint --spelling-dict=en_GB $(git ls-files '*.py')
+          pylint --spelling-dict=en_GB .

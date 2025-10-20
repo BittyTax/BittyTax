@@ -26,6 +26,7 @@ COINTRACKING_D_MAPPING = {
     "Airdrop": TrType.AIRDROP,
     "Staking": TrType.STAKING,
     "Masternode": TrType.STAKING,
+    "Margin Profit": TrType.MARGIN_GAIN,
 }
 
 COINTRACKING_W_MAPPING = {
@@ -34,6 +35,8 @@ COINTRACKING_W_MAPPING = {
     "Gift": TrType.GIFT_SENT,
     "Stolen": TrType.LOST,
     "Lost": TrType.LOST,
+    "Margin Loss": TrType.MARGIN_LOSS,
+    "Margin Fee": TrType.MARGIN_FEE,
 }
 
 
@@ -46,6 +49,7 @@ def parse_cointracking(
         row_dict["Date"], dayfirst=config.date_is_day_first
     )
 
+    buy_value = sell_value = None
     currency = parser.args[0].group(1)
     if data_row.row[4] != "-":
         buy_value = DataParser.convert_currency(data_row.row[4], currency, data_row.timestamp)

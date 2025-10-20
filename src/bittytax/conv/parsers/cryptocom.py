@@ -9,6 +9,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -23,6 +24,9 @@ def parse_crypto_com(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp (UTC)"])
+
+    if "Transaction Hash" in row_dict:
+        data_row.tx_raw = TxRawPos(parser.in_header.index("Transaction Hash"))
 
     if row_dict["Currency"] != config.ccy:
         value = DataParser.convert_currency(
@@ -57,6 +61,9 @@ def parse_crypto_com(
         "mco_stake_reward",
         "crypto_earn_extra_interest_paid",
         "supercharger_reward_to_app_credited",
+        "finance.lockup.dpos_compound_interest.crypto_wallet",
+        "finance.dpos.non_compound_interest.crypto_wallet",
+        "finance.dpos.compound_interest.crypto_wallet",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.INTEREST,
@@ -82,6 +89,7 @@ def parse_crypto_com(
         "crypto_exchange",
         "crypto_to_van_sell_order",
         "trading.limit_order.fiat_wallet.sell_commit",
+        "recurring_buy_order",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
@@ -203,6 +211,9 @@ def parse_crypto_com(
         "trading.limit_order.fiat_wallet.purchase_lock",
         "trading.limit_order.fiat_wallet.purchase_unlock",
         "trading.limit_order.fiat_wallet.sell_lock",
+        "finance.lockup.dpos_lock.crypto_wallet",
+        "finance.dpos.staking.crypto_wallet",
+        "finance.dpos.unstaking.crypto_wallet",
     ):
         return
     elif row_dict["Transaction Kind"] == "":

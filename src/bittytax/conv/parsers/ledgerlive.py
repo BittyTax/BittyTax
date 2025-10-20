@@ -8,6 +8,7 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -22,6 +23,17 @@ def parse_ledger_live(
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Operation Date"])
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("Operation Hash"),
+        tx_dest_pos=(
+            parser.in_header.index("Account xpub")
+            if "Account xpub" in parser.in_header
+            else parser.in_header.index("Account id")
+        ),
+    )
+
+    if "Status" in row_dict and row_dict["Status"] != "Confirmed":
+        return
 
     if row_dict["Operation Fees"]:
         fee_quantity = Decimal(row_dict["Operation Fees"])
@@ -58,7 +70,7 @@ def parse_ledger_live(
             fee_asset=fee_asset,
             wallet=WALLET,
         )
-    elif row_dict["Operation Type"] in ("FEES", "REVEAL", "BOND"):
+    elif row_dict["Operation Type"] in ("FEES", "REVEAL", "BOND", "UNBOND", "WITHDRAW_UNBONDED"):
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
             data_row.timestamp,
@@ -90,6 +102,27 @@ def parse_ledger_live(
             row_dict["Operation Type"],
         )
 
+
+DataParser(
+    ParserType.WALLET,
+    "Ledger Live",
+    [
+        "Operation Date",
+        "Status",
+        "Currency Ticker",
+        "Operation Type",
+        "Operation Amount",
+        "Operation Fees",
+        "Operation Hash",
+        "Account Name",
+        "Account xpub",
+        "Countervalue Ticker",
+        "Countervalue at Operation Date",
+        "Countervalue at CSV Export",
+    ],
+    worksheet_name="Ledger",
+    row_handler=parse_ledger_live,
+)
 
 DataParser(
     ParserType.WALLET,

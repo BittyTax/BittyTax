@@ -9,7 +9,8 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ...config import config
-from ..dataparser import DataParser, ParserArgs, ParserType
+from ..dataparser import ConsolidateType, DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -20,13 +21,7 @@ WALLET = "Bitfinex"
 PRECISION = Decimal("0.00000000")
 
 
-def parse_bitfinex_trades_v2(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
-) -> None:
-    parse_bitfinex_trades_v1(data_row, _parser, **_kwargs)
-
-
-def parse_bitfinex_trades_v1(
+def parse_bitfinex_trades(
     data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
@@ -70,11 +65,15 @@ def parse_bitfinex_trades_v1(
 
 
 def parse_bitfinex_deposits_withdrawals(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(
         row_dict["DATE"], dayfirst=config.date_is_day_first
+    )
+    data_row.tx_raw = TxRawPos(
+        parser.in_header.index("TRANSACTION ID"),
+        tx_dest_pos=parser.in_header.index("DESCRIPTION"),
     )
 
     if row_dict["STATUS"] != "COMPLETED":
@@ -144,8 +143,8 @@ DataParser(
         "ORDER ID",
     ],
     worksheet_name="Bitfinex T",
-    # Different handler name used to prevent data file consolidation
-    row_handler=parse_bitfinex_trades_v2,
+    row_handler=parse_bitfinex_trades,
+    consolidate_type=ConsolidateType.HEADER_MATCH,
 )
 
 DataParser(
@@ -153,7 +152,7 @@ DataParser(
     "Bitfinex Trades",
     ["#", "PAIR", "AMOUNT", "PRICE", "FEE", "FEE CURRENCY", "DATE", "ORDER ID"],
     worksheet_name="Bitfinex T",
-    row_handler=parse_bitfinex_trades_v1,
+    row_handler=parse_bitfinex_trades,
 )
 
 DataParser(

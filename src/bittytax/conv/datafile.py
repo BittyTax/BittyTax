@@ -2,6 +2,7 @@
 # (c) Nano Nano Ltd 2019
 
 import argparse
+import copy
 import csv
 import io
 import os
@@ -16,7 +17,7 @@ from typing_extensions import Unpack
 
 from ..config import config
 from ..constants import ERROR, WARNING
-from .dataparser import DataParser, ParserArgs, ParserType
+from .dataparser import ConsolidateType, DataParser, ParserArgs
 from .datarow import DataRow
 from .exceptions import DataFormatUnrecognised, DataRowError
 
@@ -29,7 +30,7 @@ class DataFile:
     data_files_ordered: List["DataFile"] = []
 
     def __init__(self, parser: DataParser, reader: Iterator[List[str]]) -> None:
-        self.parser = parser
+        self.parser = copy.copy(parser)
         self.data_rows = [
             DataRow(line_num + 1, row, parser.in_header) for line_num, row in enumerate(reader)
         ]
@@ -39,12 +40,26 @@ class DataFile:
         if not isinstance(other, DataFile):
             return NotImplemented
 
+        if self.parser.consolidate_type is ConsolidateType.HEADER_MATCH:
+            return (
+                self.parser.row_handler,
+                self.parser.all_handler,
+                tuple(self.parser.in_header),
+            ) == (
+                other.parser.row_handler,
+                other.parser.all_handler,
+                tuple(other.parser.in_header),
+            )
         return (self.parser.row_handler, self.parser.all_handler) == (
             other.parser.row_handler,
             other.parser.all_handler,
         )
 
     def __hash__(self) -> int:
+        if self.parser.consolidate_type is ConsolidateType.HEADER_MATCH:
+            return hash(
+                (self.parser.row_handler, self.parser.all_handler, tuple(self.parser.in_header))
+            )
         return hash((self.parser.row_handler, self.parser.all_handler))
 
     def __iadd__(self, other: "DataFile") -> "DataFile":
@@ -55,11 +70,22 @@ class DataFile:
             self.data_rows += [dr for dr in other.data_rows if dr not in self.data_rows]
         else:
             # Checking for duplicates can be very slow for large files
-            if not config.large_data and [dr for dr in other.data_rows if dr in self.data_rows]:
-                sys.stderr.write(
-                    f'{WARNING} Duplicate rows detected for "{self.parser.name}", '
-                    f"use the [--duplicates] option to remove them (use with care)\n"
-                )
+            if not config.large_data:
+                duplicates = [dr for dr in other.data_rows if dr in self.data_rows]
+                if duplicates:
+                    sys.stderr.write(
+                        f'{WARNING} Duplicate rows detected for "{self.parser.name}", '
+                        f"use the [--duplicates] option to remove them (use with care)\n"
+                    )
+                    if config.debug:
+                        for dr in duplicates:
+                            if self.parser.in_header_row_num is None:
+                                raise RuntimeError("Missing in_header_row_num")
+
+                            sys.stderr.write(
+                                f"{Fore.CYAN}duplicate: "
+                                f"row[{self.parser.in_header_row_num + dr.line_num}] {dr}\n"
+                            )
             self.data_rows += other.data_rows
 
         return self
@@ -104,15 +130,27 @@ class DataFile:
         warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
         with open(filename, "rb") as df:
             try:
-                workbook = openpyxl.load_workbook(df, read_only=True, data_only=True)
+                workbook = openpyxl.load_workbook(
+                    df,
+                    read_only=True,
+                    data_only=True,
+                    keep_vba=False,
+                    keep_links=False,
+                    rich_text=False,
+                )
 
                 if config.debug:
                     sys.stderr.write(f"{Fore.CYAN}conv: EXCEL\n")
 
                 for sheet_name in workbook.sheetnames:
-                    dimensions = workbook[sheet_name].calculate_dimension()
-                    if dimensions == "A1:A1" or dimensions.endswith("1048576"):
+                    try:
+                        dimensions = workbook[sheet_name].calculate_dimension()
+                    except ValueError:
                         workbook[sheet_name].reset_dimensions()
+                    else:
+                        if dimensions == "A1:A1" or dimensions.endswith("1048576"):
+                            workbook[sheet_name].reset_dimensions()
+
                     yield workbook[sheet_name]
 
                 workbook.close()
@@ -198,7 +236,7 @@ class DataFile:
         cls.consolidate_datafiles(data_file)
 
     @staticmethod
-    def get_cell_values_xlsx(rows: Iterator[List[openpyxl.cell.cell.Cell]]) -> Iterator[List[str]]:
+    def get_cell_values_xlsx(rows: List[openpyxl.cell.cell.Cell]) -> Iterator[List[str]]:
         for row in rows:
             yield [DataFile.convert_cell_xlsx(cell) for cell in row]
 
@@ -275,7 +313,10 @@ class DataFile:
 
     @classmethod
     def consolidate_datafiles(cls, data_file: "DataFile") -> None:
-        if data_file.parser.p_type != ParserType.GENERIC and data_file in cls.data_files:
+        if (
+            data_file.parser.consolidate_type is not ConsolidateType.NEVER
+            and data_file in cls.data_files
+        ):
             cls.data_files[data_file] += data_file
         else:
             cls.data_files[data_file] = data_file

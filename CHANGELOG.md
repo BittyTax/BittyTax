@@ -6,6 +6,26 @@
 - Accounting tool: handle .xlsx files with incorrect dimensions. ([#342](https://github.com/BittyTax/BittyTax/issues/342))
 - Coinbase parser: fixed missing "Fee Quantity" when zero.
 - KuCoin parser: use UTC offset from Time header for timestamp.
+- Accounting/Conversion tool: catch exception when importing a Google Sheet.
+- Binance parser: use UTC offset from Date(UTC) header if present. ([#302](https://github.com/BittyTax/BittyTax/issues/302))
+- Accounting tool: fix overlapping table data in PDF report.
+- Trezor Suite parser: fee can be optional.
+- Accounting tool: correct table formatting for Income in PDF report.
+- Coinbase parser: strip currency symbols, brackets and commas from fiat values.
+- Conversion tool: Interest should be mapped to Income not LoanInterest for RECAP output format.
+- Price tool: CryptoCompare API rate limit reached returns 200 OK. ([#381](https://github.com/BittyTax/BittyTax/issues/381))
+- Accounting tool: fix AttributeError exception when decoding cell color.
+- Accounting/Price tool: Fix CoinGecko API error "Your request exceeds the allowed time range".
+- Coinbase parser: fix missing warning for advanced trades which are crypto-to-crypto.
+- Coinbase parser: fixed currency conversion when data file is not in local currency.
+- Price tool: fix epoch_time.
+- Accounting tool: skipping blank rows should also include the Note field being empty.
+- Kraken parser: added missing fee for "staking".
+- Kraken parser: "earn" with a fee must be a "reward" if the subtype is empty.
+- Accounting tool: in PDF reports only word-wrap for asset-table and total-table.
+- KuCoin parser: Fee can be empty for deposits and withdrawals.
+- KuCoin parser: UTC can be without an offset.
+- Coinbase parser: fixed advanced trades without the "at" exchange rate specified. ([#458](https://github.com/BittyTax/BittyTax/issues/458))
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
@@ -55,7 +75,113 @@
 - Trezor Suite parser: added support for non-GBP exports.
 - Uphold parser: added support for non-GBP exports.
 - Kraken parser: added "adjustment" type.
-- Conversion tool: added parser for Gate.io exchange.
+- Conversion tool: added parser for Gate.io exchange. ([#152](https://github.com/BittyTax/BittyTax/issues/152))
+- Crypto.com parser: added "finance.lockup.dpos_compound_interest.crypto_wallet" and finance.lockup.dpos_lock.crypto_wallet" transaction kinds. ([#356](https://github.com/BittyTax/BittyTax/issues/356))
+- Kraken parser: handle "/" in trading pair.
+- Binance parser: added "Token Swap - Redenomination/Rebranding" and "Token Swap - Distribution" operation.
+- Bitstamp parser: added new export format.
+- Accounting/Conversion/Price tool: output command line arguments in debug log.
+- Coinbase parser: added new export format.
+- Etherscan parser: added new export formats.
+- BscScan parser: added new export formats.
+- FTMScan parser: added new export formats.
+- HecoInfo parser: added new export formats.
+- PolygonScan parser: added new export formats.
+- SnowTrace parser: added new export formats.
+- Etherscan merger: handle new export formats.
+- Conversion tool: added ConsolidateType to DataParser to control data file consolidation.
+- Conversion tool: added parser and merge parser for CoinCorner.
+- Blockchain.com parser: added new export format.
+- Conversion tool: added parser for BitcoinTaxes accounting data.
+- Conversion tool: added parser for Kinesis exchange.
+- Snowtrace parser: added new Snowtrace export format.
+- Config: added transaction_fee_allowable_cost parameter.
+- Ledger Live parser: new data file format added.
+- Exodus parser: added "deposit (failed)" type.
+- Conversion tool: added new parser for Eternl wallet.
+- Conversion tool: added new parser for MyMonero wallet.
+- Accounting/Conversion tool: audit spreadsheet output to help with troubleshooting negative balances, and integrity check issues.
+- Accounting tool: calculate transfer mismatches and warn during audit instead of waiting for the integrity check to fail.
+- Accounting tool: audit report now shows asset balances (split by crypto and fiat) as well as any transfer mismatches.
+- Accounting tool: added source filename of transaction records to cover page of PDF report.
+- Conversion tool: added new parser for Easy Crypto NZ exchange.
+- KuCoin parser: added new export formats for deposits and withdrawals.
+- BlockFi parser: added handling of "Cc Rewards Redemption" and "Trade" transaction types.
+- Conversion tool: added new parser for PayPal.
+- Conversion tool: added new parser for WhiteBIT exchange.
+- Scripts: added batch scripts to make BittyTax easier to use on Windows.
+- Binance.US parser: added handling of "Sell" category.
+- Scripts: added AppleScripts to make BittyTax easier to use on macOS.
+- Coinbase parser: added "Subscription Rebates (24 Hours)" transaction type.
+- Conversion tool: added new parser for Neon Wallet.
+- Config: added optional API key config for data sources.
+- Bittrex parser: new data file formats added.
+- Accounting tool: new transaction types added. Margin-Gain, Margin-Loss, Margin-Fee, Loan, Loan-Repayment and Loan-Interest.
+- Accounting tool: added Margin Trading section to tax report.
+- Conversion tool: added Margin-Gain, Margin-Loss, Margin-Fee, Loan, Loan-Repayment and Loan-Interest mappings for RECAP output format.
+- Conversion tool: added parser for Blockpit accounting data.
+- Conversion tool: added parser for Deribit.
+- Binance parser: added Futures and Margin trading.
+- Kraken parser: added Margin trading.
+- KuCoin parser: added Futures trading.
+- Accointing parser: added mapping for "margin_gain", "margin_loss" and "margin_fee".
+- CoinTracking parser: added mapping for "Margin Profit", "Margin Loss" and "Margin Fee".
+- Koinly parser: added mapping for "Realized gain", "Loan", "Margin loan", "Margin fee", "Loan repayment" "Margin replayment", "Loan fee", "Other income", "Lending interest", "Cashback", "Salary" and "Fee refund".
+- Nexo parser: improved loan handling and added new loan transaction types.
+- Conversion tool: added parser for MEXC exchange.
+- Binance.US parser: added new export format.
+- Conversion tool: added parser for TradeOgre exchange.
+- Conversion tool: added parser for Voyager exchange.
+- Conversion tool: added parser for LBank exchange.
+- Conversion tool: added parser for Bybit exchange.
+- Conversion tool: added parser for Robinhood exchange.
+- Conversion tool: added parser for Aptoscan explorer.
+- Conversion tool: added parser for FatStx explorer.
+- Conversion tool: added parser for Cash App wallet.
+- Crypto.com parser: added "finance.dpos.non_compound_interest.crypto_wallet" and "finance.dpos.staking.crypto_wallet" transaction kinds. ([#383](https://github.com/BittyTax/BittyTax/issues/383))
+- HitBTC parser: added new trade history export.
+- Voyager parser: added new export format.
+- Deribit parser: added new export format.
+- Coinbase parser: added "Pro Deposit" and "Pro Withdrawal" transaction types.
+- Binance parser: added "Cross Margin" and "Transaction Fee" for margin statements. ([#395](https://github.com/BittyTax/BittyTax/issues/395))
+- Accounting/Price tool: added CryptoCompare asset IDs to allow custom mapping of asset symbols.
+- BlockFi parser: added "BIA Deposit" transaction type.
+- Config: added USDC to crypto_list.
+- CoinTracker parser: added new export format. ([#401](https://github.com/BittyTax/BittyTax/issues/401))
+- Conversion tool: added (--cryptoasset) option.
+- Nexo parser: added "Administrative Deduction", "Nexo Card Purchase" and "Transfer To Pro Wallet" types.
+- Kraken parser: added "earn" subtypes "reward", "migration", "autoallocate" and "deallocation".
+- Crypto.com parser: added "finance.dpos.compound_interest.crypto_wallet" and "recurring_buy_order" transaction kinds.
+- Scripts: added PowerShell scripts to make BittyTax easier to use on Windows.
+- Exodus parser: added "withdrawal (failed)" type.
+- CoinCorner parser: added new export format.
+- Coinbase parser: calculate amount/fee for advanced trades.
+- Conversion tool: added parser for Revolut app.
+- Binance parser: added new deposits/withdrawals export formats.
+- Binance parser: added "Swap Farming Rewards", "Swap Farming Transaction", "Liquid Swap Sell", "Liquid Swap Add", "Liquid Swap Add/Sell", "Liquidity Farming Remove" operations.
+- Conversion tool: added merge parser for Binance to handle stake/unstake of "Liquid Swap" and "Simple Earn Flexible", where you can gain/lose tokens.
+- Conversion tool: show duplicate rows detected when debug is on.
+- AdaLite parser: added new export format. ([#418](https://github.com/BittyTax/BittyTax/issues/418))
+- Crypto.com parser: added "finance.dpos.unstaking.crypto_wallet" transaction kind. ([#419](https://github.com/BittyTax/BittyTax/issues/419))
+- Conversion tool: added stream output as option for OutputExcel.
+- Nexo parser: added new export format which includes fees.
+- Conversion tool: added parser for Blockchain.com Exchange.
+- Binance parser: added "Savings" Account. ([#422](https://github.com/BittyTax/BittyTax/issues/422))
+- Conversion tool: added parser for Changelly Exchange.
+- Kraken parser: added "allocation" subtype. ([#424](https://github.com/BittyTax/BittyTax/issues/424))
+- Ledger Live parser: added "UNBOND" and "WITHDRAW_UNBONDED" Operation Types. ([#426](https://github.com/BittyTax/BittyTax/issues/426))
+- Binance parser: added "Referral Commission" operation. ([#430](https://github.com/BittyTax/BittyTax/issues/430))
+- Nexo parser: added handling for "Transfer to Nexo User" and "Earn Interest Adjustment" in Details.
+- KuCoin parser: added "Fiat Deposits", "Third-Party Payment", "Fast Trade Orders" files.
+- Binance parser: added "Funding" Account, and "Send" and "Campaign Related Reward" Operations.
+- Coinbase parser: added "Donation" and "Admin Debit" transaction types.
+- Accounting tool: split tax rates for 2024/25. ([#429](https://github.com/BittyTax/BittyTax/issues/429))
+- Accounting tool: tax rates and allowance for 2025/26.
+- Accounting tool: new transaction type Margin-Fee-Rebate added. ([#415](https://github.com/BittyTax/BittyTax/issues/415))
+- CoinTracker parser: added "STAKING_REWARD", "INTEREST_PAYMENT" and "INCOME" types.
+- Nexo parser: added "Transfer From Pro Wallet" type. ([#442](https://github.com/BittyTax/BittyTax/issues/442))
+- Accounting tool/Conversion tool: added BITTYTAX_TERMINAL environment variable.
+- KuCoin parser: added "Convert Dust to KCS" type in Account History.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -93,8 +219,61 @@
 - SwissBorg parser: use Airdrop instead of Gift-Received.
 - Coinbase parser: reworked legacy multi-currency support.
 - CoinTracking parser: Lost/Stolen transactions now include sell value if available.
+- Conversion tool: specifying a directory as the filename will recursively parse all files in all subdirectories.
+- Accounting/Conversion tool: display output filenames with absolute paths.
+- Accounting tool: use stdout not stderr.
+- Coinbase parser: advanced trade buy/sell in different currency, use local currency instead of requiring manual entry.
+- Qt Wallet parser: get symbol via input if cryptoasset cannot be identified.
+- Qt Wallet parser: ask if unconfirmed transactions should be included.
+- Electrum parser: get symbol via input if cryptoasset cannot be identified.
+- Blockscout parser: get symbol via input if cryptoasset cannot be identified.
+- Bitfinex parser: used ConsolidateType to prevent data file consolidation unless header matches.
+- Coinbase Pro parser: used ConsolidateType to prevent data file consolidation unless header matches.
+- Electrum parser: used ConsolidateType to prevent data file consolidation unless header matches.
+- Generic parser: used ConsolidateType to prevent data file consolidation.
+- Qt Wallet parser: used ConsolidateType to prevent data file consolidation unless header matches.
+- TradeSatoshi parser: used ConsolidateType to prevent data file consolidation unless header matches.
+- Trezor parser: used ConsolidateType to prevent data file consolidation unless header matches.
+- Conversion tool: changed DataMerge to merge with only a single data parser, required for CoinCorner merge parser.
+- Accounting tool: skip valuation of asset in holdings report if API fails.
+- Accounting tool: removed nowrapfilter from PDF report templates.
+- Etherscan parser/merger: made generic so will support any Etherscan clone.
+- Accounting tool: Lost transactions can now include an optional fee.
+- Accounting tool: use different default filenames for each type of PDF report.
+- Conversion tool: use comma thousand separator for high precision numbers when strings.
+- Accounting tool: disposal types changed to be an Enum.
+- BlockFi parser: "Withdrawal Fee" now joined to the "Withdrawal".
+- Koinly parser: changed "Reward" to map to Staking.
+- Accounting tool: for NFTs, a space between the symbol name and ID is now optional, i.e. CryptoPunk#369.
+- FTX parser: handle optional fee.
+- Coinbase parser: updated regex for Advanced Trades.
+- Conversional tool: use cell range for conditional formatting.
+- Accounting tool: use cell range for conditional formatting in audit log spreadsheet.
+- Conversional tool: use datetime.MAXYEAR for default timestamp.
+- Exodus parser: skip empty rows.
+- Binance parser: updated regex for quantities without decimal places.
+- Accounting tool: audit excel report now uses built-in autofit for column width.
+- Conversion tool: use stdout for EXCEL file creation message.
+- Conversion tool: changed DataParser defaults and made args optional.
+- Conversion tool: moved sheet_name and table_name functions to OutputExcel.
+- Conversion tool: header in OutputBase now uses place holders for the currency.
+- Nexo parser: "Deposit To Exchange" and "Exchange To Withdraw" made trades.
+- Binance parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
+- ByBit parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
+- Deribit parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
+- KuCoin parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
+- Accounting tool: increased precision for Decimals from 28 to 30 digits.
+- Accounting/Conversion tool: openpyxl.load_workbook set all parameters.
+- Accounting/Conversion/Price tool: changed --version to include compiled state.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
+- Conversion tool: removed filename "is a directory" message.
+- BscScan parser/merger: removed, replaced by generic Etherscan parser/merger.
+- FTMScan parser/merger: removed, replaced by generic Etherscan parser/merger.
+- HecoInfo parser/merger: removed, replaced by generic Etherscan parser/merger.
+- PolygonScan parser/merger: removed, replaced by generic Etherscan parser/merger.
+- SnowTrace parser/merger: removed, replaced by generic Etherscan parser/merger.
+- Koinly parser: removed "Staking" and "Loan interest".
 
 ## Version [0.5.2] (2023-12-22)
 Important:-
@@ -259,6 +438,7 @@ The `Lost` transaction type was incorrectly performing the buy-back before the s
 - Coinbase Pro parser: deprecated Fills parser.
 - Koinly parser: allow unsupported types.
 - Config: error and exit if config load fails.
+- KuCoin parser: add note for withdrawals from Remark field.
 
 ## Version [0.5.0] Beta (2021-11-11)
 Important:-

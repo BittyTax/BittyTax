@@ -1,11 +1,11 @@
 {% set price_missing = namespace(flag=false) %}
-<h2>Price Data - {{config.format_tax_year(tax_year)}}</h2>
+<h2>Price Data - {{ config.format_tax_year(tax_year) }}</h2>
 <table repeat="1" width="100%" class="asset-table">
     <tr>
         <th align="left" width="30%">Asset</th>
         <th align="left">Data Source</th>
         <th align="left">Date</th>
-        <th align="right">Price ({{config.ccy}})</th>
+        <th align="right">Price ({{ config.ccy }})</th>
         <th align="right">Price (BTC)</th>
     </tr>
     {% if tax_year in price_report %}
@@ -13,12 +13,14 @@
             {% for date in price_report[tax_year][asset]|sort %}
                 {% if price_report[tax_year][asset][date]['price_ccy'] != none %}
                     <tr>
-                        <td>1 {{asset}} ({{price_report[tax_year][asset][date]['name']|nowrapfilter}})</td>
-                        <td><a href="{{price_report[tax_year][asset][date]['url']}}">{{price_report[tax_year][asset][date]['data_source']}}</a></td>
-                        <td>{{date|datefilter}}</td>
-                        <td align="right">{{price_report[tax_year][asset][date]['price_ccy']|valuefilter}}</td>
+                        <td>1 {{ asset }} ({{ price_report[tax_year][asset][date]['name'] }})</td>
+                        <td>
+                            <a href="{{ price_report[tax_year][asset][date]['url'] }}">{{ price_report[tax_year][asset][date]['data_source'] }}</a>
+                        </td>
+                        <td>{{ date|datefilter }}</td>
+                        <td align="right">{{ price_report[tax_year][asset][date]['price_ccy']|valuefilter }}</td>
                         {% if price_report[tax_year][asset][date]['price_btc'] != none %}
-                            <td align="right">{{price_report[tax_year][asset][date]['price_btc']|quantityfilter}}</td>
+                            <td align="right">{{ price_report[tax_year][asset][date]['price_btc']|quantityfilter }}</td>
                         {% else %}
                             <td align="right">n/a</td>
                         {% endif %}
@@ -26,10 +28,12 @@
                 {% else %}
                     {% set price_missing.flag = true %}
                     <tr>
-                        <td>1 {{asset}}</td>
+                        <td>1 {{ asset }}</td>
                         <td></td>
-                        <td>{{date|datefilter}}</td>
-                        <td align="right"><i>Not available*</i></td>
+                        <td>{{ date|datefilter }}</td>
+                        <td align="right">
+                            <i>Not available*</i>
+                        </td>
                         <td></td>
                     </tr>
                 {% endif %}
@@ -37,6 +41,4 @@
         {% endfor %}
     {% endif %}
 </table>
-{% if price_missing.flag %}
-    <p>*Price of £0.00 used</p>
-{% endif %}
+{% if price_missing.flag %}<p>*Price of £0.00 used</p>{% endif %}

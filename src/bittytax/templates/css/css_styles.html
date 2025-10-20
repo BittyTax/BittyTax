@@ -76,6 +76,9 @@
         margin: 0;
         padding: 0;
     }
+    td {
+        vertical-align: top;
+    }
     #header-content,
     #footer-content {
         color: #505a5f;
@@ -114,6 +117,7 @@
         padding-bottom: 0px;
         padding-left: 0px;
         padding-right: 0px;
+        -pdf-word-wrap: CJK;
     }
     #cover-page {
         display: block;
@@ -140,6 +144,12 @@
         margin-top: 1.5em;
         margin-bottom: 0.5em;
         line-height: 1.25;
+        padding: 0;
+        -pdf-outline: false;
+    }
+    #cover-page h4 {
+        font-size: 1em;
+        color: #505a5f;
         padding: 0;
         -pdf-outline: false;
     }

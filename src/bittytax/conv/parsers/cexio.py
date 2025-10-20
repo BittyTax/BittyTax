@@ -12,6 +12,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataRowError, UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -74,6 +75,7 @@ def _parse_cexio_row(
             return
 
         if row_dict["Comment"].endswith("Completed") or row_dict["Comment"].startswith("Confirmed"):
+            data_row.tx_raw = TxRawPos(parser.in_header.index("Comment"))
             data_row.t_record = TransactionOutRecord(
                 TrType.DEPOSIT,
                 data_row.timestamp,
@@ -90,6 +92,7 @@ def _parse_cexio_row(
         else:
             sell_quantity = abs(Decimal(row_dict["Amount"]))
 
+        data_row.tx_raw = TxRawPos(parser.in_header.index("Comment"))
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,

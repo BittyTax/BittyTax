@@ -20,7 +20,7 @@ fail-on=
 fail-under=10.0
 
 # Files or directories to be skipped. They should be base names, not paths.
-ignore=CVS
+ignore=.venv
 
 # Add files or directories matching the regex patterns to the ignore-list. The
 # regex matches against paths and can be in Posix or Windows format.
@@ -290,7 +290,7 @@ indent-string='    '
 max-line-length=100
 
 # Maximum number of lines in a module.
-max-module-lines=1000
+max-module-lines=1200
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.
@@ -561,13 +561,13 @@ ignored-parents=
 max-args=14
 
 # Maximum number of attributes for a class (see R0902).
-max-attributes=7
+max-attributes=10
 
 # Maximum number of boolean expressions in an if statement (see R0916).
 max-bool-expr=5
 
 # Maximum number of branch for function / method body.
-max-branches=33
+max-branches=45
 
 # Maximum number of locals for function / method body.
 max-locals=24
@@ -575,14 +575,17 @@ max-locals=24
 # Maximum number of parents for a class (see R0901).
 max-parents=7
 
+# Maximum number of positional arguments for function / method.
+max-positional-arguments=15
+
 # Maximum number of public methods for a class (see R0904).
 max-public-methods=20
 
 # Maximum number of return / yield for function / method body.
-max-returns=6
+max-returns=7
 
 # Maximum number of statements in function / method body.
-max-statements=92
+max-statements=101
 
 # Minimum number of public methods for a class (see R0903).
 min-public-methods=2

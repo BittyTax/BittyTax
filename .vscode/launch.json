@@ -1,0 +1,165 @@
+{
+    "version": "0.2.0",
+    "configurations": [ 
+        {
+            "name": "Python Debugger: bittytax_conv",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "bittytax.conv.bittytax_conv",
+            "args": "${input:pickDataFilenames} --format ${input:getFormat} --debug"
+        },
+        {
+            "name": "Python Debugger: bittytax",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "bittytax.bittytax",
+            "args": "${input:pickTransactionRecordsFilename} --debug"
+        },
+        {
+            "name": "Python Debugger: bittytax_price list",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "bittytax.price.bittytax_price",
+            "args": "list --debug"
+        },
+        {
+            "name": "Python Debugger: bittytax_price latest",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "bittytax.price.bittytax_price",
+            "args": "latest ${input:getAsset} ${input:getQuantity} -ds ${input:getDataSource} --debug"
+        },
+        {
+            "name": "Python Debugger: bittytax_price historic",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "bittytax.price.bittytax_price",
+            "args": "historic ${input:getAsset} ${input:getDate} ${input:getQuantity} -ds ${input:getDataSource} --nocache --debug"
+        },
+        {
+            "name": "PowerShell: BittyTax Conversion Tool",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/scripts/powershell/BittyTax Conversion Tool.ps1",
+            "cwd": "${cwd}"
+        },
+        {
+            "name": "PowerShell: BittyTax Accounting Tool",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${workspaceFolder}/scripts/powershell/BittyTax Accounting Tool.ps1",
+        },
+    ],
+    "inputs": [
+        {
+            "id": "getDataFilename",
+            "type": "promptString",
+            "description": "Enter data filename"
+        },
+        {
+            "id": "getTransactionRecordsFilename",
+            "type": "promptString",
+            "description": "Enter transaction records filename",
+            "default": "data/example.xlsx"
+        },
+        {
+            "id": "getFormat",
+            "type": "pickString",
+            "description": "Select output format",
+            "options": [
+                "EXCEL",
+                "CSV",
+                "RECAP"
+            ],
+            "default": "EXCEL"
+        },
+        {
+            "id": "getAsset",
+            "type": "promptString",
+            "description": "Enter asset symbol",
+            "default": "BTC"
+        },
+        {
+            "id": "getDate",
+            "type": "promptString",
+            "description": "Enter date YYYY-MM-DD or DD/MM/YYYY",
+            "default": "2024-01-01"
+        },
+        {
+            "id": "getQuantity",
+            "type": "promptString",
+            "description": "Enter quantity",
+            "default": "1"
+        },
+        {
+            "id": "getDataSource",
+            "type": "pickString",
+            "description": "Select data source",
+            "options": [
+                "BittyTaxAPI",
+                "CoinDesk",
+                "CoinGecko",
+                "CoinPaprika",
+                "CryptoCompare",
+                "Frankfurter",
+                "ALL" 
+            ],
+            "default": "CryptoCompare"
+        },
+        {
+            "id": "pickDataFilename",
+            "type": "command",
+            "command": "extension.commandvariable.file.openDialog",
+            "args": {
+                "defaultUri": "${userHome}${pathSeparator}Downloads",
+                "filters": {
+                    "Data file": ["csv", "xlsx", "xls", "txt"]
+                },
+                "title": "Select a data file:"
+            }
+        },
+        {
+            "id": "pickTransactionRecordsFilename",
+            "type": "command",
+            "command": "extension.commandvariable.file.openDialog",
+            "args": {
+                "defaultUri": "${workspaceFolder}",
+                "filters": {
+                    "Excel file": ["xlsx"]
+                },
+                "title": "Select a transaction records file:"
+            }
+        },
+        {
+            "id": "pickDataFilenames",
+            "type": "command",
+            "command": "extension.commandvariable.transform",
+            "args": {
+                "text": "${openDialog:dataFilenamesDialog}",
+                "apply": [
+                    {
+                        "find": " ",
+                        "replace": "\\ ",
+                        "flags": "g"
+                    },
+                    {
+                        "find": ",",
+                        "replace": " ",
+                        "flags": "g"
+                    }
+                ],
+                "openDialog": {
+                    "dataFilenamesDialog": {
+                        "defaultUri": "${userHome}${pathSeparator}Downloads",
+                        "filters": {
+                            "Data file": ["csv", "xlsx", "xls", "txt"]
+                        },
+                        "title": "Select a data file(s):",
+                        "canSelectMany": "true",
+                        "separator": ","
+                    }
+                }
+            }
+        }
+    ]
+}

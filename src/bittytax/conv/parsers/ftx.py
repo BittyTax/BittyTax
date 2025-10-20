@@ -12,6 +12,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
+from ..datarow import TxRawPos
 from ..exceptions import DataRowError, UnexpectedTradingPairError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
@@ -22,7 +23,7 @@ WALLET = "FTX"
 
 
 def parse_ftx_deposits(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     _normalise_ftx_dict(row_dict)
@@ -30,6 +31,11 @@ def parse_ftx_deposits(
 
     if row_dict["Status"] not in ("complete", "confirmed"):
         return
+
+    if "Transaction ID" in row_dict:
+        data_row.tx_raw = TxRawPos(parser.in_header.index("Transaction ID"))
+    else:
+        data_row.tx_raw = TxRawPos(parser.in_header.index("txid"))
 
     data_row.t_record = TransactionOutRecord(
         TrType.DEPOSIT,
@@ -41,7 +47,7 @@ def parse_ftx_deposits(
 
 
 def parse_ftx_withdrawals(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     _normalise_ftx_dict(row_dict)
@@ -53,6 +59,16 @@ def parse_ftx_withdrawals(
     else:
         fee_quantity = None
         fee_asset = ""
+
+    if "Transaction ID" in row_dict:
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("Transaction ID"),
+            tx_dest_pos=parser.in_header.index("Destination"),
+        )
+    else:
+        data_row.tx_raw = TxRawPos(
+            parser.in_header.index("txid"), tx_dest_pos=parser.in_header.index("address")
+        )
 
     data_row.t_record = TransactionOutRecord(
         TrType.WITHDRAWAL,
@@ -106,24 +122,28 @@ def _parse_ftx_trades_row(
             parser.in_header.index("Market"), "Market", row_dict["Market"]
         )
 
-    if Decimal(row_dict["Fee"]) < 0:
-        dup_data_row = copy.copy(data_row)
-        dup_data_row.row = []
+    if row_dict["Fee"]:
+        if Decimal(row_dict["Fee"]) < 0:
+            dup_data_row = copy.copy(data_row)
+            dup_data_row.row = []
 
-        dup_data_row.t_record = TransactionOutRecord(
-            TrType.FEE_REBATE,
-            data_row.timestamp,
-            buy_quantity=abs(Decimal(row_dict["Fee"])),
-            buy_asset=row_dict["Fee Currency"],
-            wallet=WALLET,
-        )
-        data_rows.insert(row_index + 1, dup_data_row)
+            dup_data_row.t_record = TransactionOutRecord(
+                TrType.FEE_REBATE,
+                data_row.timestamp,
+                buy_quantity=abs(Decimal(row_dict["Fee"])),
+                buy_asset=row_dict["Fee Currency"],
+                wallet=WALLET,
+            )
+            data_rows.insert(row_index + 1, dup_data_row)
 
+            fee_quantity = None
+            fee_asset = ""
+        else:
+            fee_quantity = Decimal(row_dict["Fee"])
+            fee_asset = row_dict["Fee Currency"]
+    else:
         fee_quantity = None
         fee_asset = ""
-    else:
-        fee_quantity = Decimal(row_dict["Fee"])
-        fee_asset = row_dict["Fee Currency"]
 
     if row_dict["Side"] == "buy":
         if Decimal(row_dict["Total"]) == 0:
@@ -259,6 +279,14 @@ def _split_trading_pair(trading_pair: str) -> Tuple[Optional[str], Optional[str]
 DataParser(
     ParserType.EXCHANGE,
     "FTX Deposits",
+    ["", "Time", "Coin", "Amount", "Status", "Additional info", "Transaction ID"],
+    worksheet_name="FTX D",
+    row_handler=parse_ftx_deposits,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "FTX Deposits",
     ["", "Time", "Coin", "Amount", "Status", "Additional info", "Transaction ID", ""],
     worksheet_name="FTX D",
     row_handler=parse_ftx_deposits,
@@ -280,6 +308,15 @@ DataParser(
     row_handler=parse_ftx_deposits,
 )
 
+
+DataParser(
+    ParserType.EXCHANGE,
+    "FTX Withdrawals",
+    ["", "Time", "Coin", "Amount", "Destination", "Status", "Transaction ID", "fee"],
+    worksheet_name="FTX W",
+    row_handler=parse_ftx_withdrawals,
+)
+
 DataParser(
     ParserType.EXCHANGE,
     "FTX Withdrawals",
@@ -294,6 +331,26 @@ DataParser(
     ["time", "coin", "size", "address", "status", "txid", "fee", "id"],
     worksheet_name="FTX W",
     row_handler=parse_ftx_withdrawals,
+)
+
+ftx_trades = DataParser(
+    ParserType.EXCHANGE,
+    "FTX Trades",
+    [
+        "ID",
+        "Time",
+        "Market",
+        "Side",
+        "Order Type",
+        "Size",
+        "Price",
+        "Total",
+        "Fee",
+        "Fee Currency",
+        "TWAP",  # New field
+    ],
+    worksheet_name="FTX T",
+    all_handler=parse_ftx_trades,
 )
 
 ftx_trades = DataParser(
