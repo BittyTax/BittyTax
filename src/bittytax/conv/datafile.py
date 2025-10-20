@@ -131,7 +131,14 @@ class DataFile:
         warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
         with open(filename, "rb") as df:
             try:
-                workbook = openpyxl.load_workbook(df, read_only=True, data_only=True)
+                workbook = openpyxl.load_workbook(
+                    df,
+                    read_only=True,
+                    data_only=True,
+                    keep_vba=False,
+                    keep_links=False,
+                    rich_text=False,
+                )
 
                 if config.debug:
                     sys.stderr.write(f"{Fore.CYAN}conv: EXCEL\n")

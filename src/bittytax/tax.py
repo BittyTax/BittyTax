@@ -4,7 +4,6 @@
 
 import copy
 import datetime
-import sys
 from decimal import Decimal, getcontext
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -33,6 +32,7 @@ from .holdings import Holdings
 from .price.valueasset import ValueAsset
 from .tax_event import TaxEvent, TaxEventCapitalGains, TaxEventIncome, TaxEventMarginTrade
 from .transactions import Buy, Sell
+from .utils import bt_tqdm_write, disable_tqdm
 
 PRECISION = Decimal("0.00")
 
@@ -178,7 +178,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             transactions,
             unit="t",
             desc=f"{Fore.CYAN}pool same day{Fore.GREEN}",
-            disable=bool(config.debug or not sys.stdout.isatty()),
+            disable=disable_tqdm(),
         ):
             if (
                 isinstance(t, Buy)
@@ -231,7 +231,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             total=len(self.sells_ordered),
             unit="t",
             desc=f"{Fore.CYAN}match {rule.value.lower()} transactions{Fore.GREEN}",
-            disable=bool(config.debug or not sys.stdout.isatty()),
+            disable=disable_tqdm(),
         )
 
         while sell_index < len(self.sells_ordered):
@@ -313,7 +313,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             total=len(self.buys_ordered),
             unit="t",
             desc=f"{Fore.CYAN}match {rule.value.lower()} transactions{Fore.GREEN}",
-            disable=bool(config.debug or not sys.stdout.isatty()),
+            disable=disable_tqdm(),
         )
 
         while buy_index < len(self.buys_ordered):
@@ -402,7 +402,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             sorted(self._all_transactions()),
             unit="t",
             desc=f"{Fore.CYAN}process section 104{Fore.GREEN}",
-            disable=bool(config.debug or not sys.stdout.isatty()),
+            disable=disable_tqdm(),
         ):
             if t.is_crypto() and t.asset not in self.holdings:
                 self.holdings[t.asset] = Holdings(t.asset)
@@ -493,7 +493,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             self.transactions,
             unit="t",
             desc=f"{Fore.CYAN}process income{Fore.GREEN}",
-            disable=bool(config.debug or not sys.stdout.isatty()),
+            disable=disable_tqdm(),
         ):
             if t.t_type in self.INCOME_TYPES and (t.is_crypto() or config.fiat_income):
                 tax_event = TaxEventIncome(t)
@@ -507,7 +507,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             self.transactions,
             unit="t",
             desc=f"{Fore.CYAN}process margin trades{Fore.GREEN}",
-            disable=bool(config.debug or not sys.stdout.isatty()),
+            disable=disable_tqdm(),
         ):
             if t.t_type in self.MARGIN_TYPES:
                 tax_event = TaxEventMarginTrade(t)
@@ -564,7 +564,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             self.holdings,
             unit="h",
             desc=f"{Fore.CYAN}calculating holdings{Fore.GREEN}",
-            disable=bool(config.debug or not sys.stdout.isatty()),
+            disable=disable_tqdm(),
         ):
             if self.holdings[h].quantity > 0 or config.show_empty_wallets:
                 try:
@@ -572,7 +572,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         self.holdings[h].asset, self.holdings[h].quantity
                     )
                 except requests.exceptions.HTTPError as e:
-                    tqdm.write(
+                    bt_tqdm_write(
                         f"{WARNING} Skipping valuation of {self.holdings[h].asset} "
                         f"due to API failure ({e.response.status_code})"
                     )

@@ -6,7 +6,6 @@ from decimal import Decimal
 from typing import Dict, Optional, Tuple
 
 from colorama import Fore, Style
-from tqdm import tqdm
 from typing_extensions import TypedDict
 
 from ..bt_types import (
@@ -22,6 +21,7 @@ from ..bt_types import (
 )
 from ..config import config
 from ..constants import WARNING
+from ..utils import bt_tqdm_write
 from .pricedata import PriceData
 
 
@@ -63,7 +63,7 @@ class ValueAsset:
                 )
             return value, FixedValue(False)
 
-        tqdm.write(
+        bt_tqdm_write(
             f"{WARNING} Price for {asset} on {timestamp:%Y-%m-%d} is not available, "
             f"using price of {config.sym()}{0:0,.2f}"
         )
@@ -84,7 +84,7 @@ class ValueAsset:
         asset_price_ccy = None
 
         if not self.price_tool and timestamp.date() >= datetime.now().date():
-            tqdm.write(
+            bt_tqdm_write(
                 f"{WARNING} Price for {asset} on {timestamp:%Y-%m-%d}, "
                 f"no historic price available, using latest price"
             )

@@ -4,8 +4,9 @@
 import copy
 import re
 import sys
+from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Dict, List
 
 from colorama import Fore
 from typing_extensions import Unpack
@@ -14,7 +15,7 @@ from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..datarow import TxRawPos
-from ..exceptions import DataFormatNotSupported, DataRowError, UnexpectedTypeError
+from ..exceptions import DataRowError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -494,19 +495,49 @@ def _get_asset_from_symbol(symbol: str) -> str:
     return asset
 
 
-# This parser is only used for Airdrops, everything else is duplicates
-def parse_kucoin_account_history_funding(
-    data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]
+# This parser is only used for Airdrops and Dust conversions, everything else is duplicates
+def parse_kucoin_account_history(
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
-    if "History_Funding" not in kwargs["filename"]:
-        # Only the Funding Account can contain airdrops
-        raise DataFormatNotSupported(kwargs["filename"])
+    tx_times: Dict[datetime, List["DataRow"]] = {}
 
+    for dr in data_rows:
+        timestamp_hdr = parser.args[0].group(1)
+        utc_offset = parser.args[0].group(2)
+        dr.timestamp = DataParser.parse_timestamp(f"{dr.row_dict[timestamp_hdr]} {utc_offset}")
+        if dr.timestamp in tx_times:
+            tx_times[dr.timestamp].append(dr)
+        else:
+            tx_times[dr.timestamp] = [dr]
+
+    for data_row in data_rows:
+        if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
+            sys.stderr.write(
+                f"{Fore.YELLOW}conv: "
+                f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
+            )
+
+        if data_row.parsed:
+            continue
+
+        try:
+            _parse_kucoin_account_history_row(tx_times, data_row)
+        except DataRowError as e:
+            data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
+
+
+def _parse_kucoin_account_history_row(
+    tx_times: Dict[datetime, List["DataRow"]], data_row: "DataRow"
+) -> None:
     row_dict = data_row.row_dict
-
-    timestamp_hdr = parser.args[0].group(1)
-    utc_offset = parser.args[0].group(2)
-    data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
 
     if "Distribution" in row_dict["Remark"]:
         data_row.t_record = TransactionOutRecord(
@@ -514,6 +545,51 @@ def parse_kucoin_account_history_funding(
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Currency"],
+            wallet=WALLET,
+        )
+    if row_dict.get("Type") == "Convert Dust to KCS":
+        t_rows = [
+            dr
+            for dr in tx_times[data_row.timestamp]
+            if dr.row_dict["Type"] == row_dict["Type"] and not dr.parsed
+        ]
+        _make_trade(t_rows)
+
+
+def _make_trade(type_rows: List["DataRow"]) -> None:
+    buy_quantity = sell_quantity = None
+    buy_asset = sell_asset = ""
+    trade_row = None
+
+    for data_row in type_rows:
+        row_dict = data_row.row_dict
+
+        if row_dict["Side"] == "Deposit":
+            if buy_quantity is None:
+                buy_quantity = Decimal(row_dict["Amount"])
+                buy_asset = row_dict["Currency"]
+                data_row.parsed = True
+
+        if row_dict["Side"] == "Withdrawal":
+            if sell_quantity is None:
+                sell_quantity = Decimal(row_dict["Amount"])
+                sell_asset = row_dict["Currency"]
+                data_row.parsed = True
+
+        if not trade_row:
+            trade_row = data_row
+
+        if buy_quantity and sell_quantity:
+            break
+
+    if trade_row:
+        trade_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            trade_row.timestamp,
+            buy_quantity=buy_quantity,
+            buy_asset=buy_asset,
+            sell_quantity=sell_quantity,
+            sell_asset=sell_asset,
             wallet=WALLET,
         )
 
@@ -859,7 +935,7 @@ DataParser(
         "Type",  # New field
     ],
     worksheet_name="KuCoin A",
-    row_handler=parse_kucoin_account_history_funding,
+    all_handler=parse_kucoin_account_history,
 )
 
 # Account History_Funding Account (Bundle)
@@ -877,7 +953,7 @@ DataParser(
         "Remark",
     ],
     worksheet_name="KuCoin A",
-    row_handler=parse_kucoin_account_history_funding,
+    all_handler=parse_kucoin_account_history,
 )
 
 DataParser(

@@ -5,7 +5,7 @@
 import requests
 from colorama import Back
 
-from bittytax.conv.parsers.gemini import QUOTE_ASSETS, _split_trading_pair
+from ..gemini import QUOTE_ASSETS, _split_trading_pair
 
 
 def get_assets() -> None:

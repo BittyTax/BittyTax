@@ -25,6 +25,7 @@
 - Accounting tool: in PDF reports only word-wrap for asset-table and total-table.
 - KuCoin parser: Fee can be empty for deposits and withdrawals.
 - KuCoin parser: UTC can be without an offset.
+- Coinbase parser: fixed advanced trades without the "at" exchange rate specified. ([#458](https://github.com/BittyTax/BittyTax/issues/458))
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
@@ -180,6 +181,10 @@
 - Accounting tool: new transaction types added. Stake, Unstake and Staking-Reward (Staking has been deprecated).
 - Conversion tool: added new parser for DefiTaxes.us.
 - Conversion tool: allow parsers to specify a different worksheet
+- CoinTracker parser: added "STAKING_REWARD", "INTEREST_PAYMENT" and "INCOME" types.
+- Nexo parser: added "Transfer From Pro Wallet" type. ([#442](https://github.com/BittyTax/BittyTax/issues/442))
+- Accounting tool/Conversion tool: added BITTYTAX_TERMINAL environment variable.
+- KuCoin parser: added "Convert Dust to KCS" type in Account History.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -267,6 +272,8 @@
 - Qt Wallet parser: added symbol to worksheet name instead of wallet name.
 - Electrum parser: added symbol to worksheet name instead of wallet name.
 - Blockscout parser: set the worksheet name the same as the wallet name.
+- Accounting/Conversion tool: openpyxl.load_workbook set all parameters.
+- Accounting/Conversion/Price tool: changed --version to include compiled state.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.

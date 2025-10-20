@@ -30,8 +30,11 @@ QUOTE_ASSETS = [
     "GBP",
     "GUSD",
     "LTC",
+    "RLUSD",
     "SGD",
+    "SOL",
     "USD",
+    "USDC",
     "USDT",
 ]
 
