@@ -178,6 +178,7 @@
 - Accounting tool: split tax rates for 2024/25. ([#429](https://github.com/BittyTax/BittyTax/issues/429))
 - Accounting tool: tax rates and allowance for 2025/26.
 - Accounting tool: new transaction type Margin-Fee-Rebate added. ([#415](https://github.com/BittyTax/BittyTax/issues/415))
+- CoinTracker parser: added "STAKING_REWARD", "INTEREST_PAYMENT" and "INCOME" types.
 - Nexo parser: added "Transfer From Pro Wallet" type. ([#442](https://github.com/BittyTax/BittyTax/issues/442))
 - Accounting tool/Conversion tool: added BITTYTAX_TERMINAL environment variable.
 - KuCoin parser: added "Convert Dust to KCS" type in Account History.
