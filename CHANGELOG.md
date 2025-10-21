@@ -182,6 +182,7 @@
 - Nexo parser: added "Transfer From Pro Wallet" type. ([#442](https://github.com/BittyTax/BittyTax/issues/442))
 - Accounting tool/Conversion tool: added BITTYTAX_TERMINAL environment variable.
 - KuCoin parser: added "Convert Dust to KCS" type in Account History.
+- Added support for Python 3.14.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
