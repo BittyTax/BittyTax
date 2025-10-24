@@ -864,7 +864,7 @@ def _get_ins_outs(
 
         rate = DataParser.convert_currency(row_dict["USD rate"], "USD", dr.timestamp)
         quantity = Decimal(row_dict["amount transfered"])
-        asset = _get_asset(row_dict["token symbol"], row_dict["token unique ID"])
+        asset = _get_asset(row_dict["token unique"], row_dict["token ID"])
         value = quantity * rate if rate else None
         classification = row_dict["classification"]
         vault_id = VaultId(row_dict["vault id"])
@@ -1083,7 +1083,8 @@ DataParser(
         "amount transfered",
         "token contract address",
         "token symbol",
-        "token unique ID",
+        "token unique",
+        "token ID",
         "transfer type",
         "tax treatment",
         "vault id",
@@ -1091,40 +1092,6 @@ DataParser(
         "rate source",
         "USD rate",
         "url",
-    ],
-    worksheet_name=WORKSHEET_NAME,
-    all_handler=parse_defi_taxes,
-)
-
-DataParser(
-    ParserType.ACCOUNTING,
-    "DeFi Taxes",
-    [
-        "timestamp",
-        "UTC datetime",
-        "chain",
-        "transaction hash",
-        "color",
-        "classification",
-        "custom note",
-        "counterparty address",
-        "counterparty name",
-        "function hex signature",
-        "operation (decoded hex signature)",
-        "source address",
-        "source is me",
-        "destination address",
-        "destination is me",
-        "amount transfered",
-        "token contract address",
-        "token symbol",
-        "token unique ID",
-        "transfer type",
-        "tax treatment",
-        "vault id",
-        "coingecko id",
-        "rate source",
-        "USD rate",
     ],
     worksheet_name=WORKSHEET_NAME,
     all_handler=parse_defi_taxes,
