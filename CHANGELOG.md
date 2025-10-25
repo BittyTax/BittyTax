@@ -185,9 +185,12 @@
 - Binance parser: added "Referral Commission" operation. ([#430](https://github.com/BittyTax/BittyTax/issues/430))
 - Nexo parser: added handling for "Transfer to Nexo User" and "Earn Interest Adjustment" in Details.
 - KuCoin parser: added "Fiat Deposits", "Third-Party Payment", "Fast Trade Orders" files.
-- Accounting tool: new transaction type Margin-Fee-Rebate added.
+- Binance parser: added "Funding" Account, and "Send" and "Campaign Related Reward" Operations.
+- Coinbase parser: added "Donation" and "Admin Debit" transaction types.
+- Accounting tool: new transaction type Margin-Fee-Rebate added. ([#415](https://github.com/BittyTax/BittyTax/issues/415))
 - Accounting tool/Conversion tool: added BITTYTAX_TERMINAL environment variable.
 - KuCoin parser: added "Convert Dust to KCS" type in Account History.
+- Nexo parser: added "Transfer From Pro Wallet" type. ([#442](https://github.com/BittyTax/BittyTax/issues/442))
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
