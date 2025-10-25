@@ -184,6 +184,7 @@
 - Binance parser: added "Funding" Account, and "Send" and "Campaign Related Reward" Operations.
 - Coinbase parser: added "Donation" and "Admin Debit" transaction types.
 - Binance parser: added "Referral Commission" operation. ([#430](https://github.com/BittyTax/BittyTax/issues/430))
+- CoinTracker parser: added "STAKING_REWARD", "INTEREST_PAYMENT" and "INCOME" types.
 - Nexo parser: added handling for "Transfer to Nexo User" and "Earn Interest Adjustment" in Details.
 - KuCoin parser: added "Fiat Deposits", "Third-Party Payment", "Fast Trade Orders" files.
 - Binance parser: added "Funding" Account, and "Send" and "Campaign Related Reward" Operations.
