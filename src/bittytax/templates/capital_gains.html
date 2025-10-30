@@ -69,7 +69,7 @@
     </tr>
 </table>
 <h3>Summary</h3>
-<table width="75%">
+<table width="{{ summary_width }}">
     <tr>
         <td>Number of disposals:</td>
         <td align="right">{{ cgains.summary['disposals'] }}</td>
@@ -102,7 +102,7 @@
 </table>
 {% if cgains.split_date %}
     <br>
-    <table width="75%">
+    <table width="{{ summary_width }}">
         <tr>
             <td>Gains before {{ cgains.split_date|datefilter2 }}:</td>
             {% if cgains.split_totals['gain_before'] >= 0 %}

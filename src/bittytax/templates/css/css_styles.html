@@ -18,11 +18,11 @@
             -pdf-frame-content: footer-content;
             left: 50pt;
             width: 495pt;
-            top: 762pt;
+            top: 772pt;
             height: 35pt;
         }
     }
-    @page default {
+    @page default-portrait {
         size: a4 portrait;
         @frame header {
             -pdf-frame-content: header-content;
@@ -42,6 +42,29 @@
             left: 50pt;
             width: 495pt;
             top: 772pt;
+            height: 35pt;
+        }
+    }
+    @page default-landscape {
+        size: a4 landscape;
+        @frame header {
+            -pdf-frame-content: header-content;
+            left: 50pt;
+            width: 740pt;
+            top: 50pt;
+            height: 25pt;
+        }
+        @frame content {
+            left: 50pt;
+            width: 740pt;
+            top: 100pt;
+            height: 415pt;
+        }
+        @frame footer {
+            -pdf-frame-content: footer-content;
+            left: 50pt;
+            width: 740pt;
+            top: 525pt;
             height: 35pt;
         }
     }

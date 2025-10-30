@@ -1,9 +1,18 @@
+{% if config.classic_report %}
+    {% set do_landscape = false %}
+    {% set summary_width = "75%" %}
+{% else %}
+    {% set do_landscape = true %}
+    {% set summary_width = "50%" %}
+{% endif %}
 <!DOCTYPE html>
 <html>
     {% include "html_head.html" %}
     <body>
         {% include "header_footer.html" %}
         {% include "cover_page.html" %}
+        {% if do_landscape %}<pdf:nexttemplate name="default-landscape" />{% endif %}
+        <pdf:nextpage />
         {% for tax_year in tax_report|sort %}
             <h1 class="tax-year">Tax Year - {{ config.format_tax_year(tax_year) }}</h1>
             <h2 class="date-range">
