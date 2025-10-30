@@ -1,10 +1,15 @@
+{% if config.classic_report %}
+    {% set do_landscape = false %}
+{% else %}
+    {% set do_landscape = true %}
+{% endif %}
 <!DOCTYPE html>
 <html>
     {% include "html_head.html" %}
     <body>
         {% include "header_footer.html" %}
         {% include "cover_page.html" %}
-        <pdf:nexttemplate name="default-landscape" />
+        {% if do_landscape %}<pdf:nexttemplate name="default-landscape" />{% endif %}
         <pdf:nextpage />
         {% for tax_year in tax_report|sort %}
             {% set cgains = tax_report[tax_year]['CapitalGains'] %}
