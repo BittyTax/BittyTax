@@ -67,12 +67,22 @@ A transaction record is represented as a row of data which contains the followin
 | | `Income` | Tokens received as other income |
 | | `Gift-Received` | Tokens received as a gift |
 | | `Airdrop` | Tokens received from an airdrop |
+| | `Fork` | Tokens received as the result of a blockchain fork |
+| | `Referral` | Tokens received as a reward through a referral program |
+| | `Cashback` | Tokens received as cashback |
+| | `Fee-Rebate` | Tokens received as a rebate of fees |
+| | `Loan` | Tokens received as a loan |
+| | `Margin-Gain` | Tokens received as a result of a margin gain |
 | | `Withdrawal` | Tokens withdrawn from a wallet you own |
 | | `Spend` | Tokens spent on goods or services |
 | | `Gift-Sent` | Tokens sent as a gift |
 | | `Gift-Spouse` | Tokens gifted to your spouse or civil partner |
 | | `Charity-Sent` | Tokens sent to a charity as a gift |
 | | `Lost` | Tokens that have been lost or stolen |
+| | `Loan-Repayment` | Tokens returned to the lender of a loan |
+| | `Loan-Interest` | Tokens paid as a fee to the lender of a loan |
+| | `Margin-Loss` | Tokens deducted as a result of a margin loss |
+| | `Margin-Fee` | Tokens paid as fees for a margin position |
 | | `Trade` | Tokens exchanged for another token or fiat currency |
 | Buy Quantity | | Quantity of the asset acquired |
 | Buy Asset | | Symbol name of the asset acquired |
@@ -99,12 +109,22 @@ The transaction Type dictates which fields in the row are required, either (M)an
 | `Income` | M | M | O |||| O | O | O| O | M | O |
 | `Gift-Received` | M | M | O |||| O | O | O| O | M | O |
 | `Airdrop` | M | M | O |||| O | O | O| O | M | O |
+| `Fork` | M | M | O |||| O | O | O | O | M | O |
+| `Referral` | M | M | O |||| O | O | O | O | M | O |
+| `Cashback` | M | M | O |||| O | O | O | O | M | O |
+| `Fee-Rebate` | M | M | O |||| O | O | O | O | M | O |
+| `Loan` | M | M | O |||| O | O | O | O | M | O |
+| `Margin-Gain` | M | M | O |||| O | O | O | O | M | O |
 | `Withdrawal` |||| M | M |   | O | O | O | O | M | O |
 | `Spend` |||| M | M | O | O | O | O | O | M | O |
 | `Gift-Sent` |||| M | M | O | O | O | O | O | M | O |
 | `Gift-Spouse` |||| M | M |  | O | O | O | O | M | O |
 | `Charity-Sent` |||| M | M | O | O | O | O | O | M | O |
 | `Lost` |||| M | M | O | O | O | O | O | M | O |
+| `Loan-Repayment` |||| M | M | O | O | O | O | O | M | O |
+| `Loan-Interest` |||| M | M | O | O | O | O | O | M | O |
+| `Margin-Loss` |||| M | M | O | O | O | O | O | M | O |
+| `Margin-Fee` |||| M | M | O | O | O | O | O | M | O |
 | `Trade` | M | M | O | M | M | O | O | O | O | O | M | O |
 
 - If the Fee Asset is the same as Sell Asset, then the Sell Quantity must be the net amount (after fee deduction), not gross amount.
@@ -483,7 +503,7 @@ pool:   (BUY Trade 1.64037953 BTC (~£584.51 GBP) + fee=~£2.69 GBP 'Bitstamp' 2
 ```
 
 ### Match "same day" Rule
-See ["*The “same day” rule TCGA92/S105(1)*"](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560#IDATX33F).
+See ["*The "same day" rule TCGA92/S105(1)*"](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560#IDATX33F).
 
 This tax function matches any buy and sell transactions, of the same cryptoasset, that occur on the same day. 
 
@@ -506,7 +526,7 @@ match:   Disposal(same day) gain=£-0.03 (proceeds=£22.62 - cost=£22.62 - fees
 ```
 
 ### Match "bed and breakfast" Rule
-See ["*The “bed and breakfast” rule TCGA92/S106A(5) and (5A)*"](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560#IDATR33F).
+See ["*The "bed and breakfast" rule TCGA92/S106A(5) and (5A)*"](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560#IDATR33F).
  
 This tax function matches sells to buybacks of the same cryptoasset which occur within 30 days.
 
