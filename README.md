@@ -272,7 +272,7 @@ If the balances listed in the report don't match, it could be that your transact
 
 If you do get issues, you can use the `-d` or `--debug` option to turn on logging (see [Audit Transaction Records](#audit-transaction-records)).
 
-There is also a `--audit` option which produces a report containing just this section, useful if you want a quick way to see if everything balances. You can see an example audit report [here](https://github.com/BittyTax/BittyTax/blob/master/data/BittyTax_Report_Audit.pdf).
+There is also a `--audit` option which produces a report containing just this section, useful if you want a quick way to see if everything balances. You can see an example audit report [here](https://github.com/BittyTax/BittyTax/blob/master/data/BittyTax_Audit_Report.pdf).
 
 #### Tax Report
 By default, tax reports are produced for all years which contain taxable events.
@@ -298,7 +298,7 @@ The **Summary** section provides enough information for you to complete the "Oth
 
 If the disposal proceeds exceed the HMRC reporting threshold (previously 4 times the annual tax-free allowance) this is shown. HMRC requires you to report this in your self assessment even if the gain was within your annual allowance.
 
-HMRC also requires you to include details of each gain or loss. You can use the `--summary` option in combination with `--taxyear` to generate a PDF report which only includes the capital gains disposals and summary for that specific tax year, this can then be attached to your self assessment. You can see an example summary report [here](https://github.com/BittyTax/BittyTax/blob/master/data/BittyTax_Report_Summary.pdf).
+HMRC also requires you to include details of each gain or loss. You can use the `--summary` option in combination with `--taxyear` to generate a PDF report which only includes the capital gains disposals and summary for that specific tax year, this can then be attached to your self assessment. You can see an example summary report [here](https://github.com/BittyTax/BittyTax/blob/master/data/BittyTax_Summary_Report.pdf).
 
 The **Tax Estimate** section is given purely as an estimate. Capital gains tax figures are calculated at both the basic and higher rate, and take into consideration the full tax-free allowance.  
 
