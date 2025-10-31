@@ -57,7 +57,7 @@ class Config:
         "fiat_income": True,
         "lost_buyback": False,
         "large_data": False,
-        "classic_report": False,
+        "legacy_report": False,
         "data_source_select": {},
         "data_source_fiat": DATA_SOURCE_FIAT,
         "data_source_crypto": DATA_SOURCE_CRYPTO,

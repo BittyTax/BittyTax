@@ -283,6 +283,7 @@
 - Accounting/Conversion tool: openpyxl.load_workbook set all parameters.
 - Accounting/Conversion/Price tool: changed --version to include compiled state.
 - Accounting tool: PDF reports use landscape format for each tax year.
+- Config: renamed classic_report to legacy_report.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
