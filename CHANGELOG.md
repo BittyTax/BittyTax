@@ -26,6 +26,7 @@
 - KuCoin parser: Fee can be empty for deposits and withdrawals.
 - KuCoin parser: UTC can be without an offset.
 - Coinbase parser: fixed advanced trades without the "at" exchange rate specified. ([#458](https://github.com/BittyTax/BittyTax/issues/458))
+- Accounting tool: integrity check difference should match transfers mismatch.
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
