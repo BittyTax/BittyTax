@@ -14,8 +14,8 @@ Trade,1.64037953,BTC,,994.07,USD,,4.58,USD,,Bitstamp,2014-07-24 13:09:00,
 Withdrawal,,,,4.40027953,BTC,,0.0001,BTC,,Bitstamp,2014-07-24 21:01:00,to Desktop wallet
 Deposit,4.40027953,BTC,,,,,,,,Desktop wallet,2014-07-24 21:53:37,from Bitstamp
 Income,3,BTC,450.00,,,,,,,Desktop wallet,2015-05-22 10:34:18,
-Deposit,6,BTC,,,,,,,,Poloniex,2016-01-27 21:01:03,to Desktop wallet
-Withdrawal,,,,6,BTC,,0.0001259,BTC,,Desktop wallet,2016-01-27 21:15:41,from Poloniex
+Withdrawal,,,,6,BTC,,0.0001259,BTC,,Desktop wallet,2016-01-27 21:01:03,from Poloniex
+Deposit,6,BTC,,,,,,,,Poloniex,2016-01-27 21:15:41,to Desktop wallet
 Trade,77.41195874,ETH,,0.48789661,BTC,,0.15482391,ETH,,Poloniex,2016-01-27 22:04:21,
 Trade,366.5243149,ETH,,2.30979957,BTC,,0.73304862,ETH,,Poloniex,2016-01-27 22:04:21,
 Trade,70,ETH,,0.44058,BTC,,0.14,ETH,,Poloniex,2016-01-27 22:04:21,
