@@ -1,5 +1,11 @@
 # Change Log
 ## [Unreleased]
+
+## Version [0.6.0] (2025-11-05)
+Important:-
+
+CoinDesk have deprecated their price API. You will need to remove it from your `bittytax.conf` config file, see ([#318](https://github.com/BittyTax/BittyTax/issues/318)).
+
 ### Fixed
 - Coinbase parser: fixed regex to handle whole numbers, and a single digit after the decimal point.
 - Conversion tool: handle .xlsx files with incorrect dimensions. ([#342](https://github.com/BittyTax/BittyTax/issues/342))
@@ -809,7 +815,8 @@ This is the initial beta release. Although it has been throughly tested, it's po
 - Exchange data files supported: Bitstamp, Bittrex, ChangeTip, Circle, Coinbase, Coinbase Pro, Coinfloor, Cryptopia, Cryptsy, Gatehub, OKEx, Poloniex, TradeSatoshi, Uphold.
 - Explorer data files supported: Etherscan.
 
-[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/BittyTax/BittyTax/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/BittyTax/BittyTax/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/BittyTax/BittyTax/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/BittyTax/BittyTax/compare/v0.4.3...v0.5.0
