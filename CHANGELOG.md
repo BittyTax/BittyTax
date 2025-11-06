@@ -1,5 +1,7 @@
 # Change Log
 ## [Unreleased]
+### Added
+- MEXC parser: added new export formats.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
