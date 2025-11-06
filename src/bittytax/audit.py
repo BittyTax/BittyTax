@@ -195,7 +195,7 @@ class AuditRecords:
                 continue
 
             if asset in holdings:
-                difference = holdings[asset].quantity - self.totals[asset].total
+                difference = self.totals[asset].total - holdings[asset].quantity
                 if not difference:
                     if config.debug:
                         print(f"{Fore.GREEN}check holding: {asset} (ok)")
@@ -238,7 +238,7 @@ class AuditRecords:
                 print(
                     f'{Fore.WHITE}{failure["asset"]:<8} {failure["audit_tot"].normalize():25,f} '
                     f'{failure["holding_tot"].normalize():25,f} '
-                    f'{Fore.RED}{(failure["holding_tot"] - failure["audit_tot"]).normalize():+25,f}'
+                    f'{Fore.RED}{(failure["audit_tot"] - failure["holding_tot"]).normalize():+25,f}'
                 )
             else:
                 print(
