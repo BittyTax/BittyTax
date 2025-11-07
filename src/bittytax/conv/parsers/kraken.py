@@ -71,6 +71,7 @@ ALT_ASSETS = {
     "ZARS": "ARS",
     "ZAUD": "AUD",
     "ZCAD": "CAD",
+    "ZCOP": "COP",
     "ZEUR": "EUR",
     "ZGBP": "GBP",
     "ZJPY": "JPY",

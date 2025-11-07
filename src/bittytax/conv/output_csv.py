@@ -92,6 +92,7 @@ class OutputCsv(OutputBase):
         TrType.FEE_REBATE: "FeeRebate",
         TrType.LOAN: "LoanPrincipal",
         TrType.MARGIN_GAIN: "MarginGain",
+        TrType.MARGIN_FEE_REBATE: "FeeRebate",
         TrType.WITHDRAWAL: "Withdrawal",
         TrType.SPEND: "Purchase",
         TrType.GIFT_SENT: "Gift",
