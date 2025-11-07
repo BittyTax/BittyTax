@@ -6,6 +6,7 @@
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
 - Exodus parser: added new export format. ([#467](https://github.com/BittyTax/BittyTax/issues/467))
 - MEXC parser: added new export formats.
+- Cash App parser: added new export format.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
