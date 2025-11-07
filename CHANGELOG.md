@@ -2,6 +2,7 @@
 ## [Unreleased]
 ### Added
 - MEXC parser: added new export formats.
+- Cash App parser: added new export format.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
