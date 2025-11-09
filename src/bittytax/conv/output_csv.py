@@ -79,8 +79,9 @@ class OutputCsv(OutputBase):
 
     RECAP_TYPE_MAPPING = {
         TrType.DEPOSIT: "Deposit",
+        TrType.UNSTAKE: "Unstake",
         TrType.MINING: "Mining",
-        TrType.STAKING: "StakingReward",
+        TrType.STAKING_REWARD: "StakingReward",
         TrType.INTEREST: "Income",
         TrType.DIVIDEND: "Income",
         TrType.INCOME: "Income",
@@ -94,6 +95,7 @@ class OutputCsv(OutputBase):
         TrType.MARGIN_GAIN: "MarginGain",
         TrType.MARGIN_FEE_REBATE: "FeeRebate",
         TrType.WITHDRAWAL: "Withdrawal",
+        TrType.STAKE: "Stake",
         TrType.SPEND: "Purchase",
         TrType.GIFT_SENT: "Gift",
         TrType.GIFT_SPOUSE: "Spouse",
