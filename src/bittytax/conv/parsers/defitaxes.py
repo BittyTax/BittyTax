@@ -1061,7 +1061,7 @@ def _get_note(data_row: "DataRow") -> str:
     return ""
 
 
-DataParser(
+defitaxes_parser = DataParser(
     ParserType.ACCOUNTING,
     "DeFi Taxes",
     [
