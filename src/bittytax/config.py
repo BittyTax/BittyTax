@@ -21,7 +21,7 @@ class Config:
     BITTYTAX_CONFIG = "bittytax.conf"
 
     FIAT_LIST = ["GBP", "EUR", "USD", "AUD", "NZD", "CAD", "PLN"]
-    CRYPTO_LIST = ["BTC", "ETH", "XRP", "LTC", "BCH", "USDT"]
+    CRYPTO_LIST = ["BTC", "ETH", "XRP", "LTC", "BCH", "BNB", "USDT", "USDC"]
 
     TRADE_ASSET_TYPE_BUY = 0
     TRADE_ASSET_TYPE_SELL = 1
@@ -48,7 +48,7 @@ class Config:
         "transfers_include": False,
         "transfer_fee_disposal": True,
         "transfer_fee_allowable_cost": False,
-        "fiat_income": False,
+        "fiat_income": True,
         "lost_buyback": True,
         "large_data": False,
         "legacy_report": False,
