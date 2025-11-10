@@ -61,9 +61,10 @@ A transaction record is represented as a row of data which contains the followin
 
 | Field | Type | Description |
 | --- | --- | ---|
-| Type | `Deposit` | Tokens deposited to a wallet you own  
+| Type | `Deposit` | Tokens deposited to a wallet you own |
+| | `Unstake` | Tokens returned to a wallet after being staked |
 | | `Mining` | Tokens received as income from mining |
-| | `Staking` | Tokens received as income from staking |
+| | `Staking-Reward` `Staking`\* | Tokens received as a reward from staking |
 | | `Interest` | Tokens received as interest |
 | | `Dividend` | Tokens received as a dividend |
 | | `Income` | Tokens received as other income |
@@ -77,6 +78,7 @@ A transaction record is represented as a row of data which contains the followin
 | | `Margin-Gain` | Tokens received as a result of a margin gain |
 | | `Margin-Fee-Rebate` | Tokens received as a rebate of margin fees |
 | | `Withdrawal` | Tokens withdrawn from a wallet you own |
+| | `Stake` | Tokens withdrawn from a wallet to be staked |
 | | `Spend` | Tokens spent on goods or services |
 | | `Gift-Sent` | Tokens sent as a gift |
 | | `Gift-Spouse` | Tokens gifted to your spouse or civil partner |
@@ -100,13 +102,16 @@ A transaction record is represented as a row of data which contains the followin
 | Timestamp | | Date/time of transaction |
 | Note | | Description of transaction |
 
+\* - `Staking` has been deprecated, please use `Staking-Reward`.
+
 The transaction Type dictates which fields in the row are required, either (M)andatory or (O)ptional.   
 
 | Type | Buy Quantity | Buy Asset | Buy Value in GBP | Sell Quantity | Sell Asset | Sell Value in GBP | Fee Quantity | Fee Asset | Fee Value in GBP | Wallet | Timestamp | Note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---| --- | --- |
 | `Deposit` | M | M |   |||| O | O | O | O | M | O |
+| `Unstake` | M | M |   |||| O | O | O | O | M | O |
 | `Mining` | M | M | O |||| O | O | O| O | M | O |
-| `Staking` | M | M | O |||| O | O | O| O | M | O |
+| `Staking-Reward` | M | M | O |||| O | O | O| O | M | O |
 | `Interest` | M | M | O |||| O | O | O| O | M | O |
 | `Dividend` | M | M | O |||| O | O | O| O | M | O |
 | `Income` | M | M | O |||| O | O | O| O | M | O |
@@ -120,6 +125,7 @@ The transaction Type dictates which fields in the row are required, either (M)an
 | `Margin-Gain` | M | M | O |||| O | O | O | O | M | O |
 | `Margin-Free-Rebate` | M | M | O |||| O | O | O | O | M | O |
 | `Withdrawal` |||| M | M |   | O | O | O | O | M | O |
+| `Stake` |||| M | M |   | O | O | O | O | M | O |
 | `Spend` |||| M | M | O | O | O | O | O | M | O |
 | `Gift-Sent` |||| M | M | O | O | O | O | O | M | O |
 | `Gift-Spouse` |||| M | M |  | O | O | O | O | M | O |
@@ -169,12 +175,27 @@ Its corresponding Deposit quantity should match the Withdrawal quantity, this is
 
 The Withdrawal type can also be used to record fiat withdrawals from an exchange.
 
+### Stake
+The `Stake` transaction type records tokens withdraw from a wallet to be staked for rewards.
+
+As you are still the beneficial owner, they are included in your total holdings.
+
+This is not a taxable event.
+
+### Unstake
+
+The `Unstake` transaction type records tokens returned to a wallet after being staked.
+
+There should NOT be more tokens returned than were originally staked. Any additional tokens gained should be recorded a `Staking-Reward`.
+
+This is not a taxable event.
+
 ### Mining
 The `Mining` transaction type is used to identify tokens received as income from mining. The `Income` transaction type could also be used to record this - its use is purely descriptive.
 
 These transaction records will appear within your income tax report. See [HMRC guidance on mining transactions](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto21150).
 
-### Staking
+### Staking-Reward
 The `Staking` transaction type is used to identify tokens received as income from staking.
 
 These transaction records will appear within your income tax report. See [HMRC guidance on staking](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto21200).
