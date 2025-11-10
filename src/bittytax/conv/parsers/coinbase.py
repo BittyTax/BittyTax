@@ -230,6 +230,15 @@ def _do_parse_coinbase(
             buy_value=total_ccy,
             wallet=WALLET,
         )
+    elif row_dict["Transaction Type"] == "Interest payout":
+        data_row.t_record = TransactionOutRecord(
+            TrType.INTEREST,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Quantity Transacted"]),
+            buy_asset=row_dict["Asset"],
+            buy_value=total_ccy,
+            wallet=WALLET,
+        )
     elif row_dict["Transaction Type"] in ("Subscription Rebate", "Subscription Rebates (24 Hours)"):
         data_row.t_record = TransactionOutRecord(
             TrType.FEE_REBATE,
@@ -329,7 +338,7 @@ def _do_parse_coinbase(
             data_row.t_record = TransactionOutRecord(
                 TrType.TRADE,
                 data_row.timestamp,
-                buy_quantity=subtotal_ccy,
+                buy_quantity=abs(subtotal_ccy),
                 buy_asset=config.ccy,
                 sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
                 sell_asset=row_dict["Asset"],
@@ -342,12 +351,12 @@ def _do_parse_coinbase(
             data_row.t_record = TransactionOutRecord(
                 TrType.TRADE,
                 data_row.timestamp,
-                buy_quantity=subtotal,
+                buy_quantity=abs(subtotal),
                 buy_asset=quote_asset,
-                buy_value=subtotal_ccy,
+                buy_value=abs(subtotal_ccy),
                 sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
                 sell_asset=row_dict["Asset"],
-                sell_value=subtotal_ccy,
+                sell_value=abs(subtotal_ccy),
                 fee_quantity=fees,
                 fee_asset=quote_asset,
                 fee_value=abs(fees_ccy) if fees_ccy is not None else None,
@@ -371,7 +380,7 @@ def _do_parse_coinbase(
             sell_value=total_ccy,
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] == "Vault Withdrawal":
+    elif row_dict["Transaction Type"] in ("Vault Withdrawal", "Cash to Savings"):
         # Skip internal transfers
         return
     else:
