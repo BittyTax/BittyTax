@@ -13,6 +13,7 @@ from tqdm import tqdm
 from typing_extensions import NotRequired, TypedDict
 
 from .bt_types import (
+    STAKING_TRANSFER_TYPES,
     TAX_RULES_UK_COMPANY,
     TRANSFER_TYPES,
     AssetName,
@@ -415,6 +416,11 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             if not config.transfers_include and t.t_type in TRANSFER_TYPES:
                 if config.debug:
                     print(f"{Fore.BLUE}section104: //{t} <- transfer")
+                continue
+
+            if t.t_type in STAKING_TRANSFER_TYPES:
+                if config.debug:
+                    print(f"{Fore.BLUE}section104: //{t} <- staking transfer")
                 continue
 
             if not t.is_crypto():

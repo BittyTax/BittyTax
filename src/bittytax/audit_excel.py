@@ -35,6 +35,7 @@ class AuditLogExcel:  # pylint: disable=too-few-public-methods, too-many-instanc
         "Asset",
         "Wallet",
         "Balance",
+        "Staked",
         "Change",
         "Fee",
         "Total ({{asset}})",
@@ -191,9 +192,10 @@ class Worksheet:
         self._xl_text_black(asset, self.row_num, 0)
         self._xl_text_black(audit_log_entry.wallet, self.row_num, 1)
         self._xl_balance(audit_log_entry.balance, self.row_num, 2)
-        self._xl_change(audit_log_entry.change, self.row_num, 3)
-        self._xl_change(audit_log_entry.fee, self.row_num, 4)
-        self._xl_balance(audit_log_entry.total, self.row_num, 5)
+        self._xl_balance(audit_log_entry.staked, self.row_num, 3)
+        self._xl_change(audit_log_entry.change, self.row_num, 4)
+        self._xl_change(audit_log_entry.fee, self.row_num, 5)
+        self._xl_balance(audit_log_entry.total, self.row_num, 6)
 
         link_name = self._make_linkname(audit_log_entry.t_record.t_type, audit_log_entry.tr_part)
         if audit_log_entry.t_record.t_row.filename:
@@ -205,17 +207,17 @@ class Worksheet:
             else:
                 sheet_name = audit_log_entry.t_record.t_row.worksheet_name
             self._xl_hyperlink(
-                audit_log_entry.t_record.t_row, sheet_name, link_name, self.row_num, 6
+                audit_log_entry.t_record.t_row, sheet_name, link_name, self.row_num, 7
             )
         else:
-            self._xl_text_grey(link_name, self.row_num, 6)
+            self._xl_text_grey(link_name, self.row_num, 7)
 
-        self._xl_timestamp(audit_log_entry.t_record.timestamp, self.row_num, 7)
-        self._xl_text_grey(audit_log_entry.t_record.note, self.row_num, 8)
+        self._xl_timestamp(audit_log_entry.t_record.timestamp, self.row_num, 8)
+        self._xl_text_grey(audit_log_entry.t_record.note, self.row_num, 9)
         if audit_log_entry.t_record.t_row.tx_raw:
-            self._xl_text_grey(audit_log_entry.t_record.t_row.tx_raw.tx_hash, self.row_num, 9)
-            self._xl_text_grey(audit_log_entry.t_record.t_row.tx_raw.tx_src, self.row_num, 10)
-            self._xl_text_grey(audit_log_entry.t_record.t_row.tx_raw.tx_dest, self.row_num, 11)
+            self._xl_text_grey(audit_log_entry.t_record.t_row.tx_raw.tx_hash, self.row_num, 10)
+            self._xl_text_grey(audit_log_entry.t_record.t_row.tx_raw.tx_src, self.row_num, 11)
+            self._xl_text_grey(audit_log_entry.t_record.t_row.tx_raw.tx_dest, self.row_num, 12)
 
         self.row_num += 1
 
@@ -308,9 +310,10 @@ class Worksheet:
 
     def conditional_formatting(self) -> None:
         self._format_integer(1, 2, self.output.format_num_int_unsigned)
-        self._format_integer(1, 3, self.output.format_num_int_signed)
+        self._format_integer(1, 3, self.output.format_num_int_unsigned)
         self._format_integer(1, 4, self.output.format_num_int_signed)
-        self._format_integer(1, 5, self.output.format_num_int_unsigned)
+        self._format_integer(1, 5, self.output.format_num_int_signed)
+        self._format_integer(1, 6, self.output.format_num_int_unsigned)
 
     def _format_integer(
         self, row_num: int, col_num: int, ws_format: xlsxwriter.worksheet.Format

@@ -6,15 +6,21 @@
             <th align="left">Wallet</th>
             <th align="left">Asset</th>
             <th align="right">Balance</th>
+            <th align="right">Staked</th>
         </tr>
         {% for asset in audit.wallets[wallet]|sort %}
             <tr>
                 <td>{{ wallet }}</td>
                 <td>{{ asset }}</td>
-                {% if audit.wallets[wallet][asset] >= 0 %}
-                    <td align="right">{{ audit.wallets[wallet][asset]|quantityfilter }}</td>
+                {% if audit.wallets[wallet][asset].balance >= 0 %}
+                    <td align="right">{{ audit.wallets[wallet][asset].balance|quantityfilter }}</td>
                 {% else %}
-                    <td align="right" class="red-font">{{ audit.wallets[wallet][asset]|quantityfilter }}</td>
+                    <td align="right" class="red-font">{{ audit.wallets[wallet][asset].balance|quantityfilter }}</td>
+                {% endif %}
+                {% if audit.wallets[wallet][asset].staked >= 0 %}
+                    <td align="right">{{ audit.wallets[wallet][asset].staked|quantityfilter }}</td>
+                {% else %}
+                    <td align="right" class="red-font">{{ audit.wallets[wallet][asset].staked|quantityfilter }}</td>
                 {% endif %}
             </tr>
         {% endfor %}
