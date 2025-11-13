@@ -326,12 +326,20 @@ def _do_parse_coinbase(
                 fee_value=abs(fees_ccy) if fees_ccy is not None else None,
                 wallet=WALLET,
             )
-    elif row_dict["Transaction Type"] in ("Sell", "Advanced Trade Sell", "Advance Trade Sell"):
+    elif row_dict["Transaction Type"] in (
+        "Sell",
+        "Advanced Trade Sell",
+        "Advance Trade Sell",
+        "Retail Simple Dust",
+    ):
         quote_asset, subtotal, fees = _get_trade_info(row_dict["Notes"])
         if not quote_asset:
-            raise UnexpectedContentError(
-                parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
-            )
+            if row_dict["Transaction Type"] == "Retail Simple Dust":
+                quote_asset = currency
+            else:
+                raise UnexpectedContentError(
+                    parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
+                )
 
         if quote_asset == currency:
             # Regular Sell
@@ -380,7 +388,7 @@ def _do_parse_coinbase(
             sell_value=total_ccy,
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] in ("Vault Withdrawal", "Cash to Savings"):
+    elif row_dict["Transaction Type"] in ("Vault Withdrawal", "Cash to Savings", "Savings to Cash"):
         # Skip internal transfers
         return
     else:

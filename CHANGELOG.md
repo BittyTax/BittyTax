@@ -3,7 +3,7 @@
 ### Fixed
 - Coinbase parser: fixed negative values for Advanced Trade Sells.
 ### Added
-- Coinbase parser: added "Cash to Savings" and "Interest payout" transaction types.
+- Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
 ### Changed
 - Config: fiat_income to True.
 
