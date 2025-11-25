@@ -4,7 +4,7 @@
 
 import requests
 
-from ..kucoin import _get_asset_from_symbol
+from bittytax.conv.parsers.kucoin import _get_asset_from_symbol
 
 
 def get_symbols() -> None:
