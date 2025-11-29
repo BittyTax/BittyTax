@@ -107,3 +107,6 @@ venv.bak/
 .mypy_cache/
 
 .idea/
+
+# Local exclude folder
+exclude/
