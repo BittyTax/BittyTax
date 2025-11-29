@@ -19,7 +19,7 @@
             <h2>Audit Report: {{ date|datefilter }}</h2>
             <h4>Source: {{ args.filename }}</h4>
         </div>
-        <pdf:nexttemplate name="default" />
+        <pdf:nexttemplate name="default-portrait" />
         <pdf:nextpage />
         <h1>Audit</h1>
         {% include "audit.html" %}

@@ -6,18 +6,22 @@ import os
 import sys
 from typing import Any, TextIO
 
-import pkg_resources
 import yaml
 from colorama import Fore
 
 from .constants import BITTYTAX_PATH, ERROR
+
+if sys.version_info < (3, 9):
+    import importlib_resources as pkg_resources
+else:
+    import importlib.resources as pkg_resources
 
 
 class Config:
     BITTYTAX_CONFIG = "bittytax.conf"
 
     FIAT_LIST = ["GBP", "EUR", "USD", "AUD", "NZD", "CAD", "PLN"]
-    CRYPTO_LIST = ["BTC", "ETH", "XRP", "LTC", "BCH", "USDT"]
+    CRYPTO_LIST = ["BTC", "ETH", "XRP", "LTC", "BCH", "BNB", "USDT", "USDC"]
 
     TRADE_ASSET_TYPE_BUY = 0
     TRADE_ASSET_TYPE_SELL = 1
@@ -44,10 +48,10 @@ class Config:
         "transfers_include": False,
         "transfer_fee_disposal": True,
         "transfer_fee_allowable_cost": False,
-        "fiat_income": False,
+        "fiat_income": True,
         "lost_buyback": True,
         "large_data": False,
-        "classic_report": False,
+        "legacy_report": False,
         "data_source_select": {},
         "data_source_fiat": DATA_SOURCE_FIAT,
         "data_source_crypto": DATA_SOURCE_CRYPTO,
@@ -65,6 +69,7 @@ class Config:
     )
 
     def __init__(self) -> None:
+        self.terminal = os.getenv("BITTYTAX_TERMINAL")
         self.debug = False
         self.start_of_year_month = 4
         self.start_of_year_day = 6
@@ -73,7 +78,11 @@ class Config:
             os.mkdir(BITTYTAX_PATH)
 
         if not os.path.exists(os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG)):
-            default_conf = pkg_resources.resource_string(__name__, "config/" + self.BITTYTAX_CONFIG)
+            default_conf = (
+                pkg_resources.files(__package__)
+                .joinpath(f"config/{self.BITTYTAX_CONFIG}")
+                .read_bytes()
+            )
             with open(os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG), "wb") as config_file:
                 config_file.write(default_conf)
 
@@ -103,17 +112,20 @@ class Config:
     def __getattr__(self, name: str) -> Any:
         return self.config[name]
 
-    def output_config(self, sys_out: TextIO) -> None:
-        sys_out.write(
-            f'{Fore.GREEN}config: "{os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG)}"\n'
-        )
+    def output_config(self, file: TextIO) -> None:
+        if config.terminal:
+            if sys.__stderr__ is not None:
+                file = sys.__stderr__
+            file.write(f"{Fore.GREEN}config: env BITTYTAX_TERMINAL={self.terminal}\n")
+
+        file.write(f'{Fore.GREEN}config: "{os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG)}"\n')
 
         for name in self.DEFAULT_CONFIG:
-            sys_out.write(f"{Fore.GREEN}config: {name}: {self.config[name]}\n")
+            file.write(f"{Fore.GREEN}config: {name}: {self.config[name]}\n")
 
         for name in self.OPTIONAL_CONFIG:
             if name in self.config:
-                sys_out.write(f"{Fore.GREEN}config: {name}: {self._mask_data(self.config[name])}\n")
+                file.write(f"{Fore.GREEN}config: {name}: {self._mask_data(self.config[name])}\n")
 
     def sym(self) -> str:
         if self.ccy == "GBP":

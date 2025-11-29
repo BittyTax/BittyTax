@@ -230,6 +230,15 @@ def _do_parse_coinbase(
             buy_value=total_ccy,
             wallet=WALLET,
         )
+    elif row_dict["Transaction Type"] == "Interest payout":
+        data_row.t_record = TransactionOutRecord(
+            TrType.INTEREST,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Quantity Transacted"]),
+            buy_asset=row_dict["Asset"],
+            buy_value=total_ccy,
+            wallet=WALLET,
+        )
     elif row_dict["Transaction Type"] in ("Subscription Rebate", "Subscription Rebates (24 Hours)"):
         data_row.t_record = TransactionOutRecord(
             TrType.FEE_REBATE,
@@ -317,19 +326,27 @@ def _do_parse_coinbase(
                 fee_value=abs(fees_ccy) if fees_ccy is not None else None,
                 wallet=WALLET,
             )
-    elif row_dict["Transaction Type"] in ("Sell", "Advanced Trade Sell", "Advance Trade Sell"):
+    elif row_dict["Transaction Type"] in (
+        "Sell",
+        "Advanced Trade Sell",
+        "Advance Trade Sell",
+        "Retail Simple Dust",
+    ):
         quote_asset, subtotal, fees = _get_trade_info(row_dict["Notes"])
         if not quote_asset:
-            raise UnexpectedContentError(
-                parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
-            )
+            if row_dict["Transaction Type"] == "Retail Simple Dust":
+                quote_asset = currency
+            else:
+                raise UnexpectedContentError(
+                    parser.in_header.index("Notes"), "Notes", row_dict["Notes"]
+                )
 
         if quote_asset == currency:
             # Regular Sell
             data_row.t_record = TransactionOutRecord(
                 TrType.TRADE,
                 data_row.timestamp,
-                buy_quantity=subtotal_ccy,
+                buy_quantity=abs(subtotal_ccy) if subtotal_ccy is not None else None,
                 buy_asset=config.ccy,
                 sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
                 sell_asset=row_dict["Asset"],
@@ -342,12 +359,12 @@ def _do_parse_coinbase(
             data_row.t_record = TransactionOutRecord(
                 TrType.TRADE,
                 data_row.timestamp,
-                buy_quantity=subtotal,
+                buy_quantity=abs(subtotal) if subtotal is not None else None,
                 buy_asset=quote_asset,
-                buy_value=subtotal_ccy,
+                buy_value=abs(subtotal_ccy) if subtotal_ccy is not None else None,
                 sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
                 sell_asset=row_dict["Asset"],
-                sell_value=subtotal_ccy,
+                sell_value=abs(subtotal_ccy) if subtotal_ccy is not None else None,
                 fee_quantity=fees,
                 fee_asset=quote_asset,
                 fee_value=abs(fees_ccy) if fees_ccy is not None else None,
@@ -371,7 +388,7 @@ def _do_parse_coinbase(
             sell_value=total_ccy,
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] == "Vault Withdrawal":
+    elif row_dict["Transaction Type"] in ("Vault Withdrawal", "Cash to Savings", "Savings to Cash"):
         # Skip internal transfers
         return
     else:
@@ -408,11 +425,10 @@ def _get_trade_info(notes: str) -> Tuple[str, Optional[Decimal], Optional[Decima
         quote_amount = Decimal(match.group(3))
         quote_asset = match.group(4)
         trading_pair = match.group(5)
+        rate = match.group(6)
+        rate_pair = match.group(7)
 
-        if trading_pair is not None:
-            rate = Decimal(match.group(6))
-            rate_pair = match.group(7)
-
+        if trading_pair is not None and rate is not None and rate_pair is not None:
             # Advanced Trade
             if trading_pair.split("-")[1] != quote_asset:
                 raise RuntimeError(
@@ -424,7 +440,7 @@ def _get_trade_info(notes: str) -> Tuple[str, Optional[Decimal], Optional[Decima
                     f"Trading pair and rate pair mismatch: {trading_pair} and {rate_pair}"
                 )
 
-            subtotal = base_amount * rate
+            subtotal = base_amount * Decimal(rate)
             fees = abs(subtotal - quote_amount)
 
             return quote_asset, subtotal, fees

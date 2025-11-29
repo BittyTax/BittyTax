@@ -1,6 +1,18 @@
 # Change Log
 ## [Unreleased]
 ### Fixed
+- Coinbase parser: fixed negative values for Advanced Trade Sells.
+### Added
+- Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
+### Changed
+- Config: fiat_income to True.
+
+## Version [0.6.0] (2025-11-05)
+Important:-
+
+CoinDesk have deprecated their price API. You will need to remove it from your `bittytax.conf` config file, see ([#318](https://github.com/BittyTax/BittyTax/issues/318)).
+
+### Fixed
 - Coinbase parser: fixed regex to handle whole numbers, and a single digit after the decimal point.
 - Conversion tool: handle .xlsx files with incorrect dimensions. ([#342](https://github.com/BittyTax/BittyTax/issues/342))
 - Accounting tool: handle .xlsx files with incorrect dimensions. ([#342](https://github.com/BittyTax/BittyTax/issues/342))
@@ -25,6 +37,8 @@
 - Accounting tool: in PDF reports only word-wrap for asset-table and total-table.
 - KuCoin parser: Fee can be empty for deposits and withdrawals.
 - KuCoin parser: UTC can be without an offset.
+- Coinbase parser: fixed advanced trades without the "at" exchange rate specified. ([#458](https://github.com/BittyTax/BittyTax/issues/458))
+- Accounting tool: integrity check difference should match transfers mismatch.
 ### Added
 - Accounting tool: new PDF report format.
 - Config: added classic_report parameter to switch to legacy PDF report format.
@@ -177,6 +191,12 @@
 - Accounting tool: split tax rates for 2024/25. ([#429](https://github.com/BittyTax/BittyTax/issues/429))
 - Accounting tool: tax rates and allowance for 2025/26.
 - Accounting tool: new transaction type Margin-Fee-Rebate added. ([#415](https://github.com/BittyTax/BittyTax/issues/415))
+- CoinTracker parser: added "STAKING_REWARD", "INTEREST_PAYMENT" and "INCOME" types.
+- Nexo parser: added "Transfer From Pro Wallet" type. ([#442](https://github.com/BittyTax/BittyTax/issues/442))
+- Accounting tool/Conversion tool: added BITTYTAX_TERMINAL environment variable.
+- KuCoin parser: added "Convert Dust to KCS" type in Account History.
+- Added support for Python 3.14.
+- Blockpit parser: added new export format.
 ### Changed
 - Conversion tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
 - Accounting tool: openpyxl use read-only mode. ([#337](https://github.com/BittyTax/BittyTax/issues/337))
@@ -258,6 +278,10 @@
 - Deribit parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
 - KuCoin parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
 - Accounting tool: increased precision for Decimals from 28 to 30 digits.
+- Accounting/Conversion tool: openpyxl.load_workbook set all parameters.
+- Accounting/Conversion/Price tool: changed --version to include compiled state.
+- Accounting tool: PDF reports use landscape format for each tax year.
+- Config: renamed classic_report to legacy_report.
 ### Removed
 - Conversion tool: removed merge parser for Coinbase/Coinbase Pro.
 - Conversion tool: removed filename "is a directory" message.
@@ -797,7 +821,8 @@ This is the initial beta release. Although it has been throughly tested, it's po
 - Exchange data files supported: Bitstamp, Bittrex, ChangeTip, Circle, Coinbase, Coinbase Pro, Coinfloor, Cryptopia, Cryptsy, Gatehub, OKEx, Poloniex, TradeSatoshi, Uphold.
 - Explorer data files supported: Etherscan.
 
-[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/BittyTax/BittyTax/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/BittyTax/BittyTax/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/BittyTax/BittyTax/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/BittyTax/BittyTax/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/BittyTax/BittyTax/compare/v0.4.3...v0.5.0

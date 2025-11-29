@@ -75,7 +75,7 @@ class DataSourceBase:
 
         response = requests.get(url, headers=self.headers, timeout=self.TIME_OUT)
 
-        if response.status_code in [401, 402, 403, 429, 502, 503, 504]:
+        if response.status_code in [401, 402, 403, 429, 500, 502, 503, 504]:
             response.raise_for_status()
 
         if response:
