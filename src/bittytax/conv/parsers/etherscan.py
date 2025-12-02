@@ -309,7 +309,9 @@ etherscan_txns = DataParser(
         "UnixTimestamp",
         lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "From",
+        lambda c: c in ("From_PrivateTag", None),  # Optional tag field
         "To",
+        lambda c: c in ("To_PrivateTag", None),  # Optional tag field
         "ContractAddress",
         lambda c: re.match(r"(Value_IN\((\w+)\)?)", c),
         lambda c: re.match(r"(Value_OUT\((\w+)\)?)", c),
@@ -320,6 +322,7 @@ etherscan_txns = DataParser(
         "Status",
         "ErrCode",
         "Method",  # New field
+        "PrivateNote",
     ],
     worksheet_name="Etherscan",
     row_handler=parse_etherscan,
