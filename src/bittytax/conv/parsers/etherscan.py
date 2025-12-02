@@ -465,6 +465,29 @@ etherscan_tokens = DataParser(
         "UnixTimestamp",
         lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "From",
+        lambda c: c in ("From_PrivateTag", None),  # Optional tag field
+        "To",
+        lambda c: c in ("To_PrivateTag", None),  # Optional tag field
+        "TokenValue",  # Renamed
+        "USDValueDayOfTx",  # New field
+        "ContractAddress",  # New field
+        "TokenName",
+        "TokenSymbol",
+        lambda c: c in ("PrivateNote", None),  # Optional note field
+    ],
+    worksheet_name="Etherscan",
+    all_handler=parse_etherscan_tokens,
+)
+
+DataParser(
+    ParserType.EXPLORER,
+    "Etherscan (Token Transfers ERC-20)",
+    [
+        lambda c: c in ("Txhash", "Transaction Hash"),  # Renamed
+        "Blockno",  # New field
+        "UnixTimestamp",
+        lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
+        "From",
         "To",
         "TokenValue",  # Renamed
         "USDValueDayOfTx",  # New field
