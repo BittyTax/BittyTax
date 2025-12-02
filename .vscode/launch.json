@@ -111,7 +111,7 @@
             "type": "command",
             "command": "extension.commandvariable.file.openDialog",
             "args": {
-                "defaultUri": "${userHome}${pathSeparator}Downloads",
+                "defaultUri": "C:\\Users\\agarn\\OneDrive\\Documents\\CryptoTax",
                 "filters": {
                     "Data file": ["csv", "xlsx", "xls", "txt"]
                 },
@@ -150,7 +150,7 @@
                 ],
                 "openDialog": {
                     "dataFilenamesDialog": {
-                        "defaultUri": "${userHome}${pathSeparator}Downloads",
+                        "defaultUri": "C:\\Users\\agarn\\OneDrive\\Documents\\CryptoTax",
                         "filters": {
                             "Data file": ["csv", "xlsx", "xls", "txt"]
                         },
