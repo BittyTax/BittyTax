@@ -194,7 +194,8 @@ class ReportPdf:
             if file_extension != ReportPdf.FILE_EXTENSION:
                 filepath = filepath + "." + ReportPdf.FILE_EXTENSION
         else:
-            filepath = default_filename + "." + ReportPdf.FILE_EXTENSION
+            # Default output to exclude folder
+            filepath = os.path.join("exclude", default_filename + "." + ReportPdf.FILE_EXTENSION)
 
         if not os.path.exists(filepath):
             return filepath

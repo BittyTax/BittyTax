@@ -49,7 +49,8 @@ class OutputBase:  # pylint: disable=too-few-public-methods
             if file_extension != extension_type:
                 filepath = f"{filepath}.{extension_type}"
         else:
-            filepath = f"{OutputBase.DEFAULT_FILENAME}.{extension_type}"
+            # Default output to exclude folder
+            filepath = os.path.join("exclude", f"{OutputBase.DEFAULT_FILENAME}.{extension_type}")
 
         if not os.path.exists(filepath):
             return filepath
