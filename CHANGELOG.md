@@ -6,6 +6,7 @@
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
 ### Changed
 - Config: fiat_income to True.
+- Price tool: CoinDesk API deprecated.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
