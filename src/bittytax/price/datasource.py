@@ -352,40 +352,20 @@ class CoinDesk(DataSourceBase):
         self.assets = {AssetSymbol("BTC"): {"asset_id": AssetId(""), "name": AssetName("Bitcoin")}}
 
     def get_latest(
-        self, _asset: AssetSymbol, quote: QuoteSymbol, _asset_id: AssetId = AssetId("")
+        self, _asset: AssetSymbol, _quote: QuoteSymbol, _asset_id: AssetId = AssetId("")
     ) -> Optional[Decimal]:
-        json_resp = self.get_json("https://api.coindesk.com/v1/bpi/currentprice.json")
-        return (
-            Decimal(repr(json_resp["bpi"][quote]["rate_float"]))
-            if "bpi" in json_resp and quote in json_resp["bpi"]
-            else None
-        )
+        # Deprecated
+        return None
 
     def get_historical(
         self,
-        asset: AssetSymbol,
-        quote: QuoteSymbol,
-        timestamp: Timestamp,
+        _asset: AssetSymbol,
+        _quote: QuoteSymbol,
+        _timestamp: Timestamp,
         _asset_id: AssetId = AssetId(""),
     ) -> None:
-        url = (
-            f"https://api.coindesk.com/v1/bpi/historical/close.json"
-            f"?start={timestamp:%Y-%m-%d}&end={datetime.now():%Y-%m-%d}&currency={quote}"
-        )
-        json_resp = self.get_json(url)
-        pair = self.pair(asset, quote)
-        if "bpi" in json_resp:
-            self.update_prices(
-                pair,
-                {
-                    self.str_to_date(k): {
-                        "price": Decimal(repr(v)) if v else None,
-                        "url": SourceUrl(url),
-                    }
-                    for k, v in json_resp["bpi"].items()
-                },
-                timestamp,
-            )
+        # Deprecated
+        return None
 
 
 class CryptoCompare(DataSourceBase):

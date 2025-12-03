@@ -7,6 +7,8 @@
 - Coinbase parser: fixed negative values for Advanced Trade Sells.
 ### Added
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
+### Changed
+- Price tool: CoinDesk API deprecated.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
