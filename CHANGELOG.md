@@ -4,6 +4,7 @@
 - Coinbase parser: fixed negative values for Advanced Trade Sells.
 ### Added
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
+- Exodus parser: added new export format. ([#467](https://github.com/BittyTax/BittyTax/issues/467))
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
