@@ -5,6 +5,7 @@ import copy
 import sys
 from dataclasses import dataclass
 from decimal import Decimal, getcontext
+from enum import Enum
 from typing import TYPE_CHECKING, Dict, List, NewType, Optional, Tuple
 
 from colorama import Fore
@@ -27,8 +28,8 @@ if TYPE_CHECKING:
     from ..datarow import DataRow
 
 PRECISION = Decimal("0." + "0" * 18)
-
 WORKSHEET_NAME = "DeFi Taxes"
+COUNTERPARTY_UNKNOWN = "unknown"
 
 Chain = NewType("Chain", str)
 TxHash = NewType("TxHash", str)
@@ -37,12 +38,26 @@ VaultId = NewType("VaultId", str)
 getcontext().prec = 30
 
 
+class DtTransferMapping(Enum):
+    TRANSFER = 0
+    TRADE = 1
+
+
+@dataclass
+class DtConfig:
+    transfer_in_known: DtTransferMapping
+    transfer_in_unknown: DtTransferMapping
+    transfer_out_known: DtTransferMapping
+    transfer_out_unknown: DtTransferMapping
+
+
 @dataclass
 class TxRecord:
     quantity: Decimal
     asset: AssetSymbol
     value: Optional[Decimal]
     classification: str
+    counterparty: Optional[str]
     address: str
     chain: Chain
     vault_id: VaultId
@@ -57,10 +72,11 @@ class VaultRecord:
 
 
 def parse_defi_taxes(
-    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     tx_ids: Dict[Chain, Dict[TxHash, List["DataRow"]]] = {}
     vaults: Dict[VaultId, Dict[AssetSymbol, VaultRecord]] = {}
+    dt_config = kwargs.get("dt_config")
 
     for dr in data_rows:
         if not dr.row_dict["timestamp"]:
@@ -98,7 +114,7 @@ def parse_defi_taxes(
             continue
 
         try:
-            _parse_defi_taxes_row(data_rows, tx_ids, vaults, parser, data_row)
+            _parse_defi_taxes_row(data_rows, tx_ids, vaults, dt_config, parser, data_row)
         except DataRowError as e:
             data_row.failure = e
         except (ValueError, AttributeError, ArithmeticError) as e:
@@ -112,6 +128,7 @@ def _parse_defi_taxes_row(
     data_rows: List["DataRow"],
     tx_ids: Dict[Chain, Dict[TxHash, List["DataRow"]]],
     vaults: Dict[VaultId, Dict[AssetSymbol, VaultRecord]],
+    dt_config: Optional[DtConfig],
     parser: DataParser,
     data_row: "DataRow",
 ) -> None:
@@ -143,7 +160,7 @@ def _parse_defi_taxes_row(
             _output_tx_rows(ctx_ins, ctx_outs, tx_fee)
 
     last_tx_pos = len(tx_rows) - 1
-    _make_t_record(ctx_ins, ctx_outs, tx_fee, parser, tx_rows, vaults)
+    _make_t_record(ctx_ins, ctx_outs, tx_fee, parser, tx_rows, vaults, dt_config)
     new_rows = tx_rows[last_tx_pos + 1 :]
 
     if new_rows:
@@ -163,6 +180,7 @@ def _make_t_record(
     parser: DataParser,
     tx_rows: List["DataRow"],
     vaults: Dict[VaultId, Dict[AssetSymbol, VaultRecord]],
+    dt_config: Optional[DtConfig],
 ) -> None:
 
     if tx_fee and not tx_ins and not tx_outs:
@@ -183,7 +201,7 @@ def _make_t_record(
         tx_in = tx_ins[0]
 
         if tx_in.classification.startswith("transfer in") or not tx_in.classification:
-            tx_in.data_row.t_record = _make_buy(TrType.DEPOSIT, tx_in, tx_fee)
+            tx_in.data_row.t_record = _handle_transfer_in(tx_in, tx_fee, dt_config)
         elif tx_in.classification.startswith(("withdraw", "unstake", "exit vault")):
             try:
                 _do_unstake(tx_in, vaults, tx_rows, exit_vault="exit" in tx_in.classification)
@@ -227,7 +245,7 @@ def _make_t_record(
         tx_out = tx_outs[0]
 
         if tx_out.classification.startswith("transfer out") or not tx_out.classification:
-            tx_out.data_row.t_record = _make_sell(TrType.WITHDRAWAL, tx_out, tx_fee)
+            tx_out.data_row.t_record = _handle_transfer_out(tx_out, tx_fee, dt_config)
         elif tx_out.classification.startswith(("deposit", "stake")):
             tx_out.data_row.t_record = _make_sell(TrType.STAKE, tx_out, tx_fee)
             try:
@@ -297,7 +315,7 @@ def _make_t_record(
             elif tx_in.classification.startswith("claim reward"):
                 tx_in.data_row.t_record = _make_buy(TrType.STAKING_REWARD, tx_in)
             elif tx_in.classification.startswith("transfer in"):
-                tx_in.data_row.t_record = _make_buy(TrType.DEPOSIT, tx_in)
+                tx_in.data_row.t_record = _handle_transfer_in(tx_in, dt_config=dt_config)
             elif tx_in.classification.startswith(
                 (
                     "unstake & claim reward",
@@ -343,7 +361,7 @@ def _make_t_record(
             elif tx_out.classification.startswith("repay"):
                 tx_out.data_row.t_record = _make_sell(TrType.LOAN_REPAYMENT, tx_out)
             elif tx_out.classification.startswith("transfer out"):
-                tx_out.data_row.t_record = _make_sell(TrType.WITHDRAWAL, tx_out)
+                tx_out.data_row.t_record = _handle_transfer_out(tx_out, dt_config=dt_config)
             elif tx_out.classification.startswith(("deposit", "stake")):
                 tx_out.data_row.t_record = _make_sell(TrType.STAKE, tx_out)
                 try:
@@ -423,6 +441,32 @@ def _make_t_record(
         dr.parsed = True
 
 
+def _handle_transfer_in(
+    tx_in: TxRecord, tx_fee: Optional[TxRecord] = None, dt_config: Optional[DtConfig] = None
+) -> Optional[TransactionOutRecord]:
+    if tx_in.counterparty:
+        if dt_config and dt_config.transfer_in_known is DtTransferMapping.TRADE:
+            return _make_trade(tx_in, tx_out=None, tx_fee=tx_fee)
+        return _make_buy(TrType.DEPOSIT, tx_in, tx_fee)
+
+    if dt_config and dt_config.transfer_in_unknown is DtTransferMapping.TRADE:
+        return _make_trade(tx_in, tx_out=None, tx_fee=tx_fee)
+    return _make_buy(TrType.DEPOSIT, tx_in, tx_fee)
+
+
+def _handle_transfer_out(
+    tx_out: TxRecord, tx_fee: Optional[TxRecord] = None, dt_config: Optional[DtConfig] = None
+) -> Optional[TransactionOutRecord]:
+    if tx_out.counterparty:
+        if dt_config and dt_config.transfer_out_known is DtTransferMapping.TRADE:
+            return _make_trade(tx_in=None, tx_out=tx_out, tx_fee=tx_fee)
+        return _make_sell(TrType.WITHDRAWAL, tx_out, tx_fee)
+
+    if dt_config and dt_config.transfer_out_unknown is DtTransferMapping.TRADE:
+        return _make_trade(tx_in=None, tx_out=tx_out, tx_fee=tx_fee)
+    return _make_sell(TrType.WITHDRAWAL, tx_out, tx_fee)
+
+
 def _make_buy(
     t_type: TrType, tx_in: TxRecord, tx_fee: Optional[TxRecord] = None
 ) -> TransactionOutRecord:
@@ -458,23 +502,57 @@ def _make_sell(
 
 
 def _make_trade(
-    tx_in: TxRecord, tx_out: TxRecord, tx_fee: Optional[TxRecord]
-) -> TransactionOutRecord:
-    return TransactionOutRecord(
-        TrType.TRADE,
-        tx_in.data_row.timestamp,
-        buy_quantity=tx_in.quantity,
-        buy_asset=tx_in.asset,
-        buy_value=tx_in.value,
-        sell_quantity=abs(tx_out.quantity),
-        sell_asset=tx_out.asset,
-        sell_value=abs(tx_out.value) if tx_out.value is not None else None,
-        fee_quantity=tx_fee.quantity if tx_fee else None,
-        fee_asset=tx_fee.asset if tx_fee else "",
-        fee_value=tx_fee.value if tx_fee else None,
-        wallet=_get_wallet(tx_in.chain, tx_in.address),
-        note=_get_note(tx_in.data_row),
-    )
+    tx_in: Optional[TxRecord], tx_out: Optional[TxRecord], tx_fee: Optional[TxRecord]
+) -> Optional[TransactionOutRecord]:
+    if tx_in and tx_out:
+        return TransactionOutRecord(
+            TrType.TRADE,
+            tx_in.data_row.timestamp,
+            buy_quantity=tx_in.quantity,
+            buy_asset=tx_in.asset,
+            buy_value=tx_in.value,
+            sell_quantity=abs(tx_out.quantity),
+            sell_asset=tx_out.asset,
+            sell_value=abs(tx_out.value) if tx_out.value is not None else None,
+            fee_quantity=tx_fee.quantity if tx_fee else None,
+            fee_asset=tx_fee.asset if tx_fee else "",
+            fee_value=tx_fee.value if tx_fee else None,
+            wallet=_get_wallet(tx_in.chain, tx_in.address),
+            note=_get_note(tx_in.data_row),
+        )
+    if tx_in:
+        return TransactionOutRecord(
+            TrType.TRADE,
+            tx_in.data_row.timestamp,
+            buy_quantity=tx_in.quantity,
+            buy_asset=tx_in.asset,
+            sell_quantity=tx_in.value.quantize(Decimal("0.00")) if tx_in.value else Decimal(0),
+            sell_asset="USD",
+            fee_quantity=tx_fee.quantity if tx_fee else None,
+            fee_asset=tx_fee.asset if tx_fee else "",
+            fee_value=tx_fee.value if tx_fee else None,
+            wallet=_get_wallet(tx_in.chain, tx_in.address),
+            note=_get_note(tx_in.data_row),
+        )
+    if tx_out:
+        return TransactionOutRecord(
+            TrType.TRADE,
+            tx_out.data_row.timestamp,
+            buy_quantity=(
+                abs(tx_out.value.quantize(Decimal("0.00")))
+                if tx_out.value is not None
+                else Decimal(0)
+            ),
+            buy_asset="USD",
+            sell_quantity=abs(tx_out.quantity),
+            sell_asset=tx_out.asset,
+            fee_quantity=tx_fee.quantity if tx_fee else None,
+            fee_asset=tx_fee.asset if tx_fee else "",
+            fee_value=tx_fee.value if tx_fee else None,
+            wallet=_get_wallet(tx_out.chain, tx_out.address),
+            note=_get_note(tx_out.data_row),
+        )
+    return None
 
 
 def _make_transfer(
@@ -867,6 +945,11 @@ def _get_ins_outs(
         asset = _get_asset(row_dict["token unique"], row_dict["token ID"])
         value = quantity * rate if rate else None
         classification = row_dict["classification"]
+        counterparty = (
+            row_dict["counterparty name"]
+            if row_dict["counterparty name"] != COUNTERPARTY_UNKNOWN
+            else None
+        )
         vault_id = VaultId(row_dict["vault id"])
         chain = Chain(row_dict["chain"])
         interaction = bool(
@@ -880,6 +963,7 @@ def _get_ins_outs(
                     asset,
                     value,
                     classification,
+                    counterparty,
                     row_dict["source address"],
                     chain,
                     vault_id,
@@ -897,6 +981,7 @@ def _get_ins_outs(
                     asset,
                     value,
                     classification,
+                    counterparty,
                     row_dict["destination address"],
                     chain,
                     vault_id,
@@ -913,6 +998,7 @@ def _get_ins_outs(
                     asset,
                     -abs(value) if value else None,
                     classification,
+                    counterparty,
                     row_dict["source address"],
                     chain,
                     vault_id,
@@ -1049,19 +1135,19 @@ def _get_note(data_row: "DataRow") -> str:
     if classification:
         if (
             classification
-            and counterparty_name != "unknown"
+            and counterparty_name != COUNTERPARTY_UNKNOWN
             and counterparty_name not in classification
         ):
             return f"{classification} ({counterparty_name})"
         return classification
     if operation:
-        if counterparty_name and counterparty_name != "unknown":
+        if counterparty_name and counterparty_name != COUNTERPARTY_UNKNOWN:
             return f"{operation} ({counterparty_name})"
         return operation
     return ""
 
 
-DataParser(
+defitaxes_parser = DataParser(
     ParserType.ACCOUNTING,
     "DeFi Taxes",
     [
