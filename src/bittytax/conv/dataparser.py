@@ -19,6 +19,8 @@ from ..price.pricedata import PriceData
 from .exceptions import CurrencyConversionError
 
 if TYPE_CHECKING:
+    from parsers.defitaxes import DtConfig
+
     from ..datarow import DataRow
 
 TERM_WIDTH = 69
@@ -75,6 +77,7 @@ class ParserArgs(TypedDict):  # pylint: disable=too-few-public-methods, too-many
     worksheet: NotRequired[str]
     unconfirmed: NotRequired[bool]
     cryptoasset: NotRequired[str]
+    dt_config: NotRequired["DtConfig"]
 
 
 class DataParser:  # pylint: disable=too-many-instance-attributes
