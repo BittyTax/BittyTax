@@ -50,6 +50,7 @@ QUOTE_ASSETS = [
     "EURI",
     "FDUSD",
     "GBP",
+    "IDR",
     "GYEN",
     "IDRT",
     "JPY",
@@ -64,6 +65,8 @@ QUOTE_ASSETS = [
     "TRY",
     "TUSD",
     "UAH",
+    "USD",
+    "USD1",
     "USDC",
     "USDP",
     "USDS",
@@ -89,10 +92,13 @@ BASE_ASSETS = [
 
 TRADINGPAIR_TO_QUOTE_ASSET = {
     "ADAEUR": "EUR",
+    "ARBIDR": "IDR",
+    "BNBIDR": "IDR",
     "ENAEUR": "EUR",
     "GALAEUR": "EUR",
     "LUNAEUR": "EUR",
     "THETAEUR": "EUR",
+    "USDTUSD": "USD",
 }
 
 
