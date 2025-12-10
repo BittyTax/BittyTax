@@ -1,11 +1,10 @@
 # Change Log
 ## [Unreleased]
-### Added
-- MEXC parser: added new export formats.
-- Cash App parser: added new export format.
 ### Fixed
 - Coinbase parser: fixed negative values for Advanced Trade Sells.
 ### Added
+- MEXC parser: added new export formats.
+- Cash App parser: added new export format.
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
 - Exodus parser: added new export format. ([#467](https://github.com/BittyTax/BittyTax/issues/467))
 ### Changed
