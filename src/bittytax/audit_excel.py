@@ -353,18 +353,32 @@ class Worksheet:
 
     def _sheet_name(self, name: str) -> str:
         name = self._sheet_name_validate(name)
+        base_name = name
 
         if name.lower() not in self.sheet_names:
             self.sheet_names[name.lower()] = 1
             sheet_name = name
         else:
-            self.sheet_names[name.lower()] += 1
-            sheet_name = f"{name}({self.sheet_names[name.lower()]})"
+            # Find next available counter
+            counter = self.sheet_names[base_name.lower()] + 1
+            sheet_name = f"{base_name}({counter})"
+
+            # Truncate base name if combined name is too long
             if len(sheet_name) > self.SHEETNAME_MAX_LEN:
-                sheet_name = (
-                    f"{name[: len(name) - (len(sheet_name) - self.SHEETNAME_MAX_LEN)]}"
-                    f"({self.sheet_names[name.lower()]})"
-                )
+                max_base_len = self.SHEETNAME_MAX_LEN - len(f"({counter})")
+                sheet_name = f"{base_name[:max_base_len]}({counter})"
+
+            # Ensure the generated name is unique
+            while sheet_name.lower() in self.sheet_names:
+                counter += 1
+                sheet_name = f"{base_name}({counter})"
+                if len(sheet_name) > self.SHEETNAME_MAX_LEN:
+                    max_base_len = self.SHEETNAME_MAX_LEN - len(f"({counter})")
+                    sheet_name = f"{base_name[:max_base_len]}({counter})"
+
+            self.sheet_names[base_name.lower()] = counter
+            # Also register the actual generated name to prevent collisions
+            self.sheet_names[sheet_name.lower()] = 1
 
         return sheet_name
 

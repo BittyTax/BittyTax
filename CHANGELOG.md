@@ -2,6 +2,7 @@
 ## [Unreleased]
 ### Fixed
 - Coinbase parser: fixed negative values for Advanced Trade Sells.
+- Accounting tool: fixed duplicate worksheet names in Excel audit log.
 ### Added
 - MEXC parser: added new export formats.
 - Cash App parser: added new export format.
@@ -30,7 +31,7 @@ CoinDesk have deprecated their price API. You will need to remove it from your `
 - Conversion tool: Interest should be mapped to Income not LoanInterest for RECAP output format.
 - Price tool: CryptoCompare API rate limit reached returns 200 OK. ([#381](https://github.com/BittyTax/BittyTax/issues/381))
 - Accounting tool: fix AttributeError exception when decoding cell color.
-- Accounting tool: the buy component of a SWAP should not be matched until the cost basis has been tranferred.
+- Accounting tool: the buy component of a SWAP should not be matched until the cost basis has been transferred.
 - Accounting/Price tool: Fix CoinGecko API error "Your request exceeds the allowed time range".
 - Coinbase parser: fix missing warning for advanced trades which are crypto-to-crypto.
 - Coinbase parser: fixed currency conversion when data file is not in local currency.
@@ -146,7 +147,7 @@ CoinDesk have deprecated their price API. You will need to remove it from your `
 - KuCoin parser: added Futures trading.
 - Accointing parser: added mapping for "margin_gain", "margin_loss" and "margin_fee".
 - CoinTracking parser: added mapping for "Margin Profit", "Margin Loss" and "Margin Fee".
-- Koinly parser: added mapping for "Realized gain", "Loan", "Margin loan", "Margin fee", "Loan repayment" "Margin replayment", "Loan fee", "Other income", "Lending interest", "Cashback", "Salary" and "Fee refund".
+- Koinly parser: added mapping for "Realized gain", "Loan", "Margin loan", "Margin fee", "Loan repayment" "Margin repayment", "Loan fee", "Other income", "Lending interest", "Cashback", "Salary" and "Fee refund".
 - Nexo parser: improved loan handling and added new loan transaction types.
 - Conversion tool: added parser for MEXC exchange.
 - Binance.US parser: added new export format.
