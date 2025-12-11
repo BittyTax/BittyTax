@@ -234,7 +234,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 print(f"{Fore.GREEN}sells: {t}")
 
     def _include_transfers(self, t: Union[Buy, Sell]) -> bool:
-        if not t.is_crypto() or t.t_type not in TRANSFER_TYPES:
+        if not t.is_crypto() or t.t_type not in TRANSFER_TYPES or not t.quantity:
             return False
 
         if config.cost_tracking_method is not CostTrackingMethod.UNIVERSAL:
