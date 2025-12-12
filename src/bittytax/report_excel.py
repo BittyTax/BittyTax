@@ -13,7 +13,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import xlsxwriter
 from colorama import Fore
 
-from .audit import AuditRecords, AuditTotals
+from .audit import AuditRecords, AuditTotals, AuditWallet
 from .bt_types import (
     BUY_AND_SELL_TYPES,
     TRANSFER_TYPES,
@@ -443,7 +443,7 @@ class Worksheet:
     TABLE_STYLE = "Table Style Medium 9"
     SUBTOTAL_FUNC_SUM_HIDDEN = 9
 
-    AUD_WALLET_HEADERS = ["Wallet", "Asset", "Balance"]
+    AUD_WALLET_HEADERS = ["Wallet", "Asset", "Balance", "Staked"]
     AUD_CRYPTO_HEADERS = ["Asset", "Balance", "Transfers Mismatch"]
     AUD_FIAT_HEADERS = ["Asset", "Balance"]
     CG_HEADERS = [
@@ -567,7 +567,7 @@ class Worksheet:
             {"header": header, "header_format": self.workbook_formats.header} for header in headers
         ]
 
-    def audit_by_wallet(self, audit_wallets: Dict[Wallet, Dict[AssetSymbol, Decimal]]) -> None:
+    def audit_by_wallet(self, audit_wallets: Dict[Wallet, Dict[AssetSymbol, AuditWallet]]) -> None:
         self.worksheet.merge_range(
             self.row_num,
             0,
@@ -584,7 +584,8 @@ class Worksheet:
                 self.row_num += 1
                 self.worksheet.write_string(self.row_num, 0, wallet)
                 self.worksheet.write_string(self.row_num, 1, asset)
-                self._xl_balance(self.row_num, 2, audit_wallets[wallet][asset])
+                self._xl_balance(self.row_num, 2, audit_wallets[wallet][asset].balance)
+                self._xl_balance(self.row_num, 3, audit_wallets[wallet][asset].staked)
 
         if start_row == self.row_num:
             # Add blank row if table is empty
@@ -607,6 +608,18 @@ class Worksheet:
             2,
             self.row_num,
             2,
+            {
+                "type": "formula",
+                "criteria": f"=INT({cell})={cell}",
+                "format": self.workbook_formats.num_int,
+            },
+        )
+        cell = xlsxwriter.utility.xl_rowcol_to_cell(start_row + 1, 3, col_abs=True)
+        self.worksheet.conditional_format(
+            start_row + 1,
+            3,
+            self.row_num,
+            3,
             {
                 "type": "formula",
                 "criteria": f"=INT({cell})={cell}",
