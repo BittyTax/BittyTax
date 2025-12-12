@@ -21,8 +21,13 @@ if TYPE_CHECKING:
     from ..datarow import DataRow
 
 
-def parse_etherscan(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
+def parse_etherscan(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
+    
+    # Skip Arbiscan/Arbitrum files - let arbiscan.py handle those
+    if "arbiscan" in kwargs["filename"].lower() or "arbitrum" in kwargs["filename"].lower():
+        raise DataFilenameError(kwargs["filename"], "Etherscan (not Arbiscan/Arbitrum)")
+    
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
     if "Txhash" in row_dict:
         tx_hash_pos = parser.in_header.index("Txhash")
@@ -148,6 +153,10 @@ def parse_etherscan_internal(
 def parse_etherscan_tokens(
     data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
+    # Skip Arbiscan/Arbitrum files - let arbiscan.py handle those
+    if "arbiscan" in kwargs["filename"].lower() or "arbitrum" in kwargs["filename"].lower():
+        raise DataFilenameError(kwargs["filename"], "Etherscan (not Arbiscan/Arbitrum)")
+    
     symbol = kwargs["cryptoasset"]
     if not symbol:
         sys.stderr.write(f"{WARNING} Native cryptoasset for this chain cannot be identified\n")
@@ -309,9 +318,7 @@ etherscan_txns = DataParser(
         "UnixTimestamp",
         lambda c: c in ("DateTime", "DateTime (UTC)"),  # Renamed
         "From",
-        lambda c: c in ("From_PrivateTag", None),  # Optional tag field
         "To",
-        lambda c: c in ("To_PrivateTag", None),  # Optional tag field
         "ContractAddress",
         lambda c: re.match(r"(Value_IN\((\w+)\)?)", c),
         lambda c: re.match(r"(Value_OUT\((\w+)\)?)", c),
@@ -322,7 +329,6 @@ etherscan_txns = DataParser(
         "Status",
         "ErrCode",
         "Method",  # New field
-        "PrivateNote",
     ],
     worksheet_name="Etherscan",
     row_handler=parse_etherscan,
