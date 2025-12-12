@@ -1,7 +1,6 @@
 name: Publish
 on:
   push:
-    branches: [ master ]
     tags:
       - '*'
 
