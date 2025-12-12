@@ -11,10 +11,9 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ...config import config
-from ...constants import WARNING
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..datarow import TxRawPos
-from ..exceptions import DataFilenameError, DataRowError, UnknownCryptoassetError
+from ..exceptions import DataFilenameError, DataRowError
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -23,11 +22,14 @@ if TYPE_CHECKING:
 
 def parse_arbiscan(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
-    
+
     # Only process files with "arbiscan" or "arbitrum" in the filename
-    if "arbiscan" not in kwargs["filename"].lower() and "arbitrum" not in kwargs["filename"].lower():
+    if (
+        "arbiscan" not in kwargs["filename"].lower()
+        and "arbitrum" not in kwargs["filename"].lower()
+    ):
         raise DataFilenameError(kwargs["filename"], "Arbiscan/Arbitrum")
-    
+
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
     if "Txhash" in row_dict:
         tx_hash_pos = parser.in_header.index("Txhash")
@@ -35,9 +37,7 @@ def parse_arbiscan(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Par
         tx_hash_pos = parser.in_header.index("Transaction Hash")
 
     data_row.tx_raw = TxRawPos(
-        tx_hash_pos,
-        parser.in_header.index("From"),
-        parser.in_header.index("To"),
+        tx_hash_pos, parser.in_header.index("From"), parser.in_header.index("To"),
     )
 
     # Skip over any args which are not regex
@@ -108,9 +108,12 @@ def parse_arbiscan_tokens(
     data_rows: List["DataRow"], parser: DataParser, **kwargs: Unpack[ParserArgs]
 ) -> None:
     # Only process files with "arbiscan" or "arbitrum" in the filename
-    if "arbiscan" not in kwargs["filename"].lower() and "arbitrum" not in kwargs["filename"].lower():
+    if (
+        "arbiscan" not in kwargs["filename"].lower()
+        and "arbitrum" not in kwargs["filename"].lower()
+    ):
         raise DataFilenameError(kwargs["filename"], "Arbiscan/Arbitrum")
-    
+
     symbol = kwargs["cryptoasset"]
     if not symbol:
         symbol = "ETH"  # Arbitrum uses ETH as native asset
@@ -140,7 +143,7 @@ def parse_arbiscan_tokens(
 
 
 def _parse_arbiscan_tokens_row(
-    data_row: "DataRow", parser: DataParser, symbol: str, **kwargs: Unpack[ParserArgs]
+    data_row: "DataRow", parser: DataParser, _symbol: str, **kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(int(row_dict["UnixTimestamp"]))
@@ -150,9 +153,7 @@ def _parse_arbiscan_tokens_row(
         tx_hash_pos = parser.in_header.index("Transaction Hash")
 
     data_row.tx_raw = TxRawPos(
-        tx_hash_pos,
-        parser.in_header.index("From"),
-        parser.in_header.index("To"),
+        tx_hash_pos, parser.in_header.index("From"), parser.in_header.index("To"),
     )
 
     if row_dict["TokenSymbol"].endswith("-LP"):
