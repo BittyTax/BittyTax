@@ -3,6 +3,7 @@
 ### Fixed
 - Coinbase parser: fixed negative values for Advanced Trade Sells.
 - Accounting tool: fixed duplicate worksheet names in Excel audit log.
+- Accounting tool: fixed worksheet name validation.
 ### Added
 - MEXC parser: added new export formats.
 - Cash App parser: added new export format.

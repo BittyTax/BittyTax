@@ -386,9 +386,25 @@ class Worksheet:
         return sheet_name
 
     def _sheet_name_validate(self, name: str) -> str:
-        # Remove special characters
+        # Remove special characters not allowed in Excel sheet names
         name = re.sub(r"[/\\\?\*\[\]:]", "", name)
+
+        # Remove leading/trailing single quotes and spaces
+        name = name.strip("' ")
+
+        # Excel doesn't allow empty names
+        if not name:
+            name = "Sheet"
+
+        # Truncate to maximum length
         name = name[: self.SHEETNAME_MAX_LEN] if len(name) > self.SHEETNAME_MAX_LEN else name
+
+        # Ensure name doesn't end with a single quote (Excel restriction)
+        name = name.rstrip("'")
+
+        # Reserved names (case-insensitive)
+        if name.lower() in ("history",):
+            name = f"_{name}"
 
         return name
 
