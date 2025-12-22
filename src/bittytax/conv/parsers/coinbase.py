@@ -157,8 +157,8 @@ def _do_parse_coinbase(
             fee_asset=row_dict["Asset"],
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] in ("Exchange Deposit", "Pro Deposit"):
-        # Withdrawal to Coinbase Pro
+    elif row_dict["Transaction Type"] in ("Exchange Deposit", "Pro Deposit", "Prime Deposit"):
+        # Withdrawal to Coinbase Pro/Prime
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -388,7 +388,14 @@ def _do_parse_coinbase(
             sell_value=total_ccy,
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] in ("Vault Withdrawal", "Cash to Savings", "Savings to Cash"):
+    elif row_dict["Transaction Type"] in (
+        "Vault Withdrawal",
+        "Cash to Savings",
+        "Savings to Cash",
+        "Transfer",
+        "Retail Staking Transfer",
+        "Retail Unstaking Transfer",
+    ):
         # Skip internal transfers
         return
     else:
