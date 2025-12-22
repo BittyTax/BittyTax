@@ -257,7 +257,7 @@ def _do_parse_coinbase(
             sell_value=abs(total_ccy) if total_ccy is not None else None,
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] == "Admin Debit":
+    elif row_dict["Transaction Type"] in ("Admin Debit", "Subscription"):
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
             data_row.timestamp,
