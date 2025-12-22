@@ -11,7 +11,7 @@
 - Conversion tool: added new parser for DefiTaxes.us.
 - Conversion tool: allow parsers to specify a different worksheet
 - Conversion tool: added parser for BloFin exchange.
-- Coinbase parser: added "Subscription" transaction type.
+- Coinbase parser: added "Subscription", "Prime Deposit", "Transfer", "Retail Staking Transfer" and "Retail Unstaking Transfer" transaction types.
 - Conversion tool: added parser for Coinbase Prime exchange.
 ### Changed
 - Config: fiat_income to True.
