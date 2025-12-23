@@ -55,28 +55,6 @@ def parse_coinbase_prime_orders(
         raise UnexpectedTypeError(parser.in_header.index("side"), "side", row_dict["side"])
 
 
-def parse_coinbase_prime_staking(
-    data_row: "DataRow", _parser: DataParser, **_kwargs: Unpack[ParserArgs]
-) -> None:
-    row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Date/Time of Reward"])
-
-    amount_ccy = DataParser.convert_currency(
-        row_dict["Amount of Reward (notional USD)"],
-        "USD",
-        data_row.timestamp,
-    )
-
-    data_row.t_record = TransactionOutRecord(
-        TrType.STAKING_REWARD,
-        data_row.timestamp,
-        buy_quantity=Decimal(row_dict["Amount of Reward"]),
-        buy_asset=row_dict["Reward Currency"],
-        buy_value=amount_ccy,
-        wallet=WALLET,
-    )
-
-
 def parse_coinbase_prime_transactions(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
@@ -185,34 +163,6 @@ DataParser(
     ],
     worksheet_name="Coinbase Prime T",
     row_handler=parse_coinbase_prime_orders,
-)
-
-DataParser(
-    ParserType.EXCHANGE,
-    "Coinbase Prime Staking Rewards",
-    [
-        "Portfolio",
-        "Portfolio ID",
-        "Entity Name",
-        "Entity ID",
-        "Wallet Name",
-        "Wallet ID",
-        "Wallet Address",
-        "Reward Address",
-        "Wallet Type",
-        "Staked Asset",
-        "Reward Currency",
-        "Date/Time of Reward",
-        "Type of Reward",
-        "Transaction ID",
-        "Blockchain Explorer Link",
-        "Amount of Reward",
-        "Validator Address",
-        "Validator Type",
-        "Amount of Reward (notional USD)",
-    ],
-    worksheet_name="Coinbase Prime S",
-    row_handler=parse_coinbase_prime_staking,
 )
 
 DataParser(
