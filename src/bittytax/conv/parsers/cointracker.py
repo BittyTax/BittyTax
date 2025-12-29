@@ -103,7 +103,7 @@ def _parse_cointracker_row(
         )
     elif row_dict["Type"].upper() == "STAKING_REWARD":
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Received Quantity"]),
             buy_asset=row_dict["Received Currency"],
