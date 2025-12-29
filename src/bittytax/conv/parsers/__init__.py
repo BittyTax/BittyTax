@@ -27,6 +27,7 @@ from . import (
     changetip,
     circle,
     coinbase,
+    coinbaseprime,
     coinbasepro,
     coincorner,
     coinfloor,
