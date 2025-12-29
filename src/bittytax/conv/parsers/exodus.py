@@ -27,7 +27,7 @@ def parse_exodus_stake(
 
     if row_dict["Type"] == "Staking":
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Buy"]),
             buy_asset=row_dict["Cur."],

@@ -88,7 +88,7 @@ def parse_binance_us(
         elif row_dict["Operation"] == "Staking Rewards":
             if Decimal(row_dict["Realized Amount For Primary Asset"]) > 0:
                 data_row.t_record = TransactionOutRecord(
-                    TrType.STAKING,
+                    TrType.STAKING_REWARD,
                     data_row.timestamp,
                     buy_quantity=Decimal(row_dict["Realized Amount For Primary Asset"]),
                     buy_asset=row_dict["Primary Asset"],

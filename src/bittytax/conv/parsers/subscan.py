@@ -86,7 +86,7 @@ def parse_subscan_paidout(
     token = _get_token(network, **kwargs)
 
     data_row.t_record = TransactionOutRecord(
-        TrType.STAKING,
+        TrType.STAKING_REWARD,
         data_row.timestamp,
         buy_quantity=Decimal(row_dict["Value"]),
         buy_asset=token,

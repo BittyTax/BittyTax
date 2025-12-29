@@ -303,13 +303,18 @@ class ReportLog:
         print(f"{H1}Audit{_H1}")
         print(f"{Fore.CYAN}Wallet Balances")
         for wallet in sorted(audit.wallets, key=str.lower):
-            print(f'\n{Fore.YELLOW}{"Wallet":<30} {"Asset":<{self.MAX_SYMBOL_LEN}} {"Balance":>25}')
+            print(
+                f'\n{Fore.YELLOW}{"Wallet":<30} {"Asset":<{self.MAX_SYMBOL_LEN}} '
+                f'{"Balance":>25} {"Staked":>25}'
+            )
 
             for asset in sorted(audit.wallets[wallet]):
                 print(
                     f"{Fore.WHITE}{wallet:<30} {asset:<{self.MAX_SYMBOL_LEN}} "
-                    f"{Fore.RED if audit.wallets[wallet][asset] < 0 else Fore.WHITE}"
-                    f"{self.format_quantity(audit.wallets[wallet][asset]):>25}"
+                    f"{Fore.RED if audit.wallets[wallet][asset].balance < 0 else Fore.WHITE}"
+                    f"{self.format_quantity(audit.wallets[wallet][asset].balance):>25} "
+                    f"{Fore.RED if audit.wallets[wallet][asset].staked < 0 else Fore.WHITE}"
+                    f"{self.format_quantity(audit.wallets[wallet][asset].staked):>25}"
                 )
 
         print(f"\n{Fore.CYAN}Asset Balances (Cryptoassets)")

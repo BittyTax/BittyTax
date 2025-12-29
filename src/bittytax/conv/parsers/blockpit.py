@@ -18,9 +18,9 @@ BLOCKPIT_D_MAPPING = {
     "Airdrop": TrType.AIRDROP,
     "Bounties": TrType.REFERRAL,
     "Deposit": TrType.DEPOSIT,
-    "Lending": TrType.STAKING,
+    "Lending": TrType.STAKING_REWARD,
     "Margin_trading_profit": TrType.MARGIN_GAIN,
-    "Staking": TrType.STAKING,
+    "Staking": TrType.STAKING_REWARD,
 }
 
 BLOCKPIT_W_MAPPING = {

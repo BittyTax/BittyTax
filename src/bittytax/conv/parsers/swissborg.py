@@ -104,7 +104,7 @@ def _parse_swissborg_row(
         )
 
         if row_dict["Note"] == "Yield payouts":
-            t_type = TrType.STAKING
+            t_type = TrType.STAKING_REWARD
         else:
             t_type = TrType.AIRDROP
 

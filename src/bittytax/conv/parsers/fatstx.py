@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from ..datarow import DataRow
 
 WALLET = "Stacks"
+WORKSHEET_NAME = "FatStx"
 
 
 def parse_fatstx(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[ParserArgs]) -> None:
@@ -27,6 +28,8 @@ def parse_fatstx(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Parse
         parser.in_header.index("sender"),
         parser.in_header.index("recipient"),
     )
+    wallet = _get_wallet(kwargs["filename"])
+    data_row.worksheet_name = wallet.replace(f"{WALLET}-", f"{WORKSHEET_NAME} ")
 
     in_value = out_value = fee_value = None
 
@@ -58,7 +61,7 @@ def parse_fatstx(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Parse
             fee_quantity=Decimal(row_dict["xactnFee"]),
             fee_asset="STX",
             fee_value=fee_value,
-            wallet=_get_wallet(kwargs["filename"]),
+            wallet=wallet,
             note=row_dict["xactnTypeDetail"],
         )
     elif row_dict["xactnType"] == "Send":
@@ -71,7 +74,7 @@ def parse_fatstx(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Parse
             fee_quantity=Decimal(row_dict["xactnFee"]),
             fee_asset="STX",
             fee_value=fee_value,
-            wallet=_get_wallet(kwargs["filename"]),
+            wallet=wallet,
             note=row_dict["xactnTypeDetail"],
         )
     elif row_dict["xactnType"] in ("Trade Coin", "Swap Coin for NFT"):
@@ -87,7 +90,7 @@ def parse_fatstx(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Parse
             fee_quantity=Decimal(row_dict["xactnFee"]),
             fee_asset="STX",
             fee_value=fee_value,
-            wallet=_get_wallet(kwargs["filename"]),
+            wallet=wallet,
             note=row_dict["xactnTypeDetail"],
         )
     elif row_dict["xactnType"] == "XFee Only":
@@ -99,7 +102,7 @@ def parse_fatstx(data_row: "DataRow", parser: DataParser, **kwargs: Unpack[Parse
             fee_quantity=Decimal(row_dict["xactnFee"]),
             fee_asset="STX",
             fee_value=fee_value,
-            wallet=_get_wallet(kwargs["filename"]),
+            wallet=wallet,
             note=row_dict["xactnTypeDetail"],
         )
     else:
@@ -141,6 +144,6 @@ DataParser(
         "memo",
         "burnDateAltFormat1",
     ],
-    worksheet_name="FatStx",
+    worksheet_name=WORKSHEET_NAME,
     row_handler=parse_fatstx,
 )

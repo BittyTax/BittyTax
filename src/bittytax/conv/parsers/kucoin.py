@@ -384,7 +384,7 @@ def parse_kucoin_staking_income(
     data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
 
     data_row.t_record = TransactionOutRecord(
-        TrType.STAKING,
+        TrType.STAKING_REWARD,
         data_row.timestamp,
         buy_quantity=Decimal(row_dict["Amount"]),
         buy_asset=row_dict["Earnings Coin"],

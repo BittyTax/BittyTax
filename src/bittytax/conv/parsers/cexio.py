@@ -164,7 +164,7 @@ def _parse_cexio_row(
         )
     elif row_dict["Type"] in ("staking", "staking_accrual", "staking_reward_repayment"):
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=row_dict["Symbol"],
