@@ -80,6 +80,7 @@ from . import (
     qtwallet,
     revolut,
     robinhood,
+    sfox,
     snowtrace,
     staketax,
     subscan,

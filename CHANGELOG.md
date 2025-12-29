@@ -14,6 +14,7 @@
 - Coinbase parser: added "Subscription", "Prime Deposit", "Transfer", "Retail Staking Transfer" and "Retail Unstaking Transfer" transaction types.
 - Conversion tool: added parser for Coinbase Prime exchange.
 - Conversion tool: added parser for Jupiter exchange.
+- Conversion tool: added parser for sFOX exchange.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
