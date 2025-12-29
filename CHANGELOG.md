@@ -7,9 +7,17 @@
 - Exodus parser: added new export format. ([#467](https://github.com/BittyTax/BittyTax/issues/467))
 - MEXC parser: added new export formats.
 - Cash App parser: added new export format.
+- Accounting tool: new transaction types added. Stake, Unstake and Staking-Reward (Staking has been deprecated).
+- Conversion tool: added new parser for DefiTaxes.us.
+- Conversion tool: allow parsers to specify a different worksheet
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
+- Conversion tool: parsers use Staking-Reward instead of Staking (deprecated).
+- StakeTax parser: output different worksheet for each wallet
+- Qt Wallet parser: added symbol to worksheet name instead of wallet name.
+- Electrum parser: added symbol to worksheet name instead of wallet name.
+- Blockscout parser: set the worksheet name the same as the wallet name.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
@@ -195,9 +203,6 @@ CoinDesk have deprecated their price API. You will need to remove it from your `
 - Accounting tool: split tax rates for 2024/25. ([#429](https://github.com/BittyTax/BittyTax/issues/429))
 - Accounting tool: tax rates and allowance for 2025/26.
 - Accounting tool: new transaction type Margin-Fee-Rebate added. ([#415](https://github.com/BittyTax/BittyTax/issues/415))
-- Accounting tool: new transaction types added. Stake, Unstake and Staking-Reward (Staking has been deprecated).
-- Conversion tool: added new parser for DefiTaxes.us.
-- Conversion tool: allow parsers to specify a different worksheet
 - CoinTracker parser: added "STAKING_REWARD", "INTEREST_PAYMENT" and "INCOME" types.
 - Nexo parser: added "Transfer From Pro Wallet" type. ([#442](https://github.com/BittyTax/BittyTax/issues/442))
 - Accounting tool/Conversion tool: added BITTYTAX_TERMINAL environment variable.
@@ -285,12 +290,6 @@ CoinDesk have deprecated their price API. You will need to remove it from your `
 - Deribit parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
 - KuCoin parser: use Margin-Fee-Rebate instead of Fee-Rebate for futures.
 - Accounting tool: increased precision for Decimals from 28 to 30 digits.
-- Conversion tool: parsers use Staking-Reward instead of Staking (deprecated).
-- DeFiTaxes.us parser: output different worksheet for each wallet
-- StakeTax parser: output different worksheet for each wallet
-- Qt Wallet parser: added symbol to worksheet name instead of wallet name.
-- Electrum parser: added symbol to worksheet name instead of wallet name.
-- Blockscout parser: set the worksheet name the same as the wallet name.
 - Accounting/Conversion tool: openpyxl.load_workbook set all parameters.
 - Accounting/Conversion/Price tool: changed --version to include compiled state.
 - Accounting tool: PDF reports use landscape format for each tax year.
