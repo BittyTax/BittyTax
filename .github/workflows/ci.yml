@@ -69,6 +69,7 @@ jobs:
 
       - name: Install Enchant for spelling
         run: |
+          sudo apt update -y
           sudo apt-get -y install --no-install-recommends libenchant-2-dev aspell-en libaspell-dev
 
       - name: Install spoof packages and BittyTax with development extras
