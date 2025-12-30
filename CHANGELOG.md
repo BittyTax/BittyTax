@@ -11,6 +11,7 @@
 - Exodus parser: added new export format. ([#467](https://github.com/BittyTax/BittyTax/issues/467))
 - Coinbase parser: added "Subscription", "Prime Deposit", "Transfer", "Retail Staking Transfer" and "Retail Unstaking Transfer" transaction types.
 - Conversion tool: added parser for Coinbase Prime exchange.
+- Kraken parser: added new export format. ([#469](https://github.com/BittyTax/BittyTax/issues/469))
 ### Changed
 - Price tool: CoinDesk API deprecated.
 

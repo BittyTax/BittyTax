@@ -587,6 +587,27 @@ kraken_ledgers = DataParser(
         "type",
         "subtype",
         "aclass",
+        "subclass",
+        "asset",
+        "wallet",
+        "amount",
+        "fee",
+        "balance",
+    ],
+    worksheet_name="Kraken L",
+    all_handler=parse_kraken_ledgers,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Kraken Ledgers",
+    [
+        "txid",
+        "refid",
+        "time",
+        "type",
+        "subtype",
+        "aclass",
         "asset",
         "wallet",
         "amount",
@@ -598,7 +619,7 @@ kraken_ledgers = DataParser(
     all_handler=parse_kraken_ledgers,
 )
 
-kraken_ledgers = DataParser(
+DataParser(
     ParserType.EXCHANGE,
     "Kraken Ledgers",
     [
