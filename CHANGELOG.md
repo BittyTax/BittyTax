@@ -15,6 +15,7 @@
 - Conversion tool: added parser for Coinbase Prime exchange.
 - Conversion tool: added parser for Jupiter exchange.
 - Conversion tool: added parser for sFOX exchange.
+- Kraken parser: added new export format. ([#469](https://github.com/BittyTax/BittyTax/issues/469))
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
