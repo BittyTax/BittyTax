@@ -168,7 +168,8 @@ class AuditRecords:
                 f"{self.wallets[wallet][sell.asset].balance.normalize():0,f} "
                 f"(-{sell.quantity.normalize():0,f})"
             )
-        if self.wallets[wallet][sell.asset].balance < 0 and sell.is_crypto():
+        # ignore if balance is lower than 0.00000001 
+        if self.wallets[wallet][sell.asset].balance < -0.00000001 and sell.is_crypto():
             bt_tqdm_write(
                 f"{WARNING} Balance at {wallet}:{sell.asset} "
                 f"is negative {self.wallets[wallet][sell.asset].balance.normalize():0,f}"
