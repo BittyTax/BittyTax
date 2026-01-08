@@ -27,6 +27,7 @@
 - SwissBorg parser: added "Fee Adjustment" Type.
 - Bitfinex parser: added new deposits/withdrawals export format.
 - Coinbase parser: added "Card Spend", "Credit", "Asset Migration", "Retail Eth2 Deprecation" transaction types.
+- sFOX parser: added tramsaction history parser.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
