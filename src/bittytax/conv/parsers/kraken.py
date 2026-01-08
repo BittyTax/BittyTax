@@ -23,6 +23,7 @@ WALLET = "Kraken"
 QUOTE_ASSETS = [
     "AED",
     "AUD",
+    "AUSD",
     "CAD",
     "CHF",
     "DAI",
@@ -112,6 +113,7 @@ TRADINGPAIR_TO_QUOTE_ASSET = {
     "SNXXBT": "XBT",
     "TRXETH": "ETH",
     "TRXXBT": "XBT",
+    "XBTAUSD": "AUSD",
     "XBTPYUSD": "PYUSD",
     "XRPRLUSD": "RLUSD",
     "XTZAUD": "AUD",
