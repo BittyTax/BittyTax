@@ -12,6 +12,7 @@
 - Coinbase parser: added "Subscription", "Prime Deposit", "Transfer", "Retail Staking Transfer" and "Retail Unstaking Transfer" transaction types.
 - Conversion tool: added parser for Coinbase Prime exchange.
 - Kraken parser: added new export format. ([#469](https://github.com/BittyTax/BittyTax/issues/469))
+- sFOX parser: added tramsaction history parser.
 ### Changed
 - Price tool: CoinDesk API deprecated.
 
