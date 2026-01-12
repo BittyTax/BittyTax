@@ -16,6 +16,7 @@
 - Conversion tool: added parser for Jupiter exchange.
 - Conversion tool: added parser for sFOX exchange.
 - Kraken parser: added new export format. ([#469](https://github.com/BittyTax/BittyTax/issues/469))
+- Binance parser: added "Launchpool Airdrop", "HODLer Airdrops Distribution", "Megadrop Rewards", "Asset - Transfer", "Binance Card Spending", "Binance Card Cashback", "Crypto Box", "BNB Fee Deduction", "Transfer Between Main and Funding Wallet", "Fiat OCBS - Add Fiat and Fees", "Fiat Withdrawal", "Buy Crypto With Card", "Insurance Fund Refund" and "Cross Margin Liquidation - Repayment"  Operations.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
