@@ -21,6 +21,7 @@
 - Ledger Live parser: added "DELEGATE" and "UNDELEGATE" Operation Types.
 - Bittrex parser: added new trades export format.
 - Bitfinex parser: added new deposits/withdrawals export format.
+- Binance parser: added "Launchpool Airdrop", "HODLer Airdrops Distribution", "Megadrop Rewards", "Asset - Transfer", "Binance Card Spending", "Binance Card Cashback", "Crypto Box", "BNB Fee Deduction", "Transfer Between Main and Funding Wallet", "Fiat OCBS - Add Fiat and Fees", "Fiat Withdrawal", "Buy Crypto With Card", "Insurance Fund Refund" and "Cross Margin Liquidation - Repayment"  Operations.
 ### Changed
 - Price tool: CoinDesk API deprecated.
 
