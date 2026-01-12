@@ -530,13 +530,22 @@ def _parse_binance_statements_row(
             wallet=WALLET,
         )
     elif row_dict["Operation"] == "Crypto Box":
-        data_row.t_record = TransactionOutRecord(
-            TrType.GIFT_SENT,
-            data_row.timestamp,
-            buy_quantity=abs(Decimal(row_dict["Change"])),
-            buy_asset=row_dict["Coin"],
-            wallet=WALLET,
-        )
+        if Decimal(row_dict["Change"]) < 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.GIFT_SEND,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["Change"])),
+                sell_asset=row_dict["Coin"],
+                wallet=WALLET,
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.GIFT_RECEIVED,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["Change"]),
+                buy_asset=row_dict["Coin"],
+                wallet=WALLET,
+            )
     elif row_dict["Operation"] in (
         "Small assets exchange BNB",
         "Small Assets Exchange BNB",
