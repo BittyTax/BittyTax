@@ -531,7 +531,7 @@ def _parse_binance_statements_row(
         )
     elif row_dict["Operation"] == "Crypto Box":
         data_row.t_record = TransactionOutRecord(
-            TrType.INCOME,
+            TrType.GIFT_SENT,
             data_row.timestamp,
             buy_quantity=abs(Decimal(row_dict["Change"])),
             buy_asset=row_dict["Coin"],
