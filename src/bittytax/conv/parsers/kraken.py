@@ -106,6 +106,7 @@ TRADINGPAIR_TO_QUOTE_ASSET = {
     "ETHPYUSD": "PYUSD",
     "ICXETH": "ETH",
     "ICXXBT": "XBT",
+    "MONAUSD": "AUSD",
     "REZEUR": "EUR",
     "REZUSD": "USD",
     "SNXETH": "ETH",
