@@ -20,7 +20,7 @@ fail-on=
 fail-under=10.0
 
 # Files or directories to be skipped. They should be base names, not paths.
-ignore=CVS
+ignore=.venv
 
 # Add files or directories matching the regex patterns to the ignore-list. The
 # regex matches against paths and can be in Posix or Windows format.
@@ -57,10 +57,6 @@ py-version=3.7
 
 # Discover python modules and packages in the file system subtree.
 recursive=yes
-
-# When enabled, pylint would attempt to guess common misconfiguration and emit
-# user-friendly hints instead of false-positive error messages.
-suggestion-mode=yes
 
 # Allow loading of arbitrary C extensions. Extensions are imported into the
 # active Python interpreter and may run arbitrary code.
@@ -567,7 +563,7 @@ max-attributes=10
 max-bool-expr=5
 
 # Maximum number of branch for function / method body.
-max-branches=45
+max-branches=80
 
 # Maximum number of locals for function / method body.
 max-locals=24
@@ -585,7 +581,7 @@ max-public-methods=20
 max-returns=7
 
 # Maximum number of statements in function / method body.
-max-statements=101
+max-statements=180
 
 # Minimum number of public methods for a class (see R0903).
 min-public-methods=2

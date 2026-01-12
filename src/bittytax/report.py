@@ -13,14 +13,13 @@ from types import TracebackType
 from typing import Dict, List, Optional, Tuple, Type
 
 import jinja2
-import pkg_resources
 from colorama import Fore, Style
 from xhtml2pdf import pisa
 
 from .audit import AuditRecords, AuditTotals
 from .bt_types import TAX_RULES_UK_COMPANY, AssetName, AssetSymbol, Date, Note, TaxRules, Year
 from .config import config
-from .constants import _H1, ERROR, H1
+from .constants import _H1, ERROR, H1, TERMINAL_POWERSHELL_GUI
 from .price.valueasset import VaPriceReport
 from .tax import (
     CalculateCapitalGains,
@@ -31,6 +30,11 @@ from .tax import (
     TaxReportRecord,
 )
 from .version import __version__
+
+if sys.version_info < (3, 9):
+    import importlib_resources as pkg_resources
+else:
+    import importlib.resources as pkg_resources
 
 
 class ReportPdf:
@@ -52,7 +56,7 @@ class ReportPdf:
         price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceReport]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
     ) -> None:
-        self.env = jinja2.Environment(loader=jinja2.PackageLoader("bittytax", "templates"))
+        self.env = jinja2.Environment(loader=jinja2.PackageLoader(__package__, "templates"))
 
         self.env.filters["datefilter"] = self.datefilter
         self.env.filters["datefilter2"] = self.datefilter2
@@ -65,7 +69,7 @@ class ReportPdf:
         self.env.filters["audittotalsfilter"] = self.audittotalsfilter
         self.env.filters["mismatchfilter"] = self.mismatchfilter
         self.env.globals["TAX_RULES_UK_COMPANY"] = TAX_RULES_UK_COMPANY
-        self.env.globals["TEMPLATE_PATH"] = pkg_resources.resource_filename(__name__, "templates")
+        self.env.globals["TEMPLATE_PATH"] = pkg_resources.files(__package__).joinpath("templates")
 
         if args.audit_only:
             filename = self.get_output_filename(args.output_filename, self.AUDIT_FILENAME)
@@ -112,7 +116,9 @@ class ReportPdf:
                 status = pisa.CreatePDF(html, dest=pdf_file)
 
         if not status.err:
-            print(f"{Fore.WHITE}PDF report created: {Fore.YELLOW}{os.path.abspath(filename)}")
+            sys.stdout.write(
+                f"{Fore.WHITE}PDF report created: {Fore.YELLOW}{os.path.abspath(filename)}\n"
+            )
         else:
             print(f"{ERROR} Failed to create PDF report")
 
@@ -297,13 +303,18 @@ class ReportLog:
         print(f"{H1}Audit{_H1}")
         print(f"{Fore.CYAN}Wallet Balances")
         for wallet in sorted(audit.wallets, key=str.lower):
-            print(f'\n{Fore.YELLOW}{"Wallet":<30} {"Asset":<{self.MAX_SYMBOL_LEN}} {"Balance":>25}')
+            print(
+                f'\n{Fore.YELLOW}{"Wallet":<30} {"Asset":<{self.MAX_SYMBOL_LEN}} '
+                f'{"Balance":>25} {"Staked":>25}'
+            )
 
             for asset in sorted(audit.wallets[wallet]):
                 print(
                     f"{Fore.WHITE}{wallet:<30} {asset:<{self.MAX_SYMBOL_LEN}} "
-                    f"{Fore.RED if audit.wallets[wallet][asset] < 0 else Fore.WHITE}"
-                    f"{self.format_quantity(audit.wallets[wallet][asset]):>25}"
+                    f"{Fore.RED if audit.wallets[wallet][asset].balance < 0 else Fore.WHITE}"
+                    f"{self.format_quantity(audit.wallets[wallet][asset].balance):>25} "
+                    f"{Fore.RED if audit.wallets[wallet][asset].staked < 0 else Fore.WHITE}"
+                    f"{self.format_quantity(audit.wallets[wallet][asset].staked):>25}"
                 )
 
         print(f"\n{Fore.CYAN}Asset Balances (Cryptoassets)")
@@ -718,17 +729,17 @@ class ProgressSpinner:
 
     def do_spinner(self) -> None:
         while self.busy:
-            sys.stdout.write(next(self.spinner))
-            sys.stdout.flush()
+            sys.stderr.write(next(self.spinner))
+            sys.stderr.flush()
             time.sleep(0.1)
             if self.busy:
-                sys.stdout.write("\b")
-                sys.stdout.flush()
+                sys.stderr.write("\b")
+                sys.stderr.flush()
 
     def __enter__(self) -> None:
-        if sys.stdout.isatty():
+        if not self._disable():
             self.busy = True
-            sys.stdout.write(self.message)
+            sys.stderr.write(self.message)
             threading.Thread(target=self.do_spinner).start()
 
     def __exit__(
@@ -737,6 +748,10 @@ class ProgressSpinner:
         exc_val: Optional[BaseException],
         exc_traceback: Optional[TracebackType],
     ) -> None:
-        if sys.stdout.isatty():
+        if not self._disable():
             self.busy = False
-            sys.stdout.write("\r")
+            sys.stderr.write("\r")
+
+    def _disable(self) -> bool:
+        # Disable the spinner if it's not a terminal, or not using the PowerShell GUI
+        return bool(not sys.stdout.isatty() and config.terminal != TERMINAL_POWERSHELL_GUI)

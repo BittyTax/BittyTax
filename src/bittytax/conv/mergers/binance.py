@@ -111,7 +111,7 @@ def _do_unstake(
         del vaults[vault_id][asset]
 
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=staking_reward,
             buy_asset=asset,

@@ -49,7 +49,7 @@ def parse_coinlist(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Pa
         )
     elif "Staking" in row_dict["Description"]:
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=amount,
             buy_asset=row_dict["Asset"],

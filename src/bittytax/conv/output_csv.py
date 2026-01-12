@@ -79,8 +79,9 @@ class OutputCsv(OutputBase):
 
     RECAP_TYPE_MAPPING = {
         TrType.DEPOSIT: "Deposit",
+        TrType.UNSTAKE: "Unstake",
         TrType.MINING: "Mining",
-        TrType.STAKING: "StakingReward",
+        TrType.STAKING_REWARD: "StakingReward",
         TrType.INTEREST: "Income",
         TrType.DIVIDEND: "Income",
         TrType.INCOME: "Income",
@@ -92,7 +93,9 @@ class OutputCsv(OutputBase):
         TrType.FEE_REBATE: "FeeRebate",
         TrType.LOAN: "LoanPrincipal",
         TrType.MARGIN_GAIN: "MarginGain",
+        TrType.MARGIN_FEE_REBATE: "FeeRebate",
         TrType.WITHDRAWAL: "Withdrawal",
+        TrType.STAKE: "Stake",
         TrType.SPEND: "Purchase",
         TrType.GIFT_SENT: "Gift",
         TrType.GIFT_SPOUSE: "Spouse",
@@ -134,7 +137,7 @@ class OutputCsv(OutputBase):
                 writer = csv.writer(csv_file, lineterminator="\n")
                 self.write_rows(writer)
 
-            sys.stderr.write(
+            sys.stdout.write(
                 f"{Fore.WHITE}output CSV file created: "
                 f"{Fore.YELLOW}{os.path.abspath(self.filename)}\n"
             )

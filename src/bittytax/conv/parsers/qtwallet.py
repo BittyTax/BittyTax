@@ -94,6 +94,8 @@ def _parse_qt_wallet_row(
         if not symbol:
             raise UnknownCryptoassetError(kwargs["filename"], kwargs.get("worksheet", ""))
 
+    data_row.worksheet_name = f"{WALLET} {symbol}"
+
     if row_dict["Confirmed"] == "false" and not unconfirmed_include:
         if parser.in_header_row_num is None:
             raise RuntimeError("Missing in_header_row_num")
@@ -113,7 +115,7 @@ def _parse_qt_wallet_row(
             data_row.timestamp,
             buy_quantity=amount,
             buy_asset=symbol,
-            wallet=_get_wallet(symbol),
+            wallet=WALLET,
             note=row_dict["Label"],
         )
     elif row_dict["Type"] == "Sent to":
@@ -122,7 +124,7 @@ def _parse_qt_wallet_row(
             data_row.timestamp,
             sell_quantity=abs(amount),
             sell_asset=symbol,
-            wallet=_get_wallet(symbol),
+            wallet=WALLET,
             note=row_dict["Label"],
         )
     elif row_dict["Type"] == "Mined":
@@ -131,16 +133,16 @@ def _parse_qt_wallet_row(
             data_row.timestamp,
             buy_quantity=amount,
             buy_asset=symbol,
-            wallet=_get_wallet(symbol),
+            wallet=WALLET,
             note=row_dict["Label"],
         )
     elif row_dict["Type"] == "Masternode Reward":
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=amount,
             buy_asset=symbol,
-            wallet=_get_wallet(symbol),
+            wallet=WALLET,
             note=row_dict["Label"],
         )
     elif row_dict["Type"] == "Payment to yourself":
@@ -151,7 +153,7 @@ def _parse_qt_wallet_row(
             sell_asset=symbol,
             fee_quantity=abs(amount),
             fee_asset=symbol,
-            wallet=_get_wallet(symbol),
+            wallet=WALLET,
             note=row_dict["Label"],
         )
     elif row_dict["Type"] == "Name operation":
@@ -160,7 +162,7 @@ def _parse_qt_wallet_row(
             data_row.timestamp,
             sell_quantity=abs(amount),
             sell_asset=symbol,
-            wallet=_get_wallet(symbol),
+            wallet=WALLET,
             note=row_dict["Label"],
         )
     else:
@@ -179,17 +181,14 @@ def _get_amount(amount: str) -> Tuple[Decimal, str]:
     return Decimal(amount), ""
 
 
-def _get_wallet(symbol: str) -> str:
-    return f"{WALLET} ({symbol})"
-
-
 def parse_vericoin_qt_wallet(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
+    symbol = "VRC"
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date/Time"], tz=config.local_timezone)
+    data_row.worksheet_name = f"{WALLET} {symbol}"
     data_row.tx_raw = TxRawPos(parser.in_header.index("Transaction"))
-    symbol = "VRC"
 
     if row_dict["Type"] == "Receive":
         data_row.t_record = TransactionOutRecord(
@@ -197,7 +196,7 @@ def parse_vericoin_qt_wallet(
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=symbol,
-            wallet=_get_wallet(symbol),
+            wallet=WALLET,
         )
     elif row_dict["Type"] == "Send":
         data_row.t_record = TransactionOutRecord(
@@ -205,15 +204,15 @@ def parse_vericoin_qt_wallet(
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["Amount"])),
             sell_asset=symbol,
-            wallet=_get_wallet(symbol),
+            wallet=WALLET,
         )
     elif row_dict["Type"] == "Stake":
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Amount"]),
             buy_asset=symbol,
-            wallet=_get_wallet(symbol),
+            wallet=WALLET,
         )
     else:
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])

@@ -5,7 +5,7 @@
 [![Downloads badge][downloads-badge]][downloads]
 [![Stars badge][github-stars-badge]][github-stars]
 [![Sponsor badge][sponsor-badge]][sponsor]
-[![Twitter badge][twitter-badge]][twitter]
+[![X badge][x-badge]][x]
 [![Discord badge][discord-badge]][discord]
 [![PayPal badge][paypal-badge]][PayPal]
 [![Bitcoin badge][bitcoin-badge]][bitcoin]
@@ -25,6 +25,8 @@ BittyTax comprises of the following tools.
 3. `bittytax_price` - (optional) lookup historic price data for cryptoassets and foreign currencies (see [Price Tool](#price-tool))
 
 Although UK focused, many of the tools can be used for other countries and currencies, see [International support](https://github.com/BittyTax/BittyTax/wiki/International-Support).
+
+There is also a US version of BittyTax which has its own branch, see [USA](https://github.com/BittyTax/BittyTax/wiki/USA).
 
 ## Why use BittyTax?
 * Open-source: growing community of users
@@ -59,20 +61,33 @@ A transaction record is represented as a row of data which contains the followin
 
 | Field | Type | Description |
 | --- | --- | ---|
-| Type | `Deposit` | Tokens deposited to a wallet you own  
+| Type | `Deposit` | Tokens deposited to a wallet you own |
+| | `Unstake` | Tokens returned to a wallet after being staked |
 | | `Mining` | Tokens received as income from mining |
-| | `Staking` | Tokens received as income from staking |
+| | `Staking-Reward` `Staking`\* | Tokens received as a reward from staking |
 | | `Interest` | Tokens received as interest |
 | | `Dividend` | Tokens received as a dividend |
 | | `Income` | Tokens received as other income |
 | | `Gift-Received` | Tokens received as a gift |
+| | `Fork` | Tokens received as the result of a blockchain fork |
 | | `Airdrop` | Tokens received from an airdrop |
+| | `Referral` | Tokens received as a reward through a referral program |
+| | `Cashback` | Tokens received as cashback |
+| | `Fee-Rebate` | Tokens received as a rebate of fees |
+| | `Loan` | Tokens received as a loan |
+| | `Margin-Gain` | Tokens received as a result of a margin gain |
+| | `Margin-Fee-Rebate` | Tokens received as a rebate of margin fees |
 | | `Withdrawal` | Tokens withdrawn from a wallet you own |
+| | `Stake` | Tokens withdrawn from a wallet to be staked |
 | | `Spend` | Tokens spent on goods or services |
 | | `Gift-Sent` | Tokens sent as a gift |
 | | `Gift-Spouse` | Tokens gifted to your spouse or civil partner |
 | | `Charity-Sent` | Tokens sent to a charity as a gift |
 | | `Lost` | Tokens that have been lost or stolen |
+| | `Loan-Repayment` | Tokens returned to the lender of a loan |
+| | `Loan-Interest` | Tokens paid as a fee to the lender of a loan |
+| | `Margin-Loss` | Tokens deducted as a result of a margin loss |
+| | `Margin-Fee` | Tokens paid as fees for a margin position |
 | | `Trade` | Tokens exchanged for another token or fiat currency |
 | Buy Quantity | | Quantity of the asset acquired |
 | Buy Asset | | Symbol name of the asset acquired |
@@ -87,24 +102,39 @@ A transaction record is represented as a row of data which contains the followin
 | Timestamp | | Date/time of transaction |
 | Note | | Description of transaction |
 
+\* - `Staking` has been deprecated, please use `Staking-Reward`.
+
 The transaction Type dictates which fields in the row are required, either (M)andatory or (O)ptional.   
 
 | Type | Buy Quantity | Buy Asset | Buy Value in GBP | Sell Quantity | Sell Asset | Sell Value in GBP | Fee Quantity | Fee Asset | Fee Value in GBP | Wallet | Timestamp | Note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---| --- | --- |
 | `Deposit` | M | M |   |||| O | O | O | O | M | O |
+| `Unstake` | M | M |   |||| O | O | O | O | M | O |
 | `Mining` | M | M | O |||| O | O | O| O | M | O |
-| `Staking` | M | M | O |||| O | O | O| O | M | O |
+| `Staking-Reward` | M | M | O |||| O | O | O| O | M | O |
 | `Interest` | M | M | O |||| O | O | O| O | M | O |
 | `Dividend` | M | M | O |||| O | O | O| O | M | O |
 | `Income` | M | M | O |||| O | O | O| O | M | O |
 | `Gift-Received` | M | M | O |||| O | O | O| O | M | O |
+| `Fork` | M | M | O |||| O | O | O | O | M | O |
 | `Airdrop` | M | M | O |||| O | O | O| O | M | O |
+| `Referral` | M | M | O |||| O | O | O | O | M | O |
+| `Cashback` | M | M | O |||| O | O | O | O | M | O |
+| `Fee-Rebate` | M | M | O |||| O | O | O | O | M | O |
+| `Loan` | M | M | O |||| O | O | O | O | M | O |
+| `Margin-Gain` | M | M | O |||| O | O | O | O | M | O |
+| `Margin-Free-Rebate` | M | M | O |||| O | O | O | O | M | O |
 | `Withdrawal` |||| M | M |   | O | O | O | O | M | O |
+| `Stake` |||| M | M |   | O | O | O | O | M | O |
 | `Spend` |||| M | M | O | O | O | O | O | M | O |
 | `Gift-Sent` |||| M | M | O | O | O | O | O | M | O |
 | `Gift-Spouse` |||| M | M |  | O | O | O | O | M | O |
 | `Charity-Sent` |||| M | M | O | O | O | O | O | M | O |
 | `Lost` |||| M | M | O | O | O | O | O | M | O |
+| `Loan-Repayment` |||| M | M | O | O | O | O | O | M | O |
+| `Loan-Interest` |||| M | M | O | O | O | O | O | M | O |
+| `Margin-Loss` |||| M | M | O | O | O | O | O | M | O |
+| `Margin-Fee` |||| M | M | O | O | O | O | O | M | O |
 | `Trade` | M | M | O | M | M | O | O | O | O | O | M | O |
 
 - If the Fee Asset is the same as Sell Asset, then the Sell Quantity must be the net amount (after fee deduction), not gross amount.
@@ -115,7 +145,7 @@ The transaction Type dictates which fields in the row are required, either (M)an
 
 - Wallet name is optional, but recommended if you want to audit your cryptoasset balances across multiple wallets.  
 
-- Timestamps should be in Excel Date & Time format (as UTC), or if text, in the format `YYYY-MM-DDTHH:MM:SS.000000 ZZZ` where ZZZ is the timezone, or if omitted UTC is assumed. Milliseconds or microseconds are optional.
+- Timestamps should be in Excel Date & Time format (as UTC), or if text, in the format `YYYY-MM-DDTHH:MM:SS.000000 ZZZ` where ZZZ represents the timezone, or if omitted UTC is assumed. Milliseconds or microseconds are optional.
 
 - Cryptoasset symbol names need to be consistent throughout your transaction records. The symbol name you choose should match the symbol name used by the price data source, otherwise valuations will fail. See [Price Tool](#price-tool) for more information.  NFT assets should be identified with a unique symbol name in the format "\<Name\> #\<Id\>", i.e. `CryptoPunk #369`.
 
@@ -145,17 +175,32 @@ Its corresponding Deposit quantity should match the Withdrawal quantity, this is
 
 The Withdrawal type can also be used to record fiat withdrawals from an exchange.
 
+### Stake
+The `Stake` transaction type records tokens withdraw from a wallet to be staked for rewards.
+
+As you are still the beneficial owner, they are included in your total holdings.
+
+This is not a taxable event.
+
+### Unstake
+
+The `Unstake` transaction type records tokens returned to a wallet after being staked.
+
+There should NOT be more tokens returned than were originally staked. Any additional tokens gained should be recorded a `Staking-Reward`.
+
+This is not a taxable event.
+
 ### Mining
 The `Mining` transaction type is used to identify tokens received as income from mining. The `Income` transaction type could also be used to record this - its use is purely descriptive.
 
 These transaction records will appear within your income tax report. See [HMRC guidance on mining transactions](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto21150).
 
-### Staking
+### Staking-Reward
 The `Staking` transaction type is used to identify tokens received as income from staking.
 
 These transaction records will appear within your income tax report. See [HMRC guidance on staking](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto21200).
 
-If staking income is received as return for the lending of tokens (or providing liquidiy), and beneficial ownership of those tokens transfers to the borrower/lending platform, then additional transaction records will need to be added to record disposals for both the lending and the repayment, see [HMRC guidance on making a DeFi loan](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto61620).
+If staking income is received as return for the lending of tokens (or providing liquidity), and beneficial ownership of those tokens transfers to the borrower/lending platform, then additional transaction records will need to be added to record disposals for both the lending and the repayment, see [HMRC guidance on making a DeFi loan](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto61620).
 
 It's also possible that staking tokens received are considered capital instead of income, see [HMRC guidance on nature of the return](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto61214).
 
@@ -183,12 +228,37 @@ The `Gift-Received` transaction type is used to record cryptoasset tokens receiv
 
 A gift received is not taxed as income.
 
+### Fork
+The `Fork` transaction type is used to identify tokens received for a new cryptoasset as a result of a blockchain fork.
+
+These tokens are always given a Buy Value of 0, as currently it is not possible to derive a cost from the original cryptoasset, and apportion this to the new one. See [HMRC guidance on Blockchain forks](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto22300).
+
+Tokens received for a fork are not taxed as income.
+
 ### Airdrop
-The `Airdrop` transaction type is used to record cryptoassets tokens received from an airdrop.
+The `Airdrop` transaction type is used to record cryptoasset tokens received from an airdrop.
 
 Airdrop tokens are not taxed as income, as it is assumed that nothing was done in return for them.
 
 If the airdrop distribution was dependant upon providing a service or other conditions, then they should be recorded as `Income`. See [HMRC guidance on airdrops](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto21250). 
+
+### Referral
+The `Referral` transaction type is used to record tokens received as a reward through a referral program.
+
+Tokens received for referrals are not taxed as income.
+
+### Cashback
+The `Cashback` transaction type records tokens received as cashback for a spend transaction.
+
+These tokens are are not taxed as income.
+
+### Fee-Rebate
+
+The `Fee-Rebate` transaction type is used to record tokens received as a rebate of fees.
+
+For example, some exchanges offer rebates to market makers (traders who provide liquidity by posting buy and sell orders), as opposed to traders who execute existing orders (market takers) who are charged a fee.
+
+Fee rebates are are not taxed as income.
 
 ### Spend
 A `Spend` is a disposal transaction record, which is used to capture the spending of tokens on goods or services.
@@ -236,11 +306,36 @@ In the opposite case, crypto-to-fiat, the Buy Asset would be fiat, and the Buy Q
 
 Trades which are a *disposal* are applicable for Capital Gains tax.
 
-### Other types?
-Below is a list of some other situations which you might need to record, but which don't have a specific transaction type defined.
+### Loan
+The `Loan` transaction type identifies tokens borrowed as a loan.
 
-1. **Dust clean** - Some exchanges remove very small amounts (dust) of cryptoasset tokens from wallets after a period of time, since these are too small to be traded or withdrawn. This can be captured as a `Spend` with a Sell Value of 0.  
-1. **Fork** - If a cryptoasset you own is forked and a new cryptoasset is created, this can be recorded as a `Gift-Received` but with a Buy Value of 0. This assumes that you are not splitting the cost between the original and new cryptoasset. Currently, it is not possible to derive a cost from the original cryptoasset and apportion this to the new one. See [HMRC guidance on Blockchain forks](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto22300).
+If you provided collateral for the loan then this might trigger a capital gains disposal, see [HMRC guidance on making a DeFi loan](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto61620).
+
+### Loan-Repayment
+The `Loan-Repayment` transaction type records the repayment (in part or full) of the borrowed tokens. This is separate to any interest charged on the loan.
+
+As a disposal transaction, it is applicable for Capital Gains tax.
+
+### Loan-Interest
+The `Loan-Interest` transaction type records interest payments made on the tokens you have borrowed.
+
+As a disposal transaction, it is applicable for Capital Gains tax.
+
+### Margin-Gain
+The `Margin-Gain` transaction type records the realised gain from a margin trade, futures, or other derivative trade.
+
+### Margin-Loss
+The `Margin-Loss` transaction type records the realised loss from a margin trade, futures, or other derivative trade.
+
+Payment of the loss is a disposal transaction, it is applicable for Capital Gains tax.
+
+### Margin-Fee
+The `Margin-Fee` transaction type can be used to record margin fees, funding fees, and/or trade fees for a margin trade, futures, or other derivative trade.
+
+Payment of the fee is a disposal transaction, it is applicable for Capital Gains tax.
+
+### Margin-Fee-Rebate
+The `Margin-Fee-Rebate` transaction type records funding fees which are credited to you. This can happen with perpetual futures.
 
 ## Accounting Tool
 Once you have all of your transaction records stored in an Excel or CSV file, you can use `bittytax` to process them and generate your report.
@@ -270,9 +365,13 @@ The imported transaction records are audited by calculating what the final balan
 
 If the balances listed in the report don't match, it could be that your transaction records are incomplete.
 
-If you do get issues, you can use the `-d` or `--debug` option to turn on logging (see [Audit Transaction Records](#audit-transaction-records)).
+If you do get issues, you can run just the audit report on its own using the `--audit` option.
 
-There is also a `--audit` option which produces a report containing just this section, useful if you want a quick way to see if everything balances. You can see an example audit report [here](https://github.com/BittyTax/BittyTax/blob/master/data/BittyTax_Report_Audit.pdf).
+This produces not only the report, but also an audit log in Excel format.
+
+The audit log contains a worksheet per asset, showing the individual balance changes associated with each transaction record. It also shows the transactions raw blockchain data when available, i.e. tx hash as well as, source and destination addresses. This can be useful for matching withdrawals with deposits.
+
+You can see an example audit report [here](https://github.com/BittyTax/BittyTax/blob/master/data/BittyTax_Audit_Report.pdf) and audit log [here](https://github.com/BittyTax/BittyTax/blob/master/data/BittyTax_Audit_Log.xlsx).
 
 #### Tax Report
 By default, tax reports are produced for all years which contain taxable events.
@@ -298,7 +397,7 @@ The **Summary** section provides enough information for you to complete the "Oth
 
 If the disposal proceeds exceed the HMRC reporting threshold (previously 4 times the annual tax-free allowance) this is shown. HMRC requires you to report this in your self assessment even if the gain was within your annual allowance.
 
-HMRC also requires you to include details of each gain or loss. You can use the `--summary` option in combination with `--taxyear` to generate a PDF report which only includes the capital gains disposals and summary for that specific tax year, this can then be attached to your self assessment. You can see an example summary report [here](https://github.com/BittyTax/BittyTax/blob/master/data/BittyTax_Report_Summary.pdf).
+HMRC also requires you to include details of each gain or loss. You can use the `--summary` option in combination with `--taxyear` to generate a PDF report which only includes the capital gains disposals and summary for that specific tax year, this can then be attached to your self assessment. You can see an example summary report [here](https://github.com/BittyTax/BittyTax/blob/master/data/BittyTax_Summary_Report.pdf).
 
 The **Tax Estimate** section is given purely as an estimate. Capital gains tax figures are calculated at both the basic and higher rate, and take into consideration the full tax-free allowance.  
 
@@ -313,10 +412,19 @@ By default, fiat currency transactions are excluded, this setting can be changed
 
 You should check with an [accountant](https://github.com/BittyTax/BittyTax/wiki/Crypto-Tax-Accountants-in-the-UK) for how this should be reported according to your personal situation.
 
+#### Margin Trading
+All margin trading transactions (`Margin-Gain`, `Margin-Loss`, `Margin-Fee` and `Margin-Fee-Rebate`) are totalised.
+
+Totals are given per wallet and per contract (which is taken from the Note field of the transaction record), as well as the totals for that tax year.
+
+These figures are NOT included in the **Summary** or **Tax Estimate**  sections.
+
+You will need to check with an [accountant](https://github.com/BittyTax/BittyTax/wiki/Crypto-Tax-Accountants-in-the-UK) whether these derivative trades should be taxed as other income, or capital gains, [HMRC gives little guidance](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto10150).
+
 #### Price Data
 The appendix section contains all the historic price data which bittytax has used in the tax calculations.
 
-This includes both fiat and crypto prices, split by tax year.
+This includes both fiat and cryptoasset prices, split by tax year.
 
 It is important to check that the symbol names of your assets have been interpreted correctly, and that the prices look reasonable, otherwise your tax calculations will be incorrect. See [Price Tool](#price-tool) for more information on how price data is retrieved.
 
@@ -341,6 +449,7 @@ You can turn on debug using the `-d` or `--debug` option to see full details of 
 1. [Process Unmatched (Section 104)](#process-unmatched-section-104)
 1. [Integrity Check](#integrity-check)
 1. [Process Income](#process-income)
+1. [Process Margin Trades](#process-margin-trades)
 
 #### Import Transaction Records
 First the transaction records are imported and validated according to their transaction type, making sure that the correct mandatory and optional fields are included.
@@ -483,7 +592,7 @@ pool:   (BUY Trade 1.64037953 BTC (~£584.51 GBP) + fee=~£2.69 GBP 'Bitstamp' 2
 ```
 
 ### Match "same day" Rule
-See ["*The “same day” rule TCGA92/S105(1)*"](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560#IDATX33F).
+See ["*The "same day" rule TCGA92/S105(1)*"](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560#IDATX33F).
 
 This tax function matches any buy and sell transactions, of the same cryptoasset, that occur on the same day. 
 
@@ -506,7 +615,7 @@ match:   Disposal(same day) gain=£-0.03 (proceeds=£22.62 - cost=£22.62 - fees
 ```
 
 ### Match "bed and breakfast" Rule
-See ["*The “bed and breakfast” rule TCGA92/S106A(5) and (5A)*"](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560#IDATR33F).
+See ["*The "bed and breakfast" rule TCGA92/S106A(5) and (5A)*"](https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg51560#IDATR33F).
  
 This tax function matches sells to buybacks of the same cryptoasset which occur within 30 days.
 
@@ -523,7 +632,7 @@ In the log, you can see which transactions have been matched by the "*bed & brea
 ```console
 match bed & breakfast transactions
 ...
-match: SELL Spend 5.32306861 BTC (~£1,483.06 GBP) + fee=~£1.48 GBP '<pooled>' 2016-01-27T22:09:19 GMT '<pooled>' [TID:17.2] (6)
+match: SELL Spend 5.32306861 BTC (~£1,483.06 GBP) + fee=~£1.48 GBP '<pooled>' 2016-01-27T22:09:19 GMT '<pooled>' [TID:16.2] (6)
 match: BUY Trade 5.54195456 BTC (~£1,475.82 GBP) + fee=~£1.48 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [TID:23.5] (9)
 match:   split: BUY Trade 5.32306861 BTC (~£1,417.53 GBP) + fee=~£1.42 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [TID:23.6] (9)
 match:   split: BUY Trade 0.21888595 BTC (~£58.29 GBP) + fee=~£0.06 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [TID:23.7] (9)
@@ -551,21 +660,20 @@ When a disposal takes place, the gain calculation is then shown below.
 
 ```console
 process unmatched transactions
+...
 section104: BUY Trade 0.21888595 BTC (~£58.29 GBP) + fee=~£0.06 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [TID:23.7] (9)
 section104:   BTC=17.58916048 (+0.21888595) cost=£2,943.37 GBP (+£58.29 GBP) fees=£7.47 GBP (+£0.06 GBP)
 section104: //SELL Spend 0.01110608 BTC (~£2.96 GBP) 'Poloniex' 2016-01-29T14:12:31 GMT [TID:23.3] (7) <- matched
 section104: //SELL* Withdrawal 7 BTC 'Desktop wallet' 2017-03-24T22:57:44 GMT 'to Poloniex' [TID:32.1] <- transfer
-section104: //BUY* Deposit 7 BTC 'Poloniex' 2017-03-24T22:57:44 GMT 'from Desktop wallet' [TID:33.1] <- transfer
 section104: SELL Spend 0.0002 BTC (~£0.15 GBP) 'Desktop wallet' 2017-03-24T22:57:44 GMT 'to Poloniex' [TID:32.2]
 section104:   BTC=17.58896048 (-0.0002) cost=£2,943.33 GBP (-£0.03 GBP) fees=£7.47 GBP (-£0.00 GBP)
 section104:   Disposal(section 104) gain=£0.12 (proceeds=£0.15 - cost=£0.03 - fees=£0.00)
-...
 ```
 
 ### Integrity Check 
 The integrity check compares the final balances from the audit against the final balances of the Section 104 pools.
 
-It's purpose is to find issues with transfer transactions which might impact your tax calculations.
+Its purpose is to find issues with transfer transactions which might impact your tax calculations.
 
 The integrity check will only be successful if your transaction records are complete (i.e. there is a matching Deposit for every Withdrawal).
 
@@ -579,54 +687,25 @@ Possible reasons for failure:
 1. The Deposit quantity is not the gross amount (before fee deduction), with the fee specified.
 1. Withdrawal/Deposit transactions have been used incorrectly (they should only be used to move existing tokens between your own wallets).
 
-In this example, the Section 104 Pool has a difference of 0.0002 BTC.
+In this example below, there is a difference (-negative) detected for BTC. This means that 0.0002 BTC has gone missing between transfers.
 
 ```console
 integrity check: failed
 WARNING Integrity check failed: audit does not match section 104 pools, please check Withdrawals and Deposits for missing fees
 
 Asset                Audit Balance          Section 104 Pool                Difference
-BTC                    14.00369127               14.00389127                   +0.0002
+BTC                    14.00369127               14.00389127                   -0.0002
 ```
 
-In the log, there is a Withdrawal (from 'Desktop wallet') of 7.0002 BTC, but the corresponding Deposit (to 'Poloniex') is 7 BTC. The Withdrawal quantity is the gross amount (before the 0.0002 fee), instead of being the net amount with the fee specified.
+An easy way to find any discrepancies is to use the audit log spreadsheet, see [Audit](#audit).
 
-```console
-process section 104
-...
-section104: BUY Trade 0.21888595 BTC (~£58.29 GBP) + fee=~£0.06 GBP 'Poloniex' 2016-01-29T13:51:01 GMT [TID:23.7] (9)
-section104:   BTC=17.58916048 (+0.21888595) cost=£2,943.37 GBP (+£58.29 GBP) fees=£7.47 GBP (+£0.06 GBP)
-section104: //SELL Spend 0.01110608 BTC (~£2.96 GBP) 'Poloniex' 2016-01-29T14:12:31 GMT [TID:23.3] (7) <- matched
-section104: //SELL* Withdrawal 7.0002 BTC 'Desktop wallet' 2017-03-24T22:57:44 GMT 'to Poloniex' [TID:32.1] <- transfer
-section104: //BUY* Deposit 7 BTC 'Poloniex' 2017-03-24T22:57:44 GMT 'from Desktop wallet' [TID:33.1] <- transfer
-section104: //SELL Trade 1.0003 BTC (~£975.08 GBP) + fee=~£1.22 GBP 'Poloniex' 2017-04-12T20:38:26 BST [TID:34.6] (4) <- matched
-```
-
-Unfortunately the tool cannot do this checking for you, as it does not know what is the correct Deposit for the Withdrawal.
-
-An easy way to find any discrepancies, is to filter the debug log to see just the transfers.
-
-```console
-$ bittytax <filename> -d | grep "<- transfer"
-section104: //SELL* Withdrawal 10 BTC 'LocalBitcoins' 2013-05-24T21:20:49 BST 'to Desktop wallet' [TID:3.1] <- transfer
-section104: //BUY* Deposit 10 BTC 'Desktop wallet' 2013-05-24T21:20:49 BST 'from LocalBitcoins' [TID:4.1] <- transfer
-section104: //SELL* Withdrawal 4.40027953 BTC 'Bitstamp' 2014-07-24T22:01:00 BST 'to Desktop wallet' [TID:13.1] <- transfer
-section104: //BUY* Deposit 4.40027953 BTC 'Desktop wallet' 2014-07-24T22:53:37 BST 'from Bitstamp' [TID:14.1] <- transfer
-section104: //BUY* Deposit 6 BTC 'Poloniex' 2016-01-27T21:01:03 GMT 'to Desktop wallet' [TID:16.1] <- transfer
-section104: //SELL* Withdrawal 6 BTC 'Desktop wallet' 2016-01-27T21:15:41 GMT 'from Poloniex' [TID:17.1] <- transfer
-section104: //SELL* Withdrawal 7.0002 BTC 'Desktop wallet' 2017-03-24T22:57:44 GMT 'to Poloniex' [TID:32.1] <- transfer
-section104: //BUY* Deposit 7 BTC 'Poloniex' 2017-03-24T22:57:44 GMT 'from Desktop wallet' [TID:33.1] <- transfer
-section104: //SELL* Withdrawal 2 BTC 'Poloniex' 2017-12-24T12:01:33 GMT 'to Coinfloor' [TID:51.1] <- transfer
-section104: //BUY* Deposit 2 BTC 'Coinfloor' 2017-12-24T13:53:19 GMT 'from Poloniex' [TID:52.1] <- transfer
-```
-
-For Windows use this command instead:
-```console
-> bittytax <filename> -d | findstr /C:"<- transfer"
-```
+You can use the column filter to select only `Deposit` and `Withdrawal` as the Type. This makes it easy to see any transfer mismatches.
 
 ### Process Income
 This function searches through all the original transactions, and records any that are applicable for income tax. Currently this is `Mining`, `Staking`, `Interest`, `Dividend` and `Income` transaction types.
+
+### Process Margin Trades
+This function searches through all the original transactions, and records any that are for margin trading, i.e. `Margin-Gain`, `Margin-Loss`, `Margin-Fee` and `Margin-Fee-Rebate`.
 
 ## Conversion Tool
 The bittytax conversion tool `bittytax_conv` takes all of the data files exported from your wallets and exchanges, normalises them into the transaction record format required by bittytax, and consolidates them into a single Excel spreadsheet for you to review, make edits, and add any missing records.
@@ -640,14 +719,18 @@ The converter takes care of all the cell formatting to ensure that all decimal p
 For most wallet files, transactions can only be categorised as deposits or withdrawals. You will need to edit these to reflect your real transactions (i.e. spends, gifts, income, etc.). This is easy with Excel, as the valid options are selectable via a dropdown menu.
 
 **Wallets:**
+- AdaLite
 - Blockchain.com
 - Coinomi
 - Electrum
+- Eternl
 - Exodus
 - HandCash
 - Helium
 - Ledger Live
+- MyMonero
 - Nault
+- Neon Wallet
 - Qt Wallet (i.e. Bitcoin Core)
 - Trezor
 - Volt
@@ -656,37 +739,57 @@ For most wallet files, transactions can only be categorised as deposits or withd
 
 **Exchanges:**
 - [Binance](https://github.com/BittyTax/BittyTax/wiki/Exchange:-Binance)
+- Binance.US
 - Bitfinex
 - Bitpanda
 - Bitstamp
 - Bittrex
 - Bittylicious
+- Blockchain.com Exchange
+- ByBit
+- Cash App
 - CEX.IO
+- Changelly
 - ChangeTip 
 - Circle
 - Coinbase
 - Coinbase Pro
+- CoinCorner
 - Coinfloor
 - CoinList
 - Coinmetro
 - Crypto.com
 - Cryptopia
 - Cryptsy
+- Deribit
+- Easy Crypto
 - FTX
+- Gate.io
 - Gatehub
+- Gemini
 - Gravity (Bitstocks)
 - HitBTC
 - Hotbit
+- Kinesis
 - Kraken
 - KuCoin
+- LBank
 - Liquid
 - Mercatox
+- MEXC
 - OKX
 - Paxful
+- PayPal
 - Poloniex
 - qTrade
+- Revolut
+- Robinhood
+- SwissBorg
+- TradeOgre
 - TradeSatoshi
 - Uphold
+- Voyager
+- WhiteBIT
 - Wirex
 
 **Savings & Loans**
@@ -696,17 +799,23 @@ For most wallet files, transactions can only be categorised as deposits or withd
 - Nexo
 
 **Explorers:**
+- Aptoscan
 - Blockscout
 - BscScan
 - Etherscan
+- FatStx
 - HecoInfo
 - Helium Explorer
+- Snowtrace
 - PolygonScan
 - SnowTrace
+- Subscan
 - Zerion
 
 **Accounting:**
 - Accointing
+- BitcoinTaxes
+- Blockpit
 - CoinTracker
 - CoinTracking
 - Koinly
@@ -717,7 +826,7 @@ The help option displays a full list of recognised data file formats, as well as
 
     bittytax_conv --help
 
-To use the conversion tool (assuming you've already exported your data), just enter the filenames of all your data files, in any order, as command arguments.
+To use the conversion tool (assuming you've already exported your data), just enter the filenames of all your data files, in any order, as command arguments. You can also pass in a directory and it will recursively search all files and folders for processing.
 
 Most terminals allow you to drag and drop files from the desktop into the terminal window, this saves you time by giving you the correct file path without having to enter it manually.
 
@@ -771,24 +880,8 @@ You can also use the conversion tool to convert your wallet or exchange files in
 ### Notes:
 1. Some exchanges only allow the export of trades. This means transaction records of deposits and withdrawals will have to be created manually, otherwise the assets will not balance.
 1. Bitfinex - when exporting your data, make sure the "*Date Format*" is set to "*DD-MM-YY*" which is the default.
-1. ChangeTip - the conversion tool requires your username(s) to be configured. This is to identify which transactions are a gift received or a gift sent. See [Config](#config).
-1. Coinbase - the latest "*Transaction history (all-time)*" report format from Coinbase is not as complete and detailed as previous reports. Below is a list of issues I'm aware of, there may be others.
-    * Early referral rewards appear as BTC buys. These are filtered from real buys by checking if the fee is zero. See [Config](#config).
-    * EUR buys/sells are listed as GBP. The actual currency is identified from the description in the "*Notes*" field.
-    * Fiat deposits/withdrawals are not shown in the report so will not balance.
-    * Crypto deposits/withdrawals which are relayed to/from Coinbase Pro are missing so will not balance.
-
-    If you are also using Coinbase Pro, and your account does not balance, see below.
-1. Coinbase Pro - generate the "*Account Statement*" report and export. This report on its own should balance correctly.
-
-    If you are also using Coinbase, the only way to get these accounts to both balance, is to manually add the missing relayed deposit/withdrawal transaction records into your Coinbase accounts.
-
-1. CoinTracking - export the "*Trade Prices*" report, but first change the date and time format to include seconds. This can be found under "*Account Settings*" -> "*Display Settings*". Select the special format "*d.m.Y H:i:s*".
 1. Etherscan - for ERC-20 (Tokens) and ERC-721 (NFTs) exports, it is important that the filename contains your ethereum address (Etherscan does this by default), as it is used to determine if transactions are being sent or received.
-1. GateHub - some exports contain incomplete data (i.e. no counter asset in an "*exchange*"), which are possibly failed transactions. The tool will filter them and raise a warning for you to review, the data still appears to balance correctly. Any XRP network fees which cannot be attributed to a "*payment*" or an "*exchange*" will be included separately as a spend transaction record.
-1. Hotbit - the exported file (.xls) is actually a html file, you will need to open this file in Excel and then "*Save As*" the Excel workbook format (.xlsx) before you can convert it.
 1. Kraken - export just the "*Ledgers*" history.
-1. Qt Wallet - by default, unconfirmed transactions are filtered by the conversion tool. If you want to include them, use the `-uc` or `--unconfirmed` command argument.
 
 ## Price Tool
 The bittytax price tool `bittytax_price` allows you to get the latest and historic prices of cryptoassets and foreign currencies. Its use is not strictly required as part of the process of completing your accounts, but provides a useful insight into the prices which bittytax will assign when it comes to value your cryptoassets in UK pounds (or other [local currency](https://github.com/BittyTax/BittyTax#local_currency)).
@@ -801,7 +894,6 @@ The following price data sources are available.
 - [Crypto Compare](https://min-api.cryptocompare.com) - cryptoasset prices *(primary crypto)*
 - [CoinGecko](https://www.coingecko.com/en/api) - cryptoasset prices *(secondary crypto)*
 - [Coinpaprika](https://coinpaprika.com/api/) - cryptoasset prices
-- [CoinDesk BPI](https://old.coindesk.com/coindesk-api) - bitcoin price index
 
 The priority (primary, secondary, etc) to which data source is used and for which asset is controlled by the `bittytax.conf` config file, (see [Config](#config)). If your cryptoasset cannot be identified by the primary data source, the secondary source will be used, and so on. 
 
@@ -812,17 +904,17 @@ To get the latest price of an asset, use the `latest` command, followed by the a
 
     bittytax_price latest asset [quantity]
 
-If the lookup is successful not only will the price be displayed in the terminal window, but also the data source used and the full name of the asset. This is useful in making sure the asset symbol you are using in your transaction records is the correct one.
+If the lookup is successful not only will the price be displayed in the terminal window, but also the data source used and the full name of the asset. This is useful in making sure the asset symbol name you are using in your transaction records is the correct one.
 
 ```console
 $ bittytax_price latest ETH 0.5
-1 ETH=0.05406 BTC via CryptoCompare (Ethereum)
-1 BTC=30,163.16 GBP via CryptoCompare (Bitcoin)
-1 ETH=£1,630.62 GBP
-0.5 ETH=£815.31 GBP
+1 ETH=0.03375 BTC via CryptoCompare (Ethereum)
+1 BTC=79,565.35 GBP via CryptoCompare (Bitcoin)
+1 ETH=£2,685.33 GBP
+0.5 ETH=£1,342.67 GBP
 ```
 
-If you wish to perform a historic data lookup, use the `historic` command instead, followed by the asset symbol name and the date.  The date can be in either `YYYY-MM-DD` or `DD/MM/YYYY` formats.
+If you wish to perform a historic data lookup, use the `historic` command instead, followed by the asset symbol name and the date.  The date can be in either `YYYY-MM-DD` or `DD/MM/YYYY` format.
 
     bittytax_price historic asset date [quantity]
 
@@ -835,7 +927,7 @@ $ bittytax_price historic BTC 2014-06-24 0.002435
 0.002435 BTC=£0.88 GBP
 ```
 
-Since there is no standardisation of cryptoasset symbols, it's possible that the same symbol will have different meanings across data sources. For example, EDG is Edgeless on CryptoCompare, but can also be Edgeware on CoinGecko and CoinPaprika.
+Since there is no standardisation of cryptoasset symbols, it's possible that the same symbol will have different meanings across data sources. For example, EDG is Edgeless on CryptoCompare, but can also be Edgeware on CoinPaprika.
 
 A quick way to check this is to use the `list` command, followed by an asset symbol name.
 
@@ -847,24 +939,18 @@ The `<-` arrow to the right indicates which data source/asset ID will be automat
 
 ```console
 $ bittytax_price list EDG
-EDG (Edgeless) via CryptoCompare <-
-EDG (Edgeless) via CoinGecko [ID:edgeless]
-EDG (Edgeware) via CoinGecko [ID:edgeware]
-EDG (Edgeware) via CoinPaprika [ID:edg-edgeware]
-EDG (EDward Gming) via CoinPaprika [ID:edg-edward-gming]
-EDG (Earth Dog) via CoinPaprika [ID:edg-earth-dog]
-EDG (Edward Gaming) via CoinPaprika [ID:edg-edward-gaming]
-EDG (EDG) via CoinPaprika [ID:edg-edg]
+EDG (Edgeless) via CryptoCompare [ID:edg] <-
 EDG (Edgeless) via CoinPaprika [ID:edg-edgeless]
+EDG (Earth Dog) via CoinPaprika [ID:edg-earth-dog]
+EDG (Edgeware) via CoinPaprika [ID:edg-edgeware]
 ```
 
-If you are having trouble identifing the symbol name to use, you can use the `-s` option, followed by a search term.
+If you are having trouble identifying the symbol name to use, you can use the `-s` option, followed by a search term.
 
 ```console
 $ bittytax_price list -s edgeware
-EDG (Edgeware) via CoinGecko [ID:edgeware]
 EDG (Edgeware) via CoinPaprika [ID:edg-edgeware]
-EDGEW (Edgeware) via CryptoCompare <-
+EDGEW (Edgeware) via CryptoCompare [ID:edgew] <-
 ```
 
 You can also get a complete list of all the supported assets (in alphabetical order) by not specifying any asset or search term.
@@ -874,56 +960,32 @@ If bittytax is not picking up the correct asset price for you, you can change th
 The `latest` and `historic` price commands also give you the `-ds` option to override the config and specify the data source directly. It's a quick way to check asset prices are correct before updating your config.
 
 ```console
-$ bittytax_price historic EDG 2023-11-11 -ds CoinGecko
-1 EDG=0.000000153 BTC  via CoinGecko (Edgeless)
-1 BTC=30,442.47 GBP  via CryptoCompare (Bitcoin)
-1 EDG=£0.00 GBP
-1 EDG=0.000000153 BTC  via CoinGecko (Edgeware)
-1 BTC=30,442.47 GBP  via CryptoCompare (Bitcoin)
-1 EDG=£0.00 GBP
+$ bittytax_price historic EDG 2025-01-01 -ds CoinPaprika
+1 EDG=0.00000062 BTC via CoinPaprika (Edgeless)
+1 BTC=75,338.83 GBP via CryptoCompare (Bitcoin)
+1 EDG=£0.05 GBP 
 ```
 
 You can also set the data source to `ALL`, this will return price data for all data sources which have a match. If the [Price Data](#price-data) appendix in your tax report has any missing data, you can use this method to find prices. Some data sources have price history going back further than others.
 
 ```console
-$ bittytax_price historic EDG 2023-11-11 -ds ALL
-1 EDG=0.00000015 BTC  via CryptoCompare (Edgeless) <-
-1 BTC=30,442.47 GBP  via CryptoCompare (Bitcoin)
+$ bittytax_price historic EDG 2025-01-01 -ds ALL
+1 EDG=0.00000003 BTC via CryptoCompare (Edgeless) <-
+1 BTC=75,338.83 GBP via CryptoCompare (Bitcoin)
 1 EDG=£0.00 GBP
-1 EDG=0.000000153 BTC  via CoinGecko (Edgeless)
-1 BTC=30,442.47 GBP  via CryptoCompare (Bitcoin)
-1 EDG=£0.00 GBP
-1 EDG=0.000000153 BTC  via CoinGecko (Edgeware)
-1 BTC=30,442.47 GBP  via CryptoCompare (Bitcoin)
-1 EDG=£0.00 GBP
-1 EDG=0.00000001 BTC  via CoinPaprika (Edgeware)
-1 BTC=30,442.47 GBP  via CryptoCompare (Bitcoin)
-1 EDG=£0.00 GBP
-1 EDG=0.00000001 BTC  via CoinPaprika (EDward Gming)
-1 BTC=30,442.47 GBP  via CryptoCompare (Bitcoin)
-1 EDG=£0.00 GBP
-1 EDG=0.00000001 BTC  via CoinPaprika (Earth Dog)
-1 BTC=30,442.47 GBP  via CryptoCompare (Bitcoin)
-1 EDG=£0.00 GBP
-1 EDG=0.00000001 BTC  via CoinPaprika (Edward Gaming)
-1 BTC=30,442.47 GBP  via CryptoCompare (Bitcoin)
-1 EDG=£0.00 GBP
-1 EDG=0.00000001 BTC  via CoinPaprika (EDG)
-1 BTC=30,442.47 GBP  via CryptoCompare (Bitcoin)
-1 EDG=£0.00 GBP
-1 EDG=0.00000001 BTC  via CoinPaprika (Edgeless)
-1 BTC=30,442.47 GBP  via CryptoCompare (Bitcoin)
-1 EDG=£0.00 GBP
+1 EDG=0.00000062 BTC via CoinPaprika (Edgeless)
+1 BTC=75,338.83 GBP via CryptoCompare (Bitcoin)
+1 EDG=£0.05 GBP
 ```
 
-To get a full details of all arguments, use the help option, either on its own or for a specific command.
+To get full details of all arguments, use the help option, either on its own or for a specific command.
 
     bittytax_price [command] --help
 
 ### Notes:
 1. Both CoinGecko and CoinPaprika have recently changed their non-paid usage plans to only include 12 months of daily historic price data. Retrieving data older than this might result in failure.
 1. Not all data source APIs return prices in UK pounds (GBP), for this reason cryptoasset prices are requested in BTC and then converted from BTC into UK pounds (GBP) as a two step process. This may change in the near future for stablecoins, see [#82](https://github.com/BittyTax/BittyTax/issues/82).
-1. Some APIs return multiple price points for the same day. CryptoCompare and CoinDesk use the 'close' price. CoinGecko and CoinPaprika use the 'open' price. See [#45]( https://github.com/BittyTax/BittyTax/issues/45).
+1. Some APIs return multiple price points for the same day. CryptoCompare uses the 'close' price. CoinGecko and CoinPaprika use the 'open' price. See [#45]( https://github.com/BittyTax/BittyTax/issues/45).
 1. Historical price data is cached for each data source as a separate JSON file in the .bittytax/cache folder within your home directory. Beware if you are changing a symbol name to point to a different data source/asset ID as previous data might be cached.
 1. CoinPaprika does not support BTC/GBP historic prices.
 
@@ -943,10 +1005,13 @@ bittytax -d
 | Parameter | Default | Description |
 | --- | --- | --- |
 | `local_currency:` | `GBP` | Local currency used for pricing assets |
-| `fiat_list:` | `['GBP', 'EUR', 'USD']` | List of fiat symbols used |
-| `crypto_list:` | `['BTC', 'ETH', 'XRP', 'LTC', 'BCH', 'BNB', 'USDT']` | List of prioritised cryptoasset symbols |
+| `local_timezone:` | `Europe/London` | Local timezone used by the conversion tool |
+| `date_is_day_first:` | `True` | Local date format used by the conversion tool |
+| `fiat_list:` | `['GBP', 'EUR', 'USD', 'AUD', 'NZD', 'CAD', 'PLN']` | List of fiat symbols used |
+| `crypto_list:` | `['BTC', 'ETH', 'XRP', 'LTC', 'BCH', 'BNB', 'USDT', 'USDC']` | List of prioritised cryptoasset symbols |
 | `trade_asset_type:` | `2` | Method used to calculate asset value in a trade |
 | `trade_allowable_cost_type:` | `2` | Method used to attribute the trade fee |
+| `transaction_fee_allowable_cost:` | `True` | Transaction fees are an allowable cost |
 | `audit_hide_empty:` | `False` | Hide empty balances/wallets from the audit |
 | `show_empty_wallets:` | `False` | Include empty wallets in current holdings report |
 | `transfers_include:` | `False` | Include transfer transactions in the tax calculations |
@@ -955,18 +1020,29 @@ bittytax -d
 | `fiat_income:` | `False` | Include fiat transactions in the income report |
 | `lost_buyback:` | `True` | Lost tokens should be reacquired |
 | `large_data:` | `False` | Optimise for large amounts of data |
+| `legacy_report:` | `False` | Use legacy PDF report format |
 | `data_source_select:` | `{}` | Map asset to a specific data source(s) for prices |
 | `data_source_fiat:` | `['BittyTaxAPI']` | Default data source(s) to use for fiat prices |
 | `data_source_crypto:` | `['CryptoCompare', 'CoinGecko']` | Default data source(s) to use for cryptoasset prices |
 | `usernames:` | `[]` | ChangeTip parser: list of usernames used |
 | `coinbase_zero_fees_are_gifts:` | `False` | Coinbase parser: treat zero fees as gifts |
 | `binance_multi_bnb_split_even:` | `False` | Binance parser: split BNB amount evenly across tokens converted to BNB at the same time |
+| `binance_statements_only:` | `False` | Binance parser: use statements data files for all transaction types |
 
 ### local_currency
 The local currency used for pricing assets, default is GBP. See [International support](https://github.com/BittyTax/BittyTax/wiki/International-Support).
 
+### local_timezone
+The local timezone used by the conversion tool for some data files which have local timestamps, default is 'Europe/London'. See [International support](https://github.com/BittyTax/BittyTax/wiki/International-Support).
+
+### date_is_day_first
+The local date format used by the conversion tool for some data files which are in a localised format. See [International support](https://github.com/BittyTax/BittyTax/wiki/International-Support).
+
+- `True` = DD/MM/YYYY (default)
+- `False` = MM/DD/YYYY
+
 ### fiat_list
-Used to differentiate between fiat and cryptoassets symbols. Make sure you configure all fiat currencies which appear within your transaction records here.
+Used to differentiate between fiat and cryptoasset symbols. Make sure you configure all fiat currencies which appear within your transaction records here.
 
 ### crypto_list
 Identifies which cryptoasset takes priority when calculating the value of a crypto-to-crypto trade (see [trade_asset_type](#trade_asset_type)). The priority is taken in sequence, so in an ETH/BTC trade, the value of the BTC would be used in preference to ETH when pricing the trade.
@@ -996,6 +1072,12 @@ Controls the method used to attribute the trade fee (an allowable cost) to the a
 - `2` = Split evenly between the buy and sell asset (default)
 
 The guidance from [HMRC on allowable expenses](https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual/crypto22150#exchange-fees), indicates that "*the fee is attributable to both assets*" when swapping one token for another.
+
+### transaction_fee_allowable_cost
+Controls if transaction fees (the fee paid to miners for storing transactions on the blockchain) are an allowable cost or not.
+
+- `True` = transaction fees are an allowable cost (default)
+- `False` = transaction fees are NOT an allowable cost
 
 ### audit_hide_empty
 Hide empty balances, and the entire wallet (if all balances are empty) from the audit. Can be set to `True` or `False`. Default is `False`.
@@ -1066,33 +1148,33 @@ Without conditional formatting, quantities that are integers (whole numbers) wil
 
 Can be set to `True` or `False`. Default is `False`.
 
+### legacy_report
+Format the PDF report with legacy styling.
+
+- `True` = legacy PDF report (as per BittyTax v0.5)
+- `False` = new colour PDF format
+
 ### data_source_select
-Maps a specific asset symbol to a list of data source(s) in priority order.
+Maps a specific asset symbol name to a list of data source(s) with asset IDs in priority order.
 
 This parameter overrides the any data sources defined by `data_source_fiat` and `data_source_crypto` (see below).
 
-If, for example you wanted EDG to use only the CoinGecko data source, overriding the default which is CryptoCompare. You would change the config as follows.
+If, for example you wanted EDG to map to Edgeware from CoinPaprika as the data source, overriding the default which is CryptoCompare. You would change the config as follows.
 
 ```yaml
 data_source_select: {
-    'EDG': ['CoinGecko'],
+    'EDG': ['CoinPaprika:edg-edgeware'],
     }
 ```
 
 To identify a specific asset ID for a datasource, you can use the `:` colon separator.
 
-```yaml
-data_source_select: {
-    'EDG': ['CoinGecko:edgeless'],
-    }
-```
-
 You can also define a custom asset symbol. In the example, EDGW is used to avoid a clash with EDG.
 
 ```yaml
 data_source_select: {
-    'EDG': ['CoinGecko:edgeless'],
-    'EDGW': ['CoinGecko:edgeware'],
+    'EDG': ['CoinPaprika:edg-edgeware'],
+    'EDGW': ['CryptoCompare:edg'],
     }
 ```
 
@@ -1120,7 +1202,6 @@ Supported data sources for cryptoassets are:
 - `CryptoCompare`
 - `CoinGecko`
 - `CoinPaprika`
-- `CoinDesk`
 
 ### usernames
 This parameter is only used by the conversion tool.
@@ -1150,29 +1231,24 @@ By default, the BNB Buy Quantities will be left blank, which you then have to ma
 
 Can be set to `True` or `False`. Default is `False`.
 
-## Future
-Here are some ideas for the project roadmap. 
+You can also override this config setting by using the `--binance_multi_bnb_split_even` argument with the conversion tool.
 
-### General
-- Document code.
-- Add tests.
+### binance_statements_only
+This parameter is only used by the conversion tool.
 
-### Conversion Tool
-- Add exchange APIs to automatically convert new trades into the transaction record format.
+It allows Binance statements data files to be used for ALL transaction types.
 
-### Accounting Tool
-- Add support for Margin/Futures trading.
-- Tax rules for other countries, see [International support](https://github.com/BittyTax/BittyTax/wiki/International-Support).
-- BittyTax integration with Excel. The command line interface is not for everyone. By integrating with Excel (or OpenOffice), this would greatly improve the user experience.
-- Add Excel macro to find corresponding Deposit for a Withdrawal, and validate quantities in your transaction records.
-- Add export function for QuickBooks (QBXML format), to include transactions records with exchange rate data added.
+This can be useful if the individual data files (deposits, withdrawals, trades, etc) are no longer available, see [wiki](https://github.com/BittyTax/BittyTax/wiki/Exchange:-Binance).
+
+Can be set to `True` or `False`. Default is `False`.
+
+You can also override this config setting by using the `--binance_statements_only` argument with the conversion tool.
 
 ## Resources
 **HMRC Links:**
 - https://www.gov.uk/government/collections/cryptoassets
 - https://www.gov.uk/hmrc-internal-manuals/cryptoassets-manual
 - https://www.gov.uk/hmrc-internal-manuals/vat-finance-manual/vatfin2330
-- https://www.gov.uk/hmrc-internal-manuals/capital-gains-manual/cg12100
 - https://www.gov.uk/government/publications/cryptoassets-taskforce
 
 **HMRC Webinar**
@@ -1189,7 +1265,7 @@ Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of thi
 [downloads-badge]: https://img.shields.io/pypi/dm/bittytax
 [github-stars-badge]: https://img.shields.io/github/stars/BittyTax/BittyTax?logo=github&color=yellow
 [sponsor-badge]: https://img.shields.io/static/v1?label=sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86
-[twitter-badge]: https://img.shields.io/twitter/follow/bitty_tax
+[x-badge]: https://img.shields.io/twitter/follow/bitty_tax
 [discord-badge]: https://img.shields.io/discord/581493570112847872?logo=discord&label=&logoColor=white&color=7389D8&labelColor=6A7EC2
 [paypal-badge]: https://img.shields.io/badge/donate-grey.svg?logo=PayPal
 [bitcoin-badge]: https://img.shields.io/badge/donate-grey.svg?logo=bitcoin
@@ -1199,7 +1275,7 @@ Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of thi
 [downloads]: https://pypistats.org/packages/bittytax
 [github-stars]: https://github.com/BittyTax/BittyTax/stargazers
 [sponsor]: https://github.com/sponsors/BittyTax
-[twitter]: https://twitter.com/intent/follow?screen_name=bitty_tax
+[x]: https://x.com/intent/follow?screen_name=bitty_tax
 [discord]: https://discord.gg/NHE3QFt
 [PayPal]: https://www.paypal.com/donate?hosted_button_id=HVBQW8TBEHXLC
 [bitcoin]: https://donate.bitty.tax 

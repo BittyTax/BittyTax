@@ -48,8 +48,7 @@
             "type": "PowerShell",
             "request": "launch",
             "script": "${workspaceFolder}/scripts/powershell/BittyTax Accounting Tool.ps1",
-            "cwd": "${cwd}"
-        }
+        },
     ],
     "inputs": [
         {

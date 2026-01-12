@@ -27,7 +27,7 @@ def parse_exodus_stake(
 
     if row_dict["Type"] == "Staking":
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Buy"]),
             buy_asset=row_dict["Cur."],
@@ -204,6 +204,33 @@ DataParser(
     ],
     worksheet_name="Exodus",
     row_handler=parse_exodus_v2,
+)
+
+DataParser(
+    ParserType.WALLET,
+    "Exodus",
+    [
+        "DATE",
+        "TYPE",
+        "FROMPORTFOLIO",
+        "TOPORTFOLIO",
+        "OUTAMOUNT",
+        "OUTCURRENCY",
+        "FEEAMOUNT",
+        "FEECURRENCY",
+        "FROMADDRESS",
+        "TOADDRESS",
+        "OUTTXID",
+        "OUTTXURL",
+        "INAMOUNT",
+        "INCURRENCY",
+        "INTXID",
+        "INTXURL",
+        "ORDERID",
+        "PERSONALNOTE",
+    ],
+    worksheet_name="Exodus",
+    row_handler=parse_exodus_v1,
 )
 
 DataParser(

@@ -19,6 +19,8 @@ from ..price.pricedata import PriceData
 from .exceptions import CurrencyConversionError
 
 if TYPE_CHECKING:
+    from parsers.defitaxes import DtConfig
+
     from ..datarow import DataRow
 
 TERM_WIDTH = 69
@@ -75,6 +77,7 @@ class ParserArgs(TypedDict):  # pylint: disable=too-few-public-methods, too-many
     worksheet: NotRequired[str]
     unconfirmed: NotRequired[bool]
     cryptoasset: NotRequired[str]
+    dt_config: NotRequired["DtConfig"]
 
 
 class DataParser:  # pylint: disable=too-many-instance-attributes
@@ -209,7 +212,7 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def match_header(cls, row: List[str], row_num: int) -> "DataParser":
-        row = [col.strip() for col in row]
+        row = [col.replace("\n", "").strip() for col in row]
         if config.debug:
             sys.stderr.write(
                 f"{Fore.YELLOW}header: row[{row_num + 1}] TRY: {cls._format_row(row)}\n"

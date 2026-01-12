@@ -29,12 +29,16 @@ QUOTE_ASSETS = [
     "DOT",
     "ETH",
     "EUR",
+    "EURC",
+    "EUROP",
     "GBP",
     "JPY",
     "POL",
     "PYUSD",
     "RLUSD",
+    "SOL",
     "USD",
+    "USD1",
     "USDC",
     "USDD",
     "USDQ",
@@ -64,11 +68,14 @@ ALT_ASSETS = {
     "XXMR": "XMR",
     "XXRP": "XRP",
     "XZEC": "ZEC",
+    "ZARS": "ARS",
     "ZAUD": "AUD",
     "ZCAD": "CAD",
+    "ZCOP": "COP",
     "ZEUR": "EUR",
     "ZGBP": "GBP",
     "ZJPY": "JPY",
+    "ZMXN": "MXN",
     "ZUSD": "USD",
 }
 
@@ -86,8 +93,12 @@ STAKED_SUFFIX = [
 ]
 
 TRADINGPAIR_TO_QUOTE_ASSET = {
+    "2ZEUR": "EUR",
+    "2ZUSD": "USD",
     "AI16ZEUR": "EUR",
     "AI16ZUSD": "USD",
+    "AIOZEUR": "EUR",
+    "AIOZUSD": "USD",
     "BLZEUR": "EUR",
     "BLZUSD": "USD",
     "CHZEUR": "EUR",
@@ -237,7 +248,7 @@ def _parse_kraken_ledgers_row(
     elif row_dict["type"] == "staking":
         if Decimal(row_dict["amount"]) > 0:
             data_row.t_record = TransactionOutRecord(
-                TrType.STAKING,
+                TrType.STAKING_REWARD,
                 data_row.timestamp,
                 buy_quantity=Decimal(row_dict["amount"]),
                 buy_asset=_normalise_asset(row_dict["asset"]),
@@ -576,6 +587,27 @@ kraken_ledgers = DataParser(
         "type",
         "subtype",
         "aclass",
+        "subclass",
+        "asset",
+        "wallet",
+        "amount",
+        "fee",
+        "balance",
+    ],
+    worksheet_name="Kraken L",
+    all_handler=parse_kraken_ledgers,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Kraken Ledgers",
+    [
+        "txid",
+        "refid",
+        "time",
+        "type",
+        "subtype",
+        "aclass",
         "asset",
         "wallet",
         "amount",
@@ -587,7 +619,7 @@ kraken_ledgers = DataParser(
     all_handler=parse_kraken_ledgers,
 )
 
-kraken_ledgers = DataParser(
+DataParser(
     ParserType.EXCHANGE,
     "Kraken Ledgers",
     [

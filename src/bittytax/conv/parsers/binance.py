@@ -50,6 +50,7 @@ QUOTE_ASSETS = [
     "EURI",
     "FDUSD",
     "GBP",
+    "IDR",
     "GYEN",
     "IDRT",
     "JPY",
@@ -64,6 +65,8 @@ QUOTE_ASSETS = [
     "TRY",
     "TUSD",
     "UAH",
+    "USD",
+    "USD1",
     "USDC",
     "USDP",
     "USDS",
@@ -76,6 +79,7 @@ QUOTE_ASSETS = [
 ]
 
 BASE_ASSETS = [
+    "0G",
     "1000CAT",
     "1000CHEEMS",
     "1000SATS",
@@ -83,14 +87,18 @@ BASE_ASSETS = [
     "1INCHDOWN",
     "1INCHUP",
     "1MBABYDOGE",
+    "2Z",
 ]
 
 TRADINGPAIR_TO_QUOTE_ASSET = {
     "ADAEUR": "EUR",
+    "ARBIDR": "IDR",
+    "BNBIDR": "IDR",
     "ENAEUR": "EUR",
     "GALAEUR": "EUR",
     "LUNAEUR": "EUR",
     "THETAEUR": "EUR",
+    "USDTUSD": "USD",
 }
 
 
@@ -480,7 +488,7 @@ def _parse_binance_statements_row(
         "Swap Farming Rewards",
     ):
         data_row.t_record = TransactionOutRecord(
-            TrType.STAKING,
+            TrType.STAKING_REWARD,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Change"]),
             buy_asset=row_dict["Coin"],

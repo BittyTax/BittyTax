@@ -60,6 +60,7 @@ def parse_electrum_v2(
 def _parse_electrum_row_v2(data_row: "DataRow", parser: DataParser, symbol: str) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["timestamp"], tz=config.local_timezone)
+    data_row.worksheet_name = f"{WALLET} {symbol}"
     data_row.tx_raw = TxRawPos(parser.in_header.index("transaction_hash"))
 
     value = Decimal(row_dict["value"].replace(",", ""))
@@ -69,7 +70,7 @@ def _parse_electrum_row_v2(data_row: "DataRow", parser: DataParser, symbol: str)
             data_row.timestamp,
             buy_quantity=value,
             buy_asset=symbol,
-            wallet=_get_wallet(symbol),
+            wallet=WALLET,
             note=row_dict["label"],
         )
     else:
@@ -89,13 +90,9 @@ def _parse_electrum_row_v2(data_row: "DataRow", parser: DataParser, symbol: str)
             sell_asset=symbol,
             fee_quantity=fee_quantity,
             fee_asset=fee_asset,
-            wallet=_get_wallet(symbol),
+            wallet=WALLET,
             note=row_dict["label"],
         )
-
-
-def _get_wallet(symbol: str) -> str:
-    return f"{WALLET} ({symbol})"
 
 
 def parse_electrum_v1(
@@ -136,6 +133,7 @@ def parse_electrum_v1(
 def _parse_electrum_row_v1(data_row: "DataRow", parser: DataParser, symbol: str) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["timestamp"], tz=config.local_timezone)
+    data_row.worksheet_name = f"{WALLET} {symbol}"
     data_row.tx_raw = TxRawPos(parser.in_header.index("transaction_hash"))
 
     value = Decimal(row_dict["value"].replace(",", ""))
@@ -145,7 +143,7 @@ def _parse_electrum_row_v1(data_row: "DataRow", parser: DataParser, symbol: str)
             data_row.timestamp,
             buy_quantity=value,
             buy_asset=symbol,
-            wallet=_get_wallet(symbol),
+            wallet=WALLET,
             note=row_dict["label"],
         )
     else:
@@ -154,7 +152,7 @@ def _parse_electrum_row_v1(data_row: "DataRow", parser: DataParser, symbol: str)
             data_row.timestamp,
             sell_quantity=abs(value),
             sell_asset=symbol,
-            wallet=_get_wallet(symbol),
+            wallet=WALLET,
             note=row_dict["label"],
         )
 

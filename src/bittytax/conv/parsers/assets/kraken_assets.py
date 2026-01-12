@@ -8,7 +8,12 @@ from typing import Dict, List, Set, Tuple
 import requests
 from colorama import Back
 
-from ..kraken import ALT_ASSETS, QUOTE_ASSETS, STAKED_SUFFIX, _split_trading_pair
+from bittytax.conv.parsers.kraken import (
+    ALT_ASSETS,
+    QUOTE_ASSETS,
+    STAKED_SUFFIX,
+    _split_trading_pair,
+)
 
 
 def get_alt_assets() -> Tuple[Dict[str, str], Set[str]]:

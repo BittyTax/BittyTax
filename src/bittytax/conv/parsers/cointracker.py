@@ -101,6 +101,33 @@ def _parse_cointracker_row(
             wallet=_wallet_name(row_dict["Received Wallet"]),
             note=row_dict["Received Comment"],
         )
+    elif row_dict["Type"].upper() == "STAKING_REWARD":
+        data_row.t_record = TransactionOutRecord(
+            TrType.STAKING_REWARD,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Received Quantity"]),
+            buy_asset=row_dict["Received Currency"],
+            wallet=_wallet_name(row_dict["Received Wallet"]),
+            note=row_dict["Received Comment"],
+        )
+    elif row_dict["Type"].upper() == "INTEREST_PAYMENT":
+        data_row.t_record = TransactionOutRecord(
+            TrType.INTEREST,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Received Quantity"]),
+            buy_asset=row_dict["Received Currency"],
+            wallet=_wallet_name(row_dict["Received Wallet"]),
+            note=row_dict["Received Comment"],
+        )
+    elif row_dict["Type"].upper() == "INCOME":
+        data_row.t_record = TransactionOutRecord(
+            TrType.INCOME,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Received Quantity"]),
+            buy_asset=row_dict["Received Currency"],
+            wallet=_wallet_name(row_dict["Received Wallet"]),
+            note=row_dict["Received Comment"],
+        )
     elif row_dict["Type"].upper() == "SEND":
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,

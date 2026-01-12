@@ -371,9 +371,38 @@ def _close_position(
 DataParser(
     ParserType.EXCHANGE,
     "MEXC Deposits",
+    ["UID", "Status", "Time", "Crypto", "Network", "Deposit Amount", "TxID", "Progress"],
+    worksheet_name="MEXC D",
+    row_handler=parse_mexc_deposits,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "MEXC Deposits",
     ["Status", "Time", "Crypto", "Network", "Deposit Amount", "TxID", "Progress"],
     worksheet_name="MEXC D",
     row_handler=parse_mexc_deposits,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "MEXC Withdrawals",
+    [
+        "UID",
+        "Status",
+        "Time",
+        "Crypto",
+        "Network",
+        "Request Amount",
+        "Withdrawal Address",
+        "memo",
+        "TxID",
+        "Trading Fee",
+        "Settlement Amount",
+        "Withdrawal Descriptions",
+    ],
+    worksheet_name="MEXC W",
+    row_handler=parse_mexc_withdrawals,
 )
 
 DataParser(
@@ -395,8 +424,27 @@ DataParser(
     row_handler=parse_mexc_withdrawals,
 )
 
-
 # Export Order History
+DataParser(
+    ParserType.EXCHANGE,
+    "MEXC Trades",
+    [
+        "UID",
+        "Pairs",
+        "Time",
+        "Type",
+        "Direction",
+        "Average Filled Price",
+        "Order Price",
+        "Filled Quantity",
+        "Order Quantity",
+        "Order Amount",
+        "Status",
+    ],
+    worksheet_name="MEXC T",
+    row_handler=parse_mexc_trades_v2,
+)
+
 DataParser(
     ParserType.EXCHANGE,
     "MEXC Trades",
@@ -416,7 +464,6 @@ DataParser(
     row_handler=parse_mexc_trades_v2,
 )
 
-
 # Export Trade History, this is preferred as it contains fees
 DataParser(
     ParserType.EXCHANGE,
@@ -424,6 +471,33 @@ DataParser(
     ["Pairs", "Time", "Side", "Filled Price", "Executed Amount", "Total", "Fee", "Role"],
     worksheet_name="MEXC T",
     row_handler=parse_mexc_trades_v1,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "MEXC Futures",
+    [
+        "UID",
+        lambda c: re.match(r"(^Time\((UTC[-+]\d{2}:\d{2})\)|Time)", c),
+        "Futures Trading Pair",
+        "Direction",
+        "Leverage",
+        "Order Type",
+        "Order Qty (Cont.)",
+        "Filled Qty (Cont.)",
+        "Order Qty (Crypto)",
+        "Filled Qty (Crypto)",
+        "Order Qty (Amount)",
+        "Filled Qty (Amount)",
+        "Order Price",
+        "Average Filled Price",
+        "Closing PNL",
+        "Trading Fee",
+        "Fee-payment Crypto",
+        "Status",
+    ],
+    worksheet_name="MEXC F",
+    all_handler=parse_mexc_futures,
 )
 
 DataParser(

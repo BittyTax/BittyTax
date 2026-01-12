@@ -3,7 +3,6 @@
 
 import copy
 import re
-import sys
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -14,6 +13,7 @@ from .bt_types import TRANSFER_TYPES, AssetSymbol, Date, FixedValue, Note, Times
 from .config import config
 from .price.valueasset import ValueAsset
 from .t_record import TransactionRecord
+from .utils import disable_tqdm
 
 
 class TransactionHistory:
@@ -30,7 +30,7 @@ class TransactionHistory:
             transaction_records,
             unit="tr",
             desc=f"{Fore.CYAN}split transaction records{Fore.GREEN}",
-            disable=bool(config.debug or not sys.stdout.isatty()),
+            disable=disable_tqdm(),
         ):
             if config.debug:
                 print(f"{Fore.MAGENTA}split: TR {tr}")
@@ -326,6 +326,7 @@ class TransactionBase:  # pylint: disable=too-many-instance-attributes
 class Buy(TransactionBase):  # pylint: disable=too-many-instance-attributes
     ACQUISITION_TYPES = {
         TrType.MINING,
+        TrType.STAKING_REWARD,
         TrType.STAKING,
         TrType.INTEREST,
         TrType.DIVIDEND,

@@ -15,7 +15,14 @@ import xlsxwriter
 from colorama import Fore
 from typing_extensions import TypedDict
 
-from ..bt_types import BUY_TYPES, SELL_TYPES, TrType, UnmappedType
+from ..bt_types import (
+    BUY_AND_SELL_TYPES,
+    BUY_TYPES,
+    DEPRECATED_TYPES,
+    SELL_TYPES,
+    TrType,
+    UnmappedType,
+)
 from ..config import config
 from ..constants import (
     EXCEL_PRECISION,
@@ -170,9 +177,9 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             }
         )
 
-    def sheet_name(self, parser_name: str) -> str:
+    def sheet_name(self, worksheet_name: str) -> str:
         # Remove special characters
-        name = re.sub(r"[/\\\?\*\[\]:]", "", parser_name)
+        name = re.sub(r"[/\\\?\*\[\]:]", "", worksheet_name)
         name = name[: self.SHEETNAME_MAX_LEN] if len(name) > self.SHEETNAME_MAX_LEN else name
 
         if name.lower() not in self.sheet_names:
@@ -189,9 +196,9 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
 
         return sheet_name
 
-    def table_name(self, parser_name: str) -> str:
+    def table_name(self, worksheet_name: str) -> str:
         # Remove characters which are not allowed
-        name = parser_name.replace(" ", "_")
+        name = worksheet_name.replace(" ", "_")
         name = re.sub(r"[^a-zA-Z0-9\._]", "", name)
 
         if name.lower() not in self.table_names:
@@ -204,24 +211,35 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
 
     def write_excel(self) -> None:
         data_files = sorted(self.data_files, key=lambda df: df.parser.worksheet_name, reverse=False)
+
         for data_file in data_files:
-            worksheet = Worksheet(self, data_file)
+            worksheets = {}
+            worksheet_names = {dr.worksheet_name for dr in data_file.data_rows}
 
-            data_rows = sorted(data_file.data_rows, key=lambda dr: dr.timestamp, reverse=False)
-            for data_row in data_rows:
-                worksheet.add_row(data_row)
+            if worksheet_names:
+                for ws_name in sorted(worksheet_names):
+                    worksheets[ws_name] = Worksheet(
+                        self, ws_name, data_file.parser.in_header, data_file.data_rows
+                    )
 
-            if data_rows:
-                worksheet.make_table(data_file.parser.worksheet_name)
-                if not config.large_data:
-                    # Lots of conditional formatting can slow down Excel
-                    worksheet.conditional_formatting()
+                data_rows = sorted(data_file.data_rows, key=lambda dr: dr.timestamp, reverse=False)
+                for dr in data_rows:
+                    worksheet = worksheets[dr.worksheet_name]
+                    worksheet.add_row(dr)
+
+                for ws_name in worksheet_names:
+                    worksheets[ws_name].make_table()
+                    if not config.large_data:
+                        # Lots of conditional formatting can slow down Excel
+                        worksheets[ws_name].conditional_formatting()
+                    worksheets[ws_name].autofit()
             else:
-                # Just add headings
-                for i, columns in enumerate(worksheet.columns):
-                    worksheet.worksheet.write(0, i, columns["header"], columns["header_format"])
-
-            worksheet.autofit()
+                # No rows, just add worksheet with headings
+                worksheet = Worksheet(
+                    self, data_file.parser.worksheet_name, data_file.parser.in_header, []
+                )
+                worksheet.add_headings()
+                worksheet.autofit()
 
         self.workbook.close()
         if self.filename:
@@ -234,15 +252,20 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
 class Worksheet:
     MAX_COL_WIDTH = 30
 
-    def __init__(self, output: OutputExcel, data_file: DataFile) -> None:
+    def __init__(
+        self,
+        output: OutputExcel,
+        worksheet_name: str,
+        in_header: List[str],
+        data_rows: List[DataRow],
+    ) -> None:
         self.output = output
-        self.worksheet = output.workbook.add_worksheet(
-            self.output.sheet_name(data_file.parser.worksheet_name)
-        )
+        self.worksheet = output.workbook.add_worksheet(self.output.sheet_name(worksheet_name))
+        self.worksheet_name = worksheet_name
         self.col_width: Dict[int, int] = {}
-        self.columns = self._make_columns(data_file.parser.in_header)
+        self.columns = self._make_columns(in_header)
         self.row_num = 1
-        self.microseconds, self.milliseconds = self._is_microsecond_timestamp(data_file.data_rows)
+        self.microseconds, self.milliseconds = self._is_microsecond_timestamp(data_rows)
 
         self.worksheet.freeze_panes(1, len(self.output.BITTYTAX_OUT_HEADER))
 
@@ -349,13 +372,16 @@ class Worksheet:
         col_num: int,
         t_record: TransactionOutRecord,
     ) -> None:
-        if t_type is TrType.TRADE or t_record.buy_asset and t_record.sell_asset:
+        if t_type in BUY_AND_SELL_TYPES or t_record.buy_asset and t_record.sell_asset:
             self.worksheet.data_validation(
                 row_num,
                 col_num,
                 row_num,
                 col_num,
-                {"validate": "list", "source": [TrType.TRADE.value]},
+                {
+                    "validate": "list",
+                    "source": [t.value for t in BUY_AND_SELL_TYPES if t not in DEPRECATED_TYPES],
+                },
             )
         elif t_type in BUY_TYPES or t_record.buy_asset and not t_record.sell_asset:
             self.worksheet.data_validation(
@@ -363,7 +389,10 @@ class Worksheet:
                 col_num,
                 row_num,
                 col_num,
-                {"validate": "list", "source": [t.value for t in BUY_TYPES]},
+                {
+                    "validate": "list",
+                    "source": [t.value for t in BUY_TYPES if t not in DEPRECATED_TYPES],
+                },
             )
         elif t_type in SELL_TYPES or t_record.sell_asset and not t_record.buy_asset:
             self.worksheet.data_validation(
@@ -371,7 +400,10 @@ class Worksheet:
                 col_num,
                 row_num,
                 col_num,
-                {"validate": "list", "source": [t.value for t in SELL_TYPES]},
+                {
+                    "validate": "list",
+                    "source": [t.value for t in SELL_TYPES if t not in DEPRECATED_TYPES],
+                },
             )
         if isinstance(t_type, TrType):
             self.worksheet.write_string(row_num, col_num, t_type.value)
@@ -486,7 +518,7 @@ class Worksheet:
             },
         )
 
-    def make_table(self, parser_name: str) -> None:
+    def make_table(self) -> None:
         self.worksheet.add_table(
             0,
             0,
@@ -496,6 +528,10 @@ class Worksheet:
                 "autofilter": False,
                 "style": "Table Style Medium 13",
                 "columns": self.columns,
-                "name": self.output.table_name(parser_name),
+                "name": self.output.table_name(self.worksheet_name),
             },
         )
+
+    def add_headings(self) -> None:
+        for i, columns in enumerate(self.columns):
+            self.worksheet.write(0, i, columns["header"], columns["header_format"])

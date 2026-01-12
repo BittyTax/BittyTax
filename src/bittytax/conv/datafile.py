@@ -32,7 +32,8 @@ class DataFile:
     def __init__(self, parser: DataParser, reader: Iterator[List[str]]) -> None:
         self.parser = copy.copy(parser)
         self.data_rows = [
-            DataRow(line_num + 1, row, parser.in_header) for line_num, row in enumerate(reader)
+            DataRow(line_num + 1, row, parser.in_header, parser.worksheet_name)
+            for line_num, row in enumerate(reader)
         ]
         self.failures: List[DataRow] = []
 
@@ -130,7 +131,14 @@ class DataFile:
         warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
         with open(filename, "rb") as df:
             try:
-                workbook = openpyxl.load_workbook(df, read_only=True, data_only=True)
+                workbook = openpyxl.load_workbook(
+                    df,
+                    read_only=True,
+                    data_only=True,
+                    keep_vba=False,
+                    keep_links=False,
+                    rich_text=False,
+                )
 
                 if config.debug:
                     sys.stderr.write(f"{Fore.CYAN}conv: EXCEL\n")

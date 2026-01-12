@@ -23,7 +23,89 @@ TZ_INFOS = {
 }
 
 
-def parse_cash_app(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
+def parse_cash_app_v2(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], tzinfos=TZ_INFOS)
+
+    if row_dict["Status"] == "FAILED":
+        return
+
+    amount = get_amount(row_dict["Amount"])
+    if row_dict["Fee"]:
+        fee = abs(get_amount(row_dict["Fee"]))
+    else:
+        fee = None
+
+    if row_dict["Transaction Type"] in ("P2P", "Deposits", "Withdrawal"):
+        if amount > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.DEPOSIT,
+                data_row.timestamp,
+                buy_quantity=amount,
+                buy_asset=row_dict["Currency"],
+                fee_quantity=fee,
+                fee_asset=row_dict["Currency"],
+                wallet=WALLET,
+                note=row_dict["Notes"],
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.WITHDRAWAL,
+                data_row.timestamp,
+                sell_quantity=abs(amount),
+                sell_asset=row_dict["Currency"],
+                fee_quantity=fee,
+                fee_asset=row_dict["Currency"],
+                wallet=WALLET,
+                note=row_dict["Notes"],
+            )
+    elif row_dict["Transaction Type"] == "Bitcoin Buy":
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Asset Amount"]),
+            buy_asset=row_dict["Asset Type"],
+            sell_quantity=abs(amount),
+            sell_asset=row_dict["Currency"],
+            fee_quantity=fee,
+            fee_asset=row_dict["Currency"],
+            wallet=WALLET,
+            note=row_dict["Notes"],
+        )
+    elif row_dict["Transaction Type"] == "Bitcoin Withdrawal":
+        data_row.t_record = TransactionOutRecord(
+            TrType.WITHDRAWAL,
+            data_row.timestamp,
+            sell_quantity=abs(Decimal(row_dict["Net Amount"])),
+            sell_asset=row_dict["Currency"],
+            fee_quantity=fee,
+            fee_asset=row_dict["Currency"],
+            wallet=WALLET,
+            note=row_dict["Notes"],
+        )
+    elif row_dict["Transaction Type"] == "Account Notifications":
+        # Skip
+        return
+    else:
+        raise UnexpectedTypeError(
+            parser.in_header.index("Transaction Type"),
+            "Transaction Type",
+            row_dict["Transaction Type"],
+        )
+
+
+def get_amount(amount_str: str) -> Decimal:
+    if re.match(r"\([^)]+\)", amount_str):
+        return -Decimal(re.sub(r"[^-\d.]+", "", amount_str))
+
+    return Decimal(re.sub(r"[^-\d.]+", "", amount_str))
+
+
+def parse_cash_app_v1(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], tzinfos=TZ_INFOS)
 
@@ -135,6 +217,29 @@ DataParser(
     ParserType.EXCHANGE,
     "Cash App",
     [
+        "Date",
+        "Transaction ID",
+        "Transaction Type",
+        "Currency",
+        "Amount",
+        "Fee",
+        "Net Amount",
+        "Asset Type",
+        "Asset Price",
+        "Asset Amount",
+        "Status",
+        "Notes",
+        "Name of sender/receiver",
+        "Account",
+    ],
+    worksheet_name="Cash App",
+    row_handler=parse_cash_app_v2,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Cash App",
+    [
         "Transaction ID",
         "Date",
         "Transaction Type",
@@ -151,5 +256,5 @@ DataParser(
         "Account",
     ],
     worksheet_name="Cash App",
-    row_handler=parse_cash_app,
+    row_handler=parse_cash_app_v1,
 )

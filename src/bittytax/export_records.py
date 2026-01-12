@@ -3,6 +3,7 @@
 
 import csv
 import os
+import sys
 from typing import List
 
 import _csv
@@ -56,7 +57,9 @@ class ExportRecords:  # pylint: disable=too-few-public-methods
             writer = csv.writer(csv_file, lineterminator="\n")
             self._write_rows(writer)
 
-        print(f"{Fore.WHITE}export file created: {Fore.YELLOW}{os.path.abspath(filename)}")
+        sys.stdout.write(
+            f"{Fore.WHITE}export file created: {Fore.YELLOW}{os.path.abspath(filename)}\n"
+        )
 
     def _write_rows(self, writer: "_csv._writer") -> None:
         writer.writerow(self.OUT_HEADER)

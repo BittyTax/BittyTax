@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
-import sys
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Dict, List, Optional
@@ -16,6 +15,13 @@ from .constants import WARNING
 from .holdings import Holdings
 from .t_record import TransactionRecord
 from .transactions import Buy, Sell
+from .utils import bt_tqdm_write, disable_tqdm
+
+
+@dataclass
+class AuditWallet:
+    balance: Decimal = Decimal(0)
+    staked: Decimal = Decimal(0)
 
 
 @dataclass
@@ -29,6 +35,7 @@ class AuditLogEntry:
     change: Optional[Decimal]
     fee: Optional[Decimal]
     balance: Decimal
+    staked: Decimal
     wallet: Wallet
     total: Decimal
     tr_part: TrRecordPart
@@ -43,7 +50,7 @@ class ComparePoolFail(TypedDict):  # pylint: disable=too-few-public-methods
 
 class AuditRecords:
     def __init__(self, transaction_records: List[TransactionRecord]) -> None:
-        self.wallets: Dict[Wallet, Dict[AssetSymbol, Decimal]] = {}
+        self.wallets: Dict[Wallet, Dict[AssetSymbol, AuditWallet]] = {}
         self.totals: Dict[AssetSymbol, AuditTotals] = {}
         self.audit_log: Dict[AssetSymbol, List[AuditLogEntry]] = {}
         self.failures: List[ComparePoolFail] = []
@@ -55,7 +62,7 @@ class AuditRecords:
             transaction_records,
             unit="tr",
             desc=f"{Fore.CYAN}audit transaction records{Fore.GREEN}",
-            disable=bool(config.debug or not sys.stdout.isatty()),
+            disable=disable_tqdm(),
         ):
             if config.debug:
                 print(f"{Fore.MAGENTA}audit: TR {tr}")
@@ -83,7 +90,9 @@ class AuditRecords:
                 for asset in sorted(self.wallets[wallet]):
                     print(
                         f"{Fore.YELLOW}audit: {wallet}:{asset}={Style.BRIGHT}"
-                        f"{self.wallets[wallet][asset].normalize():0,f}{Style.NORMAL}"
+                        f"{self.wallets[wallet][asset].balance.normalize():0,f}{Style.NORMAL} "
+                        f"staked={Style.BRIGHT}{self.wallets[wallet][asset].staked.normalize():0,f}"
+                        f"{Style.NORMAL}"
                     )
 
             print(f"{Fore.CYAN}audit: final balances by asset")
@@ -108,53 +117,81 @@ class AuditRecords:
             self.wallets[wallet] = {}
 
         if buy.asset not in self.wallets[wallet]:
-            self.wallets[wallet][buy.asset] = Decimal(0)
+            self.wallets[wallet][buy.asset] = AuditWallet()
 
-        self.wallets[wallet][buy.asset] += buy.quantity
-
-        if buy.asset not in self.totals:
-            self.totals[buy.asset] = AuditTotals()
-
-        self.totals[buy.asset].total += buy.quantity
-
-        if buy.t_type == TrType.DEPOSIT and buy.is_crypto():
-            self.totals[buy.asset].transfers_mismatch += buy.quantity
+        self.wallets[wallet][buy.asset].balance += buy.quantity
 
         if config.debug:
             print(
                 f"{Fore.GREEN}audit:   {wallet}:{buy.asset}="
-                f"{self.wallets[wallet][buy.asset].normalize():0,f} "
+                f"{self.wallets[wallet][buy.asset].balance.normalize():0,f} "
                 f"(+{buy.quantity.normalize():0,f})"
             )
+
+        if buy.t_type is TrType.UNSTAKE:
+            self.wallets[wallet][buy.asset].staked -= buy.quantity
+
+            if config.debug:
+                print(
+                    f"{Fore.GREEN}audit:   {wallet}:{buy.asset}(staked)="
+                    f"{self.wallets[wallet][buy.asset].staked.normalize():0,f} "
+                    f"(-{buy.quantity.normalize():0,f})"
+                )
+
+            if self.wallets[wallet][buy.asset].staked < 0:
+                bt_tqdm_write(
+                    f"{WARNING} Staked balance at {wallet}:{buy.asset} "
+                    f"is negative {self.wallets[wallet][buy.asset].staked.normalize():0,f}"
+                )
+
+        if buy.asset not in self.totals:
+            self.totals[buy.asset] = AuditTotals()
+
+        if buy.t_type is TrType.DEPOSIT and buy.is_crypto():
+            self.totals[buy.asset].transfers_mismatch += buy.quantity
+
+        if buy.t_type is not TrType.UNSTAKE:
+            self.totals[buy.asset].total += buy.quantity
 
     def _subtract_tokens(self, wallet: Wallet, sell: Sell) -> None:
         if wallet not in self.wallets:
             self.wallets[wallet] = {}
 
         if sell.asset not in self.wallets[wallet]:
-            self.wallets[wallet][sell.asset] = Decimal(0)
+            self.wallets[wallet][sell.asset] = AuditWallet()
 
-        self.wallets[wallet][sell.asset] -= sell.quantity
-
-        if sell.asset not in self.totals:
-            self.totals[sell.asset] = AuditTotals()
-
-        self.totals[sell.asset].total -= sell.quantity
-
-        if sell.t_type == TrType.WITHDRAWAL and sell.is_crypto():
-            self.totals[sell.asset].transfers_mismatch -= sell.quantity
+        self.wallets[wallet][sell.asset].balance -= sell.quantity
 
         if config.debug:
             print(
                 f"{Fore.GREEN}audit:   {wallet}:{sell.asset}="
-                f"{self.wallets[wallet][sell.asset].normalize():0,f} "
+                f"{self.wallets[wallet][sell.asset].balance.normalize():0,f} "
                 f"(-{sell.quantity.normalize():0,f})"
             )
-        if self.wallets[wallet][sell.asset] < 0 and sell.is_crypto():
-            tqdm.write(
+        if self.wallets[wallet][sell.asset].balance < 0 and sell.is_crypto():
+            bt_tqdm_write(
                 f"{WARNING} Balance at {wallet}:{sell.asset} "
-                f"is negative {self.wallets[wallet][sell.asset].normalize():0,f}"
+                f"is negative {self.wallets[wallet][sell.asset].balance.normalize():0,f}"
             )
+
+        if sell.t_type is TrType.STAKE:
+            self.wallets[wallet][sell.asset].staked += sell.quantity
+
+            if config.debug:
+                print(
+                    f"{Fore.GREEN}audit:   {wallet}:{sell.asset}(staked)="
+                    f"{self.wallets[wallet][sell.asset].staked.normalize():0,f} "
+                    f"(+{sell.quantity.normalize():0,f})"
+                )
+
+        if sell.asset not in self.totals:
+            self.totals[sell.asset] = AuditTotals()
+
+        if sell.t_type is TrType.WITHDRAWAL and sell.is_crypto():
+            self.totals[sell.asset].transfers_mismatch -= sell.quantity
+
+        if sell.t_type is not TrType.STAKE:
+            self.totals[sell.asset].total -= sell.quantity
 
     def _audit_log(
         self,
@@ -168,7 +205,8 @@ class AuditRecords:
         audit_log_entry = AuditLogEntry(
             quantity,
             fee,
-            self.wallets[wallet][asset],
+            self.wallets[wallet][asset].balance,
+            self.wallets[wallet][asset].staked,
             wallet,
             self.totals[asset].total,
             tr_part,
@@ -195,7 +233,7 @@ class AuditRecords:
                 continue
 
             if asset in holdings:
-                difference = holdings[asset].quantity - self.totals[asset].total
+                difference = self.totals[asset].total - holdings[asset].quantity
                 if not difference:
                     if config.debug:
                         print(f"{Fore.GREEN}check pool: {asset} (ok)")
@@ -234,7 +272,7 @@ class AuditRecords:
                 print(
                     f'{Fore.WHITE}{failure["asset"]:<8} {failure["audit_tot"].normalize():25,f} '
                     f'{failure["s104_tot"].normalize():25,f} '
-                    f'{Fore.RED}{(failure["s104_tot"] - failure["audit_tot"]).normalize():+25,f}'
+                    f'{Fore.RED}{(failure["audit_tot"] - failure["s104_tot"]).normalize():+25,f}'
                 )
             else:
                 print(

@@ -126,6 +126,7 @@ def _parse_deribit_row(
     data_row.timestamp = DataParser.parse_timestamp(
         f"{row_dict['Date']}.{row_dict['UserSeq'][-6:]}"
     )
+    data_row.worksheet_name = f"{WALLET} {asset}"
     data_row.parsed = True
 
     if "Fee Paid" in row_dict:
