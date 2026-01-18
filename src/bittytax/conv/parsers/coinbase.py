@@ -124,7 +124,7 @@ def _do_parse_coinbase(
     parser: DataParser,
     fiat_values: Tuple[Optional[Decimal], Optional[Decimal], Optional[Decimal], str],
 ) -> None:
-    (subtotal_ccy, total_ccy, fees_ccy, currency) = fiat_values
+    subtotal_ccy, total_ccy, fees_ccy, currency = fiat_values
     row_dict = data_row.row_dict
 
     if row_dict["Transaction Type"] == "Deposit":
