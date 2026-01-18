@@ -19,6 +19,45 @@ if TYPE_CHECKING:
 WALLET = "Bittrex"
 
 
+def parse_bittrex_trades_v5(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Time (UTC)"])
+
+    # Extract base and quote assets from the headers
+    if row_dict["Transaction"] == "Bought":
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Quantity (Base)"]),
+            buy_asset=row_dict["Base"],
+            sell_quantity=Decimal(row_dict["Total (Quote)"]),
+            sell_asset=row_dict["Quote"],
+            fee_quantity=Decimal(row_dict["Fees (Quote)"]),
+            fee_asset=row_dict["Quote"],
+            wallet=WALLET,
+        )
+    elif row_dict["Transaction"] == "Sold":
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Total (Quote)"]),
+            buy_asset=row_dict["Quote"],
+            sell_quantity=Decimal(row_dict["Quantity (Base)"]),
+            sell_asset=row_dict["Base"],
+            fee_quantity=Decimal(row_dict["Fees (Quote)"]),
+            fee_asset=row_dict["Quote"],
+            wallet=WALLET,
+        )
+    else:
+        raise UnexpectedTypeError(
+            parser.in_header.index("Transaction"),
+            "Transaction",
+            row_dict["Transaction"],
+        )
+
+
 def parse_bittrex_trades_v4(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
@@ -242,6 +281,28 @@ def parse_bittrex_withdrawals(
             wallet=WALLET,
         )
 
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Bittrex Trades",
+    [
+        "TXID",
+        "Time (UTC)",
+        "Transaction",
+        "Order Type",
+        "Market",
+        "Base",
+        "Quote",
+        "Price",
+        "Quantity (Base)",
+        "Fees (Quote)",
+        "Total (Quote)",
+        "Approx Value (USD)",
+        "Time In Force",
+        "Notes",
+    ],
+    row_handler=parse_bittrex_trades_v5,
+)
 
 DataParser(
     ParserType.EXCHANGE,
