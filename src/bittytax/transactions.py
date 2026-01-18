@@ -129,9 +129,9 @@ class TransactionHistory:
     def get_all_values(self, tr: TransactionRecord) -> None:
         if tr.buy and tr.buy.acquisition and tr.buy.cost is None:
             if tr.sell:
-                (tr.buy.cost, tr.buy.cost_fixed) = self.which_asset_value(tr)
+                tr.buy.cost, tr.buy.cost_fixed = self.which_asset_value(tr)
             else:
-                (tr.buy.cost, tr.buy.cost_fixed) = self.value_asset.get_value(
+                tr.buy.cost, tr.buy.cost_fixed = self.value_asset.get_value(
                     tr.buy.asset, tr.buy.timestamp, tr.buy.quantity
                 )
 
@@ -140,7 +140,7 @@ class TransactionHistory:
                 tr.sell.proceeds = tr.buy.cost
                 tr.sell.proceeds_fixed = tr.buy.cost_fixed
             else:
-                (tr.sell.proceeds, tr.sell.proceeds_fixed) = self.value_asset.get_value(
+                tr.sell.proceeds, tr.sell.proceeds_fixed = self.value_asset.get_value(
                     tr.sell.asset, tr.sell.timestamp, tr.sell.quantity
                 )
         if tr.fee and tr.fee.disposal and tr.fee.proceeds is None:
@@ -177,7 +177,7 @@ class TransactionHistory:
                     ) = self.value_asset.get_value(tr.fee.asset, tr.fee.timestamp, tr.fee.quantity)
             else:
                 # Fee paid in fiat
-                (tr.fee.proceeds, tr.fee.proceeds_fixed) = self.value_asset.get_value(
+                tr.fee.proceeds, tr.fee.proceeds_fixed = self.value_asset.get_value(
                     tr.fee.asset, tr.fee.timestamp, tr.fee.quantity
                 )
 
