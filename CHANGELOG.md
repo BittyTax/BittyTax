@@ -19,6 +19,7 @@
 - SwissBorg parser: added "Fee Adjustment" Type.
 - MEXC parser: added new export formats.
 - Ledger Live parser: added "DELEGATE" and "UNDELEGATE" Operation Types.
+- Bittrex parser: added new trades export format.
 ### Changed
 - Price tool: CoinDesk API deprecated.
 
