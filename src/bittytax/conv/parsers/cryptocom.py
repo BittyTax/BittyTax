@@ -211,6 +211,8 @@ def parse_crypto_com(
         "trading.limit_order.fiat_wallet.purchase_lock",
         "trading.limit_order.fiat_wallet.purchase_unlock",
         "trading.limit_order.fiat_wallet.sell_lock",
+        "trading.limit_order.cash_account.purchase_lock",
+        "trading.limit_order.cash_account.purchase_unlock",
         "finance.lockup.dpos_lock.crypto_wallet",
         "finance.dpos.staking.crypto_wallet",
         "finance.dpos.unstaking.crypto_wallet",

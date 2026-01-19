@@ -18,6 +18,7 @@
 - Kraken parser: added new export format. ([#469](https://github.com/BittyTax/BittyTax/issues/469))
 - Binance parser: added "Launchpool Airdrop", "HODLer Airdrops Distribution", "Megadrop Rewards", "Asset - Transfer", "Binance Card Spending", "Binance Card Cashback", "Crypto Box", "BNB Fee Deduction", "Transfer Between Main and Funding Wallet", "Fiat OCBS - Add Fiat and Fees", "Fiat Withdrawal", "Buy Crypto With Card", "Insurance Fund Refund" and "Cross Margin Liquidation - Repayment"  Operations.
 - Bittrex parser: added new trades export format.
+- Crypto.com parser: added "trading.limit_order.cash_account.purchase_lock" and "trading.limit_order.cash_account.purchase_unlock" transaction kinds.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
@@ -109,7 +110,7 @@ CoinDesk have deprecated their price API. You will need to remove it from your `
 - Uphold parser: added support for non-GBP exports.
 - Kraken parser: added "adjustment" type.
 - Conversion tool: added parser for Gate.io exchange. ([#152](https://github.com/BittyTax/BittyTax/issues/152))
-- Crypto.com parser: added "finance.lockup.dpos_compound_interest.crypto_wallet" and finance.lockup.dpos_lock.crypto_wallet" transaction kinds. ([#356](https://github.com/BittyTax/BittyTax/issues/356))
+- Crypto.com parser: added "finance.lockup.dpos_compound_interest.crypto_wallet" and "finance.lockup.dpos_lock.crypto_wallet" transaction kinds. ([#356](https://github.com/BittyTax/BittyTax/issues/356))
 - Kraken parser: handle "/" in trading pair.
 - Binance parser: added "Token Swap - Redenomination/Rebranding" and "Token Swap - Distribution" operation.
 - Bitstamp parser: added new export format.
