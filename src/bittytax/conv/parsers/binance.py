@@ -64,6 +64,7 @@ QUOTE_ASSETS = [
     "TRX",
     "TRY",
     "TUSD",
+    "U",
     "UAH",
     "USD",
     "USD1",
