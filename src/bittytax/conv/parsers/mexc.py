@@ -6,7 +6,7 @@ import re
 import sys
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import TYPE_CHECKING, Dict, List, NewType
+from typing import TYPE_CHECKING, Dict, List, NewType, Optional, Tuple
 
 from colorama import Fore
 from typing_extensions import Unpack
@@ -15,7 +15,7 @@ from ...bt_types import AssetSymbol, TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..datarow import TxRawPos
-from ..exceptions import DataRowError, UnexpectedTypeError
+from ..exceptions import DataRowError, UnexpectedTradingPairError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -24,6 +24,18 @@ if TYPE_CHECKING:
 PRECISION = Decimal("0." + "0" * 8)
 
 WALLET = "MEXC"
+
+QUOTE_ASSETS = [
+    "BRL",
+    "BTC",
+    "ETH",
+    "EUR",
+    "USD1",
+    "USDC",
+    "USDE",
+    "USDF",
+    "USDT",
+]
 
 Instrument = NewType("Instrument", str)
 
@@ -77,20 +89,78 @@ def parse_mexc_withdrawals(
     )
 
 
+def parse_mexc_trades_v3(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
+
+    base_asset, quote_asset = _split_trading_pair(row_dict["Pairs"])
+    if base_asset is None or quote_asset is None:
+        raise UnexpectedTradingPairError(
+            parser.in_header.index("Pairs"), "Pairs", row_dict["Pairs"]
+        )
+
+    fee_quantity, fee_asset = _get_fee(row_dict["Fee"])
+
+    if row_dict["Side"] == "Buy":
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Executed Amount"]),
+            buy_asset=base_asset,
+            sell_quantity=Decimal(row_dict["Total"]),
+            sell_asset=quote_asset,
+            fee_quantity=fee_quantity,
+            fee_asset=fee_asset,
+            wallet=WALLET,
+        )
+    elif row_dict["Side"] == "Sell":
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Total"]),
+            buy_asset=quote_asset,
+            sell_quantity=Decimal(row_dict["Executed Amount"]),
+            sell_asset=base_asset,
+            fee_quantity=fee_quantity,
+            fee_asset=fee_asset,
+            wallet=WALLET,
+        )
+    else:
+        raise UnexpectedTypeError(parser.in_header.index("Side"), "Side", row_dict["Side"])
+
+
+def _get_fee(data_field: str) -> Tuple[Optional[Decimal], str]:
+    match = re.match(r"^(\d+(\.\d+)?)([A-Z]+)$", data_field)
+
+    if match:
+        amount = match.group(1)
+        symbol = match.group(3)
+        return Decimal(amount), symbol
+    return None, ""
+
+
 def parse_mexc_trades_v2(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
 
+    base_asset, quote_asset = _split_trading_pair(row_dict["Pairs"])
+    if base_asset is None or quote_asset is None:
+        raise UnexpectedTradingPairError(
+            parser.in_header.index("Pairs"), "Pairs", row_dict["Pairs"]
+        )
+
     if row_dict["Direction"] == "Buy":
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Filled Quantity"]),
-            buy_asset=row_dict["Pairs"].split("_")[0],
+            buy_asset=base_asset,
             sell_quantity=Decimal(row_dict["Order Amount"]),
-            sell_asset=row_dict["Pairs"].split("_")[1],
+            sell_asset=quote_asset,
             wallet=WALLET,
         )
     elif row_dict["Direction"] == "Sell":
@@ -98,9 +168,9 @@ def parse_mexc_trades_v2(
             TrType.TRADE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Order Amount"]),
-            buy_asset=row_dict["Pairs"].split("_")[1],
+            buy_asset=quote_asset,
             sell_quantity=Decimal(row_dict["Filled Quantity"]),
-            sell_asset=row_dict["Pairs"].split("_")[0],
+            sell_asset=base_asset,
             wallet=WALLET,
         )
     else:
@@ -115,16 +185,22 @@ def parse_mexc_trades_v1(
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
 
+    base_asset, quote_asset = _split_trading_pair(row_dict["Pairs"])
+    if base_asset is None or quote_asset is None:
+        raise UnexpectedTradingPairError(
+            parser.in_header.index("Pairs"), "Pairs", row_dict["Pairs"]
+        )
+
     if row_dict["Side"] == "BUY":
         data_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Executed Amount"]),
-            buy_asset=row_dict["Pairs"].split("_")[0],
+            buy_asset=base_asset,
             sell_quantity=Decimal(row_dict["Total"]),
-            sell_asset=row_dict["Pairs"].split("_")[1],
+            sell_asset=quote_asset,
             fee_quantity=Decimal(row_dict["Fee"]),
-            fee_asset=row_dict["Pairs"].split("_")[0],
+            fee_asset=base_asset,
             wallet=WALLET,
         )
     elif row_dict["Side"] == "SELL":
@@ -132,11 +208,11 @@ def parse_mexc_trades_v1(
             TrType.TRADE,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Total"]),
-            buy_asset=row_dict["Pairs"].split("_")[1],
+            buy_asset=quote_asset,
             sell_quantity=Decimal(row_dict["Executed Amount"]),
-            sell_asset=row_dict["Pairs"].split("_")[0],
+            sell_asset=base_asset,
             fee_quantity=Decimal(row_dict["Fee"]),
-            fee_asset=row_dict["Pairs"].split("_")[1],
+            fee_asset=quote_asset,
             wallet=WALLET,
         )
     else:
@@ -275,7 +351,7 @@ def _parse_mexc_futures_row(
             )
 
         partial_close = 1 - (positions[instrument].size / (positions[instrument].size - size))
-        _close_position(data_rows, data_row, positions, instrument, partial_close)
+        _close_position(data_rows, data_row, positions, instrument, partial_close, parser)
     elif row_dict["Direction"] == "sell long":
         if instrument not in positions:
             raise RuntimeError(f"No position open for {instrument}")
@@ -292,7 +368,7 @@ def _parse_mexc_futures_row(
                 f"{positions[instrument].fee_asset} ({trading_fee.normalize():+0,f})\n"
             )
         partial_close = 1 - (positions[instrument].size / (positions[instrument].size - size))
-        _close_position(data_rows, data_row, positions, instrument, partial_close)
+        _close_position(data_rows, data_row, positions, instrument, partial_close, parser)
     else:
         raise UnexpectedTypeError(
             parser.in_header.index("Direction"), "Direction", row_dict["Direction"]
@@ -305,8 +381,15 @@ def _close_position(
     positions: Dict[Instrument, Position],
     instrument: Instrument,
     partial_close: Decimal,
+    parser: DataParser,
 ) -> None:
     row_dict = data_row.row_dict
+    _, quote_asset = _split_trading_pair(instrument)
+    if quote_asset is None:
+        raise UnexpectedTradingPairError(
+            parser.in_header.index("Futures Trading Pair"), "Futures Trading Pair", instrument
+        )
+
     realised_pnl = Decimal(row_dict["Closing PNL"])
     trading_fees = (positions[instrument].trading_fees * partial_close).quantize(PRECISION)
     fee_asset = positions[instrument].fee_asset
@@ -340,7 +423,7 @@ def _close_position(
             TrType.MARGIN_GAIN,
             data_row.timestamp,
             buy_quantity=realised_pnl,
-            buy_asset=instrument.split("_")[1],
+            buy_asset=quote_asset,
             wallet=WALLET,
             note=instrument,
         )
@@ -349,7 +432,7 @@ def _close_position(
             TrType.MARGIN_LOSS,
             data_row.timestamp,
             sell_quantity=abs(realised_pnl),
-            sell_asset=instrument.split("_")[1],
+            sell_asset=quote_asset,
             wallet=WALLET,
             note=instrument,
         )
@@ -366,6 +449,19 @@ def _close_position(
             note=instrument,
         )
         data_rows.append(dup_data_row)
+
+
+def _split_trading_pair(trading_pair: str) -> Tuple[Optional[str], Optional[str]]:
+    if "_" in trading_pair:
+        base, quote = trading_pair.split("_", 1)
+        return base, quote
+
+    for quote_asset in QUOTE_ASSETS:
+        if trading_pair.endswith(quote_asset):
+            base = trading_pair[: -len(quote_asset)]
+            return base, quote_asset
+
+    return None, None
 
 
 DataParser(
@@ -465,6 +561,14 @@ DataParser(
 )
 
 # Export Trade History, this is preferred as it contains fees
+DataParser(
+    ParserType.EXCHANGE,
+    "MEXC Trades",
+    ["UID", "Pairs", "Time", "Side", "Filled Price", "Executed Amount", "Total", "Fee", "Role"],
+    worksheet_name="MEXC T",
+    row_handler=parse_mexc_trades_v3,
+)
+
 DataParser(
     ParserType.EXCHANGE,
     "MEXC Trades",
