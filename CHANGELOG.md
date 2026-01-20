@@ -19,6 +19,7 @@
 - Binance parser: added "Launchpool Airdrop", "HODLer Airdrops Distribution", "Megadrop Rewards", "Asset - Transfer", "Binance Card Spending", "Binance Card Cashback", "Crypto Box", "BNB Fee Deduction", "Transfer Between Main and Funding Wallet", "Fiat OCBS - Add Fiat and Fees", "Fiat Withdrawal", "Buy Crypto With Card", "Insurance Fund Refund" and "Cross Margin Liquidation - Repayment"  Operations.
 - Bittrex parser: added new trades export format.
 - Crypto.com parser: added "trading.limit_order.cash_account.purchase_lock" and "trading.limit_order.cash_account.purchase_unlock" transaction kinds.
+- MEXC parser: added new export formats.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
