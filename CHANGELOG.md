@@ -20,6 +20,7 @@
 - Bittrex parser: added new trades export format.
 - Crypto.com parser: added "trading.limit_order.cash_account.purchase_lock" and "trading.limit_order.cash_account.purchase_unlock" transaction kinds.
 - MEXC parser: added new export formats.
+- Ledger Live parser: added "DELEGATE" and "UNDELEGATE" Operation Types.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.

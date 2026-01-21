@@ -70,7 +70,15 @@ def parse_ledger_live(
             fee_asset=fee_asset,
             wallet=WALLET,
         )
-    elif row_dict["Operation Type"] in ("FEES", "REVEAL", "BOND", "UNBOND", "WITHDRAW_UNBONDED"):
+    elif row_dict["Operation Type"] in (
+        "FEES",
+        "REVEAL",
+        "BOND",
+        "UNBOND",
+        "WITHDRAW_UNBONDED",
+        "DELEGATE",
+        "UNDELEGATE",
+    ):
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
             data_row.timestamp,
