@@ -200,7 +200,7 @@ def parse_mexc_trades_v1(
             sell_quantity=Decimal(row_dict["Total"]),
             sell_asset=quote_asset,
             fee_quantity=Decimal(row_dict["Fee"]),
-            fee_asset=base_asset,
+            fee_asset=quote_asset,
             wallet=WALLET,
         )
     elif row_dict["Side"] == "SELL":
