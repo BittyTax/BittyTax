@@ -314,6 +314,14 @@ def _parse_kraken_ledgers_row(
                     sell_asset=_normalise_asset(row_dict["asset"]),
                     wallet=WALLET,
                 )
+        elif row_dict["subtype"] == "airdrop":
+            data_row.t_record = TransactionOutRecord(
+                TrType.AIRDROP,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["amount"]),
+                buy_asset=_normalise_asset(row_dict["asset"]),
+                wallet=WALLET,
+            )
         elif row_dict["subtype"] in (
             "spottostaking",
             "stakingtospot",
@@ -402,7 +410,13 @@ def _parse_kraken_ledgers_row(
                     fee_asset=_normalise_asset(row_dict["asset"]),
                     wallet=WALLET,
                 )
-        elif row_dict["subtype"] in ("migration", "autoallocate", "allocation", "deallocation"):
+        elif row_dict["subtype"] in (
+            "migration",
+            "autoallocate",
+            "allocation",
+            "deallocation",
+            "autoallocation",
+        ):
             # Skip internal transfers
             return
         elif row_dict["subtype"] == "":

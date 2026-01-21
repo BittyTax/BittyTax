@@ -13,6 +13,7 @@
 - Conversion tool: added parser for Coinbase Prime exchange.
 - Kraken parser: added new export format. ([#469](https://github.com/BittyTax/BittyTax/issues/469))
 - sFOX parser: added tramsaction history parser.
+- Kraken parser: added "earn" subtypes "airdrop" and "autoallocation".
 ### Changed
 - Price tool: CoinDesk API deprecated.
 
