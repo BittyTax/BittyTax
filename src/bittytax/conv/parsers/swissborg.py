@@ -119,6 +119,18 @@ def _parse_swissborg_row(
             fee_value=fee_value if row_dict["Currency"] != config.ccy else None,
             wallet=WALLET,
         )
+    elif row_dict["Type"] == "Fee Adjustment":
+        gross_amount = DataParser.convert_currency(
+            row_dict[f"Gross amount ({currency})"], currency, data_row.timestamp
+        )
+        data_row.t_record = TransactionOutRecord(
+            TrType.FEE_REBATE,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Gross amount"]),
+            buy_asset=row_dict["Currency"],
+            buy_value=gross_amount if row_dict["Currency"] != config.ccy else None,
+            wallet=WALLET,
+        )
     else:
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
