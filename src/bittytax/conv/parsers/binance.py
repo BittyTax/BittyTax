@@ -596,6 +596,8 @@ def _parse_binance_statements_row(
         "Transfer Between Spot Account and CM Futures Account",
         "Transfer Between Main Account/Futures and Margin Account",
         "Transfer Between Main and Funding Wallet",
+        "Transfer Between Main Account And Mining Account",
+        "Transfer Between Main And Mining Account",
         "Launchpool Subscription/Redemption",
         "Launchpad Subscribe",
         "Simple Earn Flexible Subscription",  # See merger
