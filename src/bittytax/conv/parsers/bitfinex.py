@@ -68,9 +68,12 @@ def parse_bitfinex_deposits_withdrawals(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
+
+    date_value = row_dict.get("DATE") or row_dict.get("UPDATED")
     data_row.timestamp = DataParser.parse_timestamp(
-        row_dict["DATE"], dayfirst=config.date_is_day_first
+        date_value, dayfirst=config.date_is_day_first
     )
+
     data_row.tx_raw = TxRawPos(
         parser.in_header.index("TRANSACTION ID"),
         tx_dest_pos=parser.in_header.index("DESCRIPTION"),
@@ -153,6 +156,25 @@ DataParser(
     ["#", "PAIR", "AMOUNT", "PRICE", "FEE", "FEE CURRENCY", "DATE", "ORDER ID"],
     worksheet_name="Bitfinex T",
     row_handler=parse_bitfinex_trades,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Bitfinex Deposits/Withdrawals",
+    [
+        "#",
+        "STARTED",
+        "UPDATED",
+        "CURRENCY",
+        "STATUS",
+        "AMOUNT",
+        "FEES",
+        "DESCRIPTION",
+        "TRANSACTION ID",
+        "NOTE",
+    ],
+    worksheet_name="Bitfinex D,W",
+    row_handler=parse_bitfinex_deposits_withdrawals,
 )
 
 DataParser(
