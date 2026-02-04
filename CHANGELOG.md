@@ -19,7 +19,7 @@
 - Kraken parser: added new export format. ([#469](https://github.com/BittyTax/BittyTax/issues/469))
 - Binance parser: added "Launchpool Airdrop", "HODLer Airdrops Distribution", "Megadrop Rewards", "Asset - Transfer", "Binance Card Spending", "Binance Card Cashback", "Crypto Box", "BNB Fee Deduction", "Transfer Between Main and Funding Wallet", "Transfer Between Main Account And Mining Account", "Transfer Between Main And Mining Account", "Fiat OCBS - Add Fiat and Fees", "Fiat Withdrawal", "Buy Crypto With Card", "Insurance Fund Refund" and "Cross Margin Liquidation - Repayment"  Operations.
 - Bittrex parser: added new trades export format.
-- Crypto.com parser: added "trading.limit_order.cash_account.purchase_lock" and "trading.limit_order.cash_account.purchase_unlock" transaction kinds.
+- Crypto.com parser: added "trading.limit_order.cash_account.purchase_lock", "trading.limit_order.cash_account.purchase_unlock", "trading.limit_order.fiat_wallet.sell_unlock", "trading.limit_order.cash_account.sell_unlock", "trading.limit_order.cash_account.sell_lock", "trading.limit_order.crypto_wallet.fund_lock", "trading.limit_order.crypto_wallet.fund_unlock", "viban_deposit_precredit", "viban_deposit_precredit_repayment", "trading.crypto_purchase.google_pay", "trading.limit_order.cash_account.purchase_commit", "trading.limit_order.crypto_wallet.exchange" transaction kinds.
 - MEXC parser: added new export formats.
 - Ledger Live parser: added "DELEGATE" and "UNDELEGATE" Operation Types.
 - Kraken parser: added "earn" subtypes "airdrop" and "autoallocation".
