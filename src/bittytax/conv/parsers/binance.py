@@ -58,6 +58,7 @@ QUOTE_ASSETS = [
     "NGN",
     "PAX",
     "PLN",
+    "RLUSD",
     "RON",
     "RUB",
     "SOL",
