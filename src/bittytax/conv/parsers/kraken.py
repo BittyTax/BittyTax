@@ -32,6 +32,7 @@ QUOTE_ASSETS = [
     "EUR",
     "EURC",
     "EUROP",
+    "FIDD",
     "GBP",
     "JPY",
     "POL",
