@@ -435,8 +435,8 @@ def _parse_binance_statements_row(
     elif row_dict["Operation"] in (
         "Distribution",
         "Asset - Transfer",
-        "Token Swap - Redenomination/Rebranding",
         "Token Swap - Distribution",
+        "Token Swap - Redenomination/Rebranding",
     ):
         if Decimal(row_dict["Change"]) > 0:
             data_row.t_record = TransactionOutRecord(
@@ -497,7 +497,6 @@ def _parse_binance_statements_row(
             wallet=WALLET,
         )
     elif row_dict["Operation"] in ("Asset Recovery", "Leveraged Coin Consolidation"):
-        # Replace with REBASE in the future
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
             data_row.timestamp,
@@ -992,7 +991,7 @@ def _get_bnb_quantity(op_rows: List["DataRow"]) -> Optional[Decimal]:
     return buy_quantity
 
 
-def _make_trade(op_rows: List["DataRow"]) -> None:
+def _make_trade(op_rows: List["DataRow"], t_type: TrType = TrType.TRADE) -> None:
     buy_quantity = sell_quantity = None
     buy_asset = sell_asset = ""
     trade_row = None
@@ -1020,7 +1019,7 @@ def _make_trade(op_rows: List["DataRow"]) -> None:
 
     if trade_row:
         trade_row.t_record = TransactionOutRecord(
-            TrType.TRADE,
+            t_type,
             trade_row.timestamp,
             buy_quantity=buy_quantity,
             buy_asset=buy_asset,
