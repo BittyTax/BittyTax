@@ -14,6 +14,7 @@
 - Conversion tool: added parser for Coinbase Prime exchange.
 - Kraken parser: added new export format. ([#469](https://github.com/BittyTax/BittyTax/issues/469))
 - sFOX parser: added tramsaction history parser.
+- Crypto.com parser: added "trading.limit_order.cash_account.purchase_lock", "trading.limit_order.cash_account.purchase_unlock", "trading.limit_order.fiat_wallet.sell_unlock", "trading.limit_order.cash_account.sell_unlock", "trading.limit_order.cash_account.sell_lock", "trading.limit_order.crypto_wallet.fund_lock", "trading.limit_order.crypto_wallet.fund_unlock", "viban_deposit_precredit", "viban_deposit_precredit_repayment", "trading.crypto_purchase.google_pay", "trading.limit_order.cash_account.purchase_commit", "trading.limit_order.crypto_wallet.exchange" transaction kinds.
 - Kraken parser: added "earn" subtypes "airdrop" and "autoallocation".
 - SwissBorg parser: added "Fee Adjustment" Type.
 - MEXC parser: added new export formats.

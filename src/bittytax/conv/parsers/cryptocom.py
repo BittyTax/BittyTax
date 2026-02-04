@@ -89,6 +89,8 @@ def parse_crypto_com(
         "crypto_exchange",
         "crypto_to_van_sell_order",
         "trading.limit_order.fiat_wallet.sell_commit",
+        "trading.limit_order.cash_account.purchase_commit",
+        "trading.limit_order.crypto_wallet.exchange",
         "recurring_buy_order",
     ):
         data_row.t_record = TransactionOutRecord(
@@ -105,6 +107,7 @@ def parse_crypto_com(
         "crypto_purchase",
         "dust_conversion_debited",
         "dust_conversion_credited",
+        "trading.crypto_purchase.google_pay",
     ):
         if Decimal(row_dict["Amount"]) > 0:
             data_row.t_record = TransactionOutRecord(
@@ -211,9 +214,18 @@ def parse_crypto_com(
         "trading.limit_order.fiat_wallet.purchase_lock",
         "trading.limit_order.fiat_wallet.purchase_unlock",
         "trading.limit_order.fiat_wallet.sell_lock",
+        "trading.limit_order.fiat_wallet.sell_unlock",
+        "trading.limit_order.cash_account.purchase_lock",
+        "trading.limit_order.cash_account.purchase_unlock",
+        "trading.limit_order.cash_account.sell_unlock",
+        "trading.limit_order.cash_account.sell_lock",
+        "trading.limit_order.crypto_wallet.fund_lock",
+        "trading.limit_order.crypto_wallet.fund_unlock",
         "finance.lockup.dpos_lock.crypto_wallet",
         "finance.dpos.staking.crypto_wallet",
         "finance.dpos.unstaking.crypto_wallet",
+        "viban_deposit_precredit",
+        "viban_deposit_precredit_repayment",
     ):
         return
     elif row_dict["Transaction Kind"] == "":
