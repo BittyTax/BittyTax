@@ -257,7 +257,7 @@ def _do_parse_coinbase(
             sell_value=abs(total_ccy) if total_ccy is not None else None,
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] in ("Admin Debit", "Subscription"):
+    elif row_dict["Transaction Type"] in ("Admin Debit", "Subscription", "Card Spend"):
         data_row.t_record = TransactionOutRecord(
             TrType.SPEND,
             data_row.timestamp,
@@ -276,7 +276,12 @@ def _do_parse_coinbase(
             sell_asset=row_dict["Asset"],
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] in ("Buy", "Advanced Trade Buy", "Advance Trade Buy"):
+    elif row_dict["Transaction Type"] in (
+        "Buy",
+        "Advanced Trade Buy",
+        "Advance Trade Buy",
+        "Credit",
+    ):
         quote_asset, subtotal, fees = _get_trade_info(row_dict["Notes"])
         if not quote_asset:
             raise UnexpectedContentError(
@@ -388,6 +393,25 @@ def _do_parse_coinbase(
             sell_value=total_ccy,
             wallet=WALLET,
         )
+    elif row_dict["Transaction Type"] in ("Asset Migration", "Retail Eth2 Deprecation"):
+        if Decimal(row_dict["Quantity Transacted"]) > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.AIRDROP,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["Quantity Transacted"]),
+                buy_asset=row_dict["Asset"],
+                buy_value=total_ccy if total_ccy is not None else None,
+                wallet=WALLET,
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.SPEND,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
+                sell_asset=row_dict["Asset"],
+                sell_value=abs(total_ccy) if total_ccy is not None else None,
+                wallet=WALLET,
+            )
     elif row_dict["Transaction Type"] in (
         "Vault Withdrawal",
         "Cash to Savings",
@@ -422,7 +446,7 @@ def _get_convert_info(notes: str) -> Tuple[Optional[Decimal], str]:
 def _get_trade_info(notes: str) -> Tuple[str, Optional[Decimal], Optional[Decimal]]:
     match = re.match(
         r"^(?:Bought|Sold) ([\d|,]+\.\d+|[\d|,]+) (\w+) for [£€$]?([\d|,]+\.\d+|[\d|,]+) (\w+)"
-        r"(?: on )?(\w+-\w+)?(?: at )?([\d|,]+\.\d+|[\d|,]+)? ?(\w+\/\w+)?$",
+        r"(?: on )?(\w+-\w+)?(?: at )?([\d|,]+\.\d+|[\d|,]+)? ?(\w+\/\w+)?(?:\s+.+)?$",
         notes,
     )
 
