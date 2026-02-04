@@ -5,6 +5,7 @@
 - Accounting tool: fixed duplicate worksheet names in Excel audit log.
 - Accounting tool: fixed worksheet name validation.
 - MEXC parser: fees for spot trades should always be the quote asset.
+- Coinbase parser: fixed regex to ingore extra descriptions at end of trades.
 ### Added
 - MEXC parser: added new export formats.
 - Cash App parser: added new export format.
@@ -22,6 +23,7 @@
 - Bittrex parser: added new trades export format.
 - Bitfinex parser: added new deposits/withdrawals export format.
 - Binance parser: added "Launchpool Airdrop", "HODLer Airdrops Distribution", "Megadrop Rewards", "Asset - Transfer", "Binance Card Spending", "Binance Card Cashback", "Crypto Box", "BNB Fee Deduction", "Transfer Between Main and Funding Wallet", "Transfer Between Main Account And Mining Account", "Transfer Between Main And Mining Account", "Fiat OCBS - Add Fiat and Fees", "Fiat Withdrawal", "Buy Crypto With Card", "Insurance Fund Refund" and "Cross Margin Liquidation - Repayment"  Operations.
+- Coinbase parser: added "Card Spend", "Credit", "Asset Migration", "Retail Eth2 Deprecation" transaction types.
 ### Changed
 - Price tool: CoinDesk API deprecated.
 
