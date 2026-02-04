@@ -24,6 +24,7 @@
 - Ledger Live parser: added "DELEGATE" and "UNDELEGATE" Operation Types.
 - Kraken parser: added "earn" subtypes "airdrop" and "autoallocation".
 - SwissBorg parser: added "Fee Adjustment" Type.
+- Bitfinex parser: added new deposits/withdrawals export format.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
