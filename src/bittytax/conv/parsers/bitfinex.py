@@ -69,9 +69,11 @@ def parse_bitfinex_deposits_withdrawals(
 ) -> None:
     row_dict = data_row.row_dict
 
-    date_value = row_dict.get("DATE") or row_dict.get("UPDATED")
+    if "DATE" in row_dict:
+        row_dict["UPDATED"] = row_dict["DATE"]
+
     data_row.timestamp = DataParser.parse_timestamp(
-        date_value, dayfirst=config.date_is_day_first
+        row_dict["UPDATED"], dayfirst=config.date_is_day_first
     )
 
     data_row.tx_raw = TxRawPos(
