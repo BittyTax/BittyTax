@@ -2,16 +2,20 @@
 # (c) Nano Nano Ltd 2019
 
 import re
+import sys
+from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
+from colorama import Fore
 from typing_extensions import Unpack
 
 from ...bt_types import TrType, UnmappedType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
 from ..datarow import TxRawPos
-from ..exceptions import UnexpectedContentError, UnexpectedTypeError
+from ..exceptions import DataRowError, UnexpectedContentError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -21,107 +25,186 @@ WALLET = "Coinbase"
 DUPLICATE = UnmappedType("Duplicate")
 
 
+@dataclass
+class TxRecord:
+    currency: str
+    subtotal_ccy: Optional[Decimal]
+    total_ccy: Optional[Decimal]
+    fees_ccy: Optional[Decimal]
+    data_row: "DataRow"
+
+
 def parse_coinbase_v4(
-    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
-    row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
+    tx_times: Dict[datetime, List[TxRecord]] = {}
+    tx_rows: List[TxRecord] = []
 
-    currency = row_dict["Price Currency"]
-    subtotal_ccy = DataParser.convert_currency(
-        re.sub(r"[^-\d.]+", "", row_dict["Subtotal"]),
-        currency,
-        data_row.timestamp,
-    )
-    total_ccy = DataParser.convert_currency(
-        re.sub(r"[^-\d.]+", "", row_dict["Total (inclusive of fees and/or spread)"]),
-        currency,
-        data_row.timestamp,
-    )
-    fees_ccy = DataParser.convert_currency(
-        re.sub(r"[^-\d.]+", "", row_dict["Fees and/or Spread"]),
-        currency,
-        data_row.timestamp,
-    )
+    for dr in data_rows:
+        dr.timestamp = DataParser.parse_timestamp(dr.row_dict["Timestamp"])
+        currency = dr.row_dict["Price Currency"]
+        subtotal_ccy = DataParser.convert_currency(
+            re.sub(r"[^-\d.]+", "", dr.row_dict["Subtotal"]),
+            currency,
+            dr.timestamp,
+        )
+        total_ccy = DataParser.convert_currency(
+            re.sub(r"[^-\d.]+", "", dr.row_dict["Total (inclusive of fees and/or spread)"]),
+            currency,
+            dr.timestamp,
+        )
+        fees_ccy = DataParser.convert_currency(
+            re.sub(r"[^-\d.]+", "", dr.row_dict["Fees and/or Spread"]),
+            currency,
+            dr.timestamp,
+        )
+        tx_record = TxRecord(currency, subtotal_ccy, total_ccy, fees_ccy, dr)
 
-    _do_parse_coinbase(data_row, parser, (subtotal_ccy, total_ccy, fees_ccy, currency))
+        if dr.timestamp not in tx_times:
+            tx_times[dr.timestamp] = []
+
+        tx_times[dr.timestamp].append(tx_record)
+        tx_rows.append(tx_record)
+
+    _do_parse_coinbase(tx_times, tx_rows, parser)
 
 
 def parse_coinbase_v3(
-    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
-    row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
+    tx_times: Dict[datetime, List[TxRecord]] = {}
+    tx_rows: List[TxRecord] = []
 
-    currency = row_dict["Spot Price Currency"]
-    subtotal_ccy = DataParser.convert_currency(
-        row_dict["Subtotal"],
-        currency,
-        data_row.timestamp,
-    )
-    total_ccy = DataParser.convert_currency(
-        row_dict["Total (inclusive of fees and/or spread)"],
-        currency,
-        data_row.timestamp,
-    )
-    fees_ccy = DataParser.convert_currency(
-        row_dict["Fees and/or Spread"],
-        currency,
-        data_row.timestamp,
-    )
+    for dr in data_rows:
+        dr.timestamp = DataParser.parse_timestamp(dr.row_dict["Timestamp"])
+        currency = dr.row_dict["Spot Price Currency"]
+        subtotal_ccy = DataParser.convert_currency(
+            dr.row_dict["Subtotal"],
+            currency,
+            dr.timestamp,
+        )
+        total_ccy = DataParser.convert_currency(
+            dr.row_dict["Total (inclusive of fees and/or spread)"],
+            currency,
+            dr.timestamp,
+        )
+        fees_ccy = DataParser.convert_currency(
+            dr.row_dict["Fees and/or Spread"],
+            currency,
+            dr.timestamp,
+        )
+        tx_record = TxRecord(currency, subtotal_ccy, total_ccy, fees_ccy, dr)
 
-    _do_parse_coinbase(data_row, parser, (subtotal_ccy, total_ccy, fees_ccy, currency))
+        if dr.timestamp not in tx_times:
+            tx_times[dr.timestamp] = []
+
+        tx_times[dr.timestamp].append(tx_record)
+        tx_rows.append(tx_record)
+
+    _do_parse_coinbase(tx_times, tx_rows, parser)
 
 
 def parse_coinbase_v2(
-    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
-    row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
+    tx_times: Dict[datetime, List[TxRecord]] = {}
+    tx_rows: List[TxRecord] = []
 
-    currency = row_dict["Spot Price Currency"]
-    subtotal_ccy = DataParser.convert_currency(
-        row_dict["Subtotal"],
-        currency,
-        data_row.timestamp,
-    )
-    total_ccy = DataParser.convert_currency(
-        row_dict["Total (inclusive of fees)"],
-        currency,
-        data_row.timestamp,
-    )
-    fees_ccy = DataParser.convert_currency(
-        row_dict["Fees"],
-        currency,
-        data_row.timestamp,
-    )
+    for dr in data_rows:
+        dr.timestamp = DataParser.parse_timestamp(dr.row_dict["Timestamp"])
+        currency = dr.row_dict["Spot Price Currency"]
+        subtotal_ccy = DataParser.convert_currency(
+            dr.row_dict["Subtotal"],
+            currency,
+            dr.timestamp,
+        )
+        total_ccy = DataParser.convert_currency(
+            dr.row_dict["Total (inclusive of fees)"],
+            currency,
+            dr.timestamp,
+        )
+        fees_ccy = DataParser.convert_currency(
+            dr.row_dict["Fees"],
+            currency,
+            dr.timestamp,
+        )
+        tx_record = TxRecord(currency, subtotal_ccy, total_ccy, fees_ccy, dr)
 
-    _do_parse_coinbase(data_row, parser, (subtotal_ccy, total_ccy, fees_ccy, currency))
+        if dr.timestamp not in tx_times:
+            tx_times[dr.timestamp] = []
+
+        tx_times[dr.timestamp].append(tx_record)
+        tx_rows.append(tx_record)
+
+    _do_parse_coinbase(tx_times, tx_rows, parser)
 
 
 def parse_coinbase_v1(
-    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+    data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
-    row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Timestamp"])
+    tx_times: Dict[datetime, List[TxRecord]] = {}
+    tx_rows: List[TxRecord] = []
 
-    currency = parser.args[0].group(1)
-    subtotal_ccy = DataParser.convert_currency(
-        row_dict[f"{currency} Subtotal"], currency, data_row.timestamp
-    )
-    total_ccy = DataParser.convert_currency(
-        row_dict[f"{currency} Total (inclusive of fees)"], currency, data_row.timestamp
-    )
-    fees_ccy = DataParser.convert_currency(
-        row_dict[f"{currency} Fees"], currency, data_row.timestamp
-    )
+    for dr in data_rows:
+        dr.timestamp = DataParser.parse_timestamp(dr.row_dict["Timestamp"])
+        currency = parser.args[0].group(1)
+        subtotal_ccy = DataParser.convert_currency(
+            dr.row_dict[f"{currency} Subtotal"], currency, dr.timestamp
+        )
+        total_ccy = DataParser.convert_currency(
+            dr.row_dict[f"{currency} Total (inclusive of fees)"], currency, dr.timestamp
+        )
+        fees_ccy = DataParser.convert_currency(
+            dr.row_dict[f"{currency} Fees"], currency, dr.timestamp
+        )
+        tx_record = TxRecord(currency, subtotal_ccy, total_ccy, fees_ccy, dr)
 
-    _do_parse_coinbase(data_row, parser, (subtotal_ccy, total_ccy, fees_ccy, currency))
+        if dr.timestamp not in tx_times:
+            tx_times[dr.timestamp] = []
+
+        tx_times[dr.timestamp].append(tx_record)
+        tx_rows.append(tx_record)
+
+    _do_parse_coinbase(tx_times, tx_rows, parser)
 
 
 def _do_parse_coinbase(
-    data_row: "DataRow",
+    tx_times: Dict[datetime, List[TxRecord]], tx_rows: List[TxRecord], parser: DataParser
+) -> None:
+    for tx in tx_rows:
+        data_row = tx.data_row
+        if config.debug:
+            if parser.in_header_row_num is None:
+                raise RuntimeError("Missing in_header_row_num")
+
+            sys.stderr.write(
+                f"{Fore.YELLOW}conv: "
+                f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
+            )
+
+        if data_row.parsed:
+            continue
+
+        try:
+            _do_parse_coinbase_row(
+                tx_times,
+                parser,
+                data_row,
+                (tx.subtotal_ccy, tx.total_ccy, tx.fees_ccy, tx.currency),
+            )
+        except DataRowError as e:
+            data_row.failure = e
+        except (ValueError, ArithmeticError) as e:
+            if config.debug:
+                raise
+
+            data_row.failure = e
+
+
+def _do_parse_coinbase_row(
+    _tx_times: Dict[datetime, List[TxRecord]],
     parser: DataParser,
+    data_row: "DataRow",
     fiat_values: Tuple[Optional[Decimal], Optional[Decimal], Optional[Decimal], str],
 ) -> None:
     subtotal_ccy, total_ccy, fees_ccy, currency = fiat_values
@@ -480,6 +563,49 @@ def _get_trade_info(notes: str) -> Tuple[str, Optional[Decimal], Optional[Decima
     return "", None, None
 
 
+def _make_trade(tx_rows: List[TxRecord], t_type: TrType = TrType.TRADE) -> None:
+    buy_quantity = sell_quantity = None
+    buy_asset = sell_asset = ""
+    buy_value = sell_value = None
+    trade_row = None
+
+    for tx in tx_rows:
+        row_dict = tx.data_row.row_dict
+
+        if Decimal(row_dict["Quantity Transacted"]) > 0:
+            if buy_quantity is None:
+                buy_quantity = Decimal(row_dict["Quantity Transacted"])
+                buy_asset = row_dict["Asset"]
+                buy_value = tx.total_ccy if tx.total_ccy is not None else None
+                tx.data_row.parsed = True
+
+        if Decimal(row_dict["Quantity Transacted"]) <= 0:
+            if sell_quantity is None:
+                sell_quantity = abs(Decimal(row_dict["Quantity Transacted"]))
+                sell_asset = row_dict["Asset"]
+                sell_value = abs(tx.total_ccy) if tx.total_ccy is not None else None
+                tx.data_row.parsed = True
+
+        if not trade_row:
+            trade_row = tx.data_row
+
+        if buy_quantity and sell_quantity:
+            break
+
+    if trade_row:
+        trade_row.t_record = TransactionOutRecord(
+            t_type,
+            trade_row.timestamp,
+            buy_quantity=buy_quantity,
+            buy_asset=buy_asset,
+            buy_value=buy_value,
+            sell_quantity=sell_quantity,
+            sell_asset=sell_asset,
+            sell_value=sell_value,
+            wallet=WALLET,
+        )
+
+
 def parse_coinbase_transfers(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
@@ -673,7 +799,7 @@ DataParser(
         "Notes",
     ],
     worksheet_name="Coinbase",
-    row_handler=parse_coinbase_v4,
+    all_handler=parse_coinbase_v4,
 )
 
 DataParser(
@@ -692,7 +818,7 @@ DataParser(
         "Notes",
     ],
     worksheet_name="Coinbase",
-    row_handler=parse_coinbase_v4,
+    all_handler=parse_coinbase_v4,
 )
 
 DataParser(
@@ -711,7 +837,7 @@ DataParser(
         "Notes",
     ],
     worksheet_name="Coinbase",
-    row_handler=parse_coinbase_v3,
+    all_handler=parse_coinbase_v3,
 )
 
 DataParser(
@@ -730,7 +856,7 @@ DataParser(
         "Notes",
     ],
     worksheet_name="Coinbase",
-    row_handler=parse_coinbase_v2,
+    all_handler=parse_coinbase_v2,
 )
 
 DataParser(
@@ -748,7 +874,7 @@ DataParser(
         "Notes",
     ],
     worksheet_name="Coinbase",
-    row_handler=parse_coinbase_v1,
+    all_handler=parse_coinbase_v1,
 )
 
 DataParser(
