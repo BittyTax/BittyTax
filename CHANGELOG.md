@@ -4,6 +4,7 @@
 - Coinbase parser: fixed negative values for Advanced Trade Sells.
 - MEXC parser: fees for spot trades should always be the quote asset.
 - Coinbase parser: fixed regex to ingore extra descriptions at end of trades.
+- Gemini parser: delete blank rows.
 ### Added
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
 - Exodus parser: added new export format. ([#467](https://github.com/BittyTax/BittyTax/issues/467))
