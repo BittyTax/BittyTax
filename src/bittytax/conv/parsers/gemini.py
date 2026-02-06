@@ -58,8 +58,8 @@ def parse_gemini(
                 f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
             )
 
-        if not data_row.row_dict["Date"]:
-            # Delete blank row with totals
+        if not data_row.row_dict or not data_row.row_dict["Date"]:
+            # Delete blank rows
             del data_rows[row_index]
             continue
 

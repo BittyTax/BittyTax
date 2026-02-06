@@ -6,6 +6,7 @@
 - Accounting tool: fixed worksheet name validation.
 - MEXC parser: fees for spot trades should always be the quote asset.
 - Coinbase parser: fixed regex to ingore extra descriptions at end of trades.
+- Gemini parser: delete blank rows.
 ### Added
 - MEXC parser: added new export formats.
 - Cash App parser: added new export format.
