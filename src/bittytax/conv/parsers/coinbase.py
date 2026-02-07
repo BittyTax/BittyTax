@@ -4,7 +4,7 @@
 import re
 import sys
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
@@ -171,7 +171,7 @@ def parse_coinbase_v1(
 def _do_parse_coinbase(
     tx_times: Dict[datetime, List[TxRecord]], tx_rows: List[TxRecord], parser: DataParser
 ) -> None:
-    for tx in tx_rows:
+    for tx in reversed(tx_rows):
         data_row = tx.data_row
         if config.debug:
             if parser.in_header_row_num is None:
@@ -349,7 +349,7 @@ def _do_parse_coinbase_row(
             sell_value=abs(total_ccy) if total_ccy is not None else None,
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] == "Send":
+    elif row_dict["Transaction Type"] in ("Send", "Retail MGX DEX Send"):
         # Crypto withdrawal
         data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Notes"))
         data_row.t_record = TransactionOutRecord(
@@ -357,6 +357,8 @@ def _do_parse_coinbase_row(
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
             sell_asset=row_dict["Asset"],
+            fee_quantity=fees_ccy,
+            fee_asset=config.ccy,
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] in (
@@ -476,16 +478,20 @@ def _do_parse_coinbase_row(
             sell_value=total_ccy,
             wallet=WALLET,
         )
-    elif row_dict["Transaction Type"] in ("Asset Migration", "Retail Eth2 Deprecation"):
-        tx_rows = [
-            tx
-            for tx in tx_times[data_row.timestamp]
-            if tx.data_row.row_dict["Transaction Type"] == row_dict["Transaction Type"]
-            and not tx.data_row.parsed
-        ]
+    elif row_dict["Transaction Type"] in (
+        "Asset Migration",
+        "Retail Eth2 Deprecation",
+        "Retail MGX DEX Buy",
+    ):
+        tx_rows = _get_tx_rows(tx_times, data_row.timestamp, (row_dict["Transaction Type"],))
+        if row_dict["Transaction Type"] == "Retail MGX DEX Buy":
+            t_type = TrType.TRADE
+        else:
+            t_type = TrType.SWAP
+
         _make_trade(
             tx_rows,
-            TrType.SWAP,
+            t_type,
         )
     elif row_dict["Transaction Type"] in (
         "Vault Withdrawal",
@@ -555,9 +561,32 @@ def _get_trade_info(notes: str) -> Tuple[str, Optional[Decimal], Optional[Decima
     return "", None, None
 
 
+def _get_tx_rows(
+    tx_times: Dict[datetime, List[TxRecord]],
+    timestamp: datetime,
+    t_types: Tuple[str, ...],
+) -> List[TxRecord]:
+    matching_rows: List[TxRecord] = []
+
+    # Search forwards 10 seconds
+    for delta in range(0, 11):
+        check_timestamp = timestamp + timedelta(seconds=delta)
+        if check_timestamp in tx_times:
+            matching_rows.extend(
+                [
+                    tx
+                    for tx in tx_times[check_timestamp]
+                    if tx.data_row.row_dict["Transaction Type"] in t_types
+                    and not tx.data_row.parsed
+                ]
+            )
+
+    return matching_rows
+
+
 def _make_trade(tx_rows: List[TxRecord], t_type: TrType = TrType.TRADE) -> None:
-    buy_quantity = sell_quantity = None
-    buy_asset = sell_asset = ""
+    buy_quantity = sell_quantity = fee_quantity = None
+    buy_asset = sell_asset = fee_asset = ""
     buy_value = sell_value = None
     trade_row = None
 
@@ -568,15 +597,19 @@ def _make_trade(tx_rows: List[TxRecord], t_type: TrType = TrType.TRADE) -> None:
             if buy_quantity is None:
                 buy_quantity = Decimal(row_dict["Quantity Transacted"])
                 buy_asset = row_dict["Asset"]
-                buy_value = tx.total_ccy if tx.total_ccy is not None else None
+                buy_value = tx.subtotal_ccy if tx.subtotal_ccy is not None else None
                 tx.data_row.parsed = True
 
         if Decimal(row_dict["Quantity Transacted"]) <= 0:
             if sell_quantity is None:
                 sell_quantity = abs(Decimal(row_dict["Quantity Transacted"]))
                 sell_asset = row_dict["Asset"]
-                sell_value = abs(tx.total_ccy) if tx.total_ccy is not None else None
+                sell_value = abs(tx.subtotal_ccy) if tx.subtotal_ccy is not None else None
                 tx.data_row.parsed = True
+
+            if tx.fees_ccy:
+                fee_quantity = tx.fees_ccy
+                fee_asset = config.ccy
 
         if not trade_row:
             trade_row = tx.data_row
@@ -594,6 +627,8 @@ def _make_trade(tx_rows: List[TxRecord], t_type: TrType = TrType.TRADE) -> None:
             sell_quantity=sell_quantity,
             sell_asset=sell_asset,
             sell_value=sell_value,
+            fee_quantity=fee_quantity,
+            fee_asset=fee_asset,
             wallet=WALLET,
         )
 
