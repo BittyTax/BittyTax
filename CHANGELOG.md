@@ -29,6 +29,7 @@
 - Bitfinex parser: added new deposits/withdrawals export format.
 - Coinbase parser: added "Card Spend", "Credit", "Asset Migration", "Retail Eth2 Deprecation" transaction types.
 - sFOX parser: added tramsaction history parser.
+- Coinbase parser: added "Retail MGX DEX Buy" and "Retail MGX DEX Send" transaction types.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
