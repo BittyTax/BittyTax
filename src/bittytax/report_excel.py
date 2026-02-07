@@ -1323,90 +1323,72 @@ class Worksheet:
 
         for asset in sorted(cgains, key=str.lower):
             start_a_row = self.row_num
-            for te in cgains[asset]:
-                self.worksheet.write_string(self.row_num, 0, te.asset)
-                self.worksheet.write_string(
-                    self.row_num, 1, ReportLog.format_wallet(te.sell.wallet, tax_year)
-                )
-                self.worksheet.write_number(
-                    self.row_num, 2, te.quantity.normalize(), self.workbook_formats.quantity
-                )
-                if te.acquisition_dates:
-                    if len(te.acquisition_dates) > 1 and not all(
-                        date == te.acquisition_dates[0] for date in te.acquisition_dates
-                    ):
-                        self.worksheet.write_string(
-                            self.row_num,
-                            3,
-                            ACQUISITIONS_VARIOUS,
-                            self.workbook_formats.string_right,
-                        )
-                        self.worksheet.write_comment(
-                            self.row_num,
-                            3,
-                            ", ".join([f"{d:%m/%d/%Y}" for d in sorted(set(te.acquisition_dates))]),
-                            {"font_size": FONT_SIZE - 1, "x_scale": 2},
-                        )
-                    else:
-                        self.worksheet.write_datetime(
-                            self.row_num, 3, te.acquisition_dates[0], self.workbook_formats.date
-                        )
-                self.worksheet.write_datetime(self.row_num, 4, te.date, self.workbook_formats.date)
 
-                quantity = sum(buy.quantity for buy in te.buys)
-                if quantity != te.sell.quantity:
-                    proceeds_percent = quantity / te.sell.quantity
-                    self.worksheet.write_comment(
+            if config.is_per_wallet(tax_year):
+                wallet_groups: Dict[Wallet, List[TaxEventCapitalGains]] = {}
+                for te in cgains[asset]:
+                    wallet = te.sell.wallet
+                    if wallet not in wallet_groups:
+                        wallet_groups[wallet] = []
+                    wallet_groups[wallet].append(te)
+
+                for wallet in sorted(wallet_groups, key=str.lower):
+                    start_w_row = self.row_num
+                    for te in wallet_groups[wallet]:
+                        self._write_disposal_row(te, row_tracker, tax_year, level=3)
+                        end_w_row = self.row_num
+                        self.row_num += 1
+
+                    # Wallet subtotal
+                    self.worksheet.write_string(
+                        self.row_num,
+                        0,
+                        f"{ReportLog.format_wallet(wallet, tax_year)} {asset} Total",
+                        self.workbook_formats.bold,
+                    )
+                    # Subtotal Quantity
+                    self.worksheet.write_formula(
+                        self.row_num,
+                        2,
+                        f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                        f"{xlsxwriter.utility.xl_range(start_w_row, 2, end_w_row, 2)})",
+                        self.workbook_formats.quantity,
+                    )
+                    # Subtotal Proceeds
+                    self.worksheet.write_formula(
                         self.row_num,
                         5,
-                        (
-                            f"Disposal is short-term and long-term\nProceeds is "
-                            f"{proceeds_percent:.0%} ({quantity:,} / {te.sell.quantity:,})"
-                        ),
-                        {"font_size": FONT_SIZE - 1, "x_scale": 2},
+                        f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                        f"{xlsxwriter.utility.xl_range(start_w_row, 5, end_w_row, 5)})",
+                        self.workbook_formats.currency,
                     )
-
-                zero_basis = [buy for buy in te.buys if buy.t_record is None]
-                if zero_basis:
-                    self.worksheet.write_comment(
+                    # Subtotal Cost
+                    self.worksheet.write_formula(
                         self.row_num,
                         6,
-                        "Cost basis zero used",
-                        {"font_size": FONT_SIZE - 1, "x_scale": 2},
+                        f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                        f"{xlsxwriter.utility.xl_range(start_w_row, 6, end_w_row, 6)})",
+                        self.workbook_formats.currency,
                     )
-
-                if row_tracker:
-                    link = row_tracker.get_row(te.sell)
-                    hyperlink = f'=HYPERLINK("{link}", {te.proceeds})'
+                    # Subtotal Gain/Loss
                     self.worksheet.write_formula(
-                        self.row_num, 5, hyperlink, self.workbook_formats.currency_link
+                        self.row_num,
+                        7,
+                        f"=SUBTOTAL({self.SUBTOTAL_FUNC_SUM_HIDDEN},"
+                        f"{xlsxwriter.utility.xl_range(start_w_row, 7, end_w_row, 7)})",
+                        self.workbook_formats.currency,
                     )
+                    self.worksheet.set_row(
+                        self.row_num, None, None, {"level": 2, "hidden": True, "collapsed": True}
+                    )
+                    self.row_num += 1
+            else:
+                for te in cgains[asset]:
+                    self._write_disposal_row(te, row_tracker, tax_year, level=2)
+                    self.row_num += 1
 
-                    link = row_tracker.get_rows_from_list(te.buys)
-                    hyperlink = f'=HYPERLINK("{link}", {te.cost})'
-                    self.worksheet.write_formula(
-                        self.row_num, 6, hyperlink, self.workbook_formats.currency_link
-                    )
-                else:
-                    self.worksheet.write_number(
-                        self.row_num, 5, te.proceeds, self.workbook_formats.currency
-                    )
-                    self.worksheet.write_number(
-                        self.row_num, 6, te.cost, self.workbook_formats.currency
-                    )
-
-                cell_proceeds = xlsxwriter.utility.xl_rowcol_to_cell(self.row_num, 5)
-                cell_cost_basis = xlsxwriter.utility.xl_rowcol_to_cell(self.row_num, 6)
-                self.worksheet.write_formula(
-                    self.row_num,
-                    7,
-                    f"={cell_proceeds}-{cell_cost_basis}",
-                    self.workbook_formats.currency,
-                )
-                self.worksheet.set_row(self.row_num, None, None, {"level": 2, "hidden": True})
-                end_a_row = self.row_num
-                self.row_num += 1
-
+            # Asset total
+            end_a_row = self.row_num - 1
             self.worksheet.write_string(
                 self.row_num, 0, f"{asset} Total", self.workbook_formats.bold
             )
@@ -1507,6 +1489,98 @@ class Worksheet:
             {"formula_differs": xlsxwriter.utility.xl_range(start_row + 1, 6, self.row_num, 6)}
         )
         self.row_num += 1
+
+    def _write_disposal_row(
+        self,
+        te: TaxEventCapitalGains,
+        row_tracker: Optional["RowTracker"],
+        tax_year: int,
+        level: int,
+    ) -> None:
+        self.worksheet.write_string(self.row_num, 0, te.asset)
+        self.worksheet.write_string(
+            self.row_num, 1, ReportLog.format_wallet(te.sell.wallet, tax_year)
+        )
+        self.worksheet.write_number(
+            self.row_num, 2, te.quantity.normalize(), self.workbook_formats.quantity
+        )
+        if te.acquisition_dates:
+            if len(te.acquisition_dates) > 1 and not all(
+                date == te.acquisition_dates[0] for date in te.acquisition_dates
+            ):
+                self.worksheet.write_string(
+                    self.row_num,
+                    3,
+                    ACQUISITIONS_VARIOUS,
+                    self.workbook_formats.string_right,
+                )
+                self.worksheet.write_comment(
+                    self.row_num,
+                    3,
+                    ", ".join([f"{d:%m/%d/%Y}" for d in sorted(set(te.acquisition_dates))]),
+                    {"font_size": FONT_SIZE - 1, "x_scale": 2},
+                )
+            else:
+                self.worksheet.write_datetime(
+                    self.row_num, 3, te.acquisition_dates[0], self.workbook_formats.date
+                )
+        self.worksheet.write_datetime(self.row_num, 4, te.date, self.workbook_formats.date)
+
+        quantity = sum(buy.quantity for buy in te.buys)
+        if quantity != te.sell.quantity:
+            proceeds_percent = quantity / te.sell.quantity
+            self.worksheet.write_comment(
+                self.row_num,
+                5,
+                (
+                    f"Disposal is short-term and long-term\nProceeds is "
+                    f"{proceeds_percent:.0%} ({quantity:,} / {te.sell.quantity:,})"
+                ),
+                {"font_size": FONT_SIZE - 1, "x_scale": 2},
+            )
+
+        zero_basis = [buy for buy in te.buys if buy.t_record is None]
+        if zero_basis:
+            self.worksheet.write_comment(
+                self.row_num,
+                6,
+                "Cost basis zero used",
+                {"font_size": FONT_SIZE - 1, "x_scale": 2},
+            )
+
+        if row_tracker:
+            link = row_tracker.get_row(te.sell)
+            hyperlink = f'=HYPERLINK("{link}", {te.proceeds})'
+            self.worksheet.write_formula(
+                self.row_num, 5, hyperlink, self.workbook_formats.currency_link
+            )
+
+            link = row_tracker.get_rows_from_list(te.buys)
+            hyperlink = f'=HYPERLINK("{link}", {te.cost})'
+            self.worksheet.write_formula(
+                self.row_num, 6, hyperlink, self.workbook_formats.currency_link
+            )
+        else:
+            self.worksheet.write_number(
+                self.row_num, 5, te.proceeds, self.workbook_formats.currency
+            )
+            self.worksheet.write_number(self.row_num, 6, te.cost, self.workbook_formats.currency)
+
+        cell_proceeds = xlsxwriter.utility.xl_rowcol_to_cell(self.row_num, 5)
+        cell_cost_basis = xlsxwriter.utility.xl_rowcol_to_cell(self.row_num, 6)
+        self.worksheet.write_formula(
+            self.row_num,
+            7,
+            f"={cell_proceeds}-{cell_cost_basis}",
+            self.workbook_formats.currency,
+        )
+
+        self.worksheet.set_row(
+            self.row_num,
+            None,
+            None,
+            {"level": level, "hidden": True, "collapsed": True},
+        )
 
     def no_gain_no_loss(
         self,
