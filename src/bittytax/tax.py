@@ -809,6 +809,12 @@ class CalculateCapitalGains:
             "higher_rate": Decimal(20),
             "proceeds_limit": Decimal(50000),
         },
+        Year(2026): {
+            "allowance": Decimal(3000),
+            "basic_rate": Decimal(18),
+            "higher_rate": Decimal(24),
+            "proceeds_limit": Decimal(50000),
+        },
     }
 
     # Rate changes start from 1st April
