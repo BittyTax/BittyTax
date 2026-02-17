@@ -44,17 +44,17 @@ def parse_coinbase_v4(
         dr.timestamp = DataParser.parse_timestamp(dr.row_dict["Timestamp"])
         currency = dr.row_dict["Price Currency"]
         subtotal_ccy = DataParser.convert_currency(
-            re.sub(r"[^-\d.]+", "", dr.row_dict["Subtotal"]),
+            re.sub(r"[^-\d.eE]+", "", dr.row_dict["Subtotal"]),
             currency,
             dr.timestamp,
         )
         total_ccy = DataParser.convert_currency(
-            re.sub(r"[^-\d.]+", "", dr.row_dict["Total (inclusive of fees and/or spread)"]),
+            re.sub(r"[^-\d.eE]+", "", dr.row_dict["Total (inclusive of fees and/or spread)"]),
             currency,
             dr.timestamp,
         )
         fees_ccy = DataParser.convert_currency(
-            re.sub(r"[^-\d.]+", "", dr.row_dict["Fees and/or Spread"]),
+            re.sub(r"[^-\d.eE]+", "", dr.row_dict["Fees and/or Spread"]),
             currency,
             dr.timestamp,
         )
