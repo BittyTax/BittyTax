@@ -424,6 +424,8 @@ def _parse_binance_statements_row(
         "Launchpool Airdrop",
         "HODLer Airdrops Distribution",
         "Megadrop Rewards",
+        "Launchpool Airdrop - User Claim Distribution",
+        "Launchpool Airdrop - System Distribution"
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.AIRDROP,

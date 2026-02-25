@@ -6,6 +6,7 @@
 - Coinbase parser: fixed regex to ingore extra descriptions at end of trades.
 - Gemini parser: delete blank rows.
 ### Added
+- Binance parser: added "Launchpool Airdrop - User Claim Distribution" and "Launchpool Airdrop - System Distribution" operations
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
 - Exodus parser: added new export format. ([#467](https://github.com/BittyTax/BittyTax/issues/467))
 - MEXC parser: added new export formats.
