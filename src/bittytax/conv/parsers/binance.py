@@ -96,6 +96,7 @@ TRADINGPAIR_TO_QUOTE_ASSET = {
     "ADAEUR": "EUR",
     "ARBIDR": "IDR",
     "BNBIDR": "IDR",
+    "BNBUSD": "USD",
     "ENAEUR": "EUR",
     "GALAEUR": "EUR",
     "LUNAEUR": "EUR",
