@@ -78,6 +78,7 @@ ALT_ASSETS = {
     "ZGBP": "GBP",
     "ZJPY": "JPY",
     "ZMXN": "MXN",
+    "ZPLN": "PLN",
     "ZUSD": "USD",
 }
 
