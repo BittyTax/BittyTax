@@ -64,6 +64,7 @@ def parse_crypto_com(
         "finance.lockup.dpos_compound_interest.crypto_wallet",
         "finance.dpos.non_compound_interest.crypto_wallet",
         "finance.dpos.compound_interest.crypto_wallet",
+        "finance.crypto_earn.loyalty_program_extra_interest_paid.crypto_wallet",
     ):
         data_row.t_record = TransactionOutRecord(
             TrType.INTEREST,
