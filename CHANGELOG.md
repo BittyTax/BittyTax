@@ -30,6 +30,7 @@
 - Coinbase parser: added "Card Spend", "Credit", "Asset Migration", "Retail Eth2 Deprecation" transaction types.
 - sFOX parser: added tramsaction history parser.
 - Coinbase parser: added "Retail MGX DEX Buy" and "Retail MGX DEX Send" transaction types.
+- Crypto.com parser: added "finance.crypto_earn.loyalty_program_extra_interest_paid.crypto_wallet" transaction kind.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
