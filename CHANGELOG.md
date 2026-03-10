@@ -6,7 +6,6 @@
 - Coinbase parser: fixed regex to ingore extra descriptions at end of trades.
 - Gemini parser: delete blank rows.
 ### Added
-- Binance parser: added "Launchpool Airdrop - User Claim Distribution" and "Launchpool Airdrop - System Distribution" operations
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
 - Exodus parser: added new export format. ([#467](https://github.com/BittyTax/BittyTax/issues/467))
 - MEXC parser: added new export formats.
@@ -31,6 +30,7 @@
 - Coinbase parser: added "Card Spend", "Credit", "Asset Migration", "Retail Eth2 Deprecation" transaction types.
 - sFOX parser: added tramsaction history parser.
 - Coinbase parser: added "Retail MGX DEX Buy" and "Retail MGX DEX Send" transaction types.
+- Binance parser: added "Launchpool Airdrop - User Claim Distribution" and "Launchpool Airdrop - System Distribution" operations
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
