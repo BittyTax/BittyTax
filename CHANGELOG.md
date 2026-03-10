@@ -30,6 +30,7 @@
 - Coinbase parser: added "Card Spend", "Credit", "Asset Migration", "Retail Eth2 Deprecation" transaction types.
 - sFOX parser: added tramsaction history parser.
 - Coinbase parser: added "Retail MGX DEX Buy" and "Retail MGX DEX Send" transaction types.
+- Binance parser: added "Launchpool Airdrop - User Claim Distribution" and "Launchpool Airdrop - System Distribution" operations
 - Crypto.com parser: added "finance.crypto_earn.loyalty_program_extra_interest_paid.crypto_wallet" transaction kind.
 - Nexo parser: added new export format with `normalizedDisplayDetails` column. ([#482](https://github.com/BittyTax/BittyTax/issues/482))
 ### Changed
