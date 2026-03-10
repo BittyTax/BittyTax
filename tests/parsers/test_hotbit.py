@@ -1,3 +1,4 @@
+import pytest
 import requests
 
 from bittytax.conv.dataparser import DataParser
@@ -5,7 +6,10 @@ from bittytax.conv.parsers.hotbit import QUOTE_ASSETS, _split_trading_pair, pars
 
 
 def test_split_trading_pair() -> None:
-    response = requests.get("https://api.hotbit.io/api/v1/market.list", timeout=10)
+    try:
+        response = requests.get("https://api.hotbit.io/api/v1/market.list", timeout=10)
+    except requests.exceptions.RequestException as e:
+        pytest.skip(f"Unable to reach Hotbit API: {e}")
 
     if response:
         for market in response.json()["result"]:
