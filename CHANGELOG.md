@@ -31,6 +31,7 @@
 - sFOX parser: added tramsaction history parser.
 - Coinbase parser: added "Retail MGX DEX Buy" and "Retail MGX DEX Send" transaction types.
 - Crypto.com parser: added "finance.crypto_earn.loyalty_program_extra_interest_paid.crypto_wallet" transaction kind.
+- Nexo parser: added new export format with `normalizedDisplayDetails` column. ([#482](https://github.com/BittyTax/BittyTax/issues/482))
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.

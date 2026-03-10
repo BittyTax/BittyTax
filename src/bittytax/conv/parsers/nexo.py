@@ -413,3 +413,24 @@ DataParser(
     worksheet_name="Nexo",
     row_handler=parse_nexo,
 )
+
+DataParser(
+    ParserType.SAVINGS,
+    "Nexo",
+    [
+        "Transaction",
+        "Type",
+        "Input Currency",
+        "Input Amount",
+        "Output Currency",
+        "Output Amount",
+        "USD Equivalent",
+        "Fee",
+        "Fee Currency",
+        "Details",
+        "Date / Time (UTC)",
+        "normalizedDisplayDetails",
+    ],
+    worksheet_name="Nexo",
+    row_handler=parse_nexo,
+)
