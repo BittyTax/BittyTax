@@ -10,7 +10,7 @@ TZ_UTC = dateutil.tz.UTC
 
 PROJECT_URL = "https://github.com/BittyTax/BittyTax"
 
-BITTYTAX_PATH = os.path.expanduser("~/.bittytax")
+BITTYTAX_PATH = os.path.join(os.getenv("BITTYTAX_DATA_DIR", os.path.expanduser("~")), ".bittytax")
 CACHE_DIR = os.path.join(BITTYTAX_PATH, "cache")
 
 TERMINAL_POWERSHELL_GUI = "POWERSHELL_GUI"

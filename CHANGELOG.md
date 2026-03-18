@@ -29,6 +29,7 @@
 - Binance parser: added "Launchpool Airdrop - User Claim Distribution" and "Launchpool Airdrop - System Distribution" operations
 - Crypto.com parser: added "finance.crypto_earn.loyalty_program_extra_interest_paid.crypto_wallet" transaction kind.
 - Nexo parser: added new export format with `normalizedDisplayDetails` column. ([#482](https://github.com/BittyTax/BittyTax/issues/482))
+- Env: added BITTYTAX_DATA_DIR variable which specifies the location for storing the .bittytax folder.
 ### Changed
 - Price tool: CoinDesk API deprecated.
 
