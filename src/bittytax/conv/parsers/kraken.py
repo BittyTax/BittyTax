@@ -74,11 +74,13 @@ ALT_ASSETS = {
     "ZAUD": "AUD",
     "ZCAD": "CAD",
     "ZCOP": "COP",
+    "ZDKK": "DKK",
     "ZEUR": "EUR",
     "ZGBP": "GBP",
     "ZJPY": "JPY",
     "ZMXN": "MXN",
     "ZPLN": "PLN",
+    "ZSEK": "SEK",
     "ZUSD": "USD",
 }
 
