@@ -1,6 +1,7 @@
 ![BittyTax logo](https://github.com/BittyTax/BittyTax/raw/master/img/BittyTax.svg)
 [![Version badge][version-badge]][version]
 [![License badge][license-badge]][license]
+[![CI][ci-badge]][ci]
 [![Python badge][python-badge]][python]
 [![Downloads badge][downloads-badge]][downloads]
 [![Stars badge][github-stars-badge]][github-stars]
@@ -1259,6 +1260,7 @@ If you would like to support this project, please consider [sponsoring](https://
 
 Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of this project. Nano Nano Ltd is not a charity, or non-profit organisation.
 
+[ci-badge]: https://github.com/BittyTax/BittyTax/actions/workflows/ci.yml/badge.svg
 [version-badge]: https://img.shields.io/pypi/v/BittyTax.svg
 [license-badge]: https://img.shields.io/pypi/l/BittyTax.svg
 [python-badge]: https://img.shields.io/pypi/pyversions/BittyTax.svg
@@ -1269,6 +1271,7 @@ Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of thi
 [discord-badge]: https://img.shields.io/discord/581493570112847872?logo=discord&label=&logoColor=white&color=7389D8&labelColor=6A7EC2
 [paypal-badge]: https://img.shields.io/badge/donate-grey.svg?logo=PayPal
 [bitcoin-badge]: https://img.shields.io/badge/donate-grey.svg?logo=bitcoin
+[ci]: https://github.com/BittyTax/BittyTax/actions/workflows/ci.yml
 [version]: https://pypi.org/project/BittyTax/
 [license]: https://github.com/BittyTax/BittyTax/blob/master/LICENSE
 [python]: https://wiki.python.org/moin/BeginnersGuide/Download
