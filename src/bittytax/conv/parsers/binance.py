@@ -72,6 +72,7 @@ QUOTE_ASSETS = [
     "USDC",
     "USDP",
     "USDS",
+    "USDSOLD",
     "USDT",
     "UST",
     "VAI",
