@@ -566,48 +566,50 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         if config.debug:
             print(f"{Fore.CYAN}calculating holdings")
 
-        for h in tqdm(
+        with tqdm(
             self.holdings,
             unit="h",
             desc=f"{Fore.CYAN}calculating holdings{Fore.GREEN}",
             disable=disable_tqdm(),
-        ):
-            if self.holdings[h].quantity > 0 or config.show_empty_wallets:
-                try:
-                    value, name, _ = value_asset.get_current_value(
-                        self.holdings[h].asset, self.holdings[h].quantity
-                    )
-                except requests.exceptions.HTTPError as e:
-                    bt_tqdm_write(
-                        f"{WARNING} Skipping valuation of {self.holdings[h].asset} "
-                        f"due to API failure ({e.response.status_code})"
-                    )
-                    value = None
-                    name = AssetName("")
+        ) as progress_bar:
+            value_asset.price_data.progress_bar = progress_bar
+            for h in progress_bar:
+                if self.holdings[h].quantity > 0 or config.show_empty_wallets:
+                    try:
+                        value, name, _ = value_asset.get_current_value(
+                            self.holdings[h].asset, self.holdings[h].quantity
+                        )
+                    except requests.exceptions.HTTPError as e:
+                        bt_tqdm_write(
+                            f"{WARNING} Skipping valuation of {self.holdings[h].asset} "
+                            f"due to API failure ({e.response.status_code})"
+                        )
+                        value = None
+                        name = AssetName("")
 
-                value = value.quantize(PRECISION) if value is not None else None
-                cost = (self.holdings[h].cost + self.holdings[h].fees).quantize(PRECISION)
+                    value = value.quantize(PRECISION) if value is not None else None
+                    cost = (self.holdings[h].cost + self.holdings[h].fees).quantize(PRECISION)
 
-                if value is not None:
-                    holdings[h] = {
-                        "name": name,
-                        "quantity": self.holdings[h].quantity,
-                        "cost": cost,
-                        "value": value,
-                        "gain": value - cost,
-                    }
+                    if value is not None:
+                        holdings[h] = {
+                            "name": name,
+                            "quantity": self.holdings[h].quantity,
+                            "cost": cost,
+                            "value": value,
+                            "gain": value - cost,
+                        }
 
-                    totals["value"] += value
-                    totals["gain"] += value - cost
-                else:
-                    holdings[h] = {
-                        "name": name,
-                        "quantity": self.holdings[h].quantity,
-                        "cost": cost,
-                        "value": None,
-                    }
+                        totals["value"] += value
+                        totals["gain"] += value - cost
+                    else:
+                        holdings[h] = {
+                            "name": name,
+                            "quantity": self.holdings[h].quantity,
+                            "cost": cost,
+                            "value": None,
+                        }
 
-                totals["cost"] += holdings[h]["cost"]
+                    totals["cost"] += holdings[h]["cost"]
 
         self.holdings_report = {"holdings": holdings, "totals": totals}
 

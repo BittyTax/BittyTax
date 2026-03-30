@@ -42,6 +42,7 @@
 - Qt Wallet parser: added symbol to worksheet name instead of wallet name.
 - Electrum parser: added symbol to worksheet name instead of wallet name.
 - Blockscout parser: set the worksheet name the same as the wallet name.
+- Price tool: added rate-limiter, retries and backoff handling for each API to prevent failures.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
