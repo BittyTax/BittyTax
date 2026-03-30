@@ -636,32 +636,34 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         if config.debug:
             print(f"{Fore.CYAN}calculating holdings")
 
-        for a in tqdm(
+        with tqdm(
             self.holdings_per_asset,
             unit="h",
             desc=f"{Fore.CYAN}calculating holdings{Fore.GREEN}",
             disable=disable_tqdm(),
-        ):
-            if self.holdings_per_asset[a].quantity > 0 or config.show_empty_wallets:
-                try:
-                    price, name, _ = value_asset.get_latest_price(a)
-                    if price is not None:
-                        current_price[a] = CurrentPrice(price, name)
-                except requests.exceptions.HTTPError as e:
-                    bt_tqdm_write(
-                        f"{WARNING} Skipping valuation of {a} "
-                        f"due to API failure ({e.response.status_code})"
+        ) as progress_bar:
+            value_asset.price_data.progress_bar = progress_bar
+            for a in progress_bar:
+                if self.holdings_per_asset[a].quantity > 0 or config.show_empty_wallets:
+                    try:
+                        price, name, _ = value_asset.get_latest_price(a)
+                        if price is not None:
+                            current_price[a] = CurrentPrice(price, name)
+                    except requests.exceptions.HTTPError as e:
+                        bt_tqdm_write(
+                            f"{WARNING} Skipping valuation of {a} "
+                            f"due to API failure ({e.response.status_code})"
+                        )
+
+                    holdings_per_asset[a] = self._calculate_holding(
+                        self.holdings_per_asset[a], current_price.get(a)
                     )
 
-                holdings_per_asset[a] = self._calculate_holding(
-                    self.holdings_per_asset[a], current_price.get(a)
-                )
-
-                total["cost"] += holdings_per_asset[a]["cost"]
-                value = holdings_per_asset[a]["value"]
-                if value:
-                    total["value"] += value
-                    total["gain"] += holdings_per_asset[a]["gain"]
+                    total["cost"] += holdings_per_asset[a]["cost"]
+                    value = holdings_per_asset[a]["value"]
+                    if value:
+                        total["value"] += value
+                        total["gain"] += holdings_per_asset[a]["gain"]
 
         if config.cost_tracking_method is not CostTrackingMethod.UNIVERSAL:
             for w, holdings in self.holdings_per_wallet.items():

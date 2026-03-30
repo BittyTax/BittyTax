@@ -5,13 +5,17 @@ import atexit
 import json
 import os
 import platform
+import threading
+import time
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from http import HTTPStatus
+from typing import Any, Dict, List, Optional, Tuple
 
 import dateutil.parser
 import requests
 from colorama import Fore
+from tqdm import tqdm
 from typing_extensions import TypedDict
 
 from ..bt_types import (
@@ -53,12 +57,21 @@ class DataSourceBase:
     )
 
     TIME_OUT = 30
+    RATE_LIMIT = 5  # requests per second
+    RETRIES = 3
+    BACKOFF_FACTOR = 1  # seconds
+    RETRY_AFTER_DEFAULT = 5  # seconds
 
     def __init__(self) -> None:
         self.headers = {"User-Agent": self.USER_AGENT}
         self.assets: Dict[AssetSymbol, DsSymbolToAssetData] = {}
         self.ids: Dict[AssetId, DsIdToAssetData] = {}
         self.prices = self._load_prices()
+
+        self.api_lock = threading.Lock()
+        self._thread_local = threading.local()
+        self.last_request_time = float(0)
+        self.progress_bar: Optional[tqdm] = None
 
         for pair in sorted(self.prices):
             if config.debug:
@@ -69,18 +82,153 @@ class DataSourceBase:
     def name(self) -> DataSourceName:
         return DataSourceName(self.__class__.__name__)
 
+    def _get_session(self) -> requests.Session:
+        if not hasattr(self._thread_local, "session"):
+            self._thread_local.session = requests.Session()
+        return self._thread_local.session
+
+    def _set_tqdm_postfix(self, message: str) -> None:
+        if self.progress_bar is None:
+            return
+
+        self.progress_bar.set_postfix_str(message)
+
+    def _countdown_sleep(self, label: str, wait_time: float) -> None:
+        remaining = wait_time
+        while remaining > 0:
+            self._set_tqdm_postfix(f"{label} {remaining:.0f}s")
+            sleep_for = min(1.0, remaining)
+            time.sleep(sleep_for)
+            remaining -= sleep_for
+        self._set_tqdm_postfix("")
+
+    def _rate_limit(self) -> None:
+        elapsed_time = time.time() - self.last_request_time
+        wait_time = (1 / self.RATE_LIMIT) - elapsed_time + 0.05
+
+        if wait_time > 0:
+            if config.debug:
+                print(f"{Fore.YELLOW}price: {self.name()} rate-limit, wait: {wait_time:.2f}s")
+                time.sleep(wait_time)
+
+        self.last_request_time = time.time()
+
+    def _retry(self, attempt: int, retry_after: Optional[int] = None) -> bool:
+        if attempt < self.RETRIES:
+            if retry_after:
+                wait_time = retry_after
+            else:
+                wait_time = self.BACKOFF_FACTOR * (2**attempt)
+
+            if config.debug:
+                print(f"{Fore.YELLOW}price: {self.name()} back-off, wait: {wait_time:.0f}s")
+
+            self._countdown_sleep(f"{self.name()} back-off", wait_time)
+            return True
+        return False
+
+    def _check_rate_limit_in_response(self, _json_resp: Any) -> Tuple[bool, Optional[int]]:
+        """
+        Check if response contains data source-specific rate limit indicator.
+        Override in subclasses to implement custom rate limit detection.
+
+        Args:
+            json_resp: The parsed JSON response
+
+        Returns:
+            Tuple of (rate_limited, retry_after_seconds) where retry_after_seconds is None
+            if no specific duration is provided by the API.
+        """
+        return False, None
+
     def get_json(self, url: str) -> Any:
-        if config.debug:
-            print(f"{Fore.YELLOW}price: GET {url} {list(self.headers.keys())}")
+        with self.api_lock:
+            session = self._get_session()
 
-        response = requests.get(url, headers=self.headers, timeout=self.TIME_OUT)
+            for attempt in range(1 + self.RETRIES):
+                self._rate_limit()
 
-        if response.status_code in [401, 402, 403, 429, 500, 502, 503, 504]:
-            response.raise_for_status()
+                try:
+                    if config.debug:
+                        retry_msg = f"(retry {attempt}/{self.RETRIES}) " if attempt > 0 else ""
+                        print(
+                            (
+                                f"{Fore.YELLOW}price: {datetime.now():%H:%M:%S.%f} GET "
+                                f"{retry_msg}{url} {list(self.headers.keys())}"
+                            )
+                        )
 
-        if response:
-            return response.json()
-        return {}
+                    response = session.get(url, headers=self.headers, timeout=self.TIME_OUT)
+
+                    if response.status_code in [
+                        HTTPStatus.UNAUTHORIZED,
+                        HTTPStatus.PAYMENT_REQUIRED,
+                        HTTPStatus.FORBIDDEN,
+                        HTTPStatus.TOO_MANY_REQUESTS,
+                        HTTPStatus.INTERNAL_SERVER_ERROR,
+                        HTTPStatus.BAD_GATEWAY,
+                        HTTPStatus.SERVICE_UNAVAILABLE,
+                        HTTPStatus.GATEWAY_TIMEOUT,
+                    ]:
+                        if response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
+                            # Handle rate limit
+                            retry_after: Optional[int] = self.RETRY_AFTER_DEFAULT
+                            if "retry-after" in response.headers:
+                                retry_after = int(response.headers["retry-after"])
+
+                            if not self._retry(attempt, retry_after):
+                                response.raise_for_status()
+                            continue
+
+                        if not self._retry(attempt):
+                            try:
+                                error_json = response.json()
+                                raise RuntimeError(
+                                    f"{self.name()} request failed {response.status_code} "
+                                    f"{response.reason} for url: {response.url}: {error_json}"
+                                )
+                            except requests.exceptions.JSONDecodeError as e:
+                                raise RuntimeError(
+                                    f"{self.name()} request failed {response.status_code} "
+                                    f"{response.reason} for url: {response.url}"
+                                ) from e
+                        continue
+
+                    if response:
+                        json_resp = response.json()
+
+                        rate_limited, retry_after = self._check_rate_limit_in_response(json_resp)
+                        if rate_limited:
+                            if config.debug:
+                                print(
+                                    f"{Fore.YELLOW}price: {self.name()} "
+                                    f"rate limit detected in response"
+                                )
+                            if not self._retry(attempt, retry_after):
+                                raise RuntimeError(f"{self.name()} rate limit exceeded")
+                            continue
+
+                        return json_resp
+                    return {}
+
+                except requests.exceptions.JSONDecodeError:
+                    if config.debug:
+                        print(f"{self.name()} JSON decode error: {url}")
+                    if not self._retry(attempt):
+                        raise
+
+                except (
+                    requests.exceptions.ConnectionError,
+                    requests.RequestException,
+                    requests.exceptions.Timeout,
+                ) as e:
+                    if config.debug:
+                        print(f"{self.name()} request failed: {url} - {e}")
+                    if not self._retry(attempt):
+                        raise
+
+        # If all retries exhausted
+        raise RuntimeError(f"{self.name()} all retries exhausted for: {url}")
 
     def update_prices(
         self, pair: TradingPair, prices: Dict[Date, DsPriceData], timestamp: Timestamp
@@ -369,19 +517,24 @@ class CoinDesk(DataSourceBase):
 
 
 class CryptoCompare(DataSourceBase):
+    ERROR_TYPE_MARKET_NOT_EXIST = 2
+    ERROR_TYPE_RATE_LIMIT = 99
     MAX_DAYS = 2000
 
     def __init__(self) -> None:
         super().__init__()
 
         if "cryptocompare_api_key" in config.config:
+            CryptoCompare.RATE_LIMIT = 20
             self.headers["authorization"] = f"Apikey {config.cryptocompare_api_key}"
+        else:
+            CryptoCompare.RATE_LIMIT = 2
 
         self.api_root = "https://min-api.cryptocompare.com"
 
         json_resp = self.get_json(f"{self.api_root}/data/all/coinlist")
         if json_resp["Response"] != "Success":
-            raise RuntimeError(f"CryptoCompare API failure: {json_resp.get('Message', '')}")
+            raise RuntimeError(f"CryptoCompare API failure: {json_resp}")
 
         # CryptoCompare symbols are unique, so can be used as the ID
         self.ids = {
@@ -397,6 +550,26 @@ class CryptoCompare(DataSourceBase):
             for c in json_resp["Data"].items()
         }
         self.get_config_assets()
+
+    def _check_rate_limit_in_response(self, json_resp: Any) -> Tuple[bool, Optional[int]]:
+        """
+        CryptoCompare returns rate limit in response body with 200 OK status.
+        Check for unsuccessful response with rate limit error.
+        Note: no "retry-after" is provided in headers or response, use default backoff time for
+        retries.
+        """
+        if isinstance(json_resp, dict):
+            if (
+                "Response" in json_resp
+                and "Type" in json_resp
+                and json_resp["Response"] != "Success"
+                and json_resp["Type"] == self.ERROR_TYPE_RATE_LIMIT
+            ):
+                if config.debug:
+                    message = json_resp.get("Message")
+                    print(f"{Fore.YELLOW}price: CryptoCompare rate limit: {message}")
+                return True, None
+        return False, None
 
     def get_latest(
         self, asset: AssetSymbol, quote: QuoteSymbol, asset_id: AssetId = AssetId("")
@@ -427,9 +600,11 @@ class CryptoCompare(DataSourceBase):
             f"&toTs={self.epoch_time(Timestamp(timestamp + timedelta(days=self.MAX_DAYS)))}"
         )
         json_resp = self.get_json(url)
-        # Type=2 - CCCAGG market does not exist for this coin pair
-        if json_resp["Response"] != "Success" and json_resp["Type"] != 2:
-            raise RuntimeError(f"CryptoCompare API failure: {json_resp.get('Message', '')}")
+        if (
+            json_resp["Response"] != "Success"
+            and json_resp["Type"] != self.ERROR_TYPE_MARKET_NOT_EXIST
+        ):
+            raise RuntimeError(f"CryptoCompare API failure: {json_resp}")
 
         pair = self.pair(asset, quote)
         # Warning - CryptoCompare returns 0 as data for missing dates, convert these to None.
@@ -455,12 +630,15 @@ class CoinGecko(DataSourceBase):
         super().__init__()
 
         if "coingecko_pro_api_key" in config.config:
+            CoinGecko.RATE_LIMIT = 20
             self.headers[self.PRO_KEY] = f"{config.coingecko_pro_api_key}"
             self.api_root = "https://pro-api.coingecko.com/api/v3"
         elif "coingecko_demo_api_key" in config.config:
+            CoinGecko.RATE_LIMIT = 2
             self.headers[self.DEMO_KEY] = config.coingecko_demo_api_key
             self.api_root = "https://api.coingecko.com/api/v3"
         else:
+            CoinGecko.RATE_LIMIT = 2
             self.api_root = "https://api.coingecko.com/api/v3"
 
         json_resp = self.get_json(f"{self.api_root}/coins/list?status=active")
@@ -514,11 +692,20 @@ class CoinGecko(DataSourceBase):
         if not asset_id:
             asset_id = self.assets[asset]["asset_id"]
 
-        if self.PRO_KEY in self.headers:
-            days = "max"
-        else:
-            # Public API is limited to 365 days of historical price data
+        # Public API is limited to 365 days of historical price data
+        if self.PRO_KEY not in self.headers:
+            days_ago = (datetime.now().date() - timestamp.date()).days
+            if days_ago > 365:
+                if config.debug:
+                    print(
+                        f"{Fore.YELLOW}price: {self.name()} "
+                        f"skipping historical lookup for {timestamp:%Y-%m-%d} "
+                        f"({days_ago} days ago) - requires Pro API for data older than 365 days"
+                    )
+                return
             days = "365"
+        else:
+            days = "max"
 
         url = f"{self.api_root}/coins/{asset_id}/market_chart?vs_currency={quote}&days={days}"
         json_resp = self.get_json(url)
@@ -544,9 +731,11 @@ class CoinPaprika(DataSourceBase):
         super().__init__()
 
         if "coinpaprika_api_key" in config.config:
+            CoinPaprika.RATE_LIMIT = 20
             self.headers["Authorization"] = f"{config.coinpaprika_api_key}"
             self.api_root = "https://api-pro.coinpaprika.com/v1"
         else:
+            CoinPaprika.RATE_LIMIT = 2
             self.api_root = "https://api.coinpaprika.com/v1"
 
         json_resp = self.get_json(f"{self.api_root}/coins")
@@ -586,6 +775,18 @@ class CoinPaprika(DataSourceBase):
 
         if not asset_id:
             asset_id = self.assets[asset]["asset_id"]
+
+        # Public API is limited to 365 days of historical price data
+        if "Authorization" not in self.headers:
+            days_ago = (datetime.now().date() - timestamp.date()).days
+            if days_ago >= 365:
+                if config.debug:
+                    print(
+                        f"{Fore.YELLOW}price: {self.name()} "
+                        f"skipping historical lookup for {timestamp:%Y-%m-%d} "
+                        f"({days_ago} days ago) - requires Pro API for data older than 365 days"
+                    )
+                return
 
         url = (
             f"{self.api_root}/tickers/{asset_id}/historical"

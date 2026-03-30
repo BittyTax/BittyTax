@@ -32,6 +32,7 @@
 - Env: added BITTYTAX_DATA_DIR variable which specifies the location for storing the .bittytax folder.
 ### Changed
 - Price tool: CoinDesk API deprecated.
+- Price tool: added rate-limiter, retries and backoff handling for each API to prevent failures.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
