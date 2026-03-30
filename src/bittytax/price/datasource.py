@@ -130,7 +130,7 @@ class DataSourceBase:
     def _check_rate_limit_in_response(self, _json_resp: Any) -> Tuple[bool, Optional[int]]:
         """
         Check if response contains data source-specific rate limit indicator.
-        Override in subclasses to implement custom rate limit detection.
+        Override in sub-classes to implement custom rate limit detection.
 
         Args:
             json_resp: The parsed JSON response
@@ -555,7 +555,7 @@ class CryptoCompare(DataSourceBase):
         """
         CryptoCompare returns rate limit in response body with 200 OK status.
         Check for unsuccessful response with rate limit error.
-        Note: no "retry-after" is provided in headers or response, use default backoff time for
+        Note: no "retry-after" is provided in headers or response, use default back-off time for
         retries.
         """
         if isinstance(json_resp, dict):
