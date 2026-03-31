@@ -11,7 +11,7 @@
             {% if holdings[asset]['name'] %}
                 <td>{{ asset }} ({{ holdings[asset]['name'] }})</td>
             {% else %}
-                <td>{{ assset }}</td>
+                <td>{{ asset }}</td>
             {% endif %}
             <td align="left">{{ holdings[asset]['quantity']|quantityfilter }}</td>
             <td align="right">{{ holdings[asset]['cost']|valuefilter }}</td>
