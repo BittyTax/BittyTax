@@ -51,11 +51,15 @@ class TransactionHistory:
                                 tr.buy.fee_fixed = tr.fee.proceeds_fixed
                             else:
                                 # Crypto-to-crypto trades
-                                if config.trade_allowable_cost_type == config.TRADE_ALLOWABLE_COST_BUY:
+                                if (
+                                    config.trade_allowable_cost_type
+                                    == config.TRADE_ALLOWABLE_COST_BUY
+                                ):
                                     tr.buy.fee_value = tr.fee.proceeds
                                     tr.buy.fee_fixed = tr.fee.proceeds_fixed
                                 elif (
-                                    config.trade_allowable_cost_type == config.TRADE_ALLOWABLE_COST_SELL
+                                    config.trade_allowable_cost_type
+                                    == config.TRADE_ALLOWABLE_COST_SELL
                                 ):
                                     tr.sell.fee_value = tr.fee.proceeds
                                     tr.sell.fee_fixed = tr.fee.proceeds_fixed
