@@ -22,16 +22,32 @@ def parse_uphold_v2(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[P
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
 
+    if row_dict["Status"] != "completed":
+        return
+
     if row_dict["Type"] == "in":
-        data_row.t_record = TransactionOutRecord(
-            TrType.DEPOSIT,
-            data_row.timestamp,
-            buy_quantity=Decimal(row_dict["Origin Amount"]),
-            buy_asset=row_dict["Origin Currency"],
-            fee_quantity=Decimal(row_dict["Fee Amount"]) if row_dict["Fee Amount"] else None,
-            fee_asset=row_dict["Fee Currency"],
-            wallet=WALLET,
-        )
+        if row_dict["Origin Currency"] == row_dict["Destination Currency"]:
+            data_row.t_record = TransactionOutRecord(
+                TrType.DEPOSIT,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["Origin Amount"]),
+                buy_asset=row_dict["Origin Currency"],
+                fee_quantity=Decimal(row_dict["Fee Amount"]) if row_dict["Fee Amount"] else None,
+                fee_asset=row_dict["Fee Currency"],
+                wallet=WALLET,
+            )
+        else:
+            data_row.t_record = TransactionOutRecord(
+                TrType.TRADE,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["Destination Amount"]),
+                buy_asset=row_dict["Destination Currency"],
+                sell_quantity=Decimal(row_dict["Origin Amount"]),
+                sell_asset=row_dict["Origin Currency"],
+                fee_quantity=Decimal(row_dict["Fee Amount"]) if row_dict["Fee Amount"] else None,
+                fee_asset=row_dict["Fee Currency"],
+                wallet=WALLET,
+            )
     elif row_dict["Type"] == "out":
         if row_dict["Origin Currency"] == row_dict["Destination Currency"]:
             data_row.t_record = TransactionOutRecord(

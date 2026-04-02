@@ -5,6 +5,7 @@
 - MEXC parser: fees for spot trades should always be the quote asset.
 - Coinbase parser: fixed regex to ingore extra descriptions at end of trades.
 - Gemini parser: delete blank rows.
+- Uphold parser: skip failed transactions.
 ### Added
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
 - Exodus parser: added new export format. ([#467](https://github.com/BittyTax/BittyTax/issues/467))
@@ -47,6 +48,7 @@
 - Blockscout parser: set the worksheet name the same as the wallet name.
 - Price tool: added rate-limiter, retries and backoff handling for each API to prevent failures.
 - Conversion tool: OutputExcel determines if macOS via parameter instead of direct from platform.
+- Uphold parser: transaction type "in" can be a Trade, i.e. credit-card purchase of crypto.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
