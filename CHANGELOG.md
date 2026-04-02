@@ -7,6 +7,7 @@
 - MEXC parser: fees for spot trades should always be the quote asset.
 - Coinbase parser: fixed regex to ingore extra descriptions at end of trades.
 - Gemini parser: delete blank rows.
+- Uphold parser: skip failed transactions.
 ### Added
 - MEXC parser: added new export formats.
 - Cash App parser: added new export format.
@@ -33,6 +34,7 @@
 ### Changed
 - Price tool: CoinDesk API deprecated.
 - Price tool: added rate-limiter, retries and backoff handling for each API to prevent failures.
+- Uphold parser: transaction type "in" can be a Trade, i.e. credit-card purchase of crypto.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
