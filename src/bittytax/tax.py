@@ -721,6 +721,12 @@ class CalculateCapitalGains:
             "higher_rate": Decimal(24),
             "proceeds_limit": Decimal(50000),
         },
+        Year(2027): {
+            "allowance": Decimal(3000),
+            "basic_rate": Decimal(18),
+            "higher_rate": Decimal(24),
+            "proceeds_limit": Decimal(50000),
+        },
     }
     CG_DATA_INDIVIDUAL_SPLIT_YEAR: Dict[Year, Tuple[Date, CapitalGainsIndividualSplitYear]] = {
         Year(2025): (
@@ -748,6 +754,7 @@ class CalculateCapitalGains:
         Year(2023): {"small_rate": Decimal(19), "main_rate": Decimal(25)},
         Year(2024): {"small_rate": Decimal(19), "main_rate": Decimal(25)},
         Year(2025): {"small_rate": Decimal(19), "main_rate": Decimal(25)},
+        Year(2026): {"small_rate": Decimal(19), "main_rate": Decimal(25)},
     }
 
     def __init__(self, tax_year: Year, tax_rules: TaxRules) -> None:
