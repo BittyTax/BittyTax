@@ -35,6 +35,7 @@
 - Nexo parser: added new export format with `normalizedDisplayDetails` column. ([#482](https://github.com/BittyTax/BittyTax/issues/482))
 - Env: added BITTYTAX_DATA_DIR variable which specifies the location for storing the .bittytax folder.
 - Accounting tool: tax rates and allowance for 2026/27.
+- Revolut parser: added "Stake", "Unstake" and "Stake Rewards" transaction types
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
