@@ -36,6 +36,7 @@
 - Price tool: CoinDesk API deprecated.
 - Price tool: added rate-limiter, retries and backoff handling for each API to prevent failures.
 - Uphold parser: transaction type "in" can be a Trade, i.e. credit-card purchase of crypto.
+- Conversion tool: OutputExcel determines if macOS via parameter instead of direct from platform.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
