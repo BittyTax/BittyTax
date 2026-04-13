@@ -82,6 +82,8 @@ ALT_ASSETS = {
     "ZPLN": "PLN",
     "ZSEK": "SEK",
     "ZUSD": "USD",
+    "ZVND": "VND",
+    "ZXOF": "XOF",
 }
 
 STAKED_SUFFIX = [
