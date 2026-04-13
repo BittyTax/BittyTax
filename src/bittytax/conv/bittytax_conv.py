@@ -181,7 +181,8 @@ def main() -> None:
         DataMerge.match_merge(DataFile.data_files)
 
         if args.format == CONV_FORMAT_EXCEL:
-            output_excel = OutputExcel(parser.prog, DataFile.data_files_ordered, args)
+            is_macos = platform.system() == "Darwin"
+            output_excel = OutputExcel(parser.prog, DataFile.data_files_ordered, args, is_macos)
             output_excel.write_excel()
         else:
             output_csv = OutputCsv(DataFile.data_files_ordered, args)

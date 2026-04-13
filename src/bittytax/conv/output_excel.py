@@ -4,7 +4,6 @@
 import argparse
 import io
 import os
-import platform
 import re
 import sys
 from datetime import datetime
@@ -39,12 +38,6 @@ from .exceptions import DataRowError
 from .out_record import TransactionOutRecord
 from .output_csv import OutputBase
 
-if platform.system() == "Darwin":
-    # Default size for MacOS
-    FONT_SIZE = 12
-else:
-    FONT_SIZE = 11
-
 
 class Column(TypedDict):  # pylint: disable=too-few-public-methods
     header: str
@@ -66,11 +59,13 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
         progname: str,
         data_files: List[DataFile],
         args: Optional[argparse.Namespace] = None,
+        is_macos: bool = False,
         stream: Optional[io.BytesIO] = None,
     ) -> None:
         super().__init__(data_files)
         self.sheet_names: Dict[str, int] = {}
         self.table_names: Dict[str, int] = {}
+        self.font_size = 12 if is_macos else 11
 
         if not stream:
             if not args:
@@ -85,7 +80,7 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             self.workbook = xlsxwriter.Workbook(stream, {"in_memory": True})
 
         self.workbook.set_size(1800, 1200)
-        self.workbook.formats[0].set_font_size(FONT_SIZE)
+        self.workbook.formats[0].set_font_size(self.font_size)
         self.workbook.set_properties(
             {
                 "title": self.TITLE,
@@ -96,7 +91,7 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
 
         self.format_out_header = self.workbook.add_format(
             {
-                "font_size": FONT_SIZE,
+                "font_size": self.font_size,
                 "font_color": "white",
                 "bold": True,
                 "bg_color": "black",
@@ -106,7 +101,7 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
         )
         self.format_in_header = self.workbook.add_format(
             {
-                "font_size": FONT_SIZE,
+                "font_size": self.font_size,
                 "font_color": "white",
                 "bold": True,
                 "bg_color": self.FONT_COLOR_IN_DATA,
@@ -115,26 +110,26 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             }
         )
         self.format_out_data = self.workbook.add_format(
-            {"font_size": FONT_SIZE, "font_color": "black"}
+            {"font_size": self.font_size, "font_color": "black"}
         )
         self.format_out_data_err = self.workbook.add_format(
-            {"font_size": FONT_SIZE, "font_color": "red"}
+            {"font_size": self.font_size, "font_color": "red"}
         )
         self.format_in_data = self.workbook.add_format(
-            {"font_size": FONT_SIZE, "font_color": self.FONT_COLOR_IN_DATA}
+            {"font_size": self.font_size, "font_color": self.FONT_COLOR_IN_DATA}
         )
         self.format_in_data_tx_hash = self.workbook.add_format(
-            {"font_size": FONT_SIZE, "font_color": f"#{FONT_COLOR_TX_HASH}"}
+            {"font_size": self.font_size, "font_color": f"#{FONT_COLOR_TX_HASH}"}
         )
         self.format_in_data_tx_src = self.workbook.add_format(
-            {"font_size": FONT_SIZE, "font_color": f"#{FONT_COLOR_TX_SRC}"}
+            {"font_size": self.font_size, "font_color": f"#{FONT_COLOR_TX_SRC}"}
         )
         self.format_in_data_tx_dest = self.workbook.add_format(
-            {"font_size": FONT_SIZE, "font_color": f"#{FONT_COLOR_TX_DEST}"}
+            {"font_size": self.font_size, "font_color": f"#{FONT_COLOR_TX_DEST}"}
         )
         self.format_in_data_col_err = self.workbook.add_format(
             {
-                "font_size": FONT_SIZE,
+                "font_size": self.font_size,
                 "font_color": self.FONT_COLOR_IN_DATA,
                 "diag_type": 3,
                 "diag_border": 7,
@@ -142,36 +137,36 @@ class OutputExcel(OutputBase):  # pylint: disable=too-many-instance-attributes
             }
         )
         self.format_in_data_err = self.workbook.add_format(
-            {"font_size": FONT_SIZE, "font_color": "red"}
+            {"font_size": self.font_size, "font_color": "red"}
         )
         self.format_num_float = self.workbook.add_format(
             {
-                "font_size": FONT_SIZE,
+                "font_size": self.font_size,
                 "font_color": "black",
                 "num_format": "#,##0." + "#" * 30,
             }
         )
         self.format_num_int = self.workbook.add_format({"num_format": "#,##0"})
         self.format_num_string = self.workbook.add_format(
-            {"font_size": FONT_SIZE, "font_color": "black", "align": "right"}
+            {"font_size": self.font_size, "font_color": "black", "align": "right"}
         )
         self.format_currency = self.workbook.add_format(
             {
-                "font_size": FONT_SIZE,
+                "font_size": self.font_size,
                 "font_color": "black",
                 "num_format": '"' + config.sym() + '"#,##0.00',
             }
         )
         self.format_timestamp = self.workbook.add_format(
             {
-                "font_size": FONT_SIZE,
+                "font_size": self.font_size,
                 "font_color": "black",
                 "num_format": self.DATE_FORMAT,
             }
         )
         self.format_timestamp_ms = self.workbook.add_format(
             {
-                "font_size": FONT_SIZE,
+                "font_size": self.font_size,
                 "font_color": "black",
                 "num_format": self.DATE_FORMAT_MS,
             }
