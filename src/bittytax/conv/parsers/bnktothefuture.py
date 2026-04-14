@@ -156,4 +156,5 @@ DataParser(
     ["Date", "Description", "Currency", "Details", "Transaction ID", "In", "Out"],
     worksheet_name="BnkToTheFuture",
     row_handler=parse_bnktothefuture,
+    newest_first=True,
 )

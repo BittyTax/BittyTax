@@ -105,6 +105,7 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         row_handler: Optional[Union[RowHandler, RowHandler2]] = None,
         all_handler: Optional[Union[AllHandler, AllHandler2]] = None,
         consolidate_type: ConsolidateType = ConsolidateType.PARSER_MATCH,
+        newest_first: bool = False,
     ):
         self.p_type = p_type
         self.name = name
@@ -119,6 +120,7 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         self.args: List[Any] = []
         self.in_header = [col if col and not callable(col) else "" for col in self.header]
         self.in_header_row_num = 1
+        self.newest_first = newest_first
 
         self.parsers.append(self)
 

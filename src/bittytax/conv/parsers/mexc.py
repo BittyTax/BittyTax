@@ -229,7 +229,7 @@ def parse_mexc_futures(
     else:
         utc_offset = "UTC+00:00"
 
-    for row_index, data_row in reversed(list(enumerate(data_rows))):
+    for row_index, data_row in enumerate(list(data_rows)):
         if config.debug:
             if parser.in_header_row_num is None:
                 raise RuntimeError("Missing in_header_row_num")
@@ -602,6 +602,7 @@ DataParser(
     ],
     worksheet_name="MEXC F",
     all_handler=parse_mexc_futures,
+    newest_first=True,
 )
 
 DataParser(
@@ -628,4 +629,5 @@ DataParser(
     ],
     worksheet_name="MEXC F",
     all_handler=parse_mexc_futures,
+    newest_first=True,
 )

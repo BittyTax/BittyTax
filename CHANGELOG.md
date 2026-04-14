@@ -35,6 +35,7 @@
 - Nexo parser: added new export format with `normalizedDisplayDetails` column. ([#482](https://github.com/BittyTax/BittyTax/issues/482))
 - Env: added BITTYTAX_DATA_DIR variable which specifies the location for storing the .bittytax folder.
 - Accounting tool: tax rates and allowance for 2026/27.
+- Conversion tool: added newest_first to DataParser to control the parsing order.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.

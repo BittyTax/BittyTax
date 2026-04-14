@@ -497,7 +497,7 @@ def parse_blofin_funding(
 ) -> None:
     positions: Dict[Instrument, Position] = {}
 
-    for data_row in reversed(data_rows):
+    for data_row in data_rows:
         if config.debug:
             if parser.in_header_row_num is None:
                 raise RuntimeError("Missing in_header_row_num")
@@ -724,4 +724,5 @@ DataParser(
     ["symbol", "QTY", "Funding rate", "Funding type", "Funding Fee", "real_funding_amount", "Time"],
     worksheet_name="BloFin F",
     all_handler=parse_blofin_funding,
+    newest_first=True,
 )
