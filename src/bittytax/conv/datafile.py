@@ -92,6 +92,9 @@ class DataFile:
         return self
 
     def parse(self, **kwargs: Unpack[ParserArgs]) -> None:
+        if self.parser.newest_first:
+            self.data_rows.reverse()
+
         if self.parser.row_handler:
             for data_row in self.data_rows:
                 if config.debug:
@@ -111,6 +114,9 @@ class DataFile:
         self.failures = [dr for dr in self.data_rows if dr.failure is not None]
 
         if self.failures:
+            if self.parser.newest_first:
+                self.failures.reverse()
+
             sys.stderr.write(f'{WARNING} Parser failure for "{self.parser.name}"\n')
 
             for data_row in self.failures:

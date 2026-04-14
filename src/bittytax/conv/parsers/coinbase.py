@@ -171,7 +171,7 @@ def parse_coinbase_v1(
 def _do_parse_coinbase(
     tx_times: Dict[datetime, List[TxRecord]], tx_rows: List[TxRecord], parser: DataParser
 ) -> None:
-    for tx in reversed(tx_rows):
+    for tx in tx_rows:
         data_row = tx.data_row
         if config.debug:
             if parser.in_header_row_num is None:
@@ -827,6 +827,7 @@ DataParser(
     ],
     worksheet_name="Coinbase",
     all_handler=parse_coinbase_v4,
+    newest_first=True,
 )
 
 DataParser(

@@ -116,7 +116,7 @@ def parse_bybit(
         else:
             tx_times[dr.timestamp] = [dr]
 
-    for data_row in reversed(data_rows):
+    for data_row in data_rows:
         if config.debug:
             if parser.in_header_row_num is None:
                 raise RuntimeError("Missing in_header_row_num")
@@ -508,4 +508,5 @@ DataParser(
     ],
     worksheet_name="Bybit",
     all_handler=parse_bybit,
+    newest_first=True,
 )
