@@ -33,6 +33,7 @@
 - Env: added BITTYTAX_DATA_DIR variable which specifies the location for storing the .bittytax folder.
 - Accounting tool: tax rates and allowance for 2026/27.
 - Conversion tool: added newest_first to DataParser to control the parsing order.
+- KuCoin parser: handle empty reports with "No matching records found".
 ### Changed
 - Price tool: CoinDesk API deprecated.
 - Price tool: added rate-limiter, retries and backoff handling for each API to prevent failures.
