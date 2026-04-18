@@ -29,6 +29,9 @@ def parse_kucoin_trades_v5(
 ) -> None:
     row_dict = data_row.row_dict
 
+    if row_dict.get("UID") == "No matching records found.":
+        return
+
     if parser.args:
         timestamp_hdr = parser.args[0].group(1)
         utc_offset = parser.args[0].group(2)
@@ -209,6 +212,9 @@ def parse_kucoin_fiat_trades(
 ) -> None:
     row_dict = data_row.row_dict
 
+    if row_dict.get("Order ID") == "No matching records found.":
+        return
+
     timestamp_hdr = parser.args[0].group(1)
     utc_offset = parser.args[0].group(2)
     data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
@@ -238,6 +244,9 @@ def parse_kucoin_fiat_trades_v2(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
+
+    if row_dict.get("Order ID") == "No matching records found.":
+        return
 
     timestamp_hdr = parser.args[0].group(1)
     utc_offset = parser.args[0].group(2)
@@ -329,6 +338,9 @@ def parse_kucoin_deposits_withdrawals_crypto_v2(
 ) -> None:
     row_dict = data_row.row_dict
 
+    if row_dict.get("UID") == "No matching records found.":
+        return
+
     if parser.args:
         timestamp_hdr = parser.args[0].group(1)
         utc_offset = parser.args[0].group(2)
@@ -379,6 +391,9 @@ def parse_kucoin_staking_income(
 ) -> None:
     row_dict = data_row.row_dict
 
+    if row_dict.get("UID") == "No matching records found.":
+        return
+
     timestamp_hdr = parser.args[0].group(1)
     utc_offset = parser.args[0].group(2)
     data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
@@ -404,6 +419,10 @@ def parse_kucoin_futures(
                 f"{Fore.YELLOW}conv: "
                 f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
             )
+
+        if data_row.row_dict.get("UID") == "No matching records found.":
+            data_row.parsed = True
+            continue
 
         if data_row.parsed:
             continue
@@ -502,6 +521,10 @@ def parse_kucoin_account_history(
     tx_times: Dict[datetime, List["DataRow"]] = {}
 
     for dr in data_rows:
+        if dr.row_dict.get("UID") == "No matching records found.":
+            dr.parsed = True
+            continue
+
         timestamp_hdr = parser.args[0].group(1)
         utc_offset = parser.args[0].group(2)
         dr.timestamp = DataParser.parse_timestamp(f"{dr.row_dict[timestamp_hdr]} {utc_offset}")
@@ -598,6 +621,9 @@ def parse_kucoin_deposits_fiat(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
     row_dict = data_row.row_dict
+
+    if row_dict.get("Order ID") == "No matching records found.":
+        return
 
     if row_dict["Status"] != "SUCCEEDED":
         return
