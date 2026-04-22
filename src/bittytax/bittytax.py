@@ -36,14 +36,14 @@ if sys.stdout.encoding != "UTF-8":
     sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
 
 
-def main() -> None:
-    if config.terminal == TERMINAL_POWERSHELL_GUI:
-        colorama.init(strip=False)
-        builtins.print = bt_print  # type: ignore[assignment]
-    else:
-        colorama.init()
+def _build_version_str() -> str:
+    compiled_suffix = " - compiled" if is_compiled() else ""
+    return f"v{__version__}{compiled_suffix}"
 
-    parser = argparse.ArgumentParser()
+
+def _create_arg_parser(version_str: str) -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(conflict_handler="resolve")
+
     parser.add_argument(
         "filename",
         type=str,
@@ -51,16 +51,11 @@ def main() -> None:
         help="filename of transaction records, or can read CSV data from standard input",
     )
 
-    if is_compiled():
-        version_str = f"{parser.prog} v{__version__} (compiled)"
-    else:
-        version_str = f"{parser.prog} v{__version__}"
-
     parser.add_argument(
         "-v",
         "--version",
         action="version",
-        version=version_str,
+        version=f"{parser.prog} {version_str}",
     )
     parser.add_argument("-d", "--debug", action="store_true", help="enable debug logging")
     parser.add_argument(
@@ -115,24 +110,35 @@ def main() -> None:
     parser.add_argument(
         "--export",
         action="store_true",
-        help="export your transaction records populated with price data",
+        help="populate transaction records with price data in CSV format",
     )
+    return parser
 
-    args = parser.parse_args()
-    try:
-        args.tax_rules = TaxRules[args.tax_rules]
-    except KeyError as e:
-        raise RuntimeError(f"Unrecognised args.tax_rules: {args.tax_rules}") from e
 
+def _init_terminal() -> None:
+    if config.terminal == TERMINAL_POWERSHELL_GUI:
+        colorama.init(strip=False)
+        builtins.print = bt_print  # type: ignore[assignment]
+    else:
+        colorama.init()
+
+
+def _print_debug_info(prog: str, version_str: str, args: argparse.Namespace) -> None:
     config.debug = args.debug
-
     if config.debug:
-        print(f"{Fore.YELLOW}{version_str}")
+        print(f"{Fore.YELLOW}{prog} {version_str}")
         print(f"{Fore.GREEN}python: v{platform.python_version()}")
         print(f"{Fore.GREEN}system: {platform.system()}, release: {platform.release()}")
         for arg in vars(args):
             print(f"{Fore.GREEN}args: {arg}: {getattr(args, arg)}")
         config.output_config(sys.stdout)
+
+
+def _run(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    try:
+        args.tax_rules = TaxRules[args.tax_rules]
+    except KeyError as e:
+        raise RuntimeError(f"Unrecognised args.tax_rules: {args.tax_rules}") from e
 
     if args.tax_rules in TAX_RULES_UK_COMPANY:
         config.start_of_year_month = TAX_RULES_UK_COMPANY.index(args.tax_rules) + 1
@@ -188,6 +194,15 @@ def main() -> None:
                 value_asset.price_report,
                 tax.holdings_report,
             )
+
+
+def main() -> None:
+    _init_terminal()
+    version_str = _build_version_str()
+    parser = _create_arg_parser(version_str)
+    args = parser.parse_args()
+    _print_debug_info(parser.prog, version_str, args)
+    _run(parser, args)
 
 
 def _validate_year(value: str) -> int:

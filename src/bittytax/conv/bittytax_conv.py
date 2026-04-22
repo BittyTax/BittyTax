@@ -54,7 +54,7 @@ def main() -> None:
     parser.add_argument("filename", type=str, nargs="+", help="filename of data file")
 
     if is_compiled():
-        version_str = f"{parser.prog} v{__version__} (compiled)"
+        version_str = f"{parser.prog} v{__version__} - compiled"
     else:
         version_str = f"{parser.prog} v{__version__}"
 
