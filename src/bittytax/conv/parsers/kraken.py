@@ -41,6 +41,7 @@ QUOTE_ASSETS = [
     "SOL",
     "USD",
     "USD1",
+    "USD:BTNL",
     "USDC",
     "USDD",
     "USDQ",
