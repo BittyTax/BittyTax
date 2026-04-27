@@ -6,6 +6,7 @@
 - Coinbase parser: fixed regex to ingore extra descriptions at end of trades.
 - Gemini parser: delete blank rows.
 - Uphold parser: skip failed transactions.
+- Coinbase parser: fixed spurious fee asset appearing in Send/Withdrawal when no fee is present.
 ### Added
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
 - Exodus parser: added new export format. ([#467](https://github.com/BittyTax/BittyTax/issues/467))

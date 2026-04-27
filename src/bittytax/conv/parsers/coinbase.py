@@ -358,7 +358,7 @@ def _do_parse_coinbase_row(
             sell_quantity=abs(Decimal(row_dict["Quantity Transacted"])),
             sell_asset=row_dict["Asset"],
             fee_quantity=fees_ccy,
-            fee_asset=config.ccy,
+            fee_asset=config.ccy if fees_ccy is not None else "",
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] in (
