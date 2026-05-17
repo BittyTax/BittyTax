@@ -581,7 +581,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                     except requests.exceptions.HTTPError as e:
                         bt_tqdm_write(
                             f"{WARNING} Skipping valuation of {self.holdings[h].asset} "
-                            f"due to API failure ({e.response})"
+                            f"due to API failure ({e.response.status_code})"
                         )
                         value = None
                         name = AssetName("")

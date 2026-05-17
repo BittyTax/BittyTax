@@ -27,10 +27,11 @@ def parse_strike_ledger(
     ref_ids: Dict[str, List["DataRow"]] = {}
 
     for dr in data_rows:
-        if dr.row_dict["refid"] in ref_ids:
-            ref_ids[dr.row_dict["refid"]].append(dr)
+        reference = dr.row_dict["Reference"]
+        if reference in ref_ids:
+            ref_ids[reference].append(dr)
         else:
-            ref_ids[dr.row_dict["refid"]] = [dr]
+            ref_ids[reference] = [dr]
 
     for row_index, data_row in enumerate(data_rows):
         if config.debug:

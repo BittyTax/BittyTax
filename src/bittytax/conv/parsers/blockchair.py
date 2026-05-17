@@ -66,12 +66,12 @@ def parse_blockchair_extended(
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
-            sell_quantity=Decimal(row_dict["Effect"]),
+            sell_quantity=abs(Decimal(row_dict["Effect"])),
             sell_asset=row_dict["Ticker"],
             wallet=WALLET,
         )
     else:
-        raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
+        raise UnexpectedTypeError(parser.in_header.index("Tx number"), "Tx number", row_dict["Tx number"])
 
 
 # simple format
