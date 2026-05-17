@@ -2,10 +2,9 @@
 # (c) Nano Nano Ltd 2022
 # deoscode implementation of Strike ledger wallet using kraken as my starting point
 
-import copy
 import sys
 from decimal import Decimal
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
 from colorama import Fore
 from typing_extensions import Unpack
@@ -13,7 +12,7 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
-from ..exceptions import DataRowError, UnexpectedTradingPairError, UnexpectedTypeError
+from ..exceptions import DataRowError, UnexpectedTypeError
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -57,10 +56,8 @@ def parse_strike_ledger(
 
 def _parse_strike_ledger_row(
     ref_ids: Dict[str, List["DataRow"]],
-    data_rows: List["DataRow"],
     parser: DataParser,
-    data_row: "DataRow",
-    row_index: int,
+    data_row: "DataRow"
 ) -> None:
     # strike.me do not document their CSV output, so I can only code for
     # what sample data is available
@@ -120,7 +117,7 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
             if Decimal(row_dict["Amount GBP"]) < 0:
                 sell_quantity = abs(Decimal(row_dict["Amount GBP"]))
                 sell_asset = "GBP"
-        
+
         if row_dict["Fee GBP"] != "":
             if Decimal(row_dict["Fee GBP"]) > 0:
                 fee_quantity = Decimal(row_dict["Fee GBP"])
@@ -149,7 +146,7 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
 DataParser(
     ParserType.EXCHANGE,
     "Strike",
-    ["Reference", "Date & Time (UTC)", "Transaction Type", "Amount GBP", "Fee GBP", 
+    ["Reference", "Date & Time (UTC)", "Transaction Type", "Amount GBP", "Fee GBP",
      "Amount BTC", "Fee BTC", "BTC Price", "Cost Basis (GBP)", "Destination", "Description",
      "Transaction Hash", "Note"],
     worksheet_name="Strike",

@@ -19,7 +19,7 @@ WALLET = "Blockchair"
 
 def parse_blockchair_simple(data_row: "DataRow",
                             parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
-    
+
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], dayfirst=True)
     data_row.tx_raw = TxRawPos(
@@ -47,7 +47,7 @@ def parse_blockchair_simple(data_row: "DataRow",
 
 def parse_blockchair_extended(data_row: "DataRow",
                               parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
-    
+
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], dayfirst=True)
     data_row.tx_raw = TxRawPos(
@@ -59,7 +59,7 @@ def parse_blockchair_extended(data_row: "DataRow",
             TrType.DEPOSIT,
             data_row.timestamp,
             buy_quantity=Decimal(row_dict["Effect"]),
-            buy_asset=row_dict["Ticker"], 
+            buy_asset=row_dict["Ticker"],
             wallet=WALLET
         )
     elif row_dict["Type"] == "External spending":
@@ -79,13 +79,13 @@ DataParser(
     "Blockchair",
     ["Tx number", "Affected address/xpub", "Effect", "Ticker",
      "Amount fiat (USD)", "Asset rate (USD)", "Date", "Transaction hash"],
-    worksheet_name="Blockchair", 
+    worksheet_name="Blockchair",
     row_handler=parse_blockchair_simple
 )
 
 # extended format
 DataParser(
-    ParserType.WALLET, 
+    ParserType.WALLET,
     "Blockchair",
     ["Tx number", "Effect", "Ticker",
      "Amount fiat (USD)", "Asset rate (USD)", "Type", "Date", "Public key",
