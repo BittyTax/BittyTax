@@ -75,6 +75,7 @@ def parse_blockchair_extended(data_row: "DataRow",
     else:
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
+
 # simple format
 DataParser(
     ParserType.WALLET,

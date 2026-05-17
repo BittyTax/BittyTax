@@ -92,7 +92,7 @@ def _parse_strike_ledger_row(
         )
     elif row_dict["Transaction Type"] == "Purchase":
         _make_trade(_get_ref_ids(ref_ids, row_dict["Reference"], ("Purchase",)))
-    #elif row_dict["Transaction Type"] in ("spend", "receive"):
+    # elif row_dict["Transaction Type"] in ("spend", "receive"):
     #    _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("spend", "receive")))
     else:
         raise UnexpectedTypeError(parser.in_header.index("Transaction Type"),
@@ -125,8 +125,8 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
         if row_dict["Fee GBP"] != "":
             if Decimal(row_dict["Fee GBP"]) > 0:
                 fee_quantity = Decimal(row_dict["Fee GBP"])
-                fee_asset="GBP"
-                sell_quantity = sell_quantity -Decimal(row_dict["Fee GBP"])
+                fee_asset = "GBP"
+                sell_quantity = sell_quantity - Decimal(row_dict["Fee GBP"])
 
         if row_dict["Amount BTC"] != "":
             if Decimal(row_dict["Amount BTC"]) > 0:
@@ -146,6 +146,7 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
             fee_asset=fee_asset,
             wallet=WALLET,
         )
+
 
 DataParser(
     ParserType.EXCHANGE,
