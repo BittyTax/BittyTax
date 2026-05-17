@@ -45,7 +45,7 @@ def parse_strike_ledger(
             continue
 
         try:
-            _parse_strike_ledger_row(ref_ids, data_row, row_index)
+            _parse_strike_ledger_row(ref_ids, parser, data_row)
         except DataRowError as e:
             data_row.failure = e
         except (ValueError, ArithmeticError) as e:
