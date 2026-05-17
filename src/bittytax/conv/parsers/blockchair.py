@@ -19,13 +19,14 @@ WALLET = "Blockchair"
 
 def parse_blockchair_simple(data_row: "DataRow",
                             parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
+    
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], dayfirst=True)
     data_row.tx_raw = TxRawPos(
         parser.in_header.index("Transaction hash")
     )
 
-    if Decimal(row_dict["Effect"])>0:
+    if Decimal(row_dict["Effect"]) > 0:
         data_row.t_record = TransactionOutRecord(
             TrType.DEPOSIT,
             data_row.timestamp,
@@ -33,7 +34,7 @@ def parse_blockchair_simple(data_row: "DataRow",
             buy_asset=row_dict["Ticker"],
             wallet=WALLET,
         )
-    elif Decimal(row_dict["Effect"])<0:
+    elif Decimal(row_dict["Effect"]) < 0:
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -46,6 +47,7 @@ def parse_blockchair_simple(data_row: "DataRow",
 
 def parse_blockchair_extended(data_row: "DataRow",
                               parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
+    
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], dayfirst=True)
     data_row.tx_raw = TxRawPos(
@@ -54,40 +56,40 @@ def parse_blockchair_extended(data_row: "DataRow",
 
     if row_dict["Type"] == "External receiving":
         data_row.t_record = TransactionOutRecord(
-            TrType.DEPOSIT,
-            data_row.timestamp,
-            buy_quantity=Decimal(row_dict["Effect"]),
-            buy_asset=row_dict["Ticker"],
-            wallet=WALLET,
+            TrType.DEPOSIT, 
+            data_row.timestamp, 
+            buy_quantity=Decimal(row_dict["Effect"]), 
+            buy_asset=row_dict["Ticker"], 
+            wallet=WALLET
         )
     elif row_dict["Type"] == "External spending":
         data_row.t_record = TransactionOutRecord(
-            TrType.WITHDRAWAL,
-            data_row.timestamp,
+            TrType.WITHDRAWAL, 
+            data_row.timestamp, 
             sell_quantity=Decimal(row_dict["Effect"]),
             sell_asset=row_dict["Ticker"],
-            wallet=WALLET,
+            wallet=WALLET
         )
     else:
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
 # simple format
 DataParser(
-    ParserType.WALLET,
-    "Blockchair",
-    ["Tx number","Affected address/xpub","Effect","Ticker",
-     "Amount fiat (USD)","Asset rate (USD)","Date","Transaction hash"],
-    worksheet_name="Blockchair",
+    ParserType.WALLET, 
+    "Blockchair", 
+    ["Tx number", "Affected address/xpub", "Effect", "Ticker", 
+     "Amount fiat (USD)", "Asset rate (USD)", "Date", "Transaction hash"], 
+    worksheet_name="Blockchair", 
     row_handler=parse_blockchair_simple
 )
 
 # extended format
 DataParser(
-    ParserType.WALLET,
+    ParserType.WALLET, 
     "Blockchair",
-    ["Tx number","Effect","Ticker",
-     "Amount fiat (USD)","Asset rate (USD)","Type","Date","Public key",
-     "Wallet address","Third-party address","Transaction hash"],
+    ["Tx number", "Effect", "Ticker",
+     "Amount fiat (USD)", "Asset rate (USD)", "Type", "Date", "Public key",
+     "Wallet address", "Third-party address", "Transaction hash"],
     worksheet_name="Blockchair",
     row_handler=parse_blockchair_extended
 )
