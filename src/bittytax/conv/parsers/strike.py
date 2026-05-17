@@ -31,7 +31,7 @@ def parse_strike_ledger(
         else:
             ref_ids[dr.row_dict["Reference"]] = [dr]
 
-    for row_index, data_row in enumerate(data_rows):
+    for data_row in enumerate(data_rows):
         if config.debug:
             if parser.in_header_row_num is None:
                 raise RuntimeError("Missing in_header_row_num")
