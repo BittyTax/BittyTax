@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 WALLET = "Blockchair"
 
-def parse_blockchair_simple(data_row: "DataRow", 
+def parse_blockchair_simple(data_row: "DataRow",
                             parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], dayfirst=True)
@@ -71,20 +71,23 @@ def parse_blockchair_extended(data_row: "DataRow",
     else:
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
-# simple csv format
+# simple format
 DataParser(
     ParserType.WALLET,
     "Blockchair",
-    ["Tx number","Affected address/xpub","Effect","Ticker","Amount fiat (USD)","Asset rate (USD)","Date","Transaction hash"],
+    ["Tx number","Affected address/xpub","Effect","Ticker",
+     "Amount fiat (USD)","Asset rate (USD)","Date","Transaction hash"],
     worksheet_name="Blockchair",
     row_handler=parse_blockchair_simple
 )
 
-# extended csv format
+# extended format
 DataParser(
     ParserType.WALLET,
     "Blockchair",
-    ["Tx number","Effect","Ticker","Amount fiat (USD)","Asset rate (USD)","Type","Date","Public key","Wallet address","Third-party address","Transaction hash"],
+    ["Tx number","Effect","Ticker",
+     "Amount fiat (USD)","Asset rate (USD)","Type","Date","Public key",
+     "Wallet address","Third-party address","Transaction hash"],
     worksheet_name="Blockchair",
     row_handler=parse_blockchair_extended
 )
