@@ -21,7 +21,6 @@ if TYPE_CHECKING:
 
 WALLET = "Strike"
 
-
 def parse_strike_ledger(
     data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
@@ -63,7 +62,7 @@ def _parse_strike_ledger_row(
     data_row: "DataRow",
     row_index: int,
 ) -> None:
-    # strike.me do not document their CSV output, so I can only code for 
+    # strike.me do not document their CSV output, so I can only code for
     # what sample data is available
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date & Time (UTC)"])
@@ -117,19 +116,19 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
         data_row.timestamp = DataParser.parse_timestamp(row_dict["Date & Time (UTC)"])
         data_row.parsed = True
 
-        if (row_dict["Amount GBP"]!=""):
-            if (Decimal(row_dict["Amount GBP"]) < 0):
+        if row_dict["Amount GBP"] != "":
+            if Decimal(row_dict["Amount GBP"]) < 0:
                 sell_quantity = abs(Decimal(row_dict["Amount GBP"]))
                 sell_asset = "GBP"
         
-        if (row_dict["Fee GBP"]!=""):
-            if (Decimal(row_dict["Fee GBP"]) > 0):
+        if row_dict["Fee GBP"] != "":
+            if Decimal(row_dict["Fee GBP"]) > 0:
                 fee_quantity = Decimal(row_dict["Fee GBP"])
                 fee_asset="GBP"
                 sell_quantity = sell_quantity -Decimal(row_dict["Fee GBP"])
 
-        if (row_dict["Amount BTC"]!=""):
-            if (Decimal(row_dict["Amount BTC"]) > 0):
+        if row_dict["Amount BTC"] != "":
+            if Decimal(row_dict["Amount BTC"]) > 0:
                 buy_quantity = Decimal(row_dict["Amount BTC"])
                 buy_asset = "BTC"
                 trade_row = data_row
