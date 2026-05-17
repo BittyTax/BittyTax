@@ -26,26 +26,26 @@ def parse_strike_ledger(
     ref_ids: Dict[str, List["DataRow"]] = {}
 
     for dr in data_rows:
-        if dr.row_dict["Reference"] in ref_ids:
-            ref_ids[dr.row_dict["Reference"]].append(dr)
+        if dr.row_dict["refid"] in ref_ids:
+            ref_ids[dr.row_dict["refid"]].append(dr)
         else:
-            ref_ids[dr.row_dict["Reference"]] = [dr]
+            ref_ids[dr.row_dict["refid"]] = [dr]
 
-    for data_row in enumerate(data_rows):
+    for row_index, data_row in enumerate(data_rows):
         if config.debug:
             if parser.in_header_row_num is None:
                 raise RuntimeError("Missing in_header_row_num")
 
             sys.stderr.write(
                 f"{Fore.YELLOW}conv: "
-                f"row[{parser.in_header_row_num}] {data_row}\n"
+                f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
             )
 
         if data_row.parsed:
             continue
 
         try:
-            _parse_strike_ledger_row(ref_ids, parser, data_row)
+            _parse_strike_ledger_row(ref_ids,  parser, data_row)
         except DataRowError as e:
             data_row.failure = e
         except (ValueError, ArithmeticError) as e:
