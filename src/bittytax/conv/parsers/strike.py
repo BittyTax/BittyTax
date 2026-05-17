@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 WALLET = "Strike"
 
+
 def parse_strike_ledger(
     data_rows: List["DataRow"], parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
@@ -54,6 +55,7 @@ def parse_strike_ledger(
 
             data_row.failure = e
 
+
 def _parse_strike_ledger_row(
     ref_ids: Dict[str, List["DataRow"]],
     parser: DataParser,
@@ -84,8 +86,8 @@ def _parse_strike_ledger_row(
             sell_quantity=abs(Decimal(row_dict["Amount BTC"])),
             sell_asset="BTC",
             # i always use strikes free transfers, so don't know what they use
-            #fee_quantity=abs(Decimal(row_dict["fee"])),
-            #fee_asset=_normalise_asset(row_dict["asset"]),
+            # fee_quantity=abs(Decimal(row_dict["fee"])),
+            # fee_asset=_normalise_asset(row_dict["asset"]),
             wallet=WALLET,
         )
     elif row_dict["Transaction Type"] == "Purchase":
@@ -96,10 +98,12 @@ def _parse_strike_ledger_row(
         raise UnexpectedTypeError(parser.in_header.index("Transaction Type"),
                                   "Transaction Type", row_dict["Transaction Type"])
 
+
 def _get_ref_ids(
     ref_ids: Dict[str, List["DataRow"]], ref_id: str, k_type: Tuple[str, ...]
 ) -> List["DataRow"]:
     return [dr for dr in ref_ids[ref_id] if dr.row_dict["Transaction Type"] in k_type]
+
 
 def _make_trade(ref_ids: List["DataRow"]) -> None:
     buy_quantity = sell_quantity = Decimal(0)

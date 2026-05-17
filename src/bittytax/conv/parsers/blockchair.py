@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 WALLET = "Blockchair"
 
+
 def parse_blockchair_simple(data_row: "DataRow",
                             parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
 
@@ -44,6 +45,7 @@ def parse_blockchair_simple(data_row: "DataRow",
         )
     else:
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
+
 
 def parse_blockchair_extended(data_row: "DataRow",
                               parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
