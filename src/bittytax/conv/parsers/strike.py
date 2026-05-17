@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2022
-# deoscode implementation of Strike ledger wallet using kraken as my starting point
+# implementation of Strike ledger wallet using kraken as my starting point
 
 import sys
 from decimal import Decimal
@@ -45,7 +45,7 @@ def parse_strike_ledger(
             continue
 
         try:
-            _parse_strike_ledger_row(ref_ids, data_row)
+            _parse_strike_ledger_row(ref_ids, parser, data_row)
         except DataRowError as e:
             data_row.failure = e
         except (ValueError, ArithmeticError) as e:
@@ -83,7 +83,7 @@ def _parse_strike_ledger_row(
             data_row.timestamp,
             sell_quantity=abs(Decimal(row_dict["Amount BTC"])),
             sell_asset="BTC",
-            # i always use strikes free transfers, so dont know what they use
+            # i always use strikes free transfers, so don't know what they use
             #fee_quantity=abs(Decimal(row_dict["fee"])),
             #fee_asset=_normalise_asset(row_dict["asset"]),
             wallet=WALLET,
