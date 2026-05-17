@@ -56,16 +56,16 @@ def parse_blockchair_extended(data_row: "DataRow",
 
     if row_dict["Type"] == "External receiving":
         data_row.t_record = TransactionOutRecord(
-            TrType.DEPOSIT, 
-            data_row.timestamp, 
-            buy_quantity=Decimal(row_dict["Effect"]), 
+            TrType.DEPOSIT,
+            data_row.timestamp,
+            buy_quantity=Decimal(row_dict["Effect"]),
             buy_asset=row_dict["Ticker"], 
             wallet=WALLET
         )
     elif row_dict["Type"] == "External spending":
         data_row.t_record = TransactionOutRecord(
-            TrType.WITHDRAWAL, 
-            data_row.timestamp, 
+            TrType.WITHDRAWAL,
+            data_row.timestamp,
             sell_quantity=Decimal(row_dict["Effect"]),
             sell_asset=row_dict["Ticker"],
             wallet=WALLET
@@ -75,10 +75,10 @@ def parse_blockchair_extended(data_row: "DataRow",
 
 # simple format
 DataParser(
-    ParserType.WALLET, 
-    "Blockchair", 
-    ["Tx number", "Affected address/xpub", "Effect", "Ticker", 
-     "Amount fiat (USD)", "Asset rate (USD)", "Date", "Transaction hash"], 
+    ParserType.WALLET,
+    "Blockchair",
+    ["Tx number", "Affected address/xpub", "Effect", "Ticker",
+     "Amount fiat (USD)", "Asset rate (USD)", "Date", "Transaction hash"],
     worksheet_name="Blockchair", 
     row_handler=parse_blockchair_simple
 )
