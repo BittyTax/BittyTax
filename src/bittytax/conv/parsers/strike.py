@@ -46,7 +46,7 @@ def parse_strike_ledger(
             continue
 
         try:
-            _parse_strike_ledger_row(ref_ids,  parser, data_row)
+            _parse_strike_ledger_row(ref_ids, parser, data_row)
         except DataRowError as e:
             data_row.failure = e
         except (ValueError, ArithmeticError) as e:
@@ -57,9 +57,7 @@ def parse_strike_ledger(
 
 
 def _parse_strike_ledger_row(
-    ref_ids: Dict[str, List["DataRow"]],
-    parser: DataParser,
-    data_row: "DataRow"
+    ref_ids: Dict[str, List["DataRow"]], parser: DataParser, data_row: "DataRow"
 ) -> None:
     # strike.me do not document their CSV output, so I can only code for
     # what sample data is available
@@ -92,11 +90,12 @@ def _parse_strike_ledger_row(
         )
     elif row_dict["Transaction Type"] == "Purchase":
         _make_trade(_get_ref_ids(ref_ids, row_dict["Reference"], ("Purchase",)))
-    # elif row_dict["Transaction Type"] in ("spend", "receive"):
-    #    _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("spend", "receive")))
     else:
-        raise UnexpectedTypeError(parser.in_header.index("Transaction Type"),
-                                  "Transaction Type", row_dict["Transaction Type"])
+        raise UnexpectedTypeError(
+            parser.in_header.index("Transaction Type"),
+            "Transaction Type",
+            row_dict["Transaction Type"],
+        )
 
 
 def _get_ref_ids(
@@ -151,9 +150,21 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
 DataParser(
     ParserType.EXCHANGE,
     "Strike",
-    ["Reference", "Date & Time (UTC)", "Transaction Type", "Amount GBP", "Fee GBP",
-     "Amount BTC", "Fee BTC", "BTC Price", "Cost Basis (GBP)", "Destination", "Description",
-     "Transaction Hash", "Note"],
+    [
+        "Reference",
+        "Date & Time (UTC)",
+        "Transaction Type",
+        "Amount GBP",
+        "Fee GBP",
+        "Amount BTC",
+        "Fee BTC",
+        "BTC Price",
+        "Cost Basis (GBP)",
+        "Destination",
+        "Description",
+        "Transaction Hash",
+        "Note",
+    ],
     worksheet_name="Strike",
     all_handler=parse_strike_ledger,
 )
