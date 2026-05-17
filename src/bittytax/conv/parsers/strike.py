@@ -38,14 +38,14 @@ def parse_strike_ledger(
 
             sys.stderr.write(
                 f"{Fore.YELLOW}conv: "
-                f"row[{parser.in_header_row_num + data_row.line_num}] {data_row}\n"
+                f"row[{parser.in_header_row_num}] {data_row}\n"
             )
 
         if data_row.parsed:
             continue
 
         try:
-            _parse_strike_ledger_row(ref_ids, parser, data_row)
+            _parse_strike_ledger_row(ref_ids, data_row)
         except DataRowError as e:
             data_row.failure = e
         except (ValueError, ArithmeticError) as e:
