@@ -149,7 +149,7 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
 
 
 DataParser(
-    ParserType.WALLET,
+    ParserType.EXCHANGE,
     "Strike",
     [
         "Reference",
