@@ -17,7 +17,8 @@ if TYPE_CHECKING:
 
 WALLET = "Blockchair"
 
-def parse_blockchair_simple(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
+def parse_blockchair_simple(data_row: "DataRow", 
+                            parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], dayfirst=True)
     data_row.tx_raw = TxRawPos(
@@ -43,7 +44,8 @@ def parse_blockchair_simple(data_row: "DataRow", parser: DataParser, **_kwargs: 
     else:
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
-def parse_blockchair_extended(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
+def parse_blockchair_extended(data_row: "DataRow",
+                              parser: DataParser, **_kwargs: Unpack[ParserArgs]) -> None:
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], dayfirst=True)
     data_row.tx_raw = TxRawPos(
@@ -66,9 +68,6 @@ def parse_blockchair_extended(data_row: "DataRow", parser: DataParser, **_kwargs
             sell_asset=row_dict["Ticker"],
             wallet=WALLET,
         )
-    elif row_dict["Type"] == "Inner":
-         # ignore
-         pass
     else:
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
