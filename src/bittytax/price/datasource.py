@@ -279,7 +279,7 @@ class DataSourceBase:
                 prices: Dict[TradingPair, Dict[AssetId, Dict[Date, DsPriceData]]] = {}
                 for pair, pair_data in json_prices.items():
                     if pair_data and self._is_date_key(next(iter(pair_data))):
-                        # Old flat format: { "YYYY-MM-DD": {"price": "...", "url": "..."} }
+                        # Legacy format
                         prices[TradingPair(pair)] = {
                             AssetId(""): {
                                 self.str_to_date(date): {
@@ -290,7 +290,7 @@ class DataSourceBase:
                             }
                         }
                     else:
-                        # New format: { "asset_id": { "name": "...", "prices": {...} } }
+                        # New format
                         prices[TradingPair(pair)] = {}
                         for asset_id, asset_entry in pair_data.items():
                             aid = AssetId(asset_id)
