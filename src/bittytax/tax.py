@@ -7,7 +7,6 @@ import datetime
 from decimal import Decimal, getcontext
 from typing import Dict, List, Optional, Tuple, Union
 
-import requests
 from colorama import Fore
 from tqdm import tqdm
 from typing_extensions import NotRequired, TypedDict
@@ -29,6 +28,7 @@ from .bt_types import (
 from .config import config
 from .constants import WARNING
 from .holdings import Holdings
+from .price.exceptions import DataSourceApiError
 from .price.valueasset import ValueAsset
 from .tax_event import TaxEvent, TaxEventCapitalGains, TaxEventIncome, TaxEventMarginTrade
 from .transactions import Buy, Sell
@@ -51,6 +51,7 @@ class HoldingsReportAsset(TypedDict):  # pylint: disable=too-few-public-methods
     cost: Decimal
     value: Optional[Decimal]
     gain: NotRequired[Decimal]
+    api_error: NotRequired[bool]
 
 
 class HoldingsReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
@@ -574,18 +575,19 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             value_asset.price_data.progress_bar = progress_bar
             for h in progress_bar:
                 if self.holdings[h].quantity > 0 or config.show_empty_wallets:
+                    api_error = False
                     try:
                         value, name, _ = value_asset.get_current_value(
                             self.holdings[h].asset, self.holdings[h].quantity
                         )
-                    except requests.exceptions.HTTPError as e:
-                        status_code = getattr(e.response, "status_code", "Unknown")
+                    except DataSourceApiError as e:
                         bt_tqdm_write(
                             f"{WARNING} Skipping valuation of {self.holdings[h].asset} "
-                            f"due to API failure ({status_code})"
+                            f"due to API failure: {e}"
                         )
                         value = None
                         name = AssetName("")
+                        api_error = True
 
                     value = value.quantize(PRECISION) if value is not None else None
                     cost = (self.holdings[h].cost + self.holdings[h].fees).quantize(PRECISION)
@@ -608,6 +610,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                             "cost": cost,
                             "value": None,
                         }
+                        if api_error:
+                            holdings[h]["api_error"] = True
 
                     totals["cost"] += holdings[h]["cost"]
 

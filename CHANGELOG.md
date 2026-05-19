@@ -60,6 +60,8 @@ The price data cache format has been updated to correctly distinguish assets tha
 - Price tool: legacy price cache files are migrated to the new asset_id format on next save.
 - Price tool: CoinGecko coin list sorted by market cap so the highest market cap coin wins when symbols conflict.
 - Price tool: CoinPaprika coin list sorted by rank for consistent symbol conflict resolution.
+- Accounting tool: API errors during current holdings valuation are now shown as ("Skipped"), distinguishing them from assets with no price data available ("Not available").
+- Accounting tool and price tool: API failures that previously produced a raw traceback now exit cleanly with an error message and a retry hint.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
