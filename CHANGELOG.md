@@ -48,6 +48,8 @@ The price data cache format has been updated to correctly distinguish assets tha
 - Accounting tool and price tool: added progress bar when initialising data sources.
 - Price tool: added progress bar when a data source fetch requires a back-off.
 - Tools: added `bittytax_cache.py` a standalone price cache management tool.
+- Price tool: added `-ccy` argument to `latest` and `historic` subcommands to allow an ad-hoc override of the local currency for a single query. ([#201](https://github.com/BittyTax/BittyTax/issues/201))
+- Config: added CHF (Swiss franc), DKK (Danish krone), NOK (Norwegian krone) and SEK (Swedish krona) to `FIAT_LIST`, with correct currency symbols.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.

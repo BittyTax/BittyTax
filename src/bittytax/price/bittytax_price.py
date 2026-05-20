@@ -57,7 +57,6 @@ def main() -> None:
     parser_latest.add_argument(
         "asset",
         type=str,
-        nargs=1,
         help="symbol of cryptoasset or fiat currency (i.e. BTC/LTC/ETH or EUR/USD)",
     )
     parser_latest.add_argument(
@@ -73,6 +72,14 @@ def main() -> None:
         dest="datasource",
         type=str.upper,
         help="specify the data source to use, or all",
+    )
+    parser_latest.add_argument(
+        "-ccy",
+        choices=config.FIAT_LIST,
+        metavar="{" + ", ".join(config.FIAT_LIST) + "}",
+        type=str.upper,
+        default=None,
+        help="override the local currency for this query",
     )
     parser_latest.add_argument("-d", "--debug", action="store_true", help="enable debug logging")
     parser_latest.add_argument(
@@ -91,12 +98,9 @@ def main() -> None:
     parser_history.add_argument(
         "asset",
         type=str.upper,
-        nargs=1,
         help="symbol of cryptoasset or fiat currency (i.e. BTC/LTC/ETH or EUR/USD)",
     )
-    parser_history.add_argument(
-        "date", type=validate_date, nargs=1, help="date (YYYY-MM-DD or DD/MM/YYYY)"
-    )
+    parser_history.add_argument("date", type=validate_date, help="date (YYYY-MM-DD or DD/MM/YYYY)")
     parser_history.add_argument(
         "quantity",
         type=validate_quantity,
@@ -110,6 +114,14 @@ def main() -> None:
         dest="datasource",
         type=str.upper,
         help="specify the data source to use, or all",
+    )
+    parser_history.add_argument(
+        "-ccy",
+        choices=config.FIAT_LIST,
+        metavar="{" + ", ".join(config.FIAT_LIST) + "}",
+        type=str.upper,
+        default=None,
+        help="override the local currency for this query",
     )
     parser_history.add_argument(
         "-nc",
@@ -159,6 +171,9 @@ def main() -> None:
     args = parser.parse_args()
     config.debug = args.debug
 
+    if args.command in (CMD_LATEST, CMD_HISTORY) and args.ccy:
+        config.ccy = args.ccy
+
     if config.debug:
         print(f"{Fore.YELLOW}{version_str}")
         print(f"{Fore.GREEN}python: v{platform.python_version()}")
@@ -168,7 +183,7 @@ def main() -> None:
         config.output_config(sys.stdout)
 
     if args.command in (CMD_LATEST, CMD_HISTORY):
-        symbol = args.asset[0]
+        symbol = args.asset
         asset = price = False
 
         try:
@@ -193,7 +208,7 @@ def main() -> None:
                 )
                 if args.command == CMD_HISTORY:
                     assets = asset_data_obj.get_historic_price_ds(
-                        symbol, args.date[0], args.datasource
+                        symbol, args.date, args.datasource
                     )
                 else:
                     assets = asset_data_obj.get_latest_price_ds(symbol, args.datasource)
@@ -207,7 +222,7 @@ def main() -> None:
                     if asset_data["quote"] == "BTC":
                         if btc is None:
                             if args.command == CMD_HISTORY:
-                                btc = asset_data_obj.get_historic_btc_price(args.date[0])
+                                btc = asset_data_obj.get_historic_btc_price(args.date)
                             else:
                                 btc = asset_data_obj.get_latest_btc_price()
 
@@ -226,7 +241,7 @@ def main() -> None:
             else:
                 value_asset = ValueAsset(price_tool=True, no_cache=args.no_cache)
                 if args.command == CMD_HISTORY:
-                    price_record = value_asset.get_historical_price(symbol, args.date[0])
+                    price_record = value_asset.get_historical_price(symbol, args.date)
                     price_ccy2 = price_record.price_ccy
                     name = price_record.name
                 else:
@@ -250,7 +265,7 @@ def main() -> None:
         if not price:
             if args.command == CMD_HISTORY:
                 parser.exit(
-                    message=f"{WARNING} Price for {symbol} on {args.date[0]:%Y-%m-%d} "
+                    message=f"{WARNING} Price for {symbol} on {args.date:%Y-%m-%d} "
                     "is not available\n"
                 )
             else:
