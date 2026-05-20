@@ -44,13 +44,15 @@ class ValueOrigin:
 
 
 class ValueAsset:
-    def __init__(self, price_tool: bool = False, no_cache: bool = False) -> None:
+    def __init__(
+        self, price_tool: bool = False, no_cache: bool = False, leave_bar: bool = False
+    ) -> None:
         self.price_tool = price_tool
         self.price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]] = {}
         data_sources_required = set(config.data_source_fiat + config.data_source_crypto) | {
             x.split(":")[0] for v in config.data_source_select.values() for x in v
         }
-        self.price_data = PriceData(list(data_sources_required), price_tool, no_cache)
+        self.price_data = PriceData(list(data_sources_required), price_tool, no_cache, leave_bar)
 
     def get_value(self, t: Union["Buy", "Sell"]) -> Tuple[Decimal, ValueOrigin]:
         if t.asset == config.ccy:

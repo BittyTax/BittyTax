@@ -247,7 +247,7 @@ def _do_import(filename: str) -> List[TransactionRecord]:
 def _do_tax(
     transaction_records: List[TransactionRecord], tax_rules: TaxRules, skip_integrity_check: bool
 ) -> Tuple[TaxCalculator, ValueAsset]:
-    value_asset = ValueAsset()
+    value_asset = ValueAsset(leave_bar=True)
     transaction_history = TransactionHistory(transaction_records, value_asset)
 
     tax = TaxCalculator(transaction_history.transactions, tax_rules)
@@ -341,7 +341,7 @@ def _do_each_tax_year(
 
 
 def _do_export(transaction_records: List[TransactionRecord]) -> None:
-    value_asset = ValueAsset()
+    value_asset = ValueAsset(leave_bar=True)
     TransactionHistory(transaction_records, value_asset)
     ExportRecords(transaction_records).write_csv()
 
