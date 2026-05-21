@@ -20,7 +20,7 @@ else:
 class Config:
     BITTYTAX_CONFIG = "bittytax.conf"
 
-    FIAT_LIST = ["GBP", "EUR", "USD", "AUD", "NZD", "CAD", "PLN"]
+    FIAT_LIST = ["GBP", "EUR", "USD", "AUD", "NZD", "CAD", "PLN", "DKK", "NOK", "SEK", "CHF"]
     CRYPTO_LIST = ["BTC", "ETH", "XRP", "LTC", "BCH", "BNB", "USDT", "USDC"]
 
     TRADE_ASSET_TYPE_BUY = 0
@@ -132,10 +132,14 @@ class Config:
             return "\xa3"  # £
         if self.ccy == "EUR":
             return "\u20ac"  # €
-        if self.ccy in ("USD", "AUD", "NZD"):
+        if self.ccy in ("USD", "AUD", "NZD", "CAD"):
             return "$"
         if self.ccy in ("DKK", "NOK", "SEK"):
-            return "kr."
+            return "kr"
+        if self.ccy == "PLN":
+            return "z\u0142"  # zł
+        if self.ccy == "CHF":
+            return "Fr."
 
         raise RuntimeError("Currency not supported")
 

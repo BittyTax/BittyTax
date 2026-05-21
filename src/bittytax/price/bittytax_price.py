@@ -6,7 +6,7 @@ import platform
 import re
 import sys
 from decimal import Decimal, InvalidOperation
-from typing import List
+from typing import List, Optional
 
 import colorama
 import dateutil.parser
@@ -19,7 +19,7 @@ from ..utils import is_compiled
 from ..version import __version__
 from .assetdata import AsPriceRecord, AsRecord, AssetData
 from .datasource import DataSourceBase
-from .exceptions import DataSourceError
+from .exceptions import DataSourceApiError, DataSourceError
 from .valueasset import ValueAsset
 
 CMD_LATEST = "latest"
@@ -57,7 +57,6 @@ def main() -> None:
     parser_latest.add_argument(
         "asset",
         type=str,
-        nargs=1,
         help="symbol of cryptoasset or fiat currency (i.e. BTC/LTC/ETH or EUR/USD)",
     )
     parser_latest.add_argument(
@@ -74,8 +73,22 @@ def main() -> None:
         type=str.upper,
         help="specify the data source to use, or all",
     )
+    parser_latest.add_argument(
+        "-ccy",
+        choices=config.FIAT_LIST,
+        metavar="{" + ", ".join(config.FIAT_LIST) + "}",
+        type=str.upper,
+        default=None,
+        help="override the local currency for this query",
+    )
     parser_latest.add_argument("-d", "--debug", action="store_true", help="enable debug logging")
-
+    parser_latest.add_argument(
+        "-nc",
+        "--nocache",
+        dest="no_cache",
+        action="store_true",
+        help="bypass data cache",
+    )
     parser_history = subparsers.add_parser(
         CMD_HISTORY,
         help="get the historical price of an asset",
@@ -85,12 +98,9 @@ def main() -> None:
     parser_history.add_argument(
         "asset",
         type=str.upper,
-        nargs=1,
         help="symbol of cryptoasset or fiat currency (i.e. BTC/LTC/ETH or EUR/USD)",
     )
-    parser_history.add_argument(
-        "date", type=validate_date, nargs=1, help="date (YYYY-MM-DD or DD/MM/YYYY)"
-    )
+    parser_history.add_argument("date", type=validate_date, help="date (YYYY-MM-DD or DD/MM/YYYY)")
     parser_history.add_argument(
         "quantity",
         type=validate_quantity,
@@ -104,6 +114,14 @@ def main() -> None:
         dest="datasource",
         type=str.upper,
         help="specify the data source to use, or all",
+    )
+    parser_history.add_argument(
+        "-ccy",
+        choices=config.FIAT_LIST,
+        metavar="{" + ", ".join(config.FIAT_LIST) + "}",
+        type=str.upper,
+        default=None,
+        help="override the local currency for this query",
     )
     parser_history.add_argument(
         "-nc",
@@ -142,9 +160,19 @@ def main() -> None:
         help="specify the data source to use, or all",
     )
     parser_list.add_argument("-d", "--debug", action="store_true", help="enable debug logging")
+    parser_list.add_argument(
+        "-nc",
+        "--nocache",
+        dest="no_cache",
+        action="store_true",
+        help="bypass data cache",
+    )
 
     args = parser.parse_args()
     config.debug = args.debug
+
+    if args.command in (CMD_LATEST, CMD_HISTORY) and args.ccy:
+        config.ccy = args.ccy
 
     if config.debug:
         print(f"{Fore.YELLOW}{version_str}")
@@ -155,17 +183,35 @@ def main() -> None:
         config.output_config(sys.stdout)
 
     if args.command in (CMD_LATEST, CMD_HISTORY):
-        symbol = args.asset[0]
+        symbol = args.asset
         asset = price = False
 
         try:
             if args.datasource:
+                if args.datasource == "ALL":
+                    combined_ds: Optional[List[str]] = None
+                else:
+                    ds_set = {args.datasource.upper()}
+                    if symbol.upper() != "BTC":
+                        btc_priority = (
+                            [
+                                ds.split(":")[0]
+                                for ds in config.data_source_select[AssetSymbol("BTC")]
+                            ]
+                            if AssetSymbol("BTC") in config.data_source_select
+                            else config.data_source_crypto
+                        )
+                        ds_set |= {ds.upper() for ds in btc_priority}
+                    combined_ds = list(ds_set)
+                asset_data_obj = AssetData(
+                    no_cache=args.no_cache, data_sources_required=combined_ds
+                )
                 if args.command == CMD_HISTORY:
-                    assets = AssetData().get_historic_price_ds(
-                        symbol, args.date[0], args.datasource, args.no_cache
+                    assets = asset_data_obj.get_historic_price_ds(
+                        symbol, args.date, args.datasource
                     )
                 else:
-                    assets = AssetData().get_latest_price_ds(symbol, args.datasource)
+                    assets = asset_data_obj.get_latest_price_ds(symbol, args.datasource)
                 btc = None
                 for asset_data in assets:
                     if asset_data["price"] is None:
@@ -176,9 +222,9 @@ def main() -> None:
                     if asset_data["quote"] == "BTC":
                         if btc is None:
                             if args.command == CMD_HISTORY:
-                                btc = get_historic_btc_price(args.date[0])
+                                btc = asset_data_obj.get_historic_btc_price(args.date)
                             else:
-                                btc = get_latest_btc_price()
+                                btc = asset_data_obj.get_latest_btc_price()
 
                         if btc["price"] is not None:
                             price_ccy = btc["price"] * asset_data["price"]
@@ -193,11 +239,9 @@ def main() -> None:
                 if assets:
                     asset = True
             else:
-                value_asset = ValueAsset(price_tool=True)
+                value_asset = ValueAsset(price_tool=True, no_cache=args.no_cache)
                 if args.command == CMD_HISTORY:
-                    price_record = value_asset.get_historical_price(
-                        symbol, args.date[0], args.no_cache
-                    )
+                    price_record = value_asset.get_historical_price(symbol, args.date)
                     price_ccy2 = price_record.price_ccy
                     name = price_record.name
                 else:
@@ -210,6 +254,8 @@ def main() -> None:
                 if name:
                     asset = True
 
+        except DataSourceApiError as e:
+            parser.exit(message=f"{ERROR} {e} - please wait and try again\n")
         except DataSourceError as e:
             parser.exit(message=f"{ERROR} {e}\n")
 
@@ -219,7 +265,7 @@ def main() -> None:
         if not price:
             if args.command == CMD_HISTORY:
                 parser.exit(
-                    message=f"{WARNING} Price for {symbol} on {args.date[0]:%Y-%m-%d} "
+                    message=f"{WARNING} Price for {symbol} on {args.date:%Y-%m-%d} "
                     "is not available\n"
                 )
             else:
@@ -227,7 +273,14 @@ def main() -> None:
     elif args.command == CMD_LIST:
         symbol = args.asset
         try:
-            asset_list = AssetData().get_assets(symbol, args.datasource, args.search_terms)
+            ds_required = (
+                None if not args.datasource or args.datasource == "ALL" else [args.datasource]
+            )
+            asset_list = AssetData(
+                no_cache=args.no_cache, data_sources_required=ds_required
+            ).get_assets(symbol, args.datasource, args.search_terms)
+        except DataSourceApiError as e:
+            parser.exit(message=f"{ERROR} {e} - please wait and try again\n")
         except DataSourceError as e:
             parser.exit(message=f"{ERROR} {e}\n")
 
@@ -238,32 +291,6 @@ def main() -> None:
             parser.exit(message="No results found\n")
 
         output_assets(asset_list)
-
-
-def get_latest_btc_price() -> AsPriceRecord:
-    price_ccy, name, data_source = ValueAsset().get_latest_price(AssetSymbol("BTC"))
-    if price_ccy is not None:
-        return AsPriceRecord(
-            symbol=AssetSymbol("BTC"),
-            name=name,
-            data_source=data_source,
-            price=price_ccy,
-            quote=config.ccy,
-        )
-    raise RuntimeError("BTC price is not available")
-
-
-def get_historic_btc_price(date: Timestamp) -> AsPriceRecord:
-    price_record = ValueAsset().get_historical_price(AssetSymbol("BTC"), date)
-    if price_record.price_ccy is not None:
-        return AsPriceRecord(
-            symbol=AssetSymbol("BTC"),
-            name=price_record.name,
-            data_source=price_record.data_source,
-            price=price_record.price_ccy,
-            quote=config.ccy,
-        )
-    raise RuntimeError("BTC price is not available")
 
 
 def output_price(symbol: AssetSymbol, price_ccy: Decimal, quantity: Decimal) -> None:

@@ -22,7 +22,7 @@ from .exceptions import ImportFailureError
 from .export_records import ExportRecords
 from .holdings import Holdings
 from .import_records import ImportRecords
-from .price.exceptions import DataSourceError
+from .price.exceptions import DataSourceApiError, DataSourceError
 from .price.valueasset import ValueAsset
 from .report import ReportLog, ReportPdf
 from .t_record import TransactionRecord
@@ -180,6 +180,8 @@ def _run(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
 
             _do_each_tax_year(tax, args.tax_year, args.summary_only, value_asset)
 
+        except DataSourceApiError as e:
+            parser.exit(message=f"{ERROR} {e} - please wait and try again\n")
         except DataSourceError as e:
             parser.exit(message=f"{ERROR} {e}\n")
 
@@ -245,7 +247,7 @@ def _do_import(filename: str) -> List[TransactionRecord]:
 def _do_tax(
     transaction_records: List[TransactionRecord], tax_rules: TaxRules, skip_integrity_check: bool
 ) -> Tuple[TaxCalculator, ValueAsset]:
-    value_asset = ValueAsset()
+    value_asset = ValueAsset(leave_bar=True)
     transaction_history = TransactionHistory(transaction_records, value_asset)
 
     tax = TaxCalculator(transaction_history.transactions, tax_rules)
@@ -339,7 +341,7 @@ def _do_each_tax_year(
 
 
 def _do_export(transaction_records: List[TransactionRecord]) -> None:
-    value_asset = ValueAsset()
+    value_asset = ValueAsset(leave_bar=True)
     TransactionHistory(transaction_records, value_asset)
     ExportRecords(transaction_records).write_csv()
 

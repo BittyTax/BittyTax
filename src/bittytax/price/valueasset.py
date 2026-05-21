@@ -44,13 +44,15 @@ class ValueOrigin:
 
 
 class ValueAsset:
-    def __init__(self, price_tool: bool = False) -> None:
+    def __init__(
+        self, price_tool: bool = False, no_cache: bool = False, leave_bar: bool = False
+    ) -> None:
         self.price_tool = price_tool
         self.price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]] = {}
         data_sources_required = set(config.data_source_fiat + config.data_source_crypto) | {
             x.split(":")[0] for v in config.data_source_select.values() for x in v
         }
-        self.price_data = PriceData(list(data_sources_required), price_tool)
+        self.price_data = PriceData(list(data_sources_required), price_tool, no_cache, leave_bar)
 
     def get_value(self, t: Union["Buy", "Sell"]) -> Tuple[Decimal, ValueOrigin]:
         if t.asset == config.ccy:
@@ -86,9 +88,7 @@ class ValueAsset:
 
         return None, AssetName(""), DataSourceName("")
 
-    def get_historical_price(
-        self, asset: AssetSymbol, timestamp: Timestamp, no_cache: bool = False
-    ) -> VaPriceRecord:
+    def get_historical_price(self, asset: AssetSymbol, timestamp: Timestamp) -> VaPriceRecord:
         asset_price_ccy = None
 
         if not self.price_tool and timestamp.date() >= datetime.now().date():
@@ -102,13 +102,13 @@ class ValueAsset:
 
         if asset == "BTC" or asset in config.fiat_list:
             asset_price_ccy, name, data_source, url = self.price_data.get_historical(
-                asset, config.ccy, timestamp, no_cache
+                asset, config.ccy, timestamp
             )
             price_record = VaPriceRecord(name, data_source, url, asset_price_ccy, None)
             self.price_report_cache(asset, timestamp, name, data_source, url, asset_price_ccy)
         else:
             asset_price_btc, name, data_source, url = self.price_data.get_historical(
-                asset, QuoteSymbol("BTC"), timestamp, no_cache
+                asset, QuoteSymbol("BTC"), timestamp
             )
             if asset_price_btc is not None:
                 (
@@ -116,9 +116,7 @@ class ValueAsset:
                     name2,
                     data_source2,
                     url2,
-                ) = self.price_data.get_historical(
-                    AssetSymbol("BTC"), config.ccy, timestamp, no_cache
-                )
+                ) = self.price_data.get_historical(AssetSymbol("BTC"), config.ccy, timestamp)
                 if btc_price_ccy is not None:
                     asset_price_ccy = btc_price_ccy * asset_price_btc
 

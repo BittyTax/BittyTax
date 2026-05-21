@@ -1,5 +1,9 @@
 # Change Log
 ## [Unreleased]
+Important:-
+
+The price data cache format has been updated to correctly distinguish assets that share the same ticker symbol. Existing cache files will be automatically migrated to the new format on the next run. After upgrading, please check the Price Data appendix in your tax report to confirm that the correct token has been chosen for each of your assets.
+
 ### Fixed
 - Coinbase parser: fixed negative values for Advanced Trade Sells.
 - MEXC parser: fees for spot trades should always be the quote asset.
@@ -7,6 +11,7 @@
 - Gemini parser: delete blank rows.
 - Uphold parser: skip failed transactions.
 - Coinbase parser: fixed spurious fee asset appearing in Send/Withdrawal when no fee is present.
+- Price tool: CoinPaprika historical prices were incorrectly using the requested date as the key for all returned entries, causing only the most recent price to be stored; each entry is now keyed by its own date from the API response.
 ### Added
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
 - Exodus parser: added new export format. ([#467](https://github.com/BittyTax/BittyTax/issues/467))
@@ -39,6 +44,12 @@
 - Accounting tool: tax rates and allowance for 2026/27.
 - Conversion tool: added newest_first to DataParser to control the parsing order.
 - KuCoin parser: handle empty reports with "No matching records found".
+- Price tool: ids and assets lists are now cached locally with a 24-hour TTL, avoiding redundant API calls on each run.
+- Accounting tool and price tool: added progress bar when initialising data sources.
+- Price tool: added progress bar when a data source fetch requires a back-off.
+- Tools: added `bittytax_cache.py` a standalone price cache management tool.
+- Price tool: added `-ccy` argument to `latest` and `historic` subcommands to allow an ad-hoc override of the local currency for a single query. ([#201](https://github.com/BittyTax/BittyTax/issues/201))
+- Config: added CHF (Swiss franc), DKK (Danish krone), NOK (Norwegian krone) and SEK (Swedish krona) to `FIAT_LIST`, with correct currency symbols.
 - Revolut parser: added "Stake", "Unstake" and "Staking reward" transaction types.
 ### Changed
 - Config: fiat_income to True.
@@ -52,6 +63,18 @@
 - Conversion tool: OutputExcel determines if macOS via parameter instead of direct from platform.
 - Uphold parser: transaction type "in" can be a Trade, i.e. credit-card purchase of crypto.
 - Accounting tool: Buy/Sell transactions now track the origin of their price valuations.
+- Price tool: price cache format updated to store prices per asset_id bucket, correctly distinguishing assets that share the same symbol.
+- Price tool: legacy price cache files are migrated to the new asset_id format on next save.
+- Price tool: CoinGecko coin list sorted by market cap so the highest market cap coin wins when symbols conflict.
+- Price tool: CoinPaprika coin list sorted by rank for consistent symbol conflict resolution.
+- Accounting tool: API errors during current holdings valuation are now shown as ("Skipped"), distinguishing them from assets with no price data available ("Not available").
+- Accounting tool and price tool: API failures that previously produced a raw traceback now exit cleanly with an error message and a retry hint.
+- Price tool: price cache is only written to disk when new price data has actually been fetched.
+- Price tool: price cache is automatically rewritten when legacy format is detected on load, migrating it to the current format.
+- Price tool: price cache is automatically reset when a corrupt or unloadable cache file is encountered, replacing it with a clean empty file.
+- Price tool: `list` command no longer shows the priority marker (`<-`) when using the `-s` search option, as priority is not meaningful across search results.
+- Price tool: when `-ds` is specified (not `ALL`), only the requested data source and any data sources required for the BTC/currency conversion are initialised, eliminating unnecessary initialisations.
+- Price tool: `list` command search option (`-s`) now also searches asset IDs in addition to symbol and name.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
