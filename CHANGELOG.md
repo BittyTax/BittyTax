@@ -51,6 +51,7 @@ The price data cache format has been updated to correctly distinguish assets tha
 - Price tool: added `-ccy` argument to `latest` and `historic` subcommands to allow an ad-hoc override of the local currency for a single query. ([#201](https://github.com/BittyTax/BittyTax/issues/201))
 - Config: added CHF (Swiss franc), DKK (Danish krone), NOK (Norwegian krone) and SEK (Swedish krona) to `FIAT_LIST`, with correct currency symbols.
 - Revolut parser: added "Stake", "Unstake" and "Staking reward" transaction types.
+- Config: updated fiat_list.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
