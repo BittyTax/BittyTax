@@ -39,7 +39,7 @@
 - Accounting tool: tax rates and allowance for 2026/27.
 - Conversion tool: added newest_first to DataParser to control the parsing order.
 - KuCoin parser: handle empty reports with "No matching records found".
-- Revolut parser: added "Staking reward" transaction type.
+- Revolut parser: added "Stake", "Unstake" and "Staking reward" transaction types.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
