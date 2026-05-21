@@ -23,7 +23,7 @@ def parse_blockchair_simple(
 ) -> None:
 
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], dayfirst=True)
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
     data_row.tx_raw = TxRawPos(parser.in_header.index("Transaction hash"))
 
     if Decimal(row_dict["Effect"]) > 0:
@@ -34,7 +34,7 @@ def parse_blockchair_simple(
             buy_asset=row_dict["Ticker"],
             wallet=WALLET,
         )
-    elif Decimal(row_dict["Effect"]) < 0:
+    else:
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -42,8 +42,6 @@ def parse_blockchair_simple(
             sell_asset=row_dict["Ticker"],
             wallet=WALLET,
         )
-    else:
-        raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
 
 
 def parse_blockchair_extended(
@@ -51,7 +49,7 @@ def parse_blockchair_extended(
 ) -> None:
 
     row_dict = data_row.row_dict
-    data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"], dayfirst=True)
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Date"])
     data_row.tx_raw = TxRawPos(parser.in_header.index("Transaction hash"))
 
     if row_dict["Type"] == "External receiving":
@@ -71,14 +69,12 @@ def parse_blockchair_extended(
             wallet=WALLET,
         )
     else:
-        raise UnexpectedTypeError(
-            parser.in_header.index("Tx number"), "Tx number", row_dict["Tx number"]
-        )
+        raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
 
-# simple format
+# Simple format
 DataParser(
-    ParserType.WALLET,
+    ParserType.EXPLORER,
     "Blockchair",
     [
         "Tx number",
@@ -94,9 +90,9 @@ DataParser(
     row_handler=parse_blockchair_simple,
 )
 
-# extended format
+# Extended format
 DataParser(
-    ParserType.WALLET,
+    ParserType.EXPLORER,
     "Blockchair",
     [
         "Tx number",
