@@ -89,10 +89,9 @@ def parse_revolut(data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[Par
             buy_asset=row_dict["Symbol"],
             wallet=WALLET,
         )
-    elif row_dict["Type"] == "Stake":
-        pass
-    elif row_dict["Type"] == "Unstake":
-        pass
+    elif row_dict["Type"] in ("Stake", "Unstake"):
+        # Skip internal transfers
+        return
     else:
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
