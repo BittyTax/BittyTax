@@ -82,8 +82,7 @@ class DataSourceBase:
         self.assets: Dict[AssetSymbol, DsSymbolToAssetData] = {}
         self.ids: Dict[AssetId, DsIdToAssetData] = {}
         self.progress_bar: Optional[tqdm] = progress_bar
-        self.prices = self._load_prices()
-        self._prices_dirty = False
+        self.prices, self._prices_dirty = self._load_prices()
 
         self.api_lock = threading.Lock()
         self._thread_local = threading.local()
@@ -286,20 +285,24 @@ class DataSourceBase:
         self.prices[pair][asset_id].update(prices)
         self._prices_dirty = True
 
-    def _load_prices(self) -> Dict[TradingPair, Dict[AssetId, Dict[Date, DsPriceData]]]:
+    def _load_prices(
+        self,
+    ) -> Tuple[Dict[TradingPair, Dict[AssetId, Dict[Date, DsPriceData]]], bool]:
         filename = os.path.join(CACHE_DIR, self.name() + ".json")
         if not os.path.exists(filename):
-            return {}
+            return {}, False
 
         try:
             with open(filename, "r", encoding="utf-8") as price_cache:
                 json_prices = json.load(price_cache)
             total_pairs = len(json_prices)
             prices: Dict[TradingPair, Dict[AssetId, Dict[Date, DsPriceData]]] = {}
+            dirty = False
             for i, (pair, pair_data) in enumerate(json_prices.items(), 1):
                 self._set_tqdm_postfix(f"{self.name()}: indexing prices ({i}/{total_pairs})")
                 if pair_data and self._is_date_key(next(iter(pair_data))):
                     # Legacy format
+                    dirty = True
                     prices[TradingPair(pair)] = {
                         AssetId(""): {
                             self.str_to_date(date): {
@@ -322,11 +325,11 @@ class DataSourceBase:
                             for date, price_data in asset_entry.get("prices", {}).items()
                         }
             self._set_tqdm_postfix("")
-            return prices
+            return prices, dirty
         except (IOError, ValueError):
             self._set_tqdm_postfix("")
             tqdm.write(f"{WARNING} Data cached for {self.name()} could not be loaded")
-            return {}
+            return {}, True
 
     def _cache_prices(self) -> None:
         if not self._prices_dirty:

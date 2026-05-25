@@ -2,7 +2,7 @@
 ## [Unreleased]
 Important:-
 
-The price data cache format has been updated to correctly distinguish assets that share the same ticker symbol. If you are upgrading, please check the Price Data appendix in your tax report to confirm that the correct token has been chosen for each of your assets.
+The price data cache format has been updated to correctly distinguish assets that share the same ticker symbol. Existing cache files will be automatically migrated to the new format on the next run. After upgrading, please check the Price Data appendix in your tax report to confirm that the correct token has been chosen for each of your assets.
 
 ### Fixed
 - Coinbase parser: fixed negative values for Advanced Trade Sells.
@@ -56,6 +56,8 @@ The price data cache format has been updated to correctly distinguish assets tha
 - Accounting tool: API errors during current holdings valuation are now shown as ("Skipped"), distinguishing them from assets with no price data available ("Not available").
 - Accounting tool and price tool: API failures that previously produced a raw traceback now exit cleanly with an error message and a retry hint.
 - Price tool: price cache is only written to disk when new price data has actually been fetched.
+- Price tool: price cache is automatically rewritten when legacy format is detected on load, migrating it to the current format.
+- Price tool: price cache is automatically reset when a corrupt or unloadable cache file is encountered, replacing it with a clean empty file.
 - Price tool: `list` command no longer shows the priority marker (`<-`) when using the `-s` search option, as priority is not meaningful across search results.
 - Price tool: when `-ds` is specified (not `ALL`), only the requested data source and any data sources required for the BTC/currency conversion are initialised, eliminating unnecessary initialisations.
 
