@@ -43,6 +43,7 @@ The price data cache format has been updated to correctly distinguish assets tha
 - Price tool: ids and assets lists are now cached locally with a 24-hour TTL, avoiding redundant API calls on each run.
 - Accounting tool and price tool: added progress bar when initialising data sources.
 - Price tool: added progress bar when a data source fetch requires a back-off.
+- Tools: added `bittytax_cache.py` a standalone price cache management tool.
 ### Changed
 - Price tool: CoinDesk API deprecated.
 - Price tool: added rate-limiter, retries and backoff handling for each API to prevent failures.
