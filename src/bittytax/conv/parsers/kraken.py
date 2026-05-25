@@ -334,6 +334,24 @@ def _parse_kraken_ledgers_row(
                 buy_asset=_normalise_asset(row_dict["asset"]),
                 wallet=WALLET,
             )
+        elif row_dict["subtype"] == "delistingconversion":
+            if Decimal(row_dict["amount"]) > 0:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.AIRDROP,
+                    data_row.timestamp,
+                    buy_quantity=Decimal(row_dict["amount"]),
+                    buy_asset=_normalise_asset(row_dict["asset"]),
+                    wallet=WALLET,
+                )
+            else:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.SPEND,
+                    data_row.timestamp,
+                    sell_quantity=abs(Decimal(row_dict["amount"])),
+                    sell_asset=_normalise_asset(row_dict["asset"]),
+                    sell_value=Decimal(0),
+                    wallet=WALLET,
+                )
         elif row_dict["subtype"] in (
             "spottostaking",
             "stakingtospot",
@@ -420,6 +438,41 @@ def _parse_kraken_ledgers_row(
                     sell_asset=_normalise_asset(row_dict["asset"]),
                     fee_quantity=abs(Decimal(row_dict["fee"])),
                     fee_asset=_normalise_asset(row_dict["asset"]),
+                    wallet=WALLET,
+                )
+        elif row_dict["subtype"] == "airdrop":
+            if Decimal(row_dict["amount"]) > 0:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.AIRDROP,
+                    data_row.timestamp,
+                    buy_quantity=Decimal(row_dict["amount"]),
+                    buy_asset=_normalise_asset(row_dict["asset"]),
+                    wallet=WALLET,
+                )
+            else:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.SPEND,
+                    data_row.timestamp,
+                    sell_quantity=abs(Decimal(row_dict["amount"])),
+                    sell_asset=_normalise_asset(row_dict["asset"]),
+                    wallet=WALLET,
+                )
+        elif row_dict["subtype"] == "delistingconversion":
+            if Decimal(row_dict["amount"]) > 0:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.AIRDROP,
+                    data_row.timestamp,
+                    buy_quantity=Decimal(row_dict["amount"]),
+                    buy_asset=_normalise_asset(row_dict["asset"]),
+                    wallet=WALLET,
+                )
+            else:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.SPEND,
+                    data_row.timestamp,
+                    sell_quantity=abs(Decimal(row_dict["amount"])),
+                    sell_asset=_normalise_asset(row_dict["asset"]),
+                    sell_value=Decimal(0),
                     wallet=WALLET,
                 )
         elif row_dict["subtype"] in (
