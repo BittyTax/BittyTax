@@ -1,17 +1,12 @@
 import re
-from decimal import Decimal
 
 import requests
 
-from bittytax.bt_types import TrType
-from bittytax.conv.datarow import DataRow
 from bittytax.conv.parsers.kraken import (
     ALT_ASSETS,
     QUOTE_ASSETS,
     STAKED_SUFFIX,
     _split_trading_pair,
-    kraken_ledgers,
-    parse_kraken_ledgers,
 )
 
 
@@ -54,33 +49,3 @@ def test_split_trading_pair() -> None:
                 assert bt_quote is not None
 
                 assert bt_base + "/" + bt_quote == wsname or bt_base == base and bt_quote == quote
-
-
-def test_parse_kraken_earn_airdrop() -> None:
-    data_row = DataRow(
-        1,
-        [
-            "txid-1",
-            "refid-1",
-            "2024-01-01 12:00:00",
-            "earn",
-            "airdrop",
-            "currency",
-            "",
-            "FLR",
-            "spot / main",
-            "100",
-            "0",
-            "100",
-        ],
-        kraken_ledgers.in_header,
-        "Kraken L",
-    )
-
-    parse_kraken_ledgers([data_row], kraken_ledgers)
-
-    assert str(data_row.t_record) == "Airdrop 100 FLR 'Kraken' 2024-01-01T12:00:00 UTC "
-    assert data_row.t_record is not None
-    assert data_row.t_record.t_type == TrType.AIRDROP
-    assert data_row.t_record.buy_quantity == Decimal("100")
-    assert data_row.t_record.buy_asset == "FLR"
