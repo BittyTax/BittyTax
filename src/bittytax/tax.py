@@ -650,9 +650,10 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         if price is not None:
                             current_price[a] = CurrentPrice(price, name)
                     except requests.exceptions.HTTPError as e:
+                        status_code = getattr(e.response, "status_code", "Unknown")
                         bt_tqdm_write(
                             f"{WARNING} Skipping valuation of {a} "
-                            f"due to API failure ({e.response.status_code})"
+                            f"due to API failure ({status_code})"
                         )
 
                     holdings_per_asset[a] = self._calculate_holding(
