@@ -643,6 +643,32 @@ def parse_kucoin_deposits_fiat(
     )
 
 
+def parse_kucoin_convert(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    row_dict = data_row.row_dict
+
+    if row_dict.get("UID") == "No matching records found.":
+        return
+
+    timestamp_hdr = parser.args[0].group(1)
+    utc_offset = parser.args[0].group(2)
+    data_row.timestamp = DataParser.parse_timestamp(f"{row_dict[timestamp_hdr]} {utc_offset}")
+
+    if row_dict["Status"] != "SUCCESS":
+        return
+
+    data_row.t_record = TransactionOutRecord(
+        TrType.TRADE,
+        data_row.timestamp,
+        buy_quantity=Decimal(row_dict["Buy"].split(" ")[0]),
+        buy_asset=row_dict["Buy"].split(" ")[1],
+        sell_quantity=Decimal(row_dict["Sell"].split(" ")[0]),
+        sell_asset=row_dict["Sell"].split(" ")[1],
+        wallet=WALLET,
+    )
+
+
 DataParser(
     ParserType.EXCHANGE,
     "KuCoin Trades",
@@ -1139,4 +1165,23 @@ DataParser(
     ],
     worksheet_name="KuCoin D",
     row_handler=parse_kucoin_deposits_fiat,
+)
+
+# Convert Orders_Filled Orders (Bundle)
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Trades",
+    [
+        "UID",
+        "Account Type",
+        "Payment Account",
+        "Sell",
+        "Buy",
+        "Price",
+        "Tax",
+        lambda c: re.match(r"(^Time of Update\((UTC|UTC[-+]\d{2}:\d{2})\))", c),
+        "Status",
+    ],
+    worksheet_name="KuCoin T",
+    row_handler=parse_kucoin_convert,
 )
