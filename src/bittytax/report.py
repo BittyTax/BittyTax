@@ -814,12 +814,14 @@ class ReportLog:
                     f'{self.format_value(holding["gain"]):>18}'
                 )
             else:
+                api_error = holding.get("api_error")
                 print(
                     f"{Fore.WHITE}"
                     f'{self.format_asset(asset, holding["name"]):<{self.ASSET_WIDTH}} '
                     f'{self.format_quantity(holding["quantity"]):<25} '
                     f'{self.format_value(holding["cost"]):>18} '
-                    f'{Fore.BLUE}{"Not available":>18} '
+                    f"{Fore.YELLOW if api_error else Fore.BLUE}"
+                    f'{"Skipped" if api_error else "Not available":>18} '
                     f'{"":>18}'
                 )
 

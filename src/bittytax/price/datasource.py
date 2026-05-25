@@ -32,7 +32,7 @@ from ..bt_types import (
 from ..config import config
 from ..constants import CACHE_DIR, WARNING
 from ..version import __version__
-from .exceptions import UnexpectedDataSourceAssetIdError
+from .exceptions import DataSourceApiError, UnexpectedDataSourceAssetIdError
 
 
 class DsSymbolToAssetData(TypedDict):  # pylint: disable=too-few-public-methods
@@ -191,21 +191,21 @@ class DataSourceBase:
                                 retry_after = int(response.headers["retry-after"])
 
                             if not self._retry(attempt, retry_after):
-                                response.raise_for_status()
+                                raise DataSourceApiError(
+                                    self.name(),
+                                    url,
+                                    f"HTTP {response.status_code} {response.reason}",
+                                )
                             continue
 
                         if not self._retry(attempt):
+                            reason = f"HTTP {response.status_code} {response.reason}"
                             try:
-                                error_json = response.json()
-                                raise RuntimeError(
-                                    f"{self.name()} request failed {response.status_code} "
-                                    f"{response.reason} for url: {response.url}: {error_json}"
-                                )
-                            except requests.exceptions.JSONDecodeError as e:
-                                raise RuntimeError(
-                                    f"{self.name()} request failed {response.status_code} "
-                                    f"{response.reason} for url: {response.url}"
-                                ) from e
+                                error_detail = response.json()
+                                reason += f": {error_detail}"
+                            except requests.exceptions.JSONDecodeError:
+                                pass
+                            raise DataSourceApiError(self.name(), url, reason)
                         continue
 
                     if response:
@@ -219,17 +219,17 @@ class DataSourceBase:
                                     f"rate limit detected in response"
                                 )
                             if not self._retry(attempt, retry_after):
-                                raise RuntimeError(f"{self.name()} rate limit exceeded")
+                                raise DataSourceApiError(self.name(), url, "rate limit exceeded")
                             continue
 
                         return json_resp
                     return {}
 
-                except requests.exceptions.JSONDecodeError:
+                except requests.exceptions.JSONDecodeError as e:
                     if config.debug:
                         print(f"{self.name()} JSON decode error: {url}")
                     if not self._retry(attempt):
-                        raise
+                        raise DataSourceApiError(self.name(), url, str(e)) from e
 
                 except (
                     requests.exceptions.ConnectionError,
@@ -239,10 +239,10 @@ class DataSourceBase:
                     if config.debug:
                         print(f"{self.name()} request failed: {url} - {e}")
                     if not self._retry(attempt):
-                        raise
+                        raise DataSourceApiError(self.name(), url, str(e)) from e
 
         # If all retries exhausted
-        raise RuntimeError(f"{self.name()} all retries exhausted for: {url}")
+        raise DataSourceApiError(self.name(), url, "all retries exhausted")
 
     def update_prices(
         self,
@@ -677,9 +677,14 @@ class CryptoCompare(DataSourceBase):
         if cached_ids is not None:
             self.ids = cached_ids
         else:
-            json_resp = self.get_json(f"{self.api_root}/data/all/coinlist")
+            url = f"{self.api_root}/data/all/coinlist"
+            json_resp = self.get_json(url)
             if json_resp["Response"] != "Success":
-                raise RuntimeError(f"CryptoCompare API failure: {json_resp}")
+                raise DataSourceApiError(
+                    self.name(),
+                    url,
+                    f"unexpected response: {json_resp}",
+                )
 
             # CryptoCompare symbols are unique, so can be used as the ID
             self.ids = {
@@ -750,7 +755,11 @@ class CryptoCompare(DataSourceBase):
             json_resp["Response"] != "Success"
             and json_resp["Type"] != self.ERROR_TYPE_MARKET_NOT_EXIST
         ):
-            raise RuntimeError(f"CryptoCompare API failure: {json_resp}")
+            raise DataSourceApiError(
+                self.name(),
+                url,
+                f"unexpected response: {json_resp}",
+            )
 
         pair = self.pair(asset, quote)
         # Warning - CryptoCompare returns 0 as data for missing dates, convert these to None.

@@ -19,7 +19,7 @@ from ..utils import is_compiled
 from ..version import __version__
 from .assetdata import AsPriceRecord, AsRecord, AssetData
 from .datasource import DataSourceBase
-from .exceptions import DataSourceError
+from .exceptions import DataSourceApiError, DataSourceError
 from .valueasset import ValueAsset
 
 CMD_LATEST = "latest"
@@ -223,6 +223,8 @@ def main() -> None:
                 if name:
                     asset = True
 
+        except DataSourceApiError as e:
+            parser.exit(message=f"{ERROR} {e} - please wait and try again\n")
         except DataSourceError as e:
             parser.exit(message=f"{ERROR} {e}\n")
 
@@ -243,6 +245,8 @@ def main() -> None:
             asset_list = AssetData(no_cache=args.no_cache).get_assets(
                 symbol, args.datasource, args.search_terms
             )
+        except DataSourceApiError as e:
+            parser.exit(message=f"{ERROR} {e} - please wait and try again\n")
         except DataSourceError as e:
             parser.exit(message=f"{ERROR} {e}\n")
 

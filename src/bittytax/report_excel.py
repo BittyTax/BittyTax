@@ -2128,7 +2128,10 @@ class Worksheet:
                     )
                 else:
                     self.worksheet.write_string(
-                        self.row_num, 5, "NOT AVAILABLE", self.workbook_formats.string_right
+                        self.row_num,
+                        5,
+                        "SKIPPED" if holding.get("api_error") else "NOT AVAILABLE",
+                        self.workbook_formats.string_right,
                     )
                 self.worksheet.set_row(self.row_num, None, None, {"level": 2, "hidden": False})
                 end_w_row = self.row_num
@@ -2254,7 +2257,10 @@ class Worksheet:
                 )
             else:
                 self.worksheet.write_string(
-                    self.row_num, 4, "NOT AVAILABLE", self.workbook_formats.string_right
+                    self.row_num,
+                    4,
+                    "SKIPPED" if holding.get("api_error") else "NOT AVAILABLE",
+                    self.workbook_formats.string_right,
                 )
             end_a_row = self.row_num
             self.row_num += 1

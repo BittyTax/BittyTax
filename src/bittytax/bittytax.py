@@ -42,7 +42,7 @@ from .import_records import ImportRecords
 from .output_csv import OutputCapitalGainsCsv, OutputTaxAct, OutputTurboTaxCsv
 from .output_irs import OutputIrs
 from .output_txf import OutputTurboTaxTxf
-from .price.exceptions import DataSourceError
+from .price.exceptions import DataSourceApiError, DataSourceError
 from .price.valueasset import ValueAsset
 from .report import ReportLog, ReportPdf
 from .report_excel import ReportExcel
@@ -232,6 +232,8 @@ def _run(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
 
             _do_each_tax_year(tax, args.tax_year, args.summary_only, value_asset)
 
+        except DataSourceApiError as e:
+            parser.exit(message=f"{ERROR} {e} - please wait and try again\n")
         except DataSourceError as e:
             parser.exit(message=f"{ERROR} {e}\n")
 

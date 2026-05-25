@@ -28,3 +28,16 @@ class UnexpectedDataSourceAssetIdError(DataSourceError):
             f"Invalid data source asset ID: '{self.data_source}' for '{self.value}' in "
             f"{os.path.join(BITTYTAX_PATH, config.BITTYTAX_CONFIG)}"
         )
+
+
+class DataSourceApiError(Exception):
+    def __init__(self, data_source: str, url: str, reason: str = "") -> None:
+        super().__init__()
+        self.data_source = data_source
+        self.url = url
+        self.reason = reason
+
+    def __str__(self) -> str:
+        if self.reason:
+            return f"{self.data_source} API request failed ({self.reason})"
+        return f"{self.data_source} API request failed"

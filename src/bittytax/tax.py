@@ -9,7 +9,6 @@ from dataclasses import dataclass, field
 from decimal import Decimal, getcontext
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
-import requests
 from colorama import Fore
 from dateutil.relativedelta import relativedelta
 from tqdm import tqdm
@@ -36,6 +35,7 @@ from .bt_types import (
 from .config import config
 from .constants import COST_BASIS_ZERO_NOTE, WARNING
 from .holdings import Holdings
+from .price.exceptions import DataSourceApiError
 from .price.valueasset import ValueAsset
 from .tax_event import (
     TaxEvent,
@@ -64,6 +64,7 @@ class HoldingsReportAsset(TypedDict):  # pylint: disable=too-few-public-methods
     cost: Decimal
     value: Optional[Decimal]
     gain: NotRequired[Decimal]
+    api_error: NotRequired[bool]
 
 
 class HoldingsReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
@@ -645,20 +646,22 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             value_asset.price_data.progress_bar = progress_bar
             for a in progress_bar:
                 if self.holdings_per_asset[a].quantity > 0 or config.show_empty_wallets:
+                    api_error = False
                     try:
                         price, name, _ = value_asset.get_latest_price(a)
                         if price is not None:
                             current_price[a] = CurrentPrice(price, name)
-                    except requests.exceptions.HTTPError as e:
-                        status_code = getattr(e.response, "status_code", "Unknown")
+                    except DataSourceApiError as e:
                         bt_tqdm_write(
-                            f"{WARNING} Skipping valuation of {a} "
-                            f"due to API failure ({status_code})"
+                            f"{WARNING} Skipping valuation of {a} " f"due to API failure: {e}"
                         )
+                        api_error = True
 
                     holdings_per_asset[a] = self._calculate_holding(
                         self.holdings_per_asset[a], current_price.get(a)
                     )
+                    if api_error:
+                        holdings_per_asset[a]["api_error"] = True
 
                     total["cost"] += holdings_per_asset[a]["cost"]
                     value = holdings_per_asset[a]["value"]
@@ -676,6 +679,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                         holdings_per_wallet[w][a] = self._calculate_holding(
                             holding, current_price.get(a)
                         )
+                        if a in holdings_per_asset and holdings_per_asset[a].get("api_error"):
+                            holdings_per_wallet[w][a]["api_error"] = True
 
         self.holdings_report = {
             "holdings_per_wallet": holdings_per_wallet,

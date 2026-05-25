@@ -24,7 +24,11 @@
                 {% endif %}
             {% else %}
                 <td align="right">
-                    <i>Not available</i>
+                    {% if holdings[asset].get('api_error') %}
+                        <i class="warning-font">Skipped</i>
+                    {% else %}
+                        <i>Not available</i>
+                    {% endif %}
                 </td>
                 <td></td>
             {% endif %}
