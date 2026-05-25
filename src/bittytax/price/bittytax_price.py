@@ -35,7 +35,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
 
     if is_compiled():
-        version_str = f"{parser.prog} v{__version__} (compiled)"
+        version_str = f"{parser.prog} v{__version__} - compiled"
     else:
         version_str = f"{parser.prog} v{__version__}"
 
