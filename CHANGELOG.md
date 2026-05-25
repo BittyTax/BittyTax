@@ -8,6 +8,7 @@
 - Coinbase parser: fixed regex to ingore extra descriptions at end of trades.
 - Gemini parser: delete blank rows.
 - Uphold parser: skip failed transactions.
+- Coinbase parser: fixed spurious fee asset appearing in Send/Withdrawal when no fee is present.
 ### Added
 - MEXC parser: added new export formats.
 - Cash App parser: added new export format.
