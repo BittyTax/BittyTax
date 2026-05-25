@@ -63,6 +63,7 @@ The price data cache format has been updated to correctly distinguish assets tha
 - Price tool: price cache is automatically reset when a corrupt or unloadable cache file is encountered, replacing it with a clean empty file.
 - Price tool: `list` command no longer shows the priority marker (`<-`) when using the `-s` search option, as priority is not meaningful across search results.
 - Price tool: when `-ds` is specified (not `ALL`), only the requested data source and any data sources required for the BTC/currency conversion are initialised, eliminating unnecessary initialisations.
+- Price tool: `list` command search option (`-s`) now also searches asset IDs in addition to symbol and name.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-

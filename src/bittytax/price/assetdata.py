@@ -94,7 +94,9 @@ class AssetData:
             for symbol in assets:
                 for asset_id in assets[symbol]:
                     if search_terms:
-                        match = self.do_search(symbol, asset_id["name"], search_terms)
+                        match = self.do_search(
+                            symbol, asset_id["name"], search_terms, asset_id["asset_id"]
+                        )
                     else:
                         match = True
 
@@ -138,9 +140,9 @@ class AssetData:
         return False
 
     @staticmethod
-    def do_search(symbol: str, name: str, search_terms: str) -> bool:
+    def do_search(symbol: str, name: str, search_terms: str, asset_id: str = "") -> bool:
         for search_term in search_terms:
-            if search_term.upper() not in symbol.upper() + " " + name.upper():
+            if search_term.upper() not in f"{symbol} {name} {asset_id}".upper():
                 return False
 
         return True
