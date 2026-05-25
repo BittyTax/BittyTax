@@ -8,8 +8,7 @@
 [![Sponsor badge][sponsor-badge]][sponsor]
 [![X badge][x-badge]][x]
 [![Discord badge][discord-badge]][discord]
-[![PayPal badge][paypal-badge]][PayPal]
-[![Bitcoin badge][bitcoin-badge]][bitcoin]
+[![Donate badge][donate-badge]][donate]
 # BittyTax
 
 ## Overview
@@ -1256,7 +1255,7 @@ You can also override this config setting by using the `--binance_statements_onl
 - https://www.youtube.com/watch?v=EzNebqkw13w
 
 ## Donations
-If you would like to support this project, please consider [sponsoring](https://github.com/sponsors/BittyTax) us. You can also donate via [PayPal] or in [bitcoin]. All donations are gratefully received.
+If you would like to support this project, please consider [sponsoring](https://github.com/sponsors/BittyTax) us. You can also [donate] via Bitcoin, PayPal or Wise. All donations are gratefully received.
 
 Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of this project. Nano Nano Ltd is not a charity, or non-profit organisation.
 
@@ -1266,11 +1265,10 @@ Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of thi
 [python-badge]: https://img.shields.io/pypi/pyversions/BittyTax.svg
 [downloads-badge]: https://img.shields.io/pypi/dm/bittytax
 [github-stars-badge]: https://img.shields.io/github/stars/BittyTax/BittyTax?logo=github&color=yellow
-[sponsor-badge]: https://img.shields.io/static/v1?label=sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86
+[sponsor-badge]: https://img.shields.io/static/v1?label=sponsor&message=%E2%9D%A4&logo=GitHub&color=red
 [x-badge]: https://img.shields.io/twitter/follow/bitty_tax
 [discord-badge]: https://img.shields.io/discord/581493570112847872?logo=discord&label=&logoColor=white&color=7389D8&labelColor=6A7EC2
-[paypal-badge]: https://img.shields.io/badge/donate-grey.svg?logo=PayPal
-[bitcoin-badge]: https://img.shields.io/badge/donate-grey.svg?logo=bitcoin
+[donate-badge]: https://img.shields.io/badge/donate-❤-red
 [ci]: https://github.com/BittyTax/BittyTax/actions/workflows/ci.yml
 [version]: https://pypi.org/project/BittyTax/
 [license]: https://github.com/BittyTax/BittyTax/blob/master/LICENSE
@@ -1280,5 +1278,4 @@ Disclosure: All donations go to Nano Nano Ltd, the creator and maintainer of thi
 [sponsor]: https://github.com/sponsors/BittyTax
 [x]: https://x.com/intent/follow?screen_name=bitty_tax
 [discord]: https://discord.gg/NHE3QFt
-[PayPal]: https://www.paypal.com/donate?hosted_button_id=HVBQW8TBEHXLC
-[bitcoin]: https://donate.bitty.tax 
+[donate]: https://donate.bitty.tax
