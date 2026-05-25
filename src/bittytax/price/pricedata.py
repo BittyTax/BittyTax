@@ -25,9 +25,13 @@ from .exceptions import UnexpectedDataSourceError
 
 class PriceData:
     def __init__(
-        self, data_sources_required: List[DataSourceName], price_tool: bool = False
+        self,
+        data_sources_required: List[DataSourceName],
+        price_tool: bool = False,
+        no_cache: bool = False,
     ) -> None:
         self.price_tool = price_tool
+        self.no_cache = no_cache
         self.data_sources = {}
         self.progress_bar = None
 
@@ -36,7 +40,7 @@ class PriceData:
 
         for data_source_class in DataSourceBase.__subclasses__():
             if data_source_class.__name__.upper() in [ds.upper() for ds in data_sources_required]:
-                self.data_sources[data_source_class.__name__.upper()] = data_source_class()
+                self.data_sources[data_source_class.__name__.upper()] = data_source_class(no_cache)
 
     @staticmethod
     def data_source_priority(asset: AssetSymbol) -> List[DataSourceName]:
@@ -66,39 +70,41 @@ class PriceData:
         asset: AssetSymbol,
         quote: QuoteSymbol,
         timestamp: Timestamp,
-        no_cache: bool = False,
     ) -> Tuple[Optional[Decimal], AssetName, SourceUrl]:
         if data_source.upper() in self.data_sources:
-            if asset in self.data_sources[data_source.upper()].assets:
-                self.data_sources[data_source.upper()].progress_bar = self.progress_bar
+            ds_obj = self.data_sources[data_source.upper()]
+            if asset in ds_obj.assets:
+                ds_obj.progress_bar = self.progress_bar
                 date = Date(timestamp.date())
                 pair = TradingPair(asset + "/" + quote)
+                asset_id = ds_obj.assets[asset]["asset_id"]
 
-                if not no_cache:
-                    # Check cache first
+                if not self.no_cache:
                     if (
-                        pair in self.data_sources[data_source.upper()].prices
-                        and date in self.data_sources[data_source.upper()].prices[pair]
+                        pair in ds_obj.prices
+                        and asset_id in ds_obj.prices[pair]
+                        and date in ds_obj.prices[pair][asset_id]
                     ):
                         return (
-                            self.data_sources[data_source.upper()].prices[pair][date]["price"],
-                            self.data_sources[data_source.upper()].assets[asset]["name"],
-                            self.data_sources[data_source.upper()].prices[pair][date]["url"],
+                            ds_obj.prices[pair][asset_id][date]["price"],
+                            ds_obj.assets[asset]["name"],
+                            ds_obj.prices[pair][asset_id][date]["url"],
                         )
 
-                self.data_sources[data_source.upper()].get_historical(asset, quote, timestamp)
+                ds_obj.get_historical(asset, quote, timestamp)
                 if (
-                    pair in self.data_sources[data_source.upper()].prices
-                    and date in self.data_sources[data_source.upper()].prices[pair]
+                    pair in ds_obj.prices
+                    and asset_id in ds_obj.prices[pair]
+                    and date in ds_obj.prices[pair][asset_id]
                 ):
                     return (
-                        self.data_sources[data_source.upper()].prices[pair][date]["price"],
-                        self.data_sources[data_source.upper()].assets[asset]["name"],
-                        self.data_sources[data_source.upper()].prices[pair][date]["url"],
+                        ds_obj.prices[pair][asset_id][date]["price"],
+                        ds_obj.assets[asset]["name"],
+                        ds_obj.prices[pair][asset_id][date]["url"],
                     )
                 return (
                     None,
-                    self.data_sources[data_source.upper()].assets[asset]["name"],
+                    ds_obj.assets[asset]["name"],
                     SourceUrl(""),
                 )
             return None, AssetName(""), SourceUrl("")
@@ -126,13 +132,11 @@ class PriceData:
         return None, name, DataSourceName("")
 
     def get_historical(
-        self, asset: AssetSymbol, quote: QuoteSymbol, timestamp: Timestamp, no_cache: bool = False
+        self, asset: AssetSymbol, quote: QuoteSymbol, timestamp: Timestamp
     ) -> Tuple[Optional[Decimal], AssetName, DataSourceName, SourceUrl]:
         name = AssetName("")
         for data_source in self.data_source_priority(asset):
-            price, name, url = self.get_historical_ds(
-                data_source, asset, quote, timestamp, no_cache
-            )
+            price, name, url = self.get_historical_ds(data_source, asset, quote, timestamp)
             if price is not None:
                 if config.debug:
                     print(

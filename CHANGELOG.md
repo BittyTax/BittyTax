@@ -1,5 +1,9 @@
 # Change Log
 ## [Unreleased]
+Important:-
+
+The price data cache format has been updated to correctly distinguish assets that share the same ticker symbol. If you are upgrading, please check the Price Data appendix in your tax report to confirm that the correct token has been chosen for each of your assets.
+
 ### Fixed
 - Coinbase parser: fixed negative values for Advanced Trade Sells.
 - Accounting tool: fixed duplicate worksheet names in Excel audit log.
@@ -35,12 +39,17 @@
 - Accounting tool: tax rates and allowance for 2026/27.
 - Conversion tool: added newest_first to DataParser to control the parsing order.
 - KuCoin parser: handle empty reports with "No matching records found".
+- Price tool: ids and assets lists are now cached locally with a 24-hour TTL, avoiding redundant API calls on each run.
 ### Changed
 - Price tool: CoinDesk API deprecated.
 - Price tool: added rate-limiter, retries and backoff handling for each API to prevent failures.
 - Uphold parser: transaction type "in" can be a Trade, i.e. credit-card purchase of crypto.
 - Conversion tool: OutputExcel determines if macOS via parameter instead of direct from platform.
-- Uphold parser: transaction type "in" can be a Trade, i.e. credit-card purchase of crypto.
+- Accounting tool: Buy/Sell transactions now track the origin of their price valuations.
+- Price tool: price cache format updated to store prices per asset_id bucket, correctly distinguishing assets that share the same symbol.
+- Price tool: legacy price cache files are migrated to the new asset_id format on next save.
+- Price tool: CoinGecko coin list sorted by market cap so the highest market cap coin wins when symbols conflict.
+- Price tool: CoinPaprika coin list sorted by rank for consistent symbol conflict resolution.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-

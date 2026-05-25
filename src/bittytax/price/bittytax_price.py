@@ -75,7 +75,13 @@ def main() -> None:
         help="specify the data source to use, or all",
     )
     parser_latest.add_argument("-d", "--debug", action="store_true", help="enable debug logging")
-
+    parser_latest.add_argument(
+        "-nc",
+        "--nocache",
+        dest="no_cache",
+        action="store_true",
+        help="bypass data cache",
+    )
     parser_history = subparsers.add_parser(
         CMD_HISTORY,
         help="get the historical price of an asset",
@@ -142,6 +148,13 @@ def main() -> None:
         help="specify the data source to use, or all",
     )
     parser_list.add_argument("-d", "--debug", action="store_true", help="enable debug logging")
+    parser_list.add_argument(
+        "-nc",
+        "--nocache",
+        dest="no_cache",
+        action="store_true",
+        help="bypass data cache",
+    )
 
     args = parser.parse_args()
     config.debug = args.debug
@@ -161,11 +174,13 @@ def main() -> None:
         try:
             if args.datasource:
                 if args.command == CMD_HISTORY:
-                    assets = AssetData().get_historic_price_ds(
-                        symbol, args.date[0], args.datasource, args.no_cache
+                    assets = AssetData(no_cache=args.no_cache).get_historic_price_ds(
+                        symbol, args.date[0], args.datasource
                     )
                 else:
-                    assets = AssetData().get_latest_price_ds(symbol, args.datasource)
+                    assets = AssetData(no_cache=args.no_cache).get_latest_price_ds(
+                        symbol, args.datasource
+                    )
                 btc = None
                 for asset_data in assets:
                     if asset_data["price"] is None:
@@ -193,11 +208,9 @@ def main() -> None:
                 if assets:
                     asset = True
             else:
-                value_asset = ValueAsset(price_tool=True)
+                value_asset = ValueAsset(price_tool=True, no_cache=args.no_cache)
                 if args.command == CMD_HISTORY:
-                    price_record = value_asset.get_historical_price(
-                        symbol, args.date[0], args.no_cache
-                    )
+                    price_record = value_asset.get_historical_price(symbol, args.date[0])
                     price_ccy2 = price_record.price_ccy
                     name = price_record.name
                 else:
@@ -227,7 +240,9 @@ def main() -> None:
     elif args.command == CMD_LIST:
         symbol = args.asset
         try:
-            asset_list = AssetData().get_assets(symbol, args.datasource, args.search_terms)
+            asset_list = AssetData(no_cache=args.no_cache).get_assets(
+                symbol, args.datasource, args.search_terms
+            )
         except DataSourceError as e:
             parser.exit(message=f"{ERROR} {e}\n")
 

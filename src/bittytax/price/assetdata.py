@@ -39,14 +39,15 @@ class AsPriceRecord(AsRecord):  # pylint: disable=too-few-public-methods
 class AssetData:
     FIAT_DATASOURCES = (BittyTaxAPI.__name__, Frankfurter.__name__)
 
-    def __init__(self) -> None:
+    def __init__(self, no_cache: bool = False) -> None:
+        self.no_cache = no_cache
         self.data_sources = {}
 
         if not os.path.exists(CACHE_DIR):
             os.mkdir(CACHE_DIR)
 
         for data_source_class in DataSourceBase.__subclasses__():
-            self.data_sources[data_source_class.__name__.upper()] = data_source_class()
+            self.data_sources[data_source_class.__name__.upper()] = data_source_class(no_cache)
 
     def get_assets(
         self, req_symbol: AssetSymbol, req_data_source: str, search_terms: str
@@ -146,7 +147,6 @@ class AssetData:
         req_symbol: AssetSymbol,
         req_date: Timestamp,
         req_data_source: str,
-        no_cache: bool = False,
     ) -> List[AsPriceRecord]:
         if req_data_source == "ALL":
             data_sources = list(self.data_sources.keys())
@@ -171,24 +171,28 @@ class AssetData:
                 date = Date(req_date.date())
                 pair = TradingPair(req_symbol + "/" + asset_data["quote"])
 
-                if not no_cache:
+                if not self.no_cache:
                     # Check cache first
+                    aid = asset_data["asset_id"]
                     if (
                         pair in self.data_sources[ds].prices
-                        and date in self.data_sources[ds].prices[pair]
+                        and aid in self.data_sources[ds].prices[pair]
+                        and date in self.data_sources[ds].prices[pair][aid]
                     ):
-                        asset_data["price"] = self.data_sources[ds].prices[pair][date]["price"]
+                        asset_data["price"] = self.data_sources[ds].prices[pair][aid][date]["price"]
                         all_assets.append(asset_data)
                         continue
 
                 self.data_sources[ds].get_historical(
                     req_symbol, asset_data["quote"], req_date, asset_data["asset_id"]
                 )
+                aid = asset_data["asset_id"]
                 if (
                     pair in self.data_sources[ds].prices
-                    and date in self.data_sources[ds].prices[pair]
+                    and aid in self.data_sources[ds].prices[pair]
+                    and date in self.data_sources[ds].prices[pair][aid]
                 ):
-                    asset_data["price"] = self.data_sources[ds].prices[pair][date]["price"]
+                    asset_data["price"] = self.data_sources[ds].prices[pair][aid][date]["price"]
                 else:
                     asset_data["price"] = None
 

@@ -50,6 +50,18 @@ class DsPriceData(TypedDict):  # pylint: disable=too-few-public-methods
     url: SourceUrl
 
 
+class _CoinGeckoIdData(TypedDict):
+    symbol: AssetSymbol
+    name: AssetName
+    market_cap: Decimal
+
+
+class _CoinPaprikaIdData(TypedDict):
+    symbol: AssetSymbol
+    name: AssetName
+    rank: int
+
+
 class DataSourceBase:
     USER_AGENT = (
         f"BittyTax/{__version__} Python/{platform.python_version()} "
@@ -61,8 +73,10 @@ class DataSourceBase:
     RETRIES = 3
     BACKOFF_FACTOR = 1  # seconds
     RETRY_AFTER_DEFAULT = 5  # seconds
+    IDS_TTL = timedelta(days=1)
 
-    def __init__(self) -> None:
+    def __init__(self, no_cache: bool = False) -> None:
+        self.no_cache = no_cache
         self.headers = {"User-Agent": self.USER_AGENT}
         self.assets: Dict[AssetSymbol, DsSymbolToAssetData] = {}
         self.ids: Dict[AssetId, DsIdToAssetData] = {}
@@ -231,10 +245,16 @@ class DataSourceBase:
         raise RuntimeError(f"{self.name()} all retries exhausted for: {url}")
 
     def update_prices(
-        self, pair: TradingPair, prices: Dict[Date, DsPriceData], timestamp: Timestamp
+        self,
+        pair: TradingPair,
+        asset_id: AssetId,
+        prices: Dict[Date, DsPriceData],
+        timestamp: Timestamp,
     ) -> None:
         if pair not in self.prices:
             self.prices[pair] = {}
+        if asset_id not in self.prices[pair]:
+            self.prices[pair][asset_id] = {}
 
         # We are not interested in today's latest price, only the days closing price, also need to
         #  filter any erroneous future dates returned
@@ -246,9 +266,9 @@ class DataSourceBase:
         if date not in prices and date < datetime.now().date():
             prices[date] = {"price": None, "url": SourceUrl("")}
 
-        self.prices[pair].update(prices)
+        self.prices[pair][asset_id].update(prices)
 
-    def _load_prices(self) -> Dict[TradingPair, Dict[Date, DsPriceData]]:
+    def _load_prices(self) -> Dict[TradingPair, Dict[AssetId, Dict[Date, DsPriceData]]]:
         filename = os.path.join(CACHE_DIR, self.name() + ".json")
         if not os.path.exists(filename):
             return {}
@@ -256,16 +276,32 @@ class DataSourceBase:
         try:
             with open(filename, "r", encoding="utf-8") as price_cache:
                 json_prices = json.load(price_cache)
-                return {
-                    pair: {
-                        self.str_to_date(date): {
-                            "price": self.str_to_decimal(price["price"]),
-                            "url": price["url"],
+                prices: Dict[TradingPair, Dict[AssetId, Dict[Date, DsPriceData]]] = {}
+                for pair, pair_data in json_prices.items():
+                    if pair_data and self._is_date_key(next(iter(pair_data))):
+                        # Old flat format: { "YYYY-MM-DD": {"price": "...", "url": "..."} }
+                        prices[TradingPair(pair)] = {
+                            AssetId(""): {
+                                self.str_to_date(date): {
+                                    "price": self.str_to_decimal(price_data["price"]),
+                                    "url": price_data["url"],
+                                }
+                                for date, price_data in pair_data.items()
+                            }
                         }
-                        for date, price in json_prices[pair].items()
-                    }
-                    for pair in json_prices
-                }
+                    else:
+                        # New format: { "asset_id": { "name": "...", "prices": {...} } }
+                        prices[TradingPair(pair)] = {}
+                        for asset_id, asset_entry in pair_data.items():
+                            aid = AssetId(asset_id)
+                            prices[TradingPair(pair)][aid] = {
+                                self.str_to_date(date): {
+                                    "price": self.str_to_decimal(price_data["price"]),
+                                    "url": price_data["url"],
+                                }
+                                for date, price_data in asset_entry.get("prices", {}).items()
+                            }
+                return prices
         except (IOError, ValueError):
             print(f"{WARNING} Data cached for {self.name()} could not be loaded")
             return {}
@@ -274,17 +310,110 @@ class DataSourceBase:
         with open(
             os.path.join(CACHE_DIR, self.name() + ".json"), "w", encoding="utf-8"
         ) as price_cache:
-            json_prices = {
-                pair: {
-                    f"{date:%Y-%m-%d}": {
-                        "price": self.decimal_to_str(price["price"]),
-                        "url": price["url"],
+            json_prices: Dict[str, Any] = {}
+            for pair, asset_id_dict in self.prices.items():
+                symbol = AssetSymbol(pair.split("/")[0])
+                json_prices[pair] = {}
+                for asset_id, date_dict in asset_id_dict.items():
+                    if not asset_id and symbol in self.assets:
+                        # Promote old flat-format data to current asset_id
+                        asset_id = self.assets[symbol]["asset_id"]
+                    if asset_id:
+                        name = self.ids[asset_id]["name"] if asset_id in self.ids else ""
+                    else:
+                        name = self.assets[symbol]["name"] if symbol in self.assets else ""
+                    json_prices[pair][asset_id] = {
+                        "name": name,
+                        "prices": {
+                            f"{date:%Y-%m-%d}": {
+                                "price": self.decimal_to_str(price["price"]),
+                                "url": price["url"],
+                            }
+                            for date, price in date_dict.items()
+                        },
                     }
-                    for date, price in self.prices[pair].items()
-                }
-                for pair in self.prices
-            }
             json.dump(json_prices, price_cache, indent=4, sort_keys=True)
+
+    def _load_ids(self) -> Optional[Dict[AssetId, DsIdToAssetData]]:
+        if self.no_cache:
+            return None
+        filename = os.path.join(CACHE_DIR, self.name() + "_ids.json")
+        if not os.path.exists(filename):
+            return None
+        try:
+            with open(filename, "r", encoding="utf-8") as ids_cache:
+                json_ids = json.load(ids_cache)
+                timestamp = datetime.fromisoformat(json_ids["timestamp"])
+                if datetime.now() - timestamp > self.IDS_TTL:
+                    if config.debug:
+                        print(f"{Fore.YELLOW}price: {self.name()} ids cache expired")
+                    return None
+                if config.debug:
+                    print(f"{Fore.YELLOW}price: {self.name()} ids cache loaded")
+                return {
+                    AssetId(k): DsIdToAssetData(
+                        symbol=AssetSymbol(v["symbol"]), name=AssetName(v["name"])
+                    )
+                    for k, v in json_ids["ids"].items()
+                }
+        except (IOError, ValueError, KeyError):
+            return None
+
+    def _save_ids(self) -> None:
+        filename = os.path.join(CACHE_DIR, self.name() + "_ids.json")
+        try:
+            with open(filename, "w", encoding="utf-8") as ids_cache:
+                json.dump(
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "ids": {
+                            k: {"symbol": v["symbol"], "name": v["name"]}
+                            for k, v in self.ids.items()
+                        },
+                    },
+                    ids_cache,
+                    indent=4,
+                )
+        except IOError:
+            pass
+
+    def _load_cached_assets(self) -> Optional[Dict[AssetSymbol, DsSymbolToAssetData]]:
+        if self.no_cache:
+            return None
+        filename = os.path.join(CACHE_DIR, self.name() + "_assets.json")
+        if not os.path.exists(filename):
+            return None
+        try:
+            with open(filename, "r", encoding="utf-8") as assets_cache:
+                json_assets = json.load(assets_cache)
+                timestamp = datetime.fromisoformat(json_assets["timestamp"])
+                if datetime.now() - timestamp > self.IDS_TTL:
+                    if config.debug:
+                        print(f"{Fore.YELLOW}price: {self.name()} assets cache expired")
+                    return None
+                if config.debug:
+                    print(f"{Fore.YELLOW}price: {self.name()} assets cache loaded")
+                return {
+                    AssetSymbol(k): {"asset_id": AssetId(""), "name": AssetName(v)}
+                    for k, v in json_assets["assets"].items()
+                }
+        except (IOError, ValueError, KeyError):
+            return None
+
+    def _save_cached_assets(self) -> None:
+        filename = os.path.join(CACHE_DIR, self.name() + "_assets.json")
+        try:
+            with open(filename, "w", encoding="utf-8") as assets_cache:
+                json.dump(
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "assets": {k: v["name"] for k, v in self.assets.items()},
+                    },
+                    assets_cache,
+                    indent=4,
+                )
+        except IOError:
+            pass
 
     def get_config_assets(self) -> None:
         for symbol in config.data_source_select:
@@ -359,14 +488,24 @@ class DataSourceBase:
     def epoch_time(timestamp: datetime) -> int:
         return int(timestamp.timestamp())
 
+    @staticmethod
+    def _is_date_key(key: str) -> bool:
+        # Quick check for ISO date format YYYY-MM-DD
+        return len(key) == 10 and key[4] == "-" and key[7] == "-"
+
 
 class BittyTaxAPI(DataSourceBase):
-    def __init__(self) -> None:
-        super().__init__()
-        json_resp = self.get_json("https://api.bitty.tax/v1/symbols")
-        self.assets = {
-            k: {"asset_id": AssetId(""), "name": v} for k, v in json_resp["symbols"].items()
-        }
+    def __init__(self, no_cache: bool = False) -> None:
+        super().__init__(no_cache)
+        cached_assets = self._load_cached_assets()
+        if cached_assets is not None:
+            self.assets = cached_assets
+        else:
+            json_resp = self.get_json("https://api.bitty.tax/v1/symbols")
+            self.assets = {
+                k: {"asset_id": AssetId(""), "name": v} for k, v in json_resp["symbols"].items()
+            }
+            self._save_cached_assets()
 
     def get_latest(
         self, asset: AssetSymbol, quote: QuoteSymbol, _asset_id: AssetId = AssetId("")
@@ -391,6 +530,7 @@ class BittyTaxAPI(DataSourceBase):
         # Date returned in response might not be date requested due to weekends/holidays
         self.update_prices(
             pair,
+            AssetId(""),
             {
                 Date(timestamp.date()): {
                     "price": (
@@ -406,8 +546,8 @@ class BittyTaxAPI(DataSourceBase):
 
 
 class Frankfurter(DataSourceBase):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, no_cache: bool = False) -> None:
+        super().__init__(no_cache)
         currencies = [
             "EUR",
             "USD",
@@ -480,6 +620,7 @@ class Frankfurter(DataSourceBase):
         # Date returned in response might not be date requested due to weekends/holidays
         self.update_prices(
             pair,
+            AssetId(""),
             {
                 Date(timestamp.date()): {
                     "price": (
@@ -495,8 +636,8 @@ class Frankfurter(DataSourceBase):
 
 
 class CoinDesk(DataSourceBase):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, no_cache: bool = False) -> None:
+        super().__init__(no_cache)
         self.assets = {AssetSymbol("BTC"): {"asset_id": AssetId(""), "name": AssetName("Bitcoin")}}
 
     def get_latest(
@@ -521,8 +662,8 @@ class CryptoCompare(DataSourceBase):
     ERROR_TYPE_RATE_LIMIT = 99
     MAX_DAYS = 2000
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, no_cache: bool = False) -> None:
+        super().__init__(no_cache)
 
         if "cryptocompare_api_key" in config.config:
             CryptoCompare.RATE_LIMIT = 20
@@ -532,23 +673,28 @@ class CryptoCompare(DataSourceBase):
 
         self.api_root = "https://min-api.cryptocompare.com"
 
-        json_resp = self.get_json(f"{self.api_root}/data/all/coinlist")
-        if json_resp["Response"] != "Success":
-            raise RuntimeError(f"CryptoCompare API failure: {json_resp}")
+        cached_ids = self._load_ids()
+        if cached_ids is not None:
+            self.ids = cached_ids
+        else:
+            json_resp = self.get_json(f"{self.api_root}/data/all/coinlist")
+            if json_resp["Response"] != "Success":
+                raise RuntimeError(f"CryptoCompare API failure: {json_resp}")
 
-        # CryptoCompare symbols are unique, so can be used as the ID
-        self.ids = {
-            c[1]["Symbol"]
-            .strip()
-            .lower(): {"symbol": c[1]["Symbol"].strip().upper(), "name": c[1]["CoinName"].strip()}
-            for c in json_resp["Data"].items()
-        }
-        self.assets = {
-            c[1]["Symbol"]
-            .strip()
-            .upper(): {"asset_id": c[1]["Symbol"].strip().lower(), "name": c[1]["CoinName"].strip()}
-            for c in json_resp["Data"].items()
-        }
+            # CryptoCompare symbols are unique, so can be used as the ID
+            self.ids = {
+                c[1]["Symbol"]
+                .strip()
+                .lower(): {
+                    "symbol": c[1]["Symbol"].strip().upper(),
+                    "name": c[1]["CoinName"].strip(),
+                }
+                for c in json_resp["Data"].items()
+            }
+            self._save_ids()
+
+        for k, v in self.ids.items():
+            self.assets[v["symbol"]] = {"asset_id": k, "name": v["name"]}
         self.get_config_assets()
 
     def _check_rate_limit_in_response(self, json_resp: Any) -> Tuple[bool, Optional[int]]:
@@ -611,6 +757,7 @@ class CryptoCompare(DataSourceBase):
         if "Data" in json_resp:
             self.update_prices(
                 pair,
+                asset_id,
                 {
                     Date(datetime.fromtimestamp(d["time"]).date()): {
                         "price": Decimal(repr(d["close"])) if "close" in d and d["close"] else None,
@@ -626,8 +773,8 @@ class CoinGecko(DataSourceBase):
     PRO_KEY = "x-cg-pro-api-key"
     DEMO_KEY = "x-cg-demo-api-key"
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, no_cache: bool = False) -> None:
+        super().__init__(no_cache)
 
         if "coingecko_pro_api_key" in config.config:
             CoinGecko.RATE_LIMIT = 20
@@ -641,27 +788,51 @@ class CoinGecko(DataSourceBase):
             CoinGecko.RATE_LIMIT = 2
             self.api_root = "https://api.coingecko.com/api/v3"
 
-        json_resp = self.get_json(f"{self.api_root}/coins/list?status=active")
-        self.ids = {
-            c["id"]: {"symbol": c["symbol"].strip().upper(), "name": c["name"].strip()}
-            for c in json_resp
-        }
-        self.assets = {
-            c["symbol"].strip().upper(): {"asset_id": c["id"], "name": c["name"].strip()}
-            for c in json_resp
-        }
-        if self.PRO_KEY in self.headers:
-            json_resp = self.get_json(f"{self.api_root}/coins/list?status=inactive")
+        cached_ids = self._load_ids()
+        if cached_ids is not None:
+            self.ids = cached_ids
+        else:
+            json_resp = self.get_json(f"{self.api_root}/coins/list?status=active")
+
+            ids: Dict[AssetId, _CoinGeckoIdData] = {}
             for c in json_resp:
-                self.ids[c["id"]] = {
-                    "symbol": c["symbol"].strip().upper(),
-                    "name": c["name"].strip(),
-                }
+                symbol = AssetSymbol(c["symbol"].strip().upper())
+                asset_id = AssetId(c["id"])
+                name = AssetName(c["name"].strip())
+                ids[asset_id] = {"symbol": symbol, "name": name, "market_cap": Decimal(0)}
+
+            if self.PRO_KEY in self.headers:
+                json_resp = self.get_json(f"{self.api_root}/coins/list?status=inactive")
+                for c in json_resp:
+                    symbol = AssetSymbol(c["symbol"].strip().upper())
+                    asset_id = AssetId(c["id"])
+                    name = AssetName(c["name"].strip())
+                    ids[asset_id] = {"symbol": symbol, "name": name, "market_cap": Decimal(0)}
+
+            # Get market cap of top 250 tokens only
+            json_resp = self.get_json(
+                f"{self.api_root}/coins/markets?vs_currency=USD&per_page=250&order=market_cap_dsc"
+            )
             for c in json_resp:
-                self.assets[c["symbol"].strip().upper()] = {
-                    "asset_id": c["id"],
-                    "name": c["name"].strip(),
-                }
+                if c["id"] in ids:
+                    ids[AssetId(c["id"])]["market_cap"] = (
+                        Decimal(c["market_cap"]) if c.get("market_cap") else Decimal(0)
+                    )
+
+            self.ids = {
+                k: DsIdToAssetData(symbol=v["symbol"], name=v["name"])
+                for k, v in sorted(
+                    ids.items(),
+                    key=lambda k_v: k_v[1]["market_cap"],
+                    reverse=True,
+                )
+            }
+            self._save_ids()
+
+        for k, v in self.ids.items():
+            if v["symbol"] not in self.assets:
+                self.assets[v["symbol"]] = {"asset_id": k, "name": v["name"]}
+
         self.get_config_assets()
 
     def get_latest(
@@ -713,6 +884,7 @@ class CoinGecko(DataSourceBase):
         if "prices" in json_resp:
             self.update_prices(
                 pair,
+                asset_id,
                 {
                     Date(datetime.utcfromtimestamp(p[0] / 1000).date()): {
                         "price": Decimal(repr(p[1])) if p[1] else None,
@@ -727,8 +899,8 @@ class CoinGecko(DataSourceBase):
 class CoinPaprika(DataSourceBase):
     MAX_DAYS = 5000
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, no_cache: bool = False) -> None:
+        super().__init__(no_cache)
 
         if "coinpaprika_api_key" in config.config:
             CoinPaprika.RATE_LIMIT = 20
@@ -738,15 +910,36 @@ class CoinPaprika(DataSourceBase):
             CoinPaprika.RATE_LIMIT = 2
             self.api_root = "https://api.coinpaprika.com/v1"
 
-        json_resp = self.get_json(f"{self.api_root}/coins")
-        self.ids = {
-            c["id"]: {"symbol": c["symbol"].strip().upper(), "name": c["name"].strip()}
-            for c in json_resp
-        }
-        self.assets = {
-            c["symbol"].strip().upper(): {"asset_id": c["id"], "name": c["name"].strip()}
-            for c in json_resp
-        }
+        cached_ids = self._load_ids()
+        if cached_ids is not None:
+            self.ids = cached_ids
+        else:
+            json_resp = self.get_json(f"{self.api_root}/coins")
+
+            ids: Dict[AssetId, _CoinPaprikaIdData] = {}
+            for c in json_resp:
+                symbol = AssetSymbol(c["symbol"].strip().upper())
+                asset_id = AssetId(c["id"])
+                name = AssetName(c["name"].strip())
+                ids[asset_id] = {
+                    "symbol": symbol,
+                    "name": name,
+                    "rank": c.get("rank", 0),
+                }
+
+            self.ids = {
+                k: DsIdToAssetData(symbol=v["symbol"], name=v["name"])
+                for k, v in sorted(
+                    ids.items(),
+                    key=lambda k_v: k_v[1]["rank"] if k_v[1]["rank"] > 0 else float("inf"),
+                )
+            }
+            self._save_ids()
+
+        for k, v in self.ids.items():
+            if v["symbol"] not in self.assets:
+                self.assets[v["symbol"]] = {"asset_id": k, "name": v["name"]}
+
         self.get_config_assets()
 
     def get_latest(
@@ -797,6 +990,7 @@ class CoinPaprika(DataSourceBase):
         pair = self.pair(asset, quote)
         self.update_prices(
             pair,
+            asset_id,
             {
                 Date(timestamp.date()): {
                     "price": Decimal(repr(p["price"])) if p["price"] else None,
