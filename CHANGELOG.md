@@ -13,6 +13,7 @@ The price data cache format has been updated to correctly distinguish assets tha
 - Gemini parser: delete blank rows.
 - Uphold parser: skip failed transactions.
 - Coinbase parser: fixed spurious fee asset appearing in Send/Withdrawal when no fee is present.
+- Price tool: CoinPaprika historical prices were incorrectly using the requested date as the key for all returned entries, causing only the most recent price to be stored; each entry is now keyed by its own date from the API response.
 ### Added
 - MEXC parser: added new export formats.
 - Cash App parser: added new export format.
@@ -40,6 +41,8 @@ The price data cache format has been updated to correctly distinguish assets tha
 - Conversion tool: added newest_first to DataParser to control the parsing order.
 - KuCoin parser: handle empty reports with "No matching records found".
 - Price tool: ids and assets lists are now cached locally with a 24-hour TTL, avoiding redundant API calls on each run.
+- Accounting tool and price tool: added progress bar when initialising data sources.
+- Price tool: added progress bar when a data source fetch requires a back-off.
 ### Changed
 - Price tool: CoinDesk API deprecated.
 - Price tool: added rate-limiter, retries and backoff handling for each API to prevent failures.
@@ -52,6 +55,9 @@ The price data cache format has been updated to correctly distinguish assets tha
 - Price tool: CoinPaprika coin list sorted by rank for consistent symbol conflict resolution.
 - Accounting tool: API errors during current holdings valuation are now shown as ("Skipped"), distinguishing them from assets with no price data available ("Not available").
 - Accounting tool and price tool: API failures that previously produced a raw traceback now exit cleanly with an error message and a retry hint.
+- Price tool: price cache is only written to disk when new price data has actually been fetched.
+- Price tool: `list` command no longer shows the priority marker (`<-`) when using the `-s` search option, as priority is not meaningful across search results.
+- Price tool: when `-ds` is specified (not `ALL`), only the requested data source and any data sources required for the BTC/currency conversion are initialised, eliminating unnecessary initialisations.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-

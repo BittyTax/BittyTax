@@ -6,7 +6,7 @@ import platform
 import re
 import sys
 from decimal import Decimal, InvalidOperation
-from typing import List
+from typing import List, Optional
 
 import colorama
 import dateutil.parser
@@ -173,14 +173,30 @@ def main() -> None:
 
         try:
             if args.datasource:
+                if args.datasource == "ALL":
+                    combined_ds: Optional[List[str]] = None
+                else:
+                    ds_set = {args.datasource.upper()}
+                    if symbol.upper() != "BTC":
+                        btc_priority = (
+                            [
+                                ds.split(":")[0]
+                                for ds in config.data_source_select[AssetSymbol("BTC")]
+                            ]
+                            if AssetSymbol("BTC") in config.data_source_select
+                            else config.data_source_crypto
+                        )
+                        ds_set |= {ds.upper() for ds in btc_priority}
+                    combined_ds = list(ds_set)
+                asset_data_obj = AssetData(
+                    no_cache=args.no_cache, data_sources_required=combined_ds
+                )
                 if args.command == CMD_HISTORY:
-                    assets = AssetData(no_cache=args.no_cache).get_historic_price_ds(
+                    assets = asset_data_obj.get_historic_price_ds(
                         symbol, args.date[0], args.datasource
                     )
                 else:
-                    assets = AssetData(no_cache=args.no_cache).get_latest_price_ds(
-                        symbol, args.datasource
-                    )
+                    assets = asset_data_obj.get_latest_price_ds(symbol, args.datasource)
                 btc = None
                 for asset_data in assets:
                     if asset_data["price"] is None:
@@ -191,9 +207,9 @@ def main() -> None:
                     if asset_data["quote"] == "BTC":
                         if btc is None:
                             if args.command == CMD_HISTORY:
-                                btc = get_historic_btc_price(args.date[0])
+                                btc = asset_data_obj.get_historic_btc_price(args.date[0])
                             else:
-                                btc = get_latest_btc_price()
+                                btc = asset_data_obj.get_latest_btc_price()
 
                         if btc["price"] is not None:
                             price_ccy = btc["price"] * asset_data["price"]
@@ -242,9 +258,12 @@ def main() -> None:
     elif args.command == CMD_LIST:
         symbol = args.asset
         try:
-            asset_list = AssetData(no_cache=args.no_cache).get_assets(
-                symbol, args.datasource, args.search_terms
+            ds_required = (
+                None if not args.datasource or args.datasource == "ALL" else [args.datasource]
             )
+            asset_list = AssetData(
+                no_cache=args.no_cache, data_sources_required=ds_required
+            ).get_assets(symbol, args.datasource, args.search_terms)
         except DataSourceApiError as e:
             parser.exit(message=f"{ERROR} {e} - please wait and try again\n")
         except DataSourceError as e:
@@ -257,32 +276,6 @@ def main() -> None:
             parser.exit(message="No results found\n")
 
         output_assets(asset_list)
-
-
-def get_latest_btc_price() -> AsPriceRecord:
-    price_ccy, name, data_source = ValueAsset().get_latest_price(AssetSymbol("BTC"))
-    if price_ccy is not None:
-        return AsPriceRecord(
-            symbol=AssetSymbol("BTC"),
-            name=name,
-            data_source=data_source,
-            price=price_ccy,
-            quote=config.ccy,
-        )
-    raise RuntimeError("BTC price is not available")
-
-
-def get_historic_btc_price(date: Timestamp) -> AsPriceRecord:
-    price_record = ValueAsset().get_historical_price(AssetSymbol("BTC"), date)
-    if price_record.price_ccy is not None:
-        return AsPriceRecord(
-            symbol=AssetSymbol("BTC"),
-            name=price_record.name,
-            data_source=price_record.data_source,
-            price=price_record.price_ccy,
-            quote=config.ccy,
-        )
-    raise RuntimeError("BTC price is not available")
 
 
 def output_price(symbol: AssetSymbol, price_ccy: Decimal, quantity: Decimal) -> None:

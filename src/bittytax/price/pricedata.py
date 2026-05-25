@@ -6,6 +6,7 @@ from decimal import Decimal
 from typing import List, Optional, Tuple
 
 from colorama import Fore
+from tqdm import tqdm
 
 from ..bt_types import (
     AssetName,
@@ -19,6 +20,7 @@ from ..bt_types import (
 )
 from ..config import config
 from ..constants import CACHE_DIR
+from ..utils import disable_tqdm
 from .datasource import DataSourceBase
 from .exceptions import UnexpectedDataSourceError
 
@@ -29,6 +31,7 @@ class PriceData:
         data_sources_required: List[DataSourceName],
         price_tool: bool = False,
         no_cache: bool = False,
+        leave_bar: bool = False,
     ) -> None:
         self.price_tool = price_tool
         self.no_cache = no_cache
@@ -38,9 +41,25 @@ class PriceData:
         if not os.path.exists(CACHE_DIR):
             os.mkdir(CACHE_DIR)
 
-        for data_source_class in DataSourceBase.__subclasses__():
-            if data_source_class.__name__.upper() in [ds.upper() for ds in data_sources_required]:
-                self.data_sources[data_source_class.__name__.upper()] = data_source_class(no_cache)
+        ds_classes = [
+            cls
+            for cls in DataSourceBase.__subclasses__()
+            if cls.__name__.upper() in {ds.upper() for ds in data_sources_required}
+        ]
+        if ds_classes:
+            with tqdm(
+                total=len(ds_classes),
+                desc=f"{Fore.CYAN}initialising data sources{Fore.GREEN}",
+                unit="ds",
+                leave=leave_bar,
+                disable=disable_tqdm(),
+            ) as pbar:
+                for cls in ds_classes:
+                    self.data_sources[cls.__name__.upper()] = cls(no_cache, progress_bar=pbar)
+                    pbar.update(1)
+
+        for ds in self.data_sources.values():
+            ds.progress_bar = None
 
     @staticmethod
     def data_source_priority(asset: AssetSymbol) -> List[DataSourceName]:
