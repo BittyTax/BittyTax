@@ -83,7 +83,8 @@ class Config:
         if not os.path.exists(config_path):
             template = (
                 pkg_resources.files(__package__)
-                .joinpath(self.BITTYTAX_RESOURCES, self.BITTYTAX_CONFIG_TEMPLATE)
+                .joinpath(self.BITTYTAX_RESOURCES)
+                .joinpath(self.BITTYTAX_CONFIG_TEMPLATE)
                 .read_text(encoding="utf-8")
             )
             with open(config_path, "w", encoding="utf-8") as config_file:
