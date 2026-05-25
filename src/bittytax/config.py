@@ -23,7 +23,7 @@ class Config:
     BITTYTAX_CONFIG = "bittytax.conf"
 
     FIAT_LIST = ["GBP", "EUR", "USD", "AUD", "NZD", "CAD", "PLN", "DKK", "NOK", "SEK", "CHF"]
-    CRYPTO_LIST = ["BTC", "ETH", "XRP", "LTC", "BCH", "BNB", "USDT", "USDC"]
+    CRYPTO_LIST = ["USDT", "USDC", "BTC", "ETH", "BNB"]
 
     TRADE_ASSET_TYPE_BUY = 0
     TRADE_ASSET_TYPE_SELL = 1
