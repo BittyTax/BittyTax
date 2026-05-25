@@ -21,6 +21,8 @@ else:
 
 class Config:
     BITTYTAX_CONFIG = "bittytax.conf"
+    BITTYTAX_CONFIG_TEMPLATE = "bittytax.conf.template"
+    BITTYTAX_RESOURCES = "resources"
 
     FIAT_LIST = ["GBP", "EUR", "USD", "AUD", "NZD", "CAD", "PLN", "DKK", "NOK", "SEK", "CHF"]
     CRYPTO_LIST = ["USDT", "USDC", "BTC", "ETH", "BNB"]
@@ -89,17 +91,18 @@ class Config:
         if not os.path.exists(BITTYTAX_PATH):
             os.mkdir(BITTYTAX_PATH)
 
-        if not os.path.exists(os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG)):
-            default_conf = (
+        config_path = os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG)
+        if not os.path.exists(config_path):
+            template = (
                 pkg_resources.files(__package__)
-                .joinpath(f"config/{self.BITTYTAX_CONFIG}")
-                .read_bytes()
+                .joinpath(self.BITTYTAX_RESOURCES, self.BITTYTAX_CONFIG_TEMPLATE)
+                .read_text(encoding="utf-8")
             )
-            with open(os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG), "wb") as config_file:
-                config_file.write(default_conf)
+            with open(config_path, "w", encoding="utf-8") as config_file:
+                config_file.write(template)
 
         try:
-            with open(os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG), "rb") as config_file:
+            with open(config_path, "rb") as config_file:
                 self.config = yaml.safe_load(config_file)
         except IOError:
             sys.stderr.write(

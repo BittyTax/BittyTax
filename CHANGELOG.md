@@ -67,6 +67,7 @@ The price data cache format has been updated to correctly distinguish assets tha
 - Price tool: when `-ds` is specified (not `ALL`), only the requested data source and any data sources required for the BTC/currency conversion are initialised, eliminating unnecessary initialisations.
 - Price tool: `list` command search option (`-s`) now also searches asset IDs in addition to symbol and name.
 - Config: updated fiat_list.
+- Config: moved default config file to resources/bittytax.conf.template.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
