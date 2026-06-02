@@ -10,7 +10,7 @@ import time
 from datetime import datetime, timedelta
 from decimal import Decimal
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import dateutil.parser
 import requests
@@ -76,6 +76,9 @@ class DataSourceBase:
     RETRY_AFTER_DEFAULT = 5  # seconds
     IDS_TTL = timedelta(days=1)
 
+    HISTORICAL_QUOTES: Set[str] = set()
+    LATEST_QUOTES: Set[str] = set()
+
     def __init__(self, no_cache: bool = False, progress_bar: Optional[tqdm] = None) -> None:
         self.no_cache = no_cache
         self.headers = {"User-Agent": self.USER_AGENT}
@@ -92,7 +95,7 @@ class DataSourceBase:
             if config.debug:
                 print(f"{Fore.YELLOW}price: {self.name()} ({pair}) data cache loaded")
 
-        atexit.register(self._cache_prices)
+        atexit.register(self._save_prices)
 
     def name(self) -> DataSourceName:
         return DataSourceName(self.__class__.__name__)
@@ -331,7 +334,7 @@ class DataSourceBase:
             tqdm.write(f"{WARNING} Data cached for {self.name()} could not be loaded")
             return {}, True
 
-    def _cache_prices(self) -> None:
+    def _save_prices(self) -> None:
         if not self._prices_dirty:
             return
         with open(
@@ -404,7 +407,7 @@ class DataSourceBase:
         except IOError:
             pass
 
-    def _load_cached_assets(self) -> Optional[Dict[AssetSymbol, DsSymbolToAssetData]]:
+    def _load_assets(self) -> Optional[Dict[AssetSymbol, DsSymbolToAssetData]]:
         if self.no_cache:
             return None
         filename = os.path.join(CACHE_DIR, self.name() + "_assets.json")
@@ -427,7 +430,7 @@ class DataSourceBase:
         except (IOError, ValueError, KeyError):
             return None
 
-    def _save_cached_assets(self) -> None:
+    def _save_assets(self) -> None:
         filename = os.path.join(CACHE_DIR, self.name() + "_assets.json")
         try:
             with open(filename, "w", encoding="utf-8") as assets_cache:
@@ -495,7 +498,7 @@ class DataSourceBase:
 
     @staticmethod
     def str_to_date(date: str) -> Date:
-        return Date(dateutil.parser.parse(date).date())
+        return Date(datetime.fromisoformat(date).date())
 
     @staticmethod
     def str_to_decimal(price: str) -> Optional[Decimal]:
@@ -522,9 +525,43 @@ class DataSourceBase:
 
 
 class BittyTaxAPI(DataSourceBase):
+    HISTORICAL_QUOTES = {
+        "AUD",
+        "BRL",
+        "CAD",
+        "CHF",
+        "CNY",
+        "CZK",
+        "DKK",
+        "EUR",
+        "GBP",
+        "HKD",
+        "HUF",
+        "IDR",
+        "ILS",
+        "INR",
+        "ISK",
+        "JPY",
+        "KRW",
+        "MXN",
+        "MYR",
+        "NOK",
+        "NZD",
+        "PHP",
+        "PLN",
+        "RON",
+        "SEK",
+        "SGD",
+        "THB",
+        "TRY",
+        "USD",
+        "ZAR",
+    }
+    LATEST_QUOTES = HISTORICAL_QUOTES
+
     def __init__(self, no_cache: bool = False, progress_bar: Optional[tqdm] = None) -> None:
         super().__init__(no_cache, progress_bar)
-        cached_assets = self._load_cached_assets()
+        cached_assets = self._load_assets()
         if cached_assets is not None:
             self.assets = cached_assets
         else:
@@ -532,7 +569,7 @@ class BittyTaxAPI(DataSourceBase):
             self.assets = {
                 k: {"asset_id": AssetId(""), "name": v} for k, v in json_resp["symbols"].items()
             }
-            self._save_cached_assets()
+            self._save_assets()
 
     def get_latest(
         self, asset: AssetSymbol, quote: QuoteSymbol, _asset_id: AssetId = AssetId("")
@@ -573,56 +610,52 @@ class BittyTaxAPI(DataSourceBase):
 
 
 class Frankfurter(DataSourceBase):
+    HISTORICAL_QUOTES = {
+        "AUD",
+        "BRL",
+        "CAD",
+        "CHF",
+        "CNY",
+        "CZK",
+        "DKK",
+        "EUR",
+        "GBP",
+        "HKD",
+        "HUF",
+        "IDR",
+        "ILS",
+        "INR",
+        "ISK",
+        "JPY",
+        "KRW",
+        "MXN",
+        "MYR",
+        "NOK",
+        "NZD",
+        "PHP",
+        "PLN",
+        "RON",
+        "SEK",
+        "SGD",
+        "THB",
+        "TRY",
+        "USD",
+        "ZAR",
+    }
+    LATEST_QUOTES = HISTORICAL_QUOTES
+
     def __init__(self, no_cache: bool = False, progress_bar: Optional[tqdm] = None) -> None:
         super().__init__(no_cache, progress_bar)
-        currencies = [
-            "EUR",
-            "USD",
-            "JPY",
-            "BGN",
-            "CYP",
-            "CZK",
-            "DKK",
-            "EEK",
-            "GBP",
-            "HUF",
-            "LTL",
-            "LVL",
-            "MTL",
-            "PLN",
-            "ROL",
-            "RON",
-            "SEK",
-            "SIT",
-            "SKK",
-            "CHF",
-            "ISK",
-            "NOK",
-            "HRK",
-            "RUB",
-            "TRL",
-            "TRY",
-            "AUD",
-            "BRL",
-            "CAD",
-            "CNY",
-            "HKD",
-            "IDR",
-            "ILS",
-            "INR",
-            "KRW",
-            "MXN",
-            "MYR",
-            "NZD",
-            "PHP",
-            "SGD",
-            "THB",
-            "ZAR",
-        ]
-        self.assets = {
-            AssetSymbol(c): {"asset_id": AssetId(""), "name": AssetName("Fiat " + c)}
-            for c in currencies
-        }
+        cached_assets = self._load_assets()
+        if cached_assets is not None:
+            self.assets = cached_assets
+        else:
+            json_resp = self.get_json("https://api.frankfurter.dev/v1/currencies")
+            self.assets = {
+                AssetSymbol(k): {"asset_id": AssetId(""), "name": AssetName(v)}
+                for k, v in json_resp.items()
+            }
+            self._save_assets()
 
     def get_latest(
         self, asset: AssetSymbol, quote: QuoteSymbol, _asset_id: AssetId = AssetId("")
@@ -663,6 +696,8 @@ class Frankfurter(DataSourceBase):
 
 
 class CoinDesk(DataSourceBase):
+    HISTORICAL_QUOTES = {"USD", "GBP", "EUR"}
+
     def __init__(self, no_cache: bool = False, progress_bar: Optional[tqdm] = None) -> None:
         super().__init__(no_cache, progress_bar)
         self.assets = {AssetSymbol("BTC"): {"asset_id": AssetId(""), "name": AssetName("Bitcoin")}}
@@ -688,6 +723,51 @@ class CryptoCompare(DataSourceBase):
     ERROR_TYPE_MARKET_NOT_EXIST = 2
     ERROR_TYPE_RATE_LIMIT = 99
     MAX_DAYS = 2000
+
+    HISTORICAL_QUOTES = {
+        "ARS",
+        "AUD",
+        "BOB",
+        "BRL",
+        "BTC",
+        "CAD",
+        "CHF",
+        "CLP",
+        "CNY",
+        "COP",
+        "CZK",
+        "DKK",
+        "EUR",
+        "GBP",
+        "HKD",
+        "HUF",
+        "IDR",
+        "ILS",
+        "INR",
+        "ISK",
+        "JPY",
+        "KRW",
+        "MXN",
+        "MYR",
+        "NGN",
+        "NOK",
+        "NZD",
+        "PEN",
+        "PHP",
+        "PKR",
+        "PLN",
+        "RUB",
+        "SEK",
+        "SGD",
+        "THB",
+        "TRY",
+        "TWD",
+        "UAH",
+        "USD",
+        "VND",
+        "ZAR",
+    }
+    LATEST_QUOTES = HISTORICAL_QUOTES
 
     def __init__(self, no_cache: bool = False, progress_bar: Optional[tqdm] = None) -> None:
         super().__init__(no_cache, progress_bar)
@@ -808,6 +888,58 @@ class CryptoCompare(DataSourceBase):
 class CoinGecko(DataSourceBase):
     PRO_KEY = "x-cg-pro-api-key"
     DEMO_KEY = "x-cg-demo-api-key"
+
+    HISTORICAL_QUOTES = {
+        "AED",
+        "ARS",
+        "AUD",
+        "BDT",
+        "BHD",
+        "BMD",
+        "BRL",
+        "BTC",
+        "CAD",
+        "CHF",
+        "CLP",
+        "CNY",
+        "CZK",
+        "DKK",
+        "EUR",
+        "GBP",
+        "GEL",
+        "HKD",
+        "HUF",
+        "IDR",
+        "ILS",
+        "INR",
+        "JPY",
+        "KRW",
+        "KWD",
+        "LKR",
+        "MMK",
+        "MXN",
+        "MYR",
+        "NGN",
+        "NOK",
+        "NZD",
+        "PHP",
+        "PKR",
+        "PLN",
+        "RUB",
+        "SAR",
+        "SEK",
+        "SGD",
+        "THB",
+        "TRY",
+        "TWD",
+        "UAH",
+        "USD",
+        "VEF",
+        "VND",
+        "XDR",
+        "ZAR",
+    }
+    LATEST_QUOTES = HISTORICAL_QUOTES
 
     def __init__(self, no_cache: bool = False, progress_bar: Optional[tqdm] = None) -> None:
         super().__init__(no_cache, progress_bar)
@@ -935,6 +1067,52 @@ class CoinGecko(DataSourceBase):
 class CoinPaprika(DataSourceBase):
     MAX_DAYS = 5000
 
+    HISTORICAL_QUOTES = {"USD", "BTC"}
+    LATEST_QUOTES = {
+        "ARS",
+        "AUD",
+        "BOB",
+        "BRL",
+        "BTC",
+        "CAD",
+        "CHF",
+        "CLP",
+        "CNY",
+        "COP",
+        "CZK",
+        "DKK",
+        "ETH",
+        "EUR",
+        "GBP",
+        "HKD",
+        "HUF",
+        "IDR",
+        "ILS",
+        "INR",
+        "ISK",
+        "JPY",
+        "KRW",
+        "MXN",
+        "MYR",
+        "NGN",
+        "NOK",
+        "NZD",
+        "PEN",
+        "PHP",
+        "PKR",
+        "PLN",
+        "RUB",
+        "SEK",
+        "SGD",
+        "THB",
+        "TRY",
+        "TWD",
+        "UAH",
+        "USD",
+        "VND",
+        "ZAR",
+    }
+
     def __init__(self, no_cache: bool = False, progress_bar: Optional[tqdm] = None) -> None:
         super().__init__(no_cache, progress_bar)
 
@@ -998,10 +1176,6 @@ class CoinPaprika(DataSourceBase):
         timestamp: Timestamp,
         asset_id: AssetId = AssetId(""),
     ) -> None:
-        # Historic prices only available in USD or BTC
-        if quote not in ("USD", "BTC"):
-            return
-
         if not asset_id:
             asset_id = self.assets[asset]["asset_id"]
 

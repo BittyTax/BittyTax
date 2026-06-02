@@ -223,10 +223,8 @@ def main() -> None:
                         if btc is None:
                             if args.command == CMD_HISTORY:
                                 btc = asset_data_obj.get_historic_btc_price(args.date)
-                            else:
-                                btc = asset_data_obj.get_latest_btc_price()
 
-                        if btc["price"] is not None:
+                        if btc is not None and btc["price"] is not None:
                             price_ccy = btc["price"] * asset_data["price"]
                             output_ds_price(btc)
                     else:

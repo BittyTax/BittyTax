@@ -134,20 +134,23 @@ class PriceData:
     ) -> Tuple[Optional[Decimal], AssetName, DataSourceName]:
         name = AssetName("")
         for data_source in self.data_source_priority(asset):
-            price, name = self.get_latest_ds(data_source, asset, quote)
-            if price is not None:
-                if config.debug:
-                    print(
-                        f"{Fore.YELLOW}price: <latest>, 1 "
-                        f"{asset}={price.normalize():0,f} {quote} via "
-                        f"{self.data_sources[data_source.upper()].name()} ({name})"
-                    )
-                if self.price_tool:
-                    print(
-                        f"{Fore.YELLOW}1 {asset}={price.normalize():0,f} {quote} "
-                        f"{Fore.CYAN}via {self.data_sources[data_source.upper()].name()} ({name})"
-                    )
-                return price, name, self.data_sources[data_source.upper()].name()
+            ds = self.data_sources[data_source.upper()]
+            if quote in type(ds).LATEST_QUOTES:
+                price, name = self.get_latest_ds(data_source, asset, quote)
+                if price is not None:
+                    if config.debug:
+                        print(
+                            f"{Fore.YELLOW}price: <latest>, 1 "
+                            f"{asset}={price.normalize():0,f} {quote} via "
+                            f"{ds.name()} ({name})"
+                        )
+                    if self.price_tool:
+                        print(
+                            f"{Fore.YELLOW}1 {asset}={price.normalize():0,f} {quote} "
+                            f"{Fore.CYAN}via {ds.name()} ({name})"
+                        )
+                    return price, name, ds.name()
+
         return None, name, DataSourceName("")
 
     def get_historical(
@@ -155,18 +158,95 @@ class PriceData:
     ) -> Tuple[Optional[Decimal], AssetName, DataSourceName, SourceUrl]:
         name = AssetName("")
         for data_source in self.data_source_priority(asset):
-            price, name, url = self.get_historical_ds(data_source, asset, quote, timestamp)
-            if price is not None:
-                if config.debug:
-                    print(
-                        f"{Fore.YELLOW}price: {timestamp:%Y-%m-%d}, 1 "
-                        f"{asset}={price.normalize():0,f} {quote} via "
-                        f"{self.data_sources[data_source.upper()].name()} ({name})"
+            ds = self.data_sources[data_source.upper()]
+            has_direct = quote in type(ds).HISTORICAL_QUOTES
+            has_btc = asset != AssetSymbol("BTC") and "BTC" in type(ds).HISTORICAL_QUOTES
+
+            if config.price_via_btc:
+                if has_btc:
+                    price_btc, name, url = self.get_historical_ds(
+                        data_source, asset, QuoteSymbol("BTC"), timestamp
                     )
-                if self.price_tool:
-                    print(
-                        f"{Fore.YELLOW}1 {asset}={price.normalize():0,f} {quote} "
-                        f"{Fore.CYAN}via {self.data_sources[data_source.upper()].name()} ({name})"
+                    if price_btc is not None:
+                        if config.debug:
+                            print(
+                                f"{Fore.YELLOW}price: {timestamp:%Y-%m-%d}, 1 "
+                                f"{asset}={price_btc.normalize():0,f} BTC via "
+                                f"{ds.name()} ({name})"
+                            )
+                        if self.price_tool:
+                            print(
+                                f"{Fore.YELLOW}1 {asset}={price_btc.normalize():0,f} BTC "
+                                f"{Fore.CYAN}via {ds.name()} ({name})"
+                            )
+                        btc_price_ccy, _, _, _ = self.get_historical(
+                            AssetSymbol("BTC"), quote, timestamp
+                        )
+                        if btc_price_ccy is not None:
+                            ccy_price = btc_price_ccy * price_btc
+                            return (
+                                ccy_price,
+                                name,
+                                ds.name(),
+                                url,
+                            )
+                elif has_direct:
+                    price, name, url = self.get_historical_ds(data_source, asset, quote, timestamp)
+                    if price is not None:
+                        if config.debug:
+                            print(
+                                f"{Fore.YELLOW}price: {timestamp:%Y-%m-%d}, 1 "
+                                f"{asset}={price.normalize():0,f} {quote} via "
+                                f"{ds.name()} ({name})"
+                            )
+                        if self.price_tool:
+                            print(
+                                f"{Fore.YELLOW}1 {asset}={price.normalize():0,f} {quote} "
+                                f"{Fore.CYAN}via {ds.name()} ({name})"
+                            )
+                        return price, name, ds.name(), url
+            else:
+                if has_direct:
+                    price, name, url = self.get_historical_ds(data_source, asset, quote, timestamp)
+                    if price is not None:
+                        if config.debug:
+                            print(
+                                f"{Fore.YELLOW}price: {timestamp:%Y-%m-%d}, 1 "
+                                f"{asset}={price.normalize():0,f} {quote} via "
+                                f"{ds.name()} ({name})"
+                            )
+                        if self.price_tool:
+                            print(
+                                f"{Fore.YELLOW}1 {asset}={price.normalize():0,f} {quote} "
+                                f"{Fore.CYAN}via {ds.name()} ({name})"
+                            )
+                        return price, name, ds.name(), url
+                elif has_btc:
+                    price_btc, name, url = self.get_historical_ds(
+                        data_source, asset, QuoteSymbol("BTC"), timestamp
                     )
-                return price, name, self.data_sources[data_source.upper()].name(), url
+                    if price_btc is not None:
+                        if config.debug:
+                            print(
+                                f"{Fore.YELLOW}price: {timestamp:%Y-%m-%d}, 1 "
+                                f"{asset}={price_btc.normalize():0,f} BTC via "
+                                f"{ds.name()} ({name})"
+                            )
+                        if self.price_tool:
+                            print(
+                                f"{Fore.YELLOW}1 {asset}={price_btc.normalize():0,f} BTC "
+                                f"{Fore.CYAN}via {ds.name()} ({name})"
+                            )
+                        btc_price_ccy, _, _, _ = self.get_historical(
+                            AssetSymbol("BTC"), quote, timestamp
+                        )
+                        if btc_price_ccy is not None:
+                            ccy_price = btc_price_ccy * price_btc
+                            return (
+                                ccy_price,
+                                name,
+                                ds.name(),
+                                url,
+                            )
+
         return None, name, DataSourceName(""), SourceUrl("")

@@ -22,7 +22,7 @@ from ..bt_types import (
 from ..config import config
 from ..constants import CACHE_DIR
 from ..utils import disable_tqdm
-from .datasource import BittyTaxAPI, DataSourceBase, Frankfurter
+from .datasource import DataSourceBase
 from .exceptions import UnexpectedDataSourceError
 
 
@@ -40,8 +40,6 @@ class AsPriceRecord(AsRecord):  # pylint: disable=too-few-public-methods
 
 
 class AssetData:
-    FIAT_DATASOURCES = (BittyTaxAPI.__name__, Frankfurter.__name__)
-
     def __init__(
         self, no_cache: bool = False, data_sources_required: Optional[List[str]] = None
     ) -> None:
@@ -157,6 +155,9 @@ class AssetData:
 
         all_assets = []
         for ds in data_sources:
+            if config.ccy not in type(self.data_sources[ds]).LATEST_QUOTES:
+                continue
+
             for asset_id in self.data_sources[ds].get_list().get(req_symbol, []):
                 asset_data = cast(AsPriceRecord, asset_id)
                 asset_data["symbol"] = req_symbol
@@ -166,42 +167,12 @@ class AssetData:
                     if req_data_source == "ALL"
                     else False
                 )
-
-                if req_symbol == "BTC" or asset_data["data_source"] in self.FIAT_DATASOURCES:
-                    asset_data["quote"] = config.ccy
-                else:
-                    asset_data["quote"] = QuoteSymbol("BTC")
-
+                asset_data["quote"] = config.ccy
                 asset_data["price"] = self.data_sources[ds].get_latest(
                     req_symbol, asset_data["quote"], asset_data["asset_id"]
                 )
                 all_assets.append(asset_data)
         return all_assets
-
-    def get_latest_btc_price(self) -> "AsPriceRecord":
-        btc_priority = (
-            [ds.split(":")[0] for ds in config.data_source_select[AssetSymbol("BTC")]]
-            if AssetSymbol("BTC") in config.data_source_select
-            else config.data_source_crypto
-        )
-        for data_source in btc_priority:
-            ds_key = data_source.upper()
-            if ds_key not in self.data_sources:
-                continue
-            ds_obj = self.data_sources[ds_key]
-            if AssetSymbol("BTC") not in ds_obj.assets:
-                continue
-            price = ds_obj.get_latest(AssetSymbol("BTC"), config.ccy)
-            if price is not None:
-                return AsPriceRecord(
-                    symbol=AssetSymbol("BTC"),
-                    name=ds_obj.assets[AssetSymbol("BTC")]["name"],
-                    data_source=ds_obj.name(),
-                    asset_id=ds_obj.assets[AssetSymbol("BTC")]["asset_id"],
-                    price=price,
-                    quote=config.ccy,
-                )
-        raise RuntimeError("BTC price is not available")
 
     def get_historic_btc_price(self, date: Timestamp) -> "AsPriceRecord":
         btc_priority = (
@@ -215,6 +186,8 @@ class AssetData:
                 continue
             ds_obj = self.data_sources[ds_key]
             if AssetSymbol("BTC") not in ds_obj.assets:
+                continue
+            if config.ccy not in type(ds_obj).HISTORICAL_QUOTES:
                 continue
             pair = TradingPair("BTC/" + config.ccy)
             asset_id = ds_obj.assets[AssetSymbol("BTC")]["asset_id"]
@@ -266,6 +239,24 @@ class AssetData:
 
         all_assets = []
         for ds in data_sources:
+            has_direct = config.ccy in type(self.data_sources[ds]).HISTORICAL_QUOTES
+            has_btc = req_symbol != "BTC" and "BTC" in type(self.data_sources[ds]).HISTORICAL_QUOTES
+
+            if config.price_via_btc:
+                if has_btc:
+                    quote = QuoteSymbol("BTC")
+                elif has_direct:
+                    quote = config.ccy
+                else:
+                    continue
+            else:
+                if has_direct:
+                    quote = config.ccy
+                elif has_btc:
+                    quote = QuoteSymbol("BTC")
+                else:
+                    continue
+
             for asset_id in self.data_sources[ds].get_list().get(req_symbol, []):
                 asset_data = cast(AsPriceRecord, asset_id)
                 asset_data["symbol"] = req_symbol
@@ -275,11 +266,7 @@ class AssetData:
                     if req_data_source == "ALL"
                     else False
                 )
-
-                if req_symbol == "BTC" or asset_data["data_source"] in self.FIAT_DATASOURCES:
-                    asset_data["quote"] = config.ccy
-                else:
-                    asset_data["quote"] = QuoteSymbol("BTC")
+                asset_data["quote"] = quote
 
                 date = Date(req_date.date())
                 pair = TradingPair(req_symbol + "/" + asset_data["quote"])
