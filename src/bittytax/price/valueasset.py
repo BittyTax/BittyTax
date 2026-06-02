@@ -13,7 +13,6 @@ from ..bt_types import (
     AssetSymbol,
     DataSourceName,
     Date,
-    QuoteSymbol,
     SourceUrl,
     Timestamp,
     Year,
@@ -89,8 +88,6 @@ class ValueAsset:
         return None, AssetName(""), DataSourceName("")
 
     def get_historical_price(self, asset: AssetSymbol, timestamp: Timestamp) -> VaPriceRecord:
-        asset_price_ccy = None
-
         if not self.price_tool and timestamp.date() >= datetime.now().date():
             bt_tqdm_write(
                 f"{WARNING} Price for {asset} on {timestamp:%Y-%m-%d}, "
@@ -100,60 +97,17 @@ class ValueAsset:
             price_record = VaPriceRecord(name, data_source, SourceUrl(""), asset_price_ccy, None)
             return price_record
 
-        if asset == "BTC" or asset in config.fiat_list:
-            asset_price_ccy, name, data_source, url = self.price_data.get_historical(
-                asset, config.ccy, timestamp
-            )
-            price_record = VaPriceRecord(name, data_source, url, asset_price_ccy, None)
-            self.price_report_cache(asset, timestamp, name, data_source, url, asset_price_ccy)
-        else:
-            asset_price_btc, name, data_source, url = self.price_data.get_historical(
-                asset, QuoteSymbol("BTC"), timestamp
-            )
-            if asset_price_btc is not None:
-                (
-                    btc_price_ccy,
-                    name2,
-                    data_source2,
-                    url2,
-                ) = self.price_data.get_historical(AssetSymbol("BTC"), config.ccy, timestamp)
-                if btc_price_ccy is not None:
-                    asset_price_ccy = btc_price_ccy * asset_price_btc
-
-                self.price_report_cache(
-                    AssetSymbol("BTC"), timestamp, name2, data_source2, url2, btc_price_ccy
-                )
-
-            self.price_report_cache(
-                asset,
-                timestamp,
-                name,
-                data_source,
-                url,
-                asset_price_ccy,
-                asset_price_btc,
-            )
-            price_record = VaPriceRecord(name, data_source, url, asset_price_ccy, asset_price_btc)
-
+        asset_price_ccy, name, data_source, url = self.price_data.get_historical(
+            asset, config.ccy, timestamp
+        )
+        price_record = VaPriceRecord(name, data_source, url, asset_price_ccy, None)
+        self.price_report_cache(asset, timestamp, name, data_source, url, asset_price_ccy)
         return price_record
 
     def get_latest_price(
         self, asset: AssetSymbol
     ) -> Tuple[Optional[Decimal], AssetName, DataSourceName]:
-        asset_price_ccy = None
-
-        if asset == "BTC" or asset in config.fiat_list:
-            asset_price_ccy, name, data_source = self.price_data.get_latest(asset, config.ccy)
-        else:
-            asset_price_btc, name, data_source = self.price_data.get_latest(
-                asset, QuoteSymbol("BTC")
-            )
-
-            if asset_price_btc is not None:
-                btc_price_ccy, _, _ = self.price_data.get_latest(AssetSymbol("BTC"), config.ccy)
-                if btc_price_ccy is not None:
-                    asset_price_ccy = btc_price_ccy * asset_price_btc
-
+        asset_price_ccy, name, data_source = self.price_data.get_latest(asset, config.ccy)
         return asset_price_ccy, name, data_source
 
     def price_report_cache(

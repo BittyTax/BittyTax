@@ -4,6 +4,8 @@ Important:-
 
 The price data cache format has been updated to correctly distinguish assets that share the same ticker symbol. Existing cache files will be automatically migrated to the new format on the next run. After upgrading, please check the Price Data appendix in your tax report to confirm that the correct token has been chosen for each of your assets.
 
+The new `price_via_btc` config option may not exist in your config file. If it is missing, BittyTax keeps the legacy BTC-intermediate behaviour for backward compatibility. Add `price_via_btc: False` to your config if you want historic prices to use direct local currency lookups.
+
 ### Fixed
 - Coinbase parser: fixed negative values for Advanced Trade Sells.
 - Accounting tool: fixed duplicate worksheet names in Excel audit log.
@@ -68,6 +70,12 @@ The price data cache format has been updated to correctly distinguish assets tha
 - Price tool: `list` command search option (`-s`) now also searches asset IDs in addition to symbol and name.
 - Config: updated fiat_list.
 - Config: moved default config file to resources/bittytax.conf.template.
+- Price tool: latest prices are always fetched directly in the configured local currency (e.g. GBP), with no BTC-intermediate conversion.
+- Price tool: historical prices use direct local-currency quotes where supported; otherwise they can use BTC as an intermediate path.
+- Price tool: each datasource now declares supported historical and latest quote currencies.
+- Config: added `price_via_btc` setting for historic prices (legacy BTC-intermediate method), defaulting to `False` for new config files.
+- Price tool: Frankfurter now fetches supported currencies via API instead of using a hardcoded list.
+- Price tool: price cache loading performance improved.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-

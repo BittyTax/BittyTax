@@ -63,6 +63,7 @@ class Config:
         "data_source_select": {},
         "data_source_fiat": DATA_SOURCE_FIAT,
         "data_source_crypto": DATA_SOURCE_CRYPTO,
+        "price_via_btc": True,
         "usernames": [],
         "coinbase_zero_fees_are_gifts": False,
         "binance_multi_bnb_split_even": False,
