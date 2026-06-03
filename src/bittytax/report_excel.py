@@ -26,7 +26,7 @@ from .bt_types import (
 )
 from .config import config
 from .constants import ACQUISITIONS_VARIOUS, COST_BASIS_ZERO_NOTE, EXCEL_PRECISION, PROJECT_URL
-from .price.valueasset import VaPriceRecord
+from .price.valueasset import PriceDataRecord
 from .report import ProgressSpinner, ReportLog
 from .tax import (
     BuyList,
@@ -103,7 +103,7 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
         sells_ordered: Optional[List[Sell]] = None,
         other_transactions: Optional[List[Union[Buy, Sell]]] = None,
         tax_report: Optional[Dict[Year, TaxReportRecord]] = None,
-        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]]] = None,
+        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, PriceDataRecord]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
     ) -> None:
         self.progname = progname
@@ -359,7 +359,7 @@ class ReportExcel:  # pylint: disable=too-few-public-methods
         sells_ordered: List[Sell],
         other_transactions: List[Union[Buy, Sell]],
         tax_report: Dict[Year, TaxReportRecord],
-        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]],
+        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, PriceDataRecord]]],
         holdings_report: Optional[HoldingsReportRecord],
     ) -> None:
         row_tracker = RowTracker()
@@ -1193,7 +1193,7 @@ class Worksheet:
 
     def price_data(
         self,
-        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]],
+        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, PriceDataRecord]]],
     ) -> Dict[Tuple[AssetSymbol, Date], int]:
         price_to_row = {}
         self.worksheet.merge_range(

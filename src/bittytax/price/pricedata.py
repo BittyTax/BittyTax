@@ -2,6 +2,7 @@
 # (c) Nano Nano Ltd 2019
 
 import os
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import List, Optional, Tuple
 
@@ -23,6 +24,16 @@ from ..constants import CACHE_DIR
 from ..utils import disable_tqdm
 from .datasource import DataSourceBase
 from .exceptions import UnexpectedDataSourceError
+
+
+@dataclass
+class PriceDataRecord:
+    name: AssetName
+    data_source: DataSourceName
+    url: SourceUrl = SourceUrl("")
+    price_ccy: Optional[Decimal] = None
+    price_btc: Optional[Decimal] = None
+    btc_record: Optional["PriceDataRecord"] = None
 
 
 class PriceData:
@@ -129,9 +140,7 @@ class PriceData:
             return None, AssetName(""), SourceUrl("")
         raise UnexpectedDataSourceError(data_source, DataSourceBase.datasources_str())
 
-    def get_latest(
-        self, asset: AssetSymbol, quote: QuoteSymbol
-    ) -> Tuple[Optional[Decimal], AssetName, DataSourceName]:
+    def get_latest(self, asset: AssetSymbol, quote: QuoteSymbol) -> PriceDataRecord:
         name = AssetName("")
         for data_source in self.data_source_priority(asset):
             ds = self.data_sources[data_source.upper()]
@@ -149,13 +158,13 @@ class PriceData:
                             f"{Fore.YELLOW}1 {asset}={price.normalize():0,f} {quote} "
                             f"{Fore.CYAN}via {ds.name()} ({name})"
                         )
-                    return price, name, ds.name()
+                    return PriceDataRecord(name=name, data_source=ds.name(), price_ccy=price)
 
-        return None, name, DataSourceName("")
+        return PriceDataRecord(name=name, data_source=DataSourceName(""))
 
     def get_historical(
         self, asset: AssetSymbol, quote: QuoteSymbol, timestamp: Timestamp
-    ) -> Tuple[Optional[Decimal], AssetName, DataSourceName, SourceUrl]:
+    ) -> PriceDataRecord:
         name = AssetName("")
         for data_source in self.data_source_priority(asset):
             ds = self.data_sources[data_source.upper()]
@@ -179,16 +188,15 @@ class PriceData:
                                 f"{Fore.YELLOW}1 {asset}={price_btc.normalize():0,f} BTC "
                                 f"{Fore.CYAN}via {ds.name()} ({name})"
                             )
-                        btc_price_ccy, _, _, _ = self.get_historical(
-                            AssetSymbol("BTC"), quote, timestamp
-                        )
-                        if btc_price_ccy is not None:
-                            ccy_price = btc_price_ccy * price_btc
-                            return (
-                                ccy_price,
-                                name,
-                                ds.name(),
-                                url,
+                        btc_record = self.get_historical(AssetSymbol("BTC"), quote, timestamp)
+                        if btc_record.price_ccy is not None:
+                            return PriceDataRecord(
+                                name=name,
+                                data_source=ds.name(),
+                                url=url,
+                                price_ccy=btc_record.price_ccy * price_btc,
+                                price_btc=price_btc,
+                                btc_record=btc_record,
                             )
                 elif has_direct:
                     price, name, url = self.get_historical_ds(data_source, asset, quote, timestamp)
@@ -204,7 +212,9 @@ class PriceData:
                                 f"{Fore.YELLOW}1 {asset}={price.normalize():0,f} {quote} "
                                 f"{Fore.CYAN}via {ds.name()} ({name})"
                             )
-                        return price, name, ds.name(), url
+                        return PriceDataRecord(
+                            name=name, data_source=ds.name(), url=url, price_ccy=price
+                        )
             else:
                 if has_direct:
                     price, name, url = self.get_historical_ds(data_source, asset, quote, timestamp)
@@ -220,7 +230,9 @@ class PriceData:
                                 f"{Fore.YELLOW}1 {asset}={price.normalize():0,f} {quote} "
                                 f"{Fore.CYAN}via {ds.name()} ({name})"
                             )
-                        return price, name, ds.name(), url
+                        return PriceDataRecord(
+                            name=name, data_source=ds.name(), url=url, price_ccy=price
+                        )
                 elif has_btc:
                     price_btc, name, url = self.get_historical_ds(
                         data_source, asset, QuoteSymbol("BTC"), timestamp
@@ -237,16 +249,15 @@ class PriceData:
                                 f"{Fore.YELLOW}1 {asset}={price_btc.normalize():0,f} BTC "
                                 f"{Fore.CYAN}via {ds.name()} ({name})"
                             )
-                        btc_price_ccy, _, _, _ = self.get_historical(
-                            AssetSymbol("BTC"), quote, timestamp
-                        )
-                        if btc_price_ccy is not None:
-                            ccy_price = btc_price_ccy * price_btc
-                            return (
-                                ccy_price,
-                                name,
-                                ds.name(),
-                                url,
+                        btc_record = self.get_historical(AssetSymbol("BTC"), quote, timestamp)
+                        if btc_record.price_ccy is not None:
+                            return PriceDataRecord(
+                                name=name,
+                                data_source=ds.name(),
+                                url=url,
+                                price_ccy=btc_record.price_ccy * price_btc,
+                                price_btc=price_btc,
+                                btc_record=btc_record,
                             )
 
-        return None, name, DataSourceName(""), SourceUrl("")
+        return PriceDataRecord(name=name, data_source=DataSourceName(""))

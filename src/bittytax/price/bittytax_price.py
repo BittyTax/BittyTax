@@ -243,7 +243,9 @@ def main() -> None:
                     price_ccy2 = price_record.price_ccy
                     name = price_record.name
                 else:
-                    price_ccy2, name, _ = value_asset.get_latest_price(symbol)
+                    price_record = value_asset.get_latest_price(symbol)
+                    price_ccy2 = price_record.price_ccy
+                    name = price_record.name
 
                 if price_ccy2 is not None:
                     output_price(symbol, price_ccy2, args.quantity)
