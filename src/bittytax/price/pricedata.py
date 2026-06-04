@@ -198,6 +198,12 @@ class PriceData:
                                 price_btc=price_btc,
                                 btc_record=btc_record,
                             )
+                        return PriceDataRecord(
+                            name=name,
+                            data_source=ds.name(),
+                            url=url,
+                            price_btc=price_btc,
+                        )
                 elif has_direct:
                     price, name, url = self.get_historical_ds(data_source, asset, quote, timestamp)
                     if price is not None:
@@ -259,5 +265,11 @@ class PriceData:
                                 price_btc=price_btc,
                                 btc_record=btc_record,
                             )
+                        return PriceDataRecord(
+                            name=name,
+                            data_source=ds.name(),
+                            url=url,
+                            price_btc=price_btc,
+                        )
 
         return PriceDataRecord(name=name, data_source=DataSourceName(""))
