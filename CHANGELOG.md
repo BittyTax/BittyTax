@@ -16,6 +16,7 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Uphold parser: skip failed transactions.
 - Coinbase parser: fixed spurious fee asset appearing in Send/Withdrawal when no fee is present.
 - Price tool: CoinPaprika historical prices were incorrectly using the requested date as the key for all returned entries, causing only the most recent price to be stored; each entry is now keyed by its own date from the API response.
+- Price tool: removed use of deprecated `datetime.utcfromtimestamp`.
 ### Added
 - MEXC parser: added new export formats.
 - Cash App parser: added new export format.
@@ -76,6 +77,7 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Config: added `price_via_btc` setting for historic prices (legacy BTC-intermediate method), defaulting to `False` for new config files.
 - Price tool: Frankfurter now fetches supported currencies via API instead of using a hardcoded list.
 - Price tool: price cache loading performance improved.
+- Accounting/Price tool: improved timestamp parsing performance.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
