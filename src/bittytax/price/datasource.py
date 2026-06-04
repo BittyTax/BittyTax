@@ -12,7 +12,6 @@ from decimal import Decimal
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-import dateutil.parser
 import requests
 from colorama import Fore
 from tqdm import tqdm
@@ -30,7 +29,7 @@ from ..bt_types import (
     TradingPair,
 )
 from ..config import config
-from ..constants import CACHE_DIR, WARNING
+from ..constants import CACHE_DIR, TZ_UTC, WARNING
 from ..utils import disable_tqdm
 from ..version import __version__
 from .exceptions import DataSourceApiError, UnexpectedDataSourceAssetIdError
@@ -1054,7 +1053,7 @@ class CoinGecko(DataSourceBase):
                 pair,
                 asset_id,
                 {
-                    Date(datetime.utcfromtimestamp(p[0] / 1000).date()): {
+                    Date(datetime.fromtimestamp(p[0] / 1000, TZ_UTC).date()): {
                         "price": Decimal(repr(p[1])) if p[1] else None,
                         "url": SourceUrl(url),
                     }
@@ -1202,7 +1201,7 @@ class CoinPaprika(DataSourceBase):
             pair,
             asset_id,
             {
-                Date(dateutil.parser.parse(p["timestamp"]).date()): {
+                Date(datetime.fromisoformat(p["timestamp"].replace("Z", "+00:00")).date()): {
                     "price": Decimal(repr(p["price"])) if p["price"] else None,
                     "url": SourceUrl(url),
                 }
