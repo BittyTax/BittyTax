@@ -297,11 +297,9 @@ class DataSourceBase:
         try:
             with open(filename, "r", encoding="utf-8") as price_cache:
                 json_prices = json.load(price_cache)
-            total_pairs = len(json_prices)
             prices: Dict[TradingPair, Dict[AssetId, Dict[Date, DsPriceData]]] = {}
             dirty = False
-            for i, (pair, pair_data) in enumerate(json_prices.items(), 1):
-                self._set_tqdm_postfix(f"{self.name()}: indexing prices ({i}/{total_pairs})")
+            for pair, pair_data in json_prices.items():
                 if pair_data and self._is_date_key(next(iter(pair_data))):
                     # Legacy format
                     dirty = True
@@ -326,10 +324,8 @@ class DataSourceBase:
                             }
                             for date, price_data in asset_entry.get("prices", {}).items()
                         }
-            self._set_tqdm_postfix("")
             return prices, dirty
         except (IOError, ValueError):
-            self._set_tqdm_postfix("")
             tqdm.write(f"{WARNING} Data cached for {self.name()} could not be loaded")
             return {}, True
 
