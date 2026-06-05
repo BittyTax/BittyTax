@@ -159,22 +159,9 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         if isinstance(timestamp_str, (int, float)):
             timestamp = datetime.fromtimestamp(timestamp_str, TZ_UTC)
         else:
-            if not tzinfos and not dayfirst and not fuzzy:
-                iso_str = timestamp_str.strip()
-                if iso_str.endswith("Z"):
-                    iso_str = f"{iso_str[:-1]}+00:00"
-                elif iso_str.upper().endswith("UTC"):
-                    iso_str = f"{iso_str[:-3].strip()}+00:00"
-                try:
-                    timestamp = datetime.fromisoformat(iso_str)
-                except ValueError:
-                    timestamp = dateutil.parser.parse(
-                        timestamp_str, tzinfos=tzinfos, dayfirst=dayfirst, fuzzy=fuzzy
-                    )
-            else:
-                timestamp = dateutil.parser.parse(
-                    timestamp_str, tzinfos=tzinfos, dayfirst=dayfirst, fuzzy=fuzzy
-                )
+            timestamp = dateutil.parser.parse(
+                timestamp_str, tzinfos=tzinfos, dayfirst=dayfirst, fuzzy=fuzzy
+            )
 
         if tz:
             timestamp = timestamp.replace(tzinfo=dateutil.tz.gettz(tz))

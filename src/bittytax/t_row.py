@@ -2,7 +2,6 @@
 # (c) Nano Nano Ltd 2019
 
 from dataclasses import dataclass
-from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from enum import Enum
 from typing import Dict, List, NamedTuple, Optional
@@ -541,22 +540,11 @@ class TransactionRow:
         )
 
     def parse_timestamp(self) -> Timestamp:
-        timestamp_str = self.row_dict["Timestamp"]
-
         try:
-            iso_str = timestamp_str.strip()
-            if iso_str.endswith("Z"):
-                iso_str = f"{iso_str[:-1]}+00:00"
-            elif iso_str.upper().endswith("UTC"):
-                iso_str = f"{iso_str[:-3].strip()}+00:00"
-
-            try:
-                timestamp = datetime.fromisoformat(iso_str)
-            except ValueError:
-                timestamp = dateutil.parser.parse(timestamp_str)
+            timestamp = dateutil.parser.parse(self.row_dict["Timestamp"])
         except ValueError as e:
             raise TimestampParserError(
-                self.HEADER.index("Timestamp"), "Timestamp", timestamp_str
+                self.HEADER.index("Timestamp"), "Timestamp", self.row_dict["Timestamp"]
             ) from e
 
         if timestamp.tzinfo is None:
