@@ -70,7 +70,7 @@ data_source_fiat:
 
 # Which data source(s) to use for cryptoasset prices
 data_source_crypto:
-    ['CryptoCompare', 'CoinGecko']
+    ['CoinGecko', 'CoinPaprika']
 
 # Use BTC as an intermediate for historic prices (legacy method)
 price_via_btc: False

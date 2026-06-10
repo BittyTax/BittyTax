@@ -63,6 +63,7 @@ class _CoinPaprikaIdData(TypedDict):
 
 
 class DataSourceBase:
+    DEPRECATED = False
     USER_AGENT = (
         f"BittyTax/{__version__} Python/{platform.python_version()} "
         f"{platform.system()}/{platform.release()}"
@@ -691,6 +692,7 @@ class Frankfurter(DataSourceBase):
 
 
 class CoinDesk(DataSourceBase):
+    DEPRECATED = True
     HISTORICAL_QUOTES = {"USD", "GBP", "EUR"}
 
     def __init__(self, no_cache: bool = False, progress_bar: Optional[tqdm] = None) -> None:
@@ -715,10 +717,7 @@ class CoinDesk(DataSourceBase):
 
 
 class CryptoCompare(DataSourceBase):
-    ERROR_TYPE_MARKET_NOT_EXIST = 2
-    ERROR_TYPE_RATE_LIMIT = 99
-    MAX_DAYS = 2000
-
+    DEPRECATED = True
     HISTORICAL_QUOTES = {
         "ARS",
         "AUD",
@@ -766,20 +765,11 @@ class CryptoCompare(DataSourceBase):
 
     def __init__(self, no_cache: bool = False, progress_bar: Optional[tqdm] = None) -> None:
         super().__init__(no_cache, progress_bar)
-
-        if "cryptocompare_api_key" in config.config:
-            CryptoCompare.RATE_LIMIT = 20
-            self.headers["authorization"] = f"Apikey {config.cryptocompare_api_key}"
-        else:
-            CryptoCompare.RATE_LIMIT = 2
-
-        self.api_root = "https://min-api.cryptocompare.com"
-
         cached_ids = self._load_ids()
         if cached_ids is not None:
             self.ids = cached_ids
         else:
-            url = f"{self.api_root}/data/all/coinlist"
+            url = "https://api.bitty.tax/v1/ext/cc"
             json_resp = self.get_json(url)
             if json_resp["Response"] != "Success":
                 raise DataSourceApiError(
@@ -804,80 +794,21 @@ class CryptoCompare(DataSourceBase):
             self.assets[v["symbol"]] = {"asset_id": k, "name": v["name"]}
         self.get_config_assets()
 
-    def _check_rate_limit_in_response(self, json_resp: Any) -> Tuple[bool, Optional[int]]:
-        """
-        CryptoCompare returns rate limit in response body with 200 OK status.
-        Check for unsuccessful response with rate limit error.
-        Note: no "retry-after" is provided in headers or response, use default back-off time for
-        retries.
-        """
-        if isinstance(json_resp, dict):
-            if (
-                "Response" in json_resp
-                and "Type" in json_resp
-                and json_resp["Response"] != "Success"
-                and json_resp["Type"] == self.ERROR_TYPE_RATE_LIMIT
-            ):
-                if config.debug:
-                    message = json_resp.get("Message")
-                    print(f"{Fore.YELLOW}price: CryptoCompare rate limit: {message}")
-                return True, None
-        return False, None
-
     def get_latest(
-        self, asset: AssetSymbol, quote: QuoteSymbol, asset_id: AssetId = AssetId("")
+        self, _asset: AssetSymbol, _quote: QuoteSymbol, _asset_id: AssetId = AssetId("")
     ) -> Optional[Decimal]:
-        if not asset_id:
-            asset_id = self.assets[asset]["asset_id"]
-
-        json_resp = self.get_json(
-            f"{self.api_root}/data/price?extraParams={self.USER_AGENT}"
-            f"&fsym={asset_id}&tsyms={quote}"
-        )
-        return Decimal(repr(json_resp[quote])) if quote in json_resp else None
+        # Deprecated
+        return None
 
     def get_historical(
         self,
-        asset: AssetSymbol,
-        quote: QuoteSymbol,
-        timestamp: Timestamp,
-        asset_id: AssetId = AssetId(""),
+        _asset: AssetSymbol,
+        _quote: QuoteSymbol,
+        _timestamp: Timestamp,
+        _asset_id: AssetId = AssetId(""),
     ) -> None:
-        if not asset_id:
-            asset_id = self.assets[asset]["asset_id"]
-
-        url = (
-            f"{self.api_root}/data/histoday?aggregate=1"
-            f"&extraParams={self.USER_AGENT}&fsym={asset_id}&tsym={quote}"
-            f"&limit={self.MAX_DAYS}"
-            f"&toTs={self.epoch_time(Timestamp(timestamp + timedelta(days=self.MAX_DAYS)))}"
-        )
-        json_resp = self.get_json(url)
-        if (
-            json_resp["Response"] != "Success"
-            and json_resp["Type"] != self.ERROR_TYPE_MARKET_NOT_EXIST
-        ):
-            raise DataSourceApiError(
-                self.name(),
-                url,
-                f"unexpected response: {json_resp}",
-            )
-
-        pair = self.pair(asset, quote)
-        # Warning - CryptoCompare returns 0 as data for missing dates, convert these to None.
-        if "Data" in json_resp:
-            self.update_prices(
-                pair,
-                asset_id,
-                {
-                    Date(datetime.fromtimestamp(d["time"]).date()): {
-                        "price": Decimal(repr(d["close"])) if "close" in d and d["close"] else None,
-                        "url": SourceUrl(url),
-                    }
-                    for d in json_resp["Data"]
-                },
-                timestamp,
-            )
+        # Deprecated
+        return None
 
 
 class CoinGecko(DataSourceBase):
