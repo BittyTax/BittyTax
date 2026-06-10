@@ -32,6 +32,7 @@ class AsRecord(TypedDict):  # pylint: disable=too-few-public-methods
     data_source: Optional[DataSourceName]
     asset_id: NotRequired[AssetId]
     priority: NotRequired[bool]
+    deprecated: NotRequired[bool]
 
 
 class AsPriceRecord(AsRecord):  # pylint: disable=too-few-public-methods
@@ -111,6 +112,7 @@ class AssetData:
                                     and not search_terms
                                     else False
                                 ),
+                                deprecated=self.data_sources[ds].DEPRECATED,
                             )
                         )
 

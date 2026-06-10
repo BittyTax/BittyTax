@@ -2,6 +2,8 @@
 ## [Unreleased]
 Important:-
 
+CryptoCompare has been deprecated due to removal of the API free tier. You can still retrieve historic prices which have been cached.
+
 The price data cache format has been updated to correctly distinguish assets that share the same ticker symbol. Existing cache files will be automatically migrated to the new format on the next run. After upgrading, please check the Price Data appendix in your tax report to confirm that the correct token has been chosen for each of your assets.
 
 The new `price_via_btc` config option may not exist in your config file. If it is missing, BittyTax keeps the legacy BTC-intermediate behaviour for backward compatibility. Add `price_via_btc: False` to your config if you want historic prices to use direct local currency lookups.
@@ -77,7 +79,8 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Config: added `price_via_btc` setting for historic prices (legacy BTC-intermediate method), defaulting to `False` for new config files.
 - Price tool: Frankfurter now fetches supported currencies via API instead of using a hardcoded list.
 - Price tool: price cache loading performance improved.
-- Accounting/Price tool: improved timestamp parsing performance.
+- Price tool: CryptoCompare API deprecated.
+- Config: removed CryptoCompare from `data_source_crypto`.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-

@@ -325,6 +325,7 @@ def output_assets(asset_list: List[AsRecord]) -> None:
             f'{Fore.WHITE}{asset_record["symbol"]} ({asset_record["name"]})'
             f'{Fore.CYAN} via {asset_record["data_source"]}{id_str}'
             f'{Fore.YELLOW + " <-" if asset_record["priority"] else ""}'
+            f'{Fore.RED + " DEPRECATED" if asset_record["deprecated"] else ""}'
         )
 
 
