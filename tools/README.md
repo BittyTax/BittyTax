@@ -8,7 +8,20 @@ The cache lives at `~/.bittytax/cache/` (or `$BITTYTAX_DATA_DIR/.bittytax/cache/
 
 ```
 cd tools
-python bittytax_cache.py <command> [options]
+python bittytax_cache.py [--cache-dir DIR] <command> [options]
+```
+
+## Global options
+
+| Option | Description |
+|---|---|
+| `--cache-dir DIR` | Path to the cache directory (default: `~/.bittytax/cache/`). Applies to all commands. |
+
+This is useful when working with a cache that lives outside the default location — for example, a backup copy.
+
+```
+# Use a specific cache directory
+python bittytax_cache.py --cache-dir /path/to/cache info
 ```
 
 ## Commands
