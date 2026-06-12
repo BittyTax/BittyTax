@@ -836,9 +836,18 @@ def _add_ds_arg(parser: argparse.ArgumentParser) -> None:
 
 
 def main() -> None:
+    global CACHE_DIR  # pylint: disable=global-statement
+
     parser = argparse.ArgumentParser(
         prog="bittytax_cache",
         description="Manage the BittyTax local price cache.",
+    )
+    parser.add_argument(
+        "--cache-dir",
+        dest="cache_dir",
+        metavar="DIR",
+        default=None,
+        help=f"path to the cache directory (default: {CACHE_DIR})",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -1038,6 +1047,10 @@ def main() -> None:
     p_refresh.set_defaults(func=cmd_refresh_ttl)
 
     args = parser.parse_args()
+
+    if args.cache_dir:
+        CACHE_DIR = os.path.expanduser(args.cache_dir)
+
     args.func(args)
 
 
