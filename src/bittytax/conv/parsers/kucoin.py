@@ -1028,6 +1028,7 @@ DataParser(
         "Maker/Taker",
         "Fee Currency",
     ],
+    header_fixed=False,  # Allow trailing columns, e.g. "Account Mode"
     worksheet_name="KuCoin T",
     row_handler=parse_kucoin_trades_v5,
 )
@@ -1080,6 +1081,7 @@ DataParser(
         "Tax",  # New field
         "Status",
     ],
+    header_fixed=False,  # Allow trailing columns, e.g. "Account Mode"
     worksheet_name="KuCoin T",
     row_handler=parse_kucoin_trades_v5,
 )
