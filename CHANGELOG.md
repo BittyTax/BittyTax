@@ -17,6 +17,11 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Coinbase parser: fixed spurious fee asset appearing in Send/Withdrawal when no fee is present.
 - Price tool: CoinPaprika historical prices were incorrectly using the requested date as the key for all returned entries, causing only the most recent price to be stored; each entry is now keyed by its own date from the API response.
 - Price tool: removed use of deprecated `datetime.utcfromtimestamp`.
+- Kraken parser: sum multi-wallet (spot + earn) legs of a trade instead of overwriting them, which previously under-reported the disposal quantity.
+- Kraken parser: handle "transfer"/"delistingconversion" rows (delisted-token forced conversions) instead of erroring.
+- Kraken parser: value fees paid in Kraken fee credits (KFEE) at their fixed 0.01 USD value, and skip standalone KFEE deposits.
+- Kraken parser: classify Kraken Earn rewards as Staking-Reward rather than Interest.
+- Kraken parser: drop one-sided dust trade rows, and warn-and-skip (instead of erroring) on unknown "transfer"/"earn" subtypes.
 ### Added
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
 - Exodus parser: added new export format. ([#467](https://github.com/BittyTax/BittyTax/issues/467))

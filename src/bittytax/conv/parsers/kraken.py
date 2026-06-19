@@ -11,14 +11,27 @@ from typing_extensions import Unpack
 
 from ...bt_types import TrType
 from ...config import config
+from ...constants import WARNING
 from ..dataparser import DataParser, ParserArgs, ParserType
-from ..exceptions import DataRowError, UnexpectedTradingPairError, UnexpectedTypeError
+from ..exceptions import (
+    DataRowError,
+    UnexpectedContentError,
+    UnexpectedTradingPairError,
+    UnexpectedTypeError,
+)
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
     from ..datarow import DataRow
 
 WALLET = "Kraken"
+
+# Kraken fee credits (KFEE/"FEE") have a fixed value of 0.01 USD (1000 KFEE = 10 USD)
+# and no market price of their own.
+KFEE_USD_RATE = Decimal("0.01")
+
+# One-sided trade rows below this quantity are rounding dust and are dropped.
+DUST_THRESHOLD = Decimal("0.001")
 
 QUOTE_ASSETS = [
     "AED",
@@ -188,6 +201,14 @@ def _parse_kraken_ledgers_row(
         # Skip failed transactions
         return
 
+    if (
+        row_dict["type"] in ("deposit", "withdrawal")
+        and _normalise_asset(row_dict["asset"]) == "FEE"
+    ):
+        # Kraken fee credits (KFEE) are not a tradeable asset; skip standalone deposits/
+        # withdrawals of them. KFEE spent as a trading fee is valued in _make_trade().
+        return
+
     if row_dict["type"] == "deposit":
         if Decimal(row_dict["amount"]) > 0:
             data_row.t_record = TransactionOutRecord(
@@ -307,7 +328,11 @@ def _parse_kraken_ledgers_row(
                 wallet=WALLET,
             )
     elif row_dict["type"] == "transfer":
-        if row_dict["subtype"] == "":
+        # An empty subtype is a fork/airdrop or a delisting; "delistingconversion" is the
+        # forced conversion of a delisted asset. Both arrive as unpaired single legs (the
+        # in/out sides have different refids, often days apart), so they can't be combined
+        # into one trade; book each leg on its own (received = Airdrop, sent = Spend).
+        if row_dict["subtype"] in ("", "delistingconversion"):
             if Decimal(row_dict["amount"]) > 0:
                 # Fork or Airdrop
                 data_row.t_record = TransactionOutRecord(
@@ -345,9 +370,11 @@ def _parse_kraken_ledgers_row(
             # Skip internal transfers
             return
         else:
-            raise UnexpectedTypeError(
-                parser.in_header.index("subtype"), "subtype", row_dict["subtype"]
+            sys.stderr.write(
+                f"{WARNING} Skipping unknown Kraken 'transfer' subtype: "
+                f"'{row_dict['subtype']}'\n"
             )
+            return
     elif row_dict["type"] == "margin":
         if Decimal(row_dict["amount"]) > 0:
             data_row.t_record = TransactionOutRecord(
@@ -395,16 +422,32 @@ def _parse_kraken_ledgers_row(
             wallet=WALLET,
         )
     elif row_dict["type"] == "settled":
-        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("settled",)))
+        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("settled",)), parser)
     elif row_dict["type"] == "trade":
-        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("trade",)))
+        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("trade",)), parser)
     elif row_dict["type"] in ("spend", "receive"):
-        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("spend", "receive")))
+        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("spend", "receive")), parser)
     elif row_dict["type"] == "earn":
-        if row_dict["subtype"] == "reward":
+        if row_dict["subtype"] in (
+            "migration",
+            "autoallocate",
+            "allocation",
+            "deallocation",
+            "autoallocation",
+        ):
+            # Skip internal transfers (moving funds in/out of the Earn product)
+            return
+        if row_dict["subtype"] == "" and not Decimal(row_dict["fee"]):
+            # An "earn" with no subtype and no fee is an internal transfer, so skip
+            return
+        if row_dict["subtype"] in ("airdrop", "delistingconversion"):
+            # A token airdrop/migration or a forced delisting conversion routed through the
+            # Earn product. Book the received leg as Airdrop and the sent leg as Spend
+            # (mirroring the matching "transfer" rows), not as staking income, which would
+            # overstate taxable income. Any fee is preserved, as for an "earn" reward.
             if Decimal(row_dict["amount"]) > 0:
                 data_row.t_record = TransactionOutRecord(
-                    TrType.INTEREST,
+                    TrType.AIRDROP,
                     data_row.timestamp,
                     buy_quantity=Decimal(row_dict["amount"]),
                     buy_asset=_normalise_asset(row_dict["asset"]),
@@ -422,44 +465,34 @@ def _parse_kraken_ledgers_row(
                     fee_asset=_normalise_asset(row_dict["asset"]),
                     wallet=WALLET,
                 )
-        elif row_dict["subtype"] in (
-            "migration",
-            "autoallocate",
-            "allocation",
-            "deallocation",
-            "autoallocation",
-        ):
-            # Skip internal transfers
             return
-        elif row_dict["subtype"] == "":
-            if Decimal(row_dict["fee"]):
-                # "earn" with a fee must be a "reward"
-                if Decimal(row_dict["amount"]) > 0:
-                    data_row.t_record = TransactionOutRecord(
-                        TrType.INTEREST,
-                        data_row.timestamp,
-                        buy_quantity=Decimal(row_dict["amount"]),
-                        buy_asset=_normalise_asset(row_dict["asset"]),
-                        fee_quantity=abs(Decimal(row_dict["fee"])),
-                        fee_asset=_normalise_asset(row_dict["asset"]),
-                        wallet=WALLET,
-                    )
-                else:
-                    data_row.t_record = TransactionOutRecord(
-                        TrType.SPEND,
-                        data_row.timestamp,
-                        sell_quantity=abs(Decimal(row_dict["amount"])),
-                        sell_asset=_normalise_asset(row_dict["asset"]),
-                        fee_quantity=abs(Decimal(row_dict["fee"])),
-                        fee_asset=_normalise_asset(row_dict["asset"]),
-                        wallet=WALLET,
-                    )
-            else:
-                # Without a fee must be internal transfer, so skip
-                return
+        if row_dict["subtype"] not in ("reward", ""):
+            sys.stderr.write(
+                f"{WARNING} Unknown Kraken 'earn' subtype: "
+                f"'{row_dict['subtype']}', assuming reward\n"
+            )
+
+        # Kraken Earn rewards (bonded/locked/liquid/flexible staking) are staking income.
+        # A fee-bearing "earn" with no subtype, or an unknown subtype, is treated the same.
+        if Decimal(row_dict["amount"]) > 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.STAKING_REWARD,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["amount"]),
+                buy_asset=_normalise_asset(row_dict["asset"]),
+                fee_quantity=abs(Decimal(row_dict["fee"])),
+                fee_asset=_normalise_asset(row_dict["asset"]),
+                wallet=WALLET,
+            )
         else:
-            raise UnexpectedTypeError(
-                parser.in_header.index("subtype"), "subtype", row_dict["subtype"]
+            data_row.t_record = TransactionOutRecord(
+                TrType.SPEND,
+                data_row.timestamp,
+                sell_quantity=abs(Decimal(row_dict["amount"])),
+                sell_asset=_normalise_asset(row_dict["asset"]),
+                fee_quantity=abs(Decimal(row_dict["fee"])),
+                fee_asset=_normalise_asset(row_dict["asset"]),
+                wallet=WALLET,
             )
     else:
         raise UnexpectedTypeError(parser.in_header.index("type"), "type", row_dict["type"])
@@ -471,7 +504,7 @@ def _get_ref_ids(
     return [dr for dr in ref_ids[ref_id] if dr.row_dict["type"] in k_type]
 
 
-def _make_trade(ref_ids: List["DataRow"]) -> None:
+def _make_trade(ref_ids: List["DataRow"], parser: DataParser) -> None:
     buy_quantity = sell_quantity = Decimal(0)
     fee_quantity = None
     buy_asset = sell_asset = config.ccy
@@ -483,48 +516,72 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
         data_row.timestamp = DataParser.parse_timestamp(row_dict["time"])
         data_row.parsed = True
 
-        if Decimal(row_dict["amount"]) == 0:
-            # Assume zero amount is a secondary fee
+        amount = Decimal(row_dict["amount"])
+        fee = Decimal(row_dict["fee"])
+
+        if amount == 0:
+            # Assume zero amount is a secondary fee (e.g. a Kraken fee credit leg)
+            norm_fee_asset, norm_fee_quantity = _normalise_fee(row_dict["asset"], abs(fee))
             data_row.t_record = TransactionOutRecord(
                 TrType.SPEND,
                 data_row.timestamp,
                 sell_quantity=Decimal(0),
-                sell_asset=_normalise_asset(row_dict["asset"]),
-                fee_quantity=abs(Decimal(row_dict["fee"])),
-                fee_asset=_normalise_asset(row_dict["asset"]),
+                sell_asset=norm_fee_asset,
+                fee_quantity=norm_fee_quantity,
+                fee_asset=norm_fee_asset,
                 wallet=WALLET,
                 note="Trading fee",
             )
             continue
 
-        if Decimal(row_dict["amount"]) > 0:
-            buy_quantity = Decimal(row_dict["amount"])
-            buy_asset = _normalise_asset(row_dict["asset"])
-
-        if Decimal(row_dict["amount"]) < 0:
-            sell_quantity = abs(Decimal(row_dict["amount"]))
-            sell_asset = _normalise_asset(row_dict["asset"])
+        # Accumulate, so a trade that liquidates the same asset from more than one wallet
+        # (e.g. spot + earn in a single order) sums the legs instead of overwriting them.
+        # Legs on the same side must share an asset; if they ever differ, fail loudly
+        # rather than silently summing unlike assets into a single quantity.
+        norm_asset = _normalise_asset(row_dict["asset"])
+        if amount > 0:
+            if buy_quantity and norm_asset != buy_asset:
+                raise UnexpectedContentError(
+                    parser.in_header.index("asset"), "asset", row_dict["asset"]
+                )
+            buy_quantity += amount
+            buy_asset = norm_asset
+        else:
+            if sell_quantity and norm_asset != sell_asset:
+                raise UnexpectedContentError(
+                    parser.in_header.index("asset"), "asset", row_dict["asset"]
+                )
+            sell_quantity += abs(amount)
+            sell_asset = norm_asset
 
         if not trade_row:
             trade_row = data_row
 
-        if Decimal(row_dict["fee"]) != 0:
-            if not fee_quantity:
-                fee_quantity = abs(Decimal(row_dict["fee"]))
-                fee_asset = _normalise_asset(row_dict["asset"])
+        if fee != 0:
+            norm_fee_asset, norm_fee_quantity = _normalise_fee(row_dict["asset"], abs(fee))
+            if fee_quantity is None:
+                fee_quantity = norm_fee_quantity
+                fee_asset = norm_fee_asset
             else:
                 # Add as secondary fee
                 data_row.t_record = TransactionOutRecord(
                     TrType.SPEND,
                     data_row.timestamp,
                     sell_quantity=Decimal(0),
-                    sell_asset=_normalise_asset(row_dict["asset"]),
-                    fee_quantity=abs(Decimal(row_dict["fee"])),
-                    fee_asset=_normalise_asset(row_dict["asset"]),
+                    sell_asset=norm_fee_asset,
+                    fee_quantity=norm_fee_quantity,
+                    fee_asset=norm_fee_asset,
                     wallet=WALLET,
                     note="Trading fee",
                 )
+
     if trade_row:
+        if (buy_quantity == 0) != (sell_quantity == 0) and max(
+            buy_quantity, sell_quantity
+        ) < DUST_THRESHOLD:
+            # One-sided dust (rounding residue with no counterparty leg); drop it.
+            return
+
         trade_row.t_record = TransactionOutRecord(
             TrType.TRADE,
             trade_row.timestamp,
@@ -604,6 +661,14 @@ def _normalise_asset(asset: str) -> str:
         if asset.endswith(suffix):
             return asset[: -len(suffix)]
     return asset
+
+
+def _normalise_fee(asset: str, fee_quantity: Decimal) -> Tuple[str, Decimal]:
+    # Kraken fee credits (KFEE/"FEE") have a fixed value of 0.01 USD and no market price,
+    # so express the fee in USD rather than against an unpriceable asset.
+    if _normalise_asset(asset) == "FEE":
+        return "USD", fee_quantity * KFEE_USD_RATE
+    return _normalise_asset(asset), fee_quantity
 
 
 kraken_ledgers = DataParser(
