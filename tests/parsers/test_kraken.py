@@ -255,6 +255,70 @@ def test_earn_allocation_is_skipped() -> None:
     assert data_rows[0].failure is None
 
 
+def test_earn_airdrop_is_airdrop_not_income() -> None:
+    # A Kraken Earn "airdrop" is a token distribution, not a staking reward: the received
+    # leg is booked as Airdrop (acquisition, no income) and any sent leg as Spend. It must
+    # not become a staking reward, which would overstate taxable income.
+    data_rows = _parse(
+        [
+            _ledger_row("L1", "R1", "earn", "airdrop", "ETH", "0.25", wallet="earn / flexible"),
+            _ledger_row("L2", "R2", "earn", "airdrop", "ETH", "-0.10", wallet="earn / flexible"),
+        ]
+    )
+
+    received = data_rows[0].t_record
+    assert received is not None
+    assert received.t_type == TrType.AIRDROP
+    assert received.buy_quantity == Decimal("0.25")
+    assert received.buy_asset == "ETH"
+    assert data_rows[0].failure is None
+
+    sent = data_rows[1].t_record
+    assert sent is not None
+    assert sent.t_type == TrType.SPEND
+    assert sent.sell_quantity == Decimal("0.10")
+    # Proceeds are left to market pricing, not forced to zero.
+    assert sent.sell_value is None
+
+
+def test_earn_delisting_conversion_is_not_income() -> None:
+    # A forced delisting conversion routed through Earn books per leg (received = Airdrop,
+    # sent = Spend), never as a staking reward; the disposal is market-priced.
+    data_rows = _parse(
+        [
+            _ledger_row(
+                "L1",
+                "R1",
+                "earn",
+                "delistingconversion",
+                "MATIC",
+                "-17.04",
+                "0.05",
+                "earn / liquid",
+            ),
+            _ledger_row(
+                "L2", "R2", "earn", "delistingconversion", "POL", "17.04", wallet="earn / liquid"
+            ),
+        ]
+    )
+
+    sent = data_rows[0].t_record
+    assert sent is not None
+    assert sent.t_type == TrType.SPEND
+    assert sent.sell_quantity == Decimal("17.04")
+    assert sent.sell_asset == "MATIC"
+    assert sent.sell_value is None
+    # A fee on the row is preserved, not dropped.
+    assert sent.fee_quantity == Decimal("0.05")
+    assert sent.fee_asset == "MATIC"
+
+    received = data_rows[1].t_record
+    assert received is not None
+    assert received.t_type == TrType.AIRDROP
+    assert received.buy_quantity == Decimal("17.04")
+    assert received.buy_asset == "POL"
+
+
 def test_unknown_subtype_degrades_gracefully() -> None:
     # Unknown earn subtype defaults to income (does not raise); unknown transfer subtype
     # is skipped with a warning (also no failure).

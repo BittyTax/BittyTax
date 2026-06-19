@@ -440,6 +440,32 @@ def _parse_kraken_ledgers_row(
         if row_dict["subtype"] == "" and not Decimal(row_dict["fee"]):
             # An "earn" with no subtype and no fee is an internal transfer, so skip
             return
+        if row_dict["subtype"] in ("airdrop", "delistingconversion"):
+            # A token airdrop/migration or a forced delisting conversion routed through the
+            # Earn product. Book the received leg as Airdrop and the sent leg as Spend
+            # (mirroring the matching "transfer" rows), not as staking income, which would
+            # overstate taxable income. Any fee is preserved, as for an "earn" reward.
+            if Decimal(row_dict["amount"]) > 0:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.AIRDROP,
+                    data_row.timestamp,
+                    buy_quantity=Decimal(row_dict["amount"]),
+                    buy_asset=_normalise_asset(row_dict["asset"]),
+                    fee_quantity=abs(Decimal(row_dict["fee"])),
+                    fee_asset=_normalise_asset(row_dict["asset"]),
+                    wallet=WALLET,
+                )
+            else:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.SPEND,
+                    data_row.timestamp,
+                    sell_quantity=abs(Decimal(row_dict["amount"])),
+                    sell_asset=_normalise_asset(row_dict["asset"]),
+                    fee_quantity=abs(Decimal(row_dict["fee"])),
+                    fee_asset=_normalise_asset(row_dict["asset"]),
+                    wallet=WALLET,
+                )
+            return
         if row_dict["subtype"] not in ("reward", ""):
             sys.stderr.write(
                 f"{WARNING} Unknown Kraken 'earn' subtype: "
