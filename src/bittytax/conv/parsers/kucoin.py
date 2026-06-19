@@ -1028,7 +1028,32 @@ DataParser(
         "Maker/Taker",
         "Fee Currency",
     ],
-    header_fixed=False,  # Allow trailing columns, e.g. "Account Mode"
+    worksheet_name="KuCoin T",
+    row_handler=parse_kucoin_trades_v5,
+)
+
+# Spot Orders_Filled Orders, order-splitting (with "Account Mode" column)
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Trades",
+    [
+        "UID",
+        "Account Type",
+        "Order ID",
+        "Symbol",
+        "Side",
+        "Order Type",
+        "Avg. Filled Price",
+        "Filled Amount",
+        "Filled Volume",
+        "Filled Volume (USDT)",
+        lambda c: re.match(r"(^Filled Time\((UTC|UTC[-+]\d{2}:\d{2})\))", c),
+        "Fee",
+        "Tax",
+        "Maker/Taker",
+        "Fee Currency",
+        "Account Mode",  # New field
+    ],
     worksheet_name="KuCoin T",
     row_handler=parse_kucoin_trades_v5,
 )
@@ -1081,7 +1106,35 @@ DataParser(
         "Tax",  # New field
         "Status",
     ],
-    header_fixed=False,  # Allow trailing columns, e.g. "Account Mode"
+    worksheet_name="KuCoin T",
+    row_handler=parse_kucoin_trades_v5,
+)
+
+# Spot Orders_Filled Orders (with "Account Mode" column)
+DataParser(
+    ParserType.EXCHANGE,
+    "KuCoin Trades",
+    [
+        "UID",
+        "Account Type",
+        "Order ID",
+        lambda c: re.match(r"(^Order Time\((UTC|UTC[-+]\d{2}:\d{2})\))", c),
+        "Symbol",
+        "Side",
+        "Order Type",
+        "Order Price",
+        "Order Amount",
+        "Avg. Filled Price",
+        "Filled Amount",
+        "Filled Volume",
+        "Filled Volume (USDT)",
+        lambda c: re.match(r"(^Filled Time\((UTC|UTC[-+]\d{2}:\d{2})\))", c),
+        "Fee",
+        "Fee Currency",
+        "Tax",
+        "Status",
+        "Account Mode",  # New field
+    ],
     worksheet_name="KuCoin T",
     row_handler=parse_kucoin_trades_v5,
 )

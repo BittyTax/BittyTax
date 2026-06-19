@@ -25,8 +25,8 @@ def test_get_asset_from_symbol() -> None:
 
 
 def test_spot_filled_orders_with_account_mode() -> None:
-    # KuCoin added a trailing "Account Mode" column to Spot Orders exports, the
-    # parser must tolerate extra trailing columns (header_fixed=False).
+    # KuCoin added a trailing "Account Mode" column to Spot Orders exports, which
+    # is matched by a dedicated fixed-header parser alongside the legacy format.
     header = [
         "UID",
         "Account Type",
