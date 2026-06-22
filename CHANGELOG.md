@@ -54,6 +54,7 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Config: added CHF (Swiss franc), DKK (Danish krone), NOK (Norwegian krone) and SEK (Swedish krona) to `FIAT_LIST`, with correct currency symbols.
 - Revolut parser: added "Stake", "Unstake" and "Staking reward" transaction types.
 - KuCoin parser: added "Convert Orders_Filled Orders" from bundle files.
+- Conversion tool: added parser for Blockchair explorer. ([#490](https://github.com/BittyTax/BittyTax/issues/490))
 ### Changed
 - Price tool: CoinDesk API deprecated.
 - Price tool: added rate-limiter, retries and backoff handling for each API to prevent failures.
