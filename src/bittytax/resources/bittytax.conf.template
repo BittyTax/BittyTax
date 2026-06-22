@@ -12,11 +12,11 @@ date_is_day_first: True
 
 # Used to differentiate between fiat and cryptoasset transactions, include in here all fiat currencies which are used in your transaction records
 fiat_list:
-    ['GBP', 'EUR', 'USD', 'AUD', 'NZD', 'CAD', 'PLN']
+    ['GBP', 'EUR', 'USD', 'AUD', 'NZD', 'CAD', 'PLN', 'DKK', 'NOK', 'SEK', 'CHF']
 
 # Identifies which cryptoasset take priority when calculating the value of a crypto-to-crypto trade
 crypto_list:
-    ['BTC', 'ETH', 'XRP', 'LTC', 'BCH', 'BNB', 'USDT', 'USDC']
+    ['USDT', 'USDC', 'BTC', 'ETH', 'BNB']
 
 # Method used to calculate the value of trades:
 #   0 = buy value
@@ -70,7 +70,10 @@ data_source_fiat:
 
 # Which data source(s) to use for cryptoasset prices
 data_source_crypto:
-    ['CryptoCompare', 'CoinGecko']
+    ['CoinGecko', 'CoinPaprika']
+
+# Use BTC as an intermediate for historic prices (legacy method)
+price_via_btc: False
 
 # Used to identify 'gift-received' and 'gift-sent' transactions in ChangeTip data files
 #usernames:

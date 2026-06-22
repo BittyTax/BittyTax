@@ -1,6 +1,8 @@
+zł
 BNB
 BTC
 CGT
+CLI
 CSV
 ETH
 FTX
@@ -10,6 +12,7 @@ PNL
 TR
 USD
 UTC
+YYYY
 airdrop
 args
 bidi
@@ -40,6 +43,7 @@ timestamp
 timezone
 txhash
 unstake
+url
 xlsx
 xlsxwriter
 yaml

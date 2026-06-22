@@ -13,7 +13,8 @@
             Tax Year(s):
             {% for tax_year in tax_report|sort %}
                 {{ config.format_tax_year(tax_year) }}
-                {%- if not loop.last -%},{% endif %}
+                {%- if not loop.last -%},
+                {% endif %}
             {% endfor %}
         </h3>
     {% endif %}

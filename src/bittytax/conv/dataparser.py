@@ -157,7 +157,7 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
         fuzzy: bool = False,
     ) -> datetime:
         if isinstance(timestamp_str, (int, float)):
-            timestamp = datetime.utcfromtimestamp(timestamp_str)
+            timestamp = datetime.fromtimestamp(timestamp_str, TZ_UTC)
         else:
             timestamp = dateutil.parser.parse(
                 timestamp_str, tzinfos=tzinfos, dayfirst=dayfirst, fuzzy=fuzzy
@@ -191,11 +191,13 @@ class DataParser:  # pylint: disable=too-many-instance-attributes
             return Decimal(value)
 
         if timestamp.date() >= datetime.now().date():
-            rate_ccy, _, _ = cls.price_data.get_latest(AssetSymbol(from_currency), config.ccy)
+            rate_record = cls.price_data.get_latest(AssetSymbol(from_currency), config.ccy)
+            rate_ccy = rate_record.price_ccy
         else:
-            rate_ccy, _, _, _ = cls.price_data.get_historical(
+            rate_record = cls.price_data.get_historical(
                 AssetSymbol(from_currency), config.ccy, Timestamp(timestamp)
             )
+            rate_ccy = rate_record.price_ccy
 
         if rate_ccy is not None:
             value_in_ccy = Decimal(value) * rate_ccy

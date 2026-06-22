@@ -20,7 +20,7 @@ from .audit import AuditRecords, AuditTotals
 from .bt_types import TAX_RULES_UK_COMPANY, AssetName, AssetSymbol, Date, Note, TaxRules, Year
 from .config import config
 from .constants import _H1, ERROR, H1, TERMINAL_POWERSHELL_GUI
-from .price.valueasset import VaPriceRecord
+from .price.pricedata import PriceDataRecord
 from .tax import (
     CalculateCapitalGains,
     CalculateIncome,
@@ -53,7 +53,7 @@ class ReportPdf:
         args: argparse.Namespace,
         audit: AuditRecords,
         tax_report: Optional[Dict[Year, TaxReportRecord]] = None,
-        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]]] = None,
+        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, PriceDataRecord]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
     ) -> None:
         self.env = jinja2.Environment(loader=jinja2.PackageLoader(__package__, "templates"))
@@ -220,7 +220,7 @@ class ReportLog:
         args: argparse.Namespace,
         audit: AuditRecords,
         tax_report: Optional[Dict[Year, TaxReportRecord]] = None,
-        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]]] = None,
+        price_report: Optional[Dict[Year, Dict[AssetSymbol, Dict[Date, PriceDataRecord]]]] = None,
         holdings_report: Optional[HoldingsReportRecord] = None,
     ) -> None:
         if args.audit_only:
@@ -259,7 +259,7 @@ class ReportLog:
         tax_rules: TaxRules,
         audit: AuditRecords,
         tax_report: Dict[Year, TaxReportRecord],
-        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]],
+        price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, PriceDataRecord]]],
         holdings_report: Optional[HoldingsReportRecord],
     ) -> None:
         print(f"{Fore.WHITE}tax report output:")
@@ -595,7 +595,7 @@ class ReportLog:
             f'{self.format_value(margin.totals["fee_rebates"]):>13}{Style.NORMAL}'
         )
 
-    def _price_data(self, price_report: Dict[AssetSymbol, Dict[Date, VaPriceRecord]]) -> None:
+    def _price_data(self, price_report: Dict[AssetSymbol, Dict[Date, PriceDataRecord]]) -> None:
         price_missing_flag = False
         for asset in sorted(price_report):
             for date in sorted(price_report[asset]):
@@ -645,12 +645,14 @@ class ReportLog:
                     f'{self.format_value(holding["gain"]):>16}'
                 )
             else:
+                api_error = holding.get("api_error")
                 print(
                     f"{Fore.WHITE}"
                     f'{self.format_asset(h, holding["name"]):<{self.ASSET_WIDTH}} '
                     f'{self.format_quantity(holding["quantity"]):>25} '
                     f'{self.format_value(holding["cost"]):>16} '
-                    f'{Fore.BLUE}{"Not available":>16} '
+                    f"{Fore.YELLOW if api_error else Fore.BLUE}"
+                    f'{"Skipped" if api_error else "Not available":>16} '
                     f'{"":>16}'
                 )
 
