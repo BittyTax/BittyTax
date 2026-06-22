@@ -84,7 +84,6 @@ from . import (
     sfox,
     snowtrace,
     staketax,
-    strike,
     subscan,
     swissborg,
     tradeogre,

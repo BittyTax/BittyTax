@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# (c) Nano Nano Ltd 2022
+# (c) Nano Nano Ltd 2026
 
 from decimal import Decimal
 from typing import TYPE_CHECKING
@@ -68,6 +68,9 @@ def parse_blockchair_extended(
             sell_asset=row_dict["Ticker"],
             wallet=WALLET,
         )
+    elif row_dict["Type"] == "Inner":
+        # Skip
+        return
     else:
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
