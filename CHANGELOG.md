@@ -17,6 +17,7 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Coinbase parser: fixed spurious fee asset appearing in Send/Withdrawal when no fee is present.
 - Price tool: CoinPaprika historical prices were incorrectly using the requested date as the key for all returned entries, causing only the most recent price to be stored; each entry is now keyed by its own date from the API response.
 - Price tool: removed use of deprecated `datetime.utcfromtimestamp`.
+- KuCoin parser: allow the new "Account Mode" column in Spot Orders exports.
 ### Added
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
 - Exodus parser: added new export format. ([#467](https://github.com/BittyTax/BittyTax/issues/467))
