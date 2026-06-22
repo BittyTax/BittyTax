@@ -39,6 +39,7 @@
 - Accounting tool: tax rates and allowance for 2026/27.
 - Conversion tool: added newest_first to DataParser to control the parsing order.
 - KuCoin parser: handle empty reports with "No matching records found".
+- Conversion tool: added parser for Blockchair explorer. ([#490](https://github.com/BittyTax/BittyTax/issues/490))
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
