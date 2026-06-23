@@ -4,7 +4,7 @@ Important:-
 
 CryptoCompare has been deprecated due to removal of the API free tier. You can still retrieve historic prices which have been cached.
 
-The price data cache format has been updated to correctly distinguish assets that share the same ticker symbol. Existing cache files will be automatically migrated to the new format on the next run. After upgrading, please check the Price Data appendix in your tax report to confirm that the correct token has been chosen for each of your assets.
+The price data cache format has been updated to correctly distinguish assets that share the same ticker symbol. Existing cached prices are automatically promoted to the new format during initialization on the next run. After upgrading, please check the Price Data appendix in your tax report to confirm that the correct token has been chosen for each of your assets.
 
 The new `price_via_btc` config option may not exist in your config file. If it is missing, BittyTax keeps the legacy BTC-intermediate behaviour for backward compatibility. Add `price_via_btc: False` to your config if you want historic prices to use direct local currency lookups.
 
@@ -13,7 +13,7 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Accounting tool: fixed duplicate worksheet names in Excel audit log.
 - Accounting tool: fixed worksheet name validation.
 - MEXC parser: fees for spot trades should always be the quote asset.
-- Coinbase parser: fixed regex to ingore extra descriptions at end of trades.
+- Coinbase parser: fixed regex to ignore extra descriptions at end of trades.
 - Gemini parser: delete blank rows.
 - Uphold parser: skip failed transactions.
 - Coinbase parser: fixed spurious fee asset appearing in Send/Withdrawal when no fee is present.
@@ -62,13 +62,12 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Conversion tool: OutputExcel determines if macOS via parameter instead of direct from platform.
 - Accounting tool: Buy/Sell transactions now track the origin of their price valuations.
 - Price tool: price cache format updated to store prices per asset_id bucket, correctly distinguishing assets that share the same symbol.
-- Price tool: legacy price cache files are migrated to the new asset_id format on next save.
 - Price tool: CoinGecko coin list sorted by market cap so the highest market cap coin wins when symbols conflict.
 - Price tool: CoinPaprika coin list sorted by rank for consistent symbol conflict resolution.
 - Accounting tool: API errors during current holdings valuation are now shown as ("Skipped"), distinguishing them from assets with no price data available ("Not available").
 - Accounting tool and price tool: API failures that previously produced a raw traceback now exit cleanly with an error message and a retry hint.
-- Price tool: price cache is only written to disk when new price data has actually been fetched.
-- Price tool: price cache is automatically rewritten when legacy format is detected on load, migrating it to the current format.
+- Price tool: price cache is only written to disk when changes have been detected, avoiding unnecessary writes on each run.
+- Price tool: price cache is automatically rewritten when legacy format is detected on load, migrating it to the current format; the original file is preserved as a `.bak` backup.
 - Price tool: price cache is automatically reset when a corrupt or unloadable cache file is encountered, replacing it with a clean empty file.
 - Price tool: `list` command no longer shows the priority marker (`<-`) when using the `-s` search option, as priority is not meaningful across search results.
 - Price tool: when `-ds` is specified (not `ALL`), only the requested data source and any data sources required for the BTC/currency conversion are initialised, eliminating unnecessary initialisations.
