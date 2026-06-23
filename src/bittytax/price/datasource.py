@@ -1,10 +1,11 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2019
 
 import atexit
 import json
 import os
 import platform
+import shutil
 import threading
 import time
 from datetime import datetime, timedelta
@@ -85,15 +86,12 @@ class DataSourceBase:
         self.assets: Dict[AssetSymbol, DsSymbolToAssetData] = {}
         self.ids: Dict[AssetId, DsIdToAssetData] = {}
         self.progress_bar: Optional[tqdm] = progress_bar
-        self.prices, self._prices_dirty = self._load_prices()
+        self.prices: Dict[TradingPair, Dict[AssetId, Dict[Date, DsPriceData]]] = {}
+        self._prices_dirty = False
 
         self.api_lock = threading.Lock()
         self._thread_local = threading.local()
         self.last_request_time = float(0)
-
-        for pair in sorted(self.prices):
-            if config.debug:
-                print(f"{Fore.YELLOW}price: {self.name()} ({pair}) data cache loaded")
 
         atexit.register(self._save_prices)
 
@@ -174,7 +172,7 @@ class DataSourceBase:
         """
         return False, None
 
-    def get_json(self, url: str) -> Any:
+    def _get_json(self, url: str) -> Any:
         with self.api_lock:
             session = self._get_session()
 
@@ -263,7 +261,7 @@ class DataSourceBase:
         # If all retries exhausted
         raise DataSourceApiError(self.name(), url, "all retries exhausted")
 
-    def update_prices(
+    def _update_prices(
         self,
         pair: TradingPair,
         asset_id: AssetId,
@@ -288,24 +286,29 @@ class DataSourceBase:
         self.prices[pair][asset_id].update(prices)
         self._prices_dirty = True
 
-    def _load_prices(
-        self,
-    ) -> Tuple[Dict[TradingPair, Dict[AssetId, Dict[Date, DsPriceData]]], bool]:
+    def _load_prices(self) -> None:
         filename = os.path.join(CACHE_DIR, self.name() + ".json")
         if not os.path.exists(filename):
-            return {}, False
+            return
 
         try:
             with open(filename, "r", encoding="utf-8") as price_cache:
                 json_prices = json.load(price_cache)
-            prices: Dict[TradingPair, Dict[AssetId, Dict[Date, DsPriceData]]] = {}
-            dirty = False
+            legacy_format = False
             for pair, pair_data in json_prices.items():
                 if pair_data and self._is_date_key(next(iter(pair_data))):
                     # Legacy format
-                    dirty = True
-                    prices[TradingPair(pair)] = {
-                        AssetId(""): {
+                    legacy_format = True
+                    symbol = AssetSymbol(pair.split("/")[0])
+                    if symbol in self.assets and self.assets[symbol]["asset_id"]:
+                        # Promote to real asset_id
+                        asset_id = self.assets[symbol]["asset_id"]
+                    else:
+                        # Keep as empty asset_id if no mapping
+                        asset_id = AssetId("")
+
+                    self.prices[TradingPair(pair)] = {
+                        asset_id: {
                             self.str_to_date(date): {
                                 "price": self.str_to_decimal(price_data["price"]),
                                 "url": price_data["url"],
@@ -315,20 +318,36 @@ class DataSourceBase:
                     }
                 else:
                     # New format
-                    prices[TradingPair(pair)] = {}
+                    self.prices[TradingPair(pair)] = {}
                     for asset_id, asset_entry in pair_data.items():
                         aid = AssetId(asset_id)
-                        prices[TradingPair(pair)][aid] = {
+                        self.prices[TradingPair(pair)][aid] = {
                             self.str_to_date(date): {
                                 "price": self.str_to_decimal(price_data["price"]),
                                 "url": price_data["url"],
                             }
                             for date, price_data in asset_entry.get("prices", {}).items()
                         }
-            return prices, dirty
+
+            if legacy_format:
+                backup_filename = filename + ".bak"
+                if not os.path.exists(backup_filename):
+                    try:
+                        shutil.copy2(filename, backup_filename)
+                    except OSError:
+                        tqdm.write(
+                            f"{WARNING} Backup could not be created: {backup_filename} "
+                            f"(source: {filename})"
+                        )
+                self._prices_dirty = True
+
+            for pair in sorted(self.prices):
+                if config.debug:
+                    print(f"{Fore.YELLOW}price: {self.name()} ({pair}) data cache loaded")
         except (IOError, ValueError):
             tqdm.write(f"{WARNING} Data cached for {self.name()} could not be loaded")
-            return {}, True
+            self.prices = {}
+            self._prices_dirty = True
 
     def _save_prices(self) -> None:
         if not self._prices_dirty:
@@ -341,9 +360,6 @@ class DataSourceBase:
                 symbol = AssetSymbol(pair.split("/")[0])
                 json_prices[pair] = {}
                 for asset_id, date_dict in asset_id_dict.items():
-                    if not asset_id and symbol in self.assets:
-                        # Promote old flat-format data to current asset_id
-                        asset_id = self.assets[symbol]["asset_id"]
                     if asset_id:
                         name = self.ids[asset_id]["name"] if asset_id in self.ids else ""
                     else:
@@ -441,7 +457,7 @@ class DataSourceBase:
         except IOError:
             pass
 
-    def get_config_assets(self) -> None:
+    def _get_config_assets(self) -> None:
         for symbol in config.data_source_select:
             for ds_select in config.data_source_select[symbol]:
                 if ds_select.upper().startswith(self.name().upper() + ":"):  # pylint: disable=E1101
@@ -561,16 +577,17 @@ class BittyTaxAPI(DataSourceBase):
         if cached_assets is not None:
             self.assets = cached_assets
         else:
-            json_resp = self.get_json("https://api.bitty.tax/v1/symbols")
+            json_resp = self._get_json("https://api.bitty.tax/v1/symbols")
             self.assets = {
                 k: {"asset_id": AssetId(""), "name": v} for k, v in json_resp["symbols"].items()
             }
             self._save_assets()
+        self._load_prices()
 
     def get_latest(
         self, asset: AssetSymbol, quote: QuoteSymbol, _asset_id: AssetId = AssetId("")
     ) -> Optional[Decimal]:
-        json_resp = self.get_json(f"https://api.bitty.tax/v1/latest?base={asset}&symbols={quote}")
+        json_resp = self._get_json(f"https://api.bitty.tax/v1/latest?base={asset}&symbols={quote}")
         return (
             Decimal(repr(json_resp["rates"][quote]))
             if "rates" in json_resp and quote in json_resp["rates"]
@@ -585,10 +602,10 @@ class BittyTaxAPI(DataSourceBase):
         _asset_id: AssetId = AssetId(""),
     ) -> None:
         url = f"https://api.bitty.tax/v1/{timestamp:%Y-%m-%d}?base={asset}&symbols={quote}"
-        json_resp = self.get_json(url)
+        json_resp = self._get_json(url)
         pair = self.pair(asset, quote)
         # Date returned in response might not be date requested due to weekends/holidays
-        self.update_prices(
+        self._update_prices(
             pair,
             AssetId(""),
             {
@@ -646,17 +663,18 @@ class Frankfurter(DataSourceBase):
         if cached_assets is not None:
             self.assets = cached_assets
         else:
-            json_resp = self.get_json("https://api.frankfurter.dev/v1/currencies")
+            json_resp = self._get_json("https://api.frankfurter.dev/v1/currencies")
             self.assets = {
                 AssetSymbol(k): {"asset_id": AssetId(""), "name": AssetName(v)}
                 for k, v in json_resp.items()
             }
             self._save_assets()
+        self._load_prices()
 
     def get_latest(
         self, asset: AssetSymbol, quote: QuoteSymbol, _asset_id: AssetId = AssetId("")
     ) -> Optional[Decimal]:
-        json_resp = self.get_json(f"https://api.frankfurter.app/latest?from={asset}&to={quote}")
+        json_resp = self._get_json(f"https://api.frankfurter.app/latest?from={asset}&to={quote}")
         return (
             Decimal(repr(json_resp["rates"][quote]))
             if "rates" in json_resp and quote in json_resp["rates"]
@@ -671,10 +689,10 @@ class Frankfurter(DataSourceBase):
         _asset_id: AssetId = AssetId(""),
     ) -> None:
         url = f"https://api.frankfurter.app/{timestamp:%Y-%m-%d}?from={asset}&to={quote}"
-        json_resp = self.get_json(url)
+        json_resp = self._get_json(url)
         pair = self.pair(asset, quote)
         # Date returned in response might not be date requested due to weekends/holidays
-        self.update_prices(
+        self._update_prices(
             pair,
             AssetId(""),
             {
@@ -698,6 +716,7 @@ class CoinDesk(DataSourceBase):
     def __init__(self, no_cache: bool = False, progress_bar: Optional[tqdm] = None) -> None:
         super().__init__(no_cache, progress_bar)
         self.assets = {AssetSymbol("BTC"): {"asset_id": AssetId(""), "name": AssetName("Bitcoin")}}
+        self._load_prices()
 
     def get_latest(
         self, _asset: AssetSymbol, _quote: QuoteSymbol, _asset_id: AssetId = AssetId("")
@@ -770,7 +789,7 @@ class CryptoCompare(DataSourceBase):
             self.ids = cached_ids
         else:
             url = "https://api.bitty.tax/v1/ext/cc"
-            json_resp = self.get_json(url)
+            json_resp = self._get_json(url)
             if json_resp["Response"] != "Success":
                 raise DataSourceApiError(
                     self.name(),
@@ -792,7 +811,8 @@ class CryptoCompare(DataSourceBase):
 
         for k, v in self.ids.items():
             self.assets[v["symbol"]] = {"asset_id": k, "name": v["name"]}
-        self.get_config_assets()
+        self._get_config_assets()
+        self._load_prices()
 
     def get_latest(
         self, _asset: AssetSymbol, _quote: QuoteSymbol, _asset_id: AssetId = AssetId("")
@@ -886,7 +906,7 @@ class CoinGecko(DataSourceBase):
         if cached_ids is not None:
             self.ids = cached_ids
         else:
-            json_resp = self.get_json(f"{self.api_root}/coins/list?status=active")
+            json_resp = self._get_json(f"{self.api_root}/coins/list?status=active")
 
             ids: Dict[AssetId, _CoinGeckoIdData] = {}
             for c in json_resp:
@@ -896,7 +916,7 @@ class CoinGecko(DataSourceBase):
                 ids[asset_id] = {"symbol": symbol, "name": name, "market_cap": Decimal(0)}
 
             if self.PRO_KEY in self.headers:
-                json_resp = self.get_json(f"{self.api_root}/coins/list?status=inactive")
+                json_resp = self._get_json(f"{self.api_root}/coins/list?status=inactive")
                 for c in json_resp:
                     symbol = AssetSymbol(c["symbol"].strip().upper())
                     asset_id = AssetId(c["id"])
@@ -904,7 +924,7 @@ class CoinGecko(DataSourceBase):
                     ids[asset_id] = {"symbol": symbol, "name": name, "market_cap": Decimal(0)}
 
             # Get market cap of top 250 tokens only
-            json_resp = self.get_json(
+            json_resp = self._get_json(
                 f"{self.api_root}/coins/markets?vs_currency=USD&per_page=250&order=market_cap_dsc"
             )
             for c in json_resp:
@@ -927,7 +947,8 @@ class CoinGecko(DataSourceBase):
             if v["symbol"] not in self.assets:
                 self.assets[v["symbol"]] = {"asset_id": k, "name": v["name"]}
 
-        self.get_config_assets()
+        self._get_config_assets()
+        self._load_prices()
 
     def get_latest(
         self, asset: AssetSymbol, quote: QuoteSymbol, asset_id: AssetId = AssetId("")
@@ -935,7 +956,7 @@ class CoinGecko(DataSourceBase):
         if not asset_id:
             asset_id = self.assets[asset]["asset_id"]
 
-        json_resp = self.get_json(
+        json_resp = self._get_json(
             f"{self.api_root}/coins/{asset_id}"
             f"?localization=false&community_data=false&developer_data=false"
         )
@@ -973,10 +994,10 @@ class CoinGecko(DataSourceBase):
             days = "max"
 
         url = f"{self.api_root}/coins/{asset_id}/market_chart?vs_currency={quote}&days={days}"
-        json_resp = self.get_json(url)
+        json_resp = self._get_json(url)
         pair = self.pair(asset, quote)
         if "prices" in json_resp:
-            self.update_prices(
+            self._update_prices(
                 pair,
                 asset_id,
                 {
@@ -1054,7 +1075,7 @@ class CoinPaprika(DataSourceBase):
         if cached_ids is not None:
             self.ids = cached_ids
         else:
-            json_resp = self.get_json(f"{self.api_root}/coins")
+            json_resp = self._get_json(f"{self.api_root}/coins")
 
             ids: Dict[AssetId, _CoinPaprikaIdData] = {}
             for c in json_resp:
@@ -1080,7 +1101,8 @@ class CoinPaprika(DataSourceBase):
             if v["symbol"] not in self.assets:
                 self.assets[v["symbol"]] = {"asset_id": k, "name": v["name"]}
 
-        self.get_config_assets()
+        self._get_config_assets()
+        self._load_prices()
 
     def get_latest(
         self, asset: AssetSymbol, quote: QuoteSymbol, asset_id: AssetId = AssetId("")
@@ -1088,7 +1110,7 @@ class CoinPaprika(DataSourceBase):
         if not asset_id:
             asset_id = self.assets[asset]["asset_id"]
 
-        json_resp = self.get_json(f"{self.api_root}/tickers/{asset_id}?quotes={quote}")
+        json_resp = self._get_json(f"{self.api_root}/tickers/{asset_id}?quotes={quote}")
         return (
             Decimal(repr(json_resp["quotes"][quote]["price"]))
             if "quotes" in json_resp and quote in json_resp["quotes"]
@@ -1122,9 +1144,9 @@ class CoinPaprika(DataSourceBase):
             f"?start={timestamp:%Y-%m-%d}&limit={self.MAX_DAYS}&quote={quote}&interval=1d"
         )
 
-        json_resp = self.get_json(url)
+        json_resp = self._get_json(url)
         pair = self.pair(asset, quote)
-        self.update_prices(
+        self._update_prices(
             pair,
             asset_id,
             {
