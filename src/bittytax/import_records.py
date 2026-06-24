@@ -4,11 +4,12 @@
 import csv
 import re
 import warnings
-from typing import List, Optional, TextIO
+from typing import List, Optional, TextIO, Tuple, Union, cast
 
 import openpyxl
 import xlrd
 from colorama import Fore
+from openpyxl.cell.cell import Cell, MergedCell
 from tqdm import tqdm, trange
 
 from .config import config
@@ -142,12 +143,14 @@ class ImportRecords:
         del workbook
 
     @staticmethod
-    def convert_cell_xlsx(cell: openpyxl.cell.cell.Cell) -> str:
+    def convert_cell_xlsx(cell: Union[Cell, MergedCell]) -> str:
         if cell.value is None:
             return ""
         return str(cell.value)
 
-    def get_tx_raw_xlsx(self, worksheet_row: List[openpyxl.cell.cell.Cell]) -> Optional["TxRaw"]:
+    def get_tx_raw_xlsx(
+        self, worksheet_row: Tuple[Union[Cell, MergedCell], ...]
+    ) -> Optional["TxRaw"]:
         tx_hash = tx_src = tx_dest = ""
 
         for cell in worksheet_row[len(TransactionRow.HEADER) :]:
@@ -175,11 +178,11 @@ class ImportRecords:
     @staticmethod
     def convert_cell_xls(cell: xlrd.sheet.Cell, workbook: xlrd.Book) -> str:
         if cell.ctype == xlrd.XL_CELL_DATE:
-            datetime = xlrd.xldate.xldate_as_datetime(cell.value, workbook.datemode)
-            if datetime.microsecond:
-                value = f"{datetime:%Y-%m-%dT%H:%M:%S.%f}"
+            dt = xlrd.xldate.xldate_as_datetime(cast(float, cell.value), workbook.datemode)
+            if dt.microsecond:
+                value = f"{dt:%Y-%m-%dT%H:%M:%S.%f}"
             else:
-                value = f"{datetime:%Y-%m-%dT%H:%M:%S}"
+                value = f"{dt:%Y-%m-%dT%H:%M:%S}"
         elif cell.ctype in (
             xlrd.XL_CELL_NUMBER,
             xlrd.XL_CELL_BOOLEAN,

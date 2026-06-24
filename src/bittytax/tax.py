@@ -36,7 +36,7 @@ from .config import config
 from .constants import COST_BASIS_ZERO_NOTE, WARNING
 from .holdings import Holdings
 from .price.exceptions import DataSourceApiError
-from .price.valueasset import ValueAsset
+from .price.valueasset import PriceDataRecord, ValueAsset
 from .tax_event import (
     TaxEvent,
     TaxEventCapitalGains,
@@ -136,12 +136,6 @@ class BuyAccumulator:
     buys: List[Buy] = field(default_factory=list)
 
 
-@dataclass
-class CurrentPrice:
-    price_ccy: Decimal
-    name: AssetName
-
-
 class MarginReportTotal(TypedDict):  # pylint: disable=too-few-public-methods
     gains: Decimal
     losses: Decimal
@@ -183,7 +177,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         self.transactions = transactions
         self.tax_rules = tax_rules
         self.buys_ordered: Dict[AssetSymbol, List[Buy]] = {}
-        self.sells_ordered: List[Sell] = []
+        self.sells_ordered: List[Union[Buy, Sell]] = []
         self.other_transactions: List[Union[Buy, Sell]] = []
         self.buy_list: Dict[AssetSymbol, BuyList] = {}
 
@@ -263,6 +257,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 self.buy_list[t.asset] = BuyList([], method)
 
             if t.t_type not in TRANSFER_TYPES:
+                if not isinstance(t, Sell):
+                    raise RuntimeError(f"Expected Sell for non-transfer type {t.t_type}")
+
                 buy_queue = self.buy_list[t.asset].make_queue(t)
                 matches = self._match_sell(t, buy_queue)
                 if matches:
@@ -273,6 +270,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 else:
                     break
             elif t.t_type is TrType.WITHDRAWAL:
+                if not isinstance(t, Sell):
+                    raise RuntimeError("Expected Sell for WITHDRAWAL")
+
                 buy_queue = self.buy_list[t.asset].make_queue(t)
                 out_transfers = self._match_sell(t, buy_queue)
                 if out_transfers:
@@ -280,6 +280,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 else:
                     break
             elif t.t_type is TrType.DEPOSIT:
+                if not isinstance(t, Buy):
+                    raise RuntimeError("Expected Buy for DEPOSIT")
+
                 self._match_deposit(t, self.buy_list[t.asset].transfer_queue)
                 self.buy_list[t.asset].do_rebuild()
 
@@ -561,7 +564,8 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             disable=disable_tqdm(),
         ):
             if (
-                t.t_type in self.INCOME_TYPES
+                isinstance(t, Buy)
+                and t.t_type in self.INCOME_TYPES
                 and (t.is_crypto() or config.fiat_income)
                 and (t.quantity or t.fee_value)
             ):
@@ -632,7 +636,7 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         holdings_per_wallet: Dict[Wallet, Dict[AssetSymbol, HoldingsReportAsset]] = {}
         holdings_per_asset: Dict[AssetSymbol, HoldingsReportAsset] = {}
         total: HoldingsReportTotal = {"cost": Decimal(0), "value": Decimal(0), "gain": Decimal(0)}
-        current_price: Dict[AssetSymbol, CurrentPrice] = {}
+        current_price: Dict[AssetSymbol, PriceDataRecord] = {}
 
         if config.debug:
             print(f"{Fore.CYAN}calculating holdings")
@@ -648,9 +652,9 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
                 if self.holdings_per_asset[a].quantity > 0 or config.show_empty_wallets:
                     api_error = False
                     try:
-                        price, name, _ = value_asset.get_latest_price(a)
-                        if price is not None:
-                            current_price[a] = CurrentPrice(price, name)
+                        price_record = value_asset.get_latest_price(a)
+                        if price_record.price_ccy is not None:
+                            current_price[a] = price_record
                     except DataSourceApiError as e:
                         bt_tqdm_write(
                             f"{WARNING} Skipping valuation of {a} " f"due to API failure: {e}"
@@ -689,11 +693,11 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
         }
 
     def _calculate_holding(
-        self, holding: Holdings, current_price: Optional[CurrentPrice]
+        self, holding: Holdings, current_price: Optional[PriceDataRecord]
     ) -> HoldingsReportAsset:
         cost = (holding.cost + holding.fees).quantize(PRECISION)
 
-        if current_price is not None:
+        if current_price and current_price.price_ccy is not None:
             value = (current_price.price_ccy * holding.quantity).quantize(PRECISION)
 
             return {
