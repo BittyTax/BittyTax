@@ -202,11 +202,11 @@ def _do_read_file(file_type: str, pathname: str, args: argparse.Namespace) -> No
             except DataFormatUnrecognised:
                 sys.stderr.write(_file_msg(pathname, worksheet.title, msg="unrecognised"))
     elif file_type == "xls":
-        for worksheet, datemode in DataFile.read_excel_xls(pathname):
+        for sheet, datemode in DataFile.read_excel_xls(pathname):
             try:
-                DataFile.read_worksheet_xls(worksheet, datemode, pathname, args)
+                DataFile.read_worksheet_xls(sheet, datemode, pathname, args)
             except (DataFormatUnrecognised, ValueError):
-                sys.stderr.write(_file_msg(pathname, worksheet.name, msg="unrecognised"))
+                sys.stderr.write(_file_msg(pathname, sheet.name, msg="unrecognised"))
     else:
         DataFile.read_csv(pathname, args)
 
