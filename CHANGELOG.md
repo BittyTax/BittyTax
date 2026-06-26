@@ -52,6 +52,7 @@ The price data cache format has been updated to correctly distinguish assets tha
 - Config: added CHF (Swiss franc), DKK (Danish krone), NOK (Norwegian krone) and SEK (Swedish krona) to `FIAT_LIST`, with correct currency symbols.
 - Revolut parser: added "Stake", "Unstake" and "Staking reward" transaction types.
 - Config: updated fiat_list.
+- Kraken parser: added "delistingconversion" and "airdrop" subtypes.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
