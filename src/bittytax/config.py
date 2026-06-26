@@ -19,6 +19,8 @@ else:
 
 class Config:
     BITTYTAX_CONFIG = "bittytax.conf"
+    BITTYTAX_CONFIG_TEMPLATE = "bittytax.conf.template"
+    BITTYTAX_RESOURCES = "resources"
 
     FIAT_LIST = ["GBP", "EUR", "USD", "AUD", "NZD", "CAD", "PLN", "DKK", "NOK", "SEK", "CHF"]
     CRYPTO_LIST = ["USDT", "USDC", "BTC", "ETH", "BNB"]
@@ -32,7 +34,7 @@ class Config:
     TRADE_ALLOWABLE_COST_SPLIT = 2
 
     DATA_SOURCE_FIAT = ["BittyTaxAPI"]
-    DATA_SOURCE_CRYPTO = ["CryptoCompare", "CoinGecko"]
+    DATA_SOURCE_CRYPTO = ["CoinGecko", "CoinPaprika"]
 
     DEFAULT_CONFIG = {
         "local_currency": "GBP",
@@ -55,6 +57,7 @@ class Config:
         "data_source_select": {},
         "data_source_fiat": DATA_SOURCE_FIAT,
         "data_source_crypto": DATA_SOURCE_CRYPTO,
+        "price_via_btc": True,
         "usernames": [],
         "coinbase_zero_fees_are_gifts": False,
         "binance_multi_bnb_split_even": False,
@@ -64,7 +67,6 @@ class Config:
     OPTIONAL_CONFIG = (
         "coingecko_pro_api_key",
         "coingecko_demo_api_key",
-        "cryptocompare_api_key",
         "coinpaprika_api_key",
     )
 
@@ -77,17 +79,19 @@ class Config:
         if not os.path.exists(BITTYTAX_PATH):
             os.mkdir(BITTYTAX_PATH)
 
-        if not os.path.exists(os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG)):
-            default_conf = (
+        config_path = os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG)
+        if not os.path.exists(config_path):
+            template = (
                 pkg_resources.files(__package__)
-                .joinpath(f"config/{self.BITTYTAX_CONFIG}")
-                .read_bytes()
+                .joinpath(self.BITTYTAX_RESOURCES)
+                .joinpath(self.BITTYTAX_CONFIG_TEMPLATE)
+                .read_text(encoding="utf-8")
             )
-            with open(os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG), "wb") as config_file:
-                config_file.write(default_conf)
+            with open(config_path, "w", encoding="utf-8") as config_file:
+                config_file.write(template)
 
         try:
-            with open(os.path.join(BITTYTAX_PATH, self.BITTYTAX_CONFIG), "rb") as config_file:
+            with open(config_path, "rb") as config_file:
                 self.config = yaml.safe_load(config_file)
         except IOError:
             sys.stderr.write(

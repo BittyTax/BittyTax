@@ -501,7 +501,11 @@ class TaxCalculator:  # pylint: disable=too-many-instance-attributes
             desc=f"{Fore.CYAN}process income{Fore.GREEN}",
             disable=disable_tqdm(),
         ):
-            if t.t_type in self.INCOME_TYPES and (t.is_crypto() or config.fiat_income):
+            if (
+                isinstance(t, Buy)
+                and t.t_type in self.INCOME_TYPES
+                and (t.is_crypto() or config.fiat_income)
+            ):
                 tax_event = TaxEventIncome(t)
                 self.tax_events[self._which_tax_year(tax_event.date)].append(tax_event)
 

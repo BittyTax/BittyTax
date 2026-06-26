@@ -8,38 +8,20 @@ from typing import TYPE_CHECKING, Dict, Optional, Tuple, Union
 
 from colorama import Fore, Style
 
-from ..bt_types import (
-    AssetName,
-    AssetSymbol,
-    DataSourceName,
-    Date,
-    QuoteSymbol,
-    SourceUrl,
-    Timestamp,
-    Year,
-)
+from ..bt_types import AssetName, AssetSymbol, DataSourceName, Date, Timestamp, Year
 from ..config import config
 from ..constants import WARNING
 from ..utils import bt_tqdm_write
-from .pricedata import PriceData
+from .pricedata import PriceData, PriceDataRecord
 
 if TYPE_CHECKING:
     from ..transactions import Buy, Sell
 
 
 @dataclass
-class VaPriceRecord:
-    name: AssetName
-    data_source: DataSourceName
-    url: SourceUrl
-    price_ccy: Optional[Decimal]
-    price_btc: Optional[Decimal]
-
-
-@dataclass
 class ValueOrigin:
     origin: Union["Buy", "Sell"]
-    price_record: Optional[VaPriceRecord] = None
+    price_record: Optional[PriceDataRecord] = None
     derived_price: bool = False
 
 
@@ -48,7 +30,7 @@ class ValueAsset:
         self, price_tool: bool = False, no_cache: bool = False, leave_bar: bool = False
     ) -> None:
         self.price_tool = price_tool
-        self.price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, VaPriceRecord]]] = {}
+        self.price_report: Dict[Year, Dict[AssetSymbol, Dict[Date, PriceDataRecord]]] = {}
         data_sources_required = set(config.data_source_fiat + config.data_source_crypto) | {
             x.split(":")[0] for v in config.data_source_select.values() for x in v
         }
@@ -82,89 +64,32 @@ class ValueAsset:
     def get_current_value(
         self, asset: AssetSymbol, quantity: Decimal
     ) -> Tuple[Optional[Decimal], AssetName, DataSourceName]:
-        asset_price_ccy, name, data_source = self.get_latest_price(asset)
-        if asset_price_ccy is not None:
-            return asset_price_ccy * quantity, name, data_source
+        price_record = self.get_latest_price(asset)
+        if price_record.price_ccy is not None:
+            return price_record.price_ccy * quantity, price_record.name, price_record.data_source
 
         return None, AssetName(""), DataSourceName("")
 
-    def get_historical_price(self, asset: AssetSymbol, timestamp: Timestamp) -> VaPriceRecord:
-        asset_price_ccy = None
-
+    def get_historical_price(self, asset: AssetSymbol, timestamp: Timestamp) -> PriceDataRecord:
         if not self.price_tool and timestamp.date() >= datetime.now().date():
             bt_tqdm_write(
                 f"{WARNING} Price for {asset} on {timestamp:%Y-%m-%d}, "
                 f"no historic price available, using latest price"
             )
-            asset_price_ccy, name, data_source = self.get_latest_price(asset)
-            price_record = VaPriceRecord(name, data_source, SourceUrl(""), asset_price_ccy, None)
+            price_record = self.get_latest_price(asset)
             return price_record
 
-        if asset == "BTC" or asset in config.fiat_list:
-            asset_price_ccy, name, data_source, url = self.price_data.get_historical(
-                asset, config.ccy, timestamp
-            )
-            price_record = VaPriceRecord(name, data_source, url, asset_price_ccy, None)
-            self.price_report_cache(asset, timestamp, name, data_source, url, asset_price_ccy)
-        else:
-            asset_price_btc, name, data_source, url = self.price_data.get_historical(
-                asset, QuoteSymbol("BTC"), timestamp
-            )
-            if asset_price_btc is not None:
-                (
-                    btc_price_ccy,
-                    name2,
-                    data_source2,
-                    url2,
-                ) = self.price_data.get_historical(AssetSymbol("BTC"), config.ccy, timestamp)
-                if btc_price_ccy is not None:
-                    asset_price_ccy = btc_price_ccy * asset_price_btc
-
-                self.price_report_cache(
-                    AssetSymbol("BTC"), timestamp, name2, data_source2, url2, btc_price_ccy
-                )
-
-            self.price_report_cache(
-                asset,
-                timestamp,
-                name,
-                data_source,
-                url,
-                asset_price_ccy,
-                asset_price_btc,
-            )
-            price_record = VaPriceRecord(name, data_source, url, asset_price_ccy, asset_price_btc)
-
+        price_record = self.price_data.get_historical(asset, config.ccy, timestamp)
+        self.price_report_cache(asset, timestamp, price_record)
+        if price_record.btc_record:
+            self.price_report_cache(AssetSymbol("BTC"), timestamp, price_record.btc_record)
         return price_record
 
-    def get_latest_price(
-        self, asset: AssetSymbol
-    ) -> Tuple[Optional[Decimal], AssetName, DataSourceName]:
-        asset_price_ccy = None
-
-        if asset == "BTC" or asset in config.fiat_list:
-            asset_price_ccy, name, data_source = self.price_data.get_latest(asset, config.ccy)
-        else:
-            asset_price_btc, name, data_source = self.price_data.get_latest(
-                asset, QuoteSymbol("BTC")
-            )
-
-            if asset_price_btc is not None:
-                btc_price_ccy, _, _ = self.price_data.get_latest(AssetSymbol("BTC"), config.ccy)
-                if btc_price_ccy is not None:
-                    asset_price_ccy = btc_price_ccy * asset_price_btc
-
-        return asset_price_ccy, name, data_source
+    def get_latest_price(self, asset: AssetSymbol) -> PriceDataRecord:
+        return self.price_data.get_latest(asset, config.ccy)
 
     def price_report_cache(
-        self,
-        asset: AssetSymbol,
-        timestamp: Timestamp,
-        name: AssetName,
-        data_source: DataSourceName,
-        url: SourceUrl,
-        price_ccy: Optional[Decimal],
-        price_btc: Optional[Decimal] = None,
+        self, asset: AssetSymbol, timestamp: Timestamp, price_record: PriceDataRecord
     ) -> None:
         date = timestamp.date()
 
@@ -180,10 +105,4 @@ class ValueAsset:
             self.price_report[tax_year][asset] = {}
 
         if date not in self.price_report[tax_year][asset]:
-            self.price_report[tax_year][asset][Date(date)] = VaPriceRecord(
-                name=name,
-                data_source=data_source,
-                url=url,
-                price_ccy=price_ccy,
-                price_btc=price_btc,
-            )
+            self.price_report[tax_year][asset][Date(date)] = price_record

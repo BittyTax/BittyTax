@@ -223,10 +223,8 @@ def main() -> None:
                         if btc is None:
                             if args.command == CMD_HISTORY:
                                 btc = asset_data_obj.get_historic_btc_price(args.date)
-                            else:
-                                btc = asset_data_obj.get_latest_btc_price()
 
-                        if btc["price"] is not None:
+                        if btc is not None and btc["price"] is not None:
                             price_ccy = btc["price"] * asset_data["price"]
                             output_ds_price(btc)
                     else:
@@ -245,7 +243,9 @@ def main() -> None:
                     price_ccy2 = price_record.price_ccy
                     name = price_record.name
                 else:
-                    price_ccy2, name, _ = value_asset.get_latest_price(symbol)
+                    price_record = value_asset.get_latest_price(symbol)
+                    price_ccy2 = price_record.price_ccy
+                    name = price_record.name
 
                 if price_ccy2 is not None:
                     output_price(symbol, price_ccy2, args.quantity)
@@ -325,6 +325,7 @@ def output_assets(asset_list: List[AsRecord]) -> None:
             f'{Fore.WHITE}{asset_record["symbol"]} ({asset_record["name"]})'
             f'{Fore.CYAN} via {asset_record["data_source"]}{id_str}'
             f'{Fore.YELLOW + " <-" if asset_record["priority"] else ""}'
+            f'{Fore.RED + " DEPRECATED" if asset_record["deprecated"] else ""}'
         )
 
 

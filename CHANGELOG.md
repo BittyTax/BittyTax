@@ -2,16 +2,22 @@
 ## [Unreleased]
 Important:-
 
-The price data cache format has been updated to correctly distinguish assets that share the same ticker symbol. Existing cache files will be automatically migrated to the new format on the next run. After upgrading, please check the Price Data appendix in your tax report to confirm that the correct token has been chosen for each of your assets.
+CryptoCompare has been deprecated due to removal of the API free tier. You can still retrieve historic prices which have been cached.
+
+The price data cache format has been updated to correctly distinguish assets that share the same ticker symbol. Existing cached prices are automatically promoted to the new format during initialization on the next run. After upgrading, please check the Price Data appendix in your tax report to confirm that the correct token has been chosen for each of your assets.
+
+The new `price_via_btc` config option may not exist in your config file. If it is missing, BittyTax keeps the legacy BTC-intermediate behaviour for backward compatibility. Add `price_via_btc: False` to your config if you want historic prices to use direct local currency lookups.
 
 ### Fixed
 - Coinbase parser: fixed negative values for Advanced Trade Sells.
 - MEXC parser: fees for spot trades should always be the quote asset.
-- Coinbase parser: fixed regex to ingore extra descriptions at end of trades.
+- Coinbase parser: fixed regex to ignore extra descriptions at end of trades.
 - Gemini parser: delete blank rows.
 - Uphold parser: skip failed transactions.
 - Coinbase parser: fixed spurious fee asset appearing in Send/Withdrawal when no fee is present.
 - Price tool: CoinPaprika historical prices were incorrectly using the requested date as the key for all returned entries, causing only the most recent price to be stored; each entry is now keyed by its own date from the API response.
+- Price tool: removed use of deprecated `datetime.utcfromtimestamp`.
+- KuCoin parser: allow the new "Account Mode" column in Spot Orders exports.
 ### Added
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
 - Exodus parser: added new export format. ([#467](https://github.com/BittyTax/BittyTax/issues/467))
@@ -35,7 +41,7 @@ The price data cache format has been updated to correctly distinguish assets tha
 - SwissBorg parser: added "Fee Adjustment" Type.
 - Bitfinex parser: added new deposits/withdrawals export format.
 - Coinbase parser: added "Card Spend", "Credit", "Asset Migration", "Retail Eth2 Deprecation" transaction types.
-- sFOX parser: added tramsaction history parser.
+- sFOX parser: added transaction history parser.
 - Coinbase parser: added "Retail MGX DEX Buy" and "Retail MGX DEX Send" transaction types.
 - Binance parser: added "Launchpool Airdrop - User Claim Distribution" and "Launchpool Airdrop - System Distribution" operations
 - Crypto.com parser: added "finance.crypto_earn.loyalty_program_extra_interest_paid.crypto_wallet" transaction kind.
@@ -51,7 +57,8 @@ The price data cache format has been updated to correctly distinguish assets tha
 - Price tool: added `-ccy` argument to `latest` and `historic` subcommands to allow an ad-hoc override of the local currency for a single query. ([#201](https://github.com/BittyTax/BittyTax/issues/201))
 - Config: added CHF (Swiss franc), DKK (Danish krone), NOK (Norwegian krone) and SEK (Swedish krona) to `FIAT_LIST`, with correct currency symbols.
 - Revolut parser: added "Stake", "Unstake" and "Staking reward" transaction types.
-- Config: updated fiat_list.
+- KuCoin parser: added "Convert Orders_Filled Orders" from bundle files.
+- Conversion tool: added parser for Blockchair explorer. ([#490](https://github.com/BittyTax/BittyTax/issues/490))
 - Kraken parser: added "delistingconversion" and "airdrop" subtypes.
 ### Changed
 - Config: fiat_income to True.
@@ -66,17 +73,26 @@ The price data cache format has been updated to correctly distinguish assets tha
 - Uphold parser: transaction type "in" can be a Trade, i.e. credit-card purchase of crypto.
 - Accounting tool: Buy/Sell transactions now track the origin of their price valuations.
 - Price tool: price cache format updated to store prices per asset_id bucket, correctly distinguishing assets that share the same symbol.
-- Price tool: legacy price cache files are migrated to the new asset_id format on next save.
 - Price tool: CoinGecko coin list sorted by market cap so the highest market cap coin wins when symbols conflict.
 - Price tool: CoinPaprika coin list sorted by rank for consistent symbol conflict resolution.
 - Accounting tool: API errors during current holdings valuation are now shown as ("Skipped"), distinguishing them from assets with no price data available ("Not available").
 - Accounting tool and price tool: API failures that previously produced a raw traceback now exit cleanly with an error message and a retry hint.
-- Price tool: price cache is only written to disk when new price data has actually been fetched.
-- Price tool: price cache is automatically rewritten when legacy format is detected on load, migrating it to the current format.
+- Price tool: price cache is only written to disk when changes have been detected, avoiding unnecessary writes on each run.
+- Price tool: price cache is automatically rewritten when legacy format is detected on load, migrating it to the current format; the original file is preserved as a `.bak` backup.
 - Price tool: price cache is automatically reset when a corrupt or unloadable cache file is encountered, replacing it with a clean empty file.
 - Price tool: `list` command no longer shows the priority marker (`<-`) when using the `-s` search option, as priority is not meaningful across search results.
 - Price tool: when `-ds` is specified (not `ALL`), only the requested data source and any data sources required for the BTC/currency conversion are initialised, eliminating unnecessary initialisations.
 - Price tool: `list` command search option (`-s`) now also searches asset IDs in addition to symbol and name.
+- Config: updated fiat_list.
+- Config: moved default config file to resources/bittytax.conf.template.
+- Price tool: latest prices are always fetched directly in the configured local currency (e.g. GBP), with no BTC-intermediate conversion.
+- Price tool: historical prices use direct local-currency quotes where supported; otherwise they can use BTC as an intermediate path.
+- Price tool: each datasource now declares supported historical and latest quote currencies.
+- Config: added `price_via_btc` setting for historic prices (legacy BTC-intermediate method), defaulting to `False` for new config files.
+- Price tool: Frankfurter now fetches supported currencies via API instead of using a hardcoded list.
+- Price tool: price cache loading performance improved.
+- Price tool: CryptoCompare API deprecated.
+- Config: removed CryptoCompare from `data_source_crypto`.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
