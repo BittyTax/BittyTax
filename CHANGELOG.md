@@ -59,6 +59,7 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Revolut parser: added "Stake", "Unstake" and "Staking reward" transaction types.
 - KuCoin parser: added "Convert Orders_Filled Orders" from bundle files.
 - Conversion tool: added parser for Blockchair explorer. ([#490](https://github.com/BittyTax/BittyTax/issues/490))
+- Kraken parser: added "delistingconversion" and "airdrop" subtypes.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
