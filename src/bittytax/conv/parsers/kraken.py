@@ -182,7 +182,6 @@ def _parse_kraken_ledgers_row(
     # https://support.kraken.com/hc/en-us/articles/360001169383-How-to-interpret-Ledger-history-fields
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["time"])
-    data_row.parsed = True
 
     if row_dict["txid"] == "":
         # Skip failed transactions
@@ -208,6 +207,7 @@ def _parse_kraken_ledgers_row(
                 wallet=WALLET,
                 note="Reverse failed Deposit",
             )
+            data_row.parsed = True
             if Decimal(row_dict["fee"]) != 0:
                 dup_data_row = copy.copy(data_row)
                 dup_data_row.row = []
@@ -240,6 +240,7 @@ def _parse_kraken_ledgers_row(
                 wallet=WALLET,
                 note="Reverse failed Withdrawal",
             )
+            data_row.parsed = True
             if Decimal(row_dict["fee"]) != 0:
                 dup_data_row = copy.copy(data_row)
                 dup_data_row.row = []
@@ -334,6 +335,16 @@ def _parse_kraken_ledgers_row(
                 buy_asset=_normalise_asset(row_dict["asset"]),
                 wallet=WALLET,
             )
+        elif row_dict["subtype"] == "delistingconversion":
+            # These are not linked by refid
+            conversion_rows = [
+                dr
+                for dr in data_rows
+                if dr.row_dict["type"] == row_dict["type"]
+                and dr.row_dict["subtype"] == row_dict["subtype"]
+                and not dr.parsed
+            ][:2]
+            _make_trade(conversion_rows, TrType.SWAP)
         elif row_dict["subtype"] in (
             "spottostaking",
             "stakingtospot",
@@ -373,7 +384,7 @@ def _parse_kraken_ledgers_row(
                 sell_asset=_normalise_asset(row_dict["asset"]),
                 wallet=WALLET,
             )
-
+        data_row.parsed = True
         if Decimal(row_dict["amount"]) != 0 and Decimal(row_dict["fee"]) != 0:
             # Insert extra row to contain the MARGIN_FEE in addition to a MARGIN_GAIN/LOSS
             dup_data_row = copy.copy(data_row)
@@ -422,6 +433,33 @@ def _parse_kraken_ledgers_row(
                     fee_asset=_normalise_asset(row_dict["asset"]),
                     wallet=WALLET,
                 )
+        elif row_dict["subtype"] == "airdrop":
+            if Decimal(row_dict["amount"]) > 0:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.AIRDROP,
+                    data_row.timestamp,
+                    buy_quantity=Decimal(row_dict["amount"]),
+                    buy_asset=_normalise_asset(row_dict["asset"]),
+                    wallet=WALLET,
+                )
+            else:
+                data_row.t_record = TransactionOutRecord(
+                    TrType.SPEND,
+                    data_row.timestamp,
+                    sell_quantity=abs(Decimal(row_dict["amount"])),
+                    sell_asset=_normalise_asset(row_dict["asset"]),
+                    wallet=WALLET,
+                )
+        elif row_dict["subtype"] == "delistingconversion":
+            # These are not linked by refid
+            conversion_rows = [
+                dr
+                for dr in data_rows
+                if dr.row_dict["type"] == row_dict["type"]
+                and dr.row_dict["subtype"] == row_dict["subtype"]
+                and not dr.parsed
+            ][:2]
+            _make_trade(conversion_rows, TrType.SWAP)
         elif row_dict["subtype"] in (
             "migration",
             "autoallocate",
@@ -468,10 +506,10 @@ def _parse_kraken_ledgers_row(
 def _get_ref_ids(
     ref_ids: Dict[str, List["DataRow"]], ref_id: str, k_type: Tuple[str, ...]
 ) -> List["DataRow"]:
-    return [dr for dr in ref_ids[ref_id] if dr.row_dict["type"] in k_type]
+    return [dr for dr in ref_ids[ref_id] if dr.row_dict["type"] in k_type and not dr.parsed]
 
 
-def _make_trade(ref_ids: List["DataRow"]) -> None:
+def _make_trade(ref_ids: List["DataRow"], t_type: TrType = TrType.TRADE) -> None:
     buy_quantity = sell_quantity = Decimal(0)
     fee_quantity = None
     buy_asset = sell_asset = config.ccy
@@ -526,7 +564,7 @@ def _make_trade(ref_ids: List["DataRow"]) -> None:
                 )
     if trade_row:
         trade_row.t_record = TransactionOutRecord(
-            TrType.TRADE,
+            t_type,
             trade_row.timestamp,
             buy_quantity=buy_quantity,
             buy_asset=buy_asset,
