@@ -38,6 +38,7 @@ openpyxl
 parsers
 powershell
 rebase
+refid
 repr
 snowtrace
 timestamp
