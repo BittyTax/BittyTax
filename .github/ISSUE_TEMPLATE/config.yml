@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Get help on Discord
+    url: https://discord.com/invite/NHE3QFt
+    about: Ask a question, get help with configuration, or discuss how to handle a transaction type.
+  - name: GitHub Discussions
+    url: https://github.com/BittyTax/BittyTax/discussions
+    about: For longer questions, ideas, or anything you're not sure is a bug.

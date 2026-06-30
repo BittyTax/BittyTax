@@ -1,0 +1,101 @@
+name: Parser Request
+description: Request a new parser or report that an existing parser has broken due to a format change
+labels: ["parser"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > **Need help with an existing parser?** If you're not sure whether it's a bug, ask on [Discord](https://discord.com/invite/NHE3QFt) or [GitHub Discussions](https://github.com/BittyTax/BittyTax/discussions) first.
+
+        Use this template to request support for a new exchange, wallet, block explorer, or other service, or to report that an existing parser has stopped working because the export format has changed.
+
+        **Before submitting:** please search [open issues](https://github.com/BittyTax/BittyTax/issues) — someone else may have already reported the same change.
+
+  - type: input
+    id: service_name
+    attributes:
+      label: Exchange, wallet or service name
+      placeholder: "e.g. Kraken, Coinbase, Ledger Live, Etherscan"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: parser_type
+    attributes:
+      label: Type
+      options:
+        - Wallets
+        - Exchanges
+        - Savings, Loans & Investments
+        - Explorers
+        - Accounting
+        - Stocks & Shares
+        - Unknown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: request_type
+    attributes:
+      label: Request type
+      options:
+        - New parser (service not currently supported)
+        - Update existing parser (format has changed)
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_changed
+    attributes:
+      label: What has changed or what is needed?
+      description: |
+        For **updates**: describe what changed — e.g. a new column was added, a column was renamed, a new transaction type appeared.
+        For **new parsers**: describe the file format and what transaction types it contains.
+    validations:
+      required: true
+
+  - type: textarea
+    id: sample_csv
+    attributes:
+      label: Sample CSV
+      description: |
+        Paste the header row and a few representative data rows.
+        **Please anonymise: replace real wallet addresses, transaction IDs, and any personal data with placeholder values.**
+      placeholder: |
+        Date,Type,Asset,Amount,Fee,...
+        2024-01-15,Buy,BTC,0.01,0.00001,...
+      render: csv
+    validations:
+      required: true
+
+  - type: input
+    id: website
+    attributes:
+      label: Website
+      description: Link to the main website — helps identify the correct service where names may be similar.
+      placeholder: "https://..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: export_files
+    attributes:
+      label: Export type(s)
+      description: |
+        Which export(s) should be used? Many services offer several different export options — e.g. "Trade History", "Account Statement", "Transaction Report". Include all that are relevant.
+      placeholder: |
+        e.g. Trade History CSV, Ledger export
+    validations:
+      required: true
+
+  - type: input
+    id: docs_link
+    attributes:
+      label: Link to export documentation (if available)
+      placeholder: "https://..."
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Anything else that might help — e.g. which account type, region-specific format, etc.
