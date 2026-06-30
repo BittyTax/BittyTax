@@ -1,0 +1,103 @@
+name: Bug Report
+description: Report a problem with BittyTax
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > **Need help?** Please don't open an issue just to ask a question — use [Discord](https://discord.com/invite/NHE3QFt) or [GitHub Discussions](https://github.com/BittyTax/BittyTax/discussions) instead.
+
+        **Before submitting:** please [search open issues](https://github.com/BittyTax/BittyTax/issues) to check this hasn't already been reported — your issue may already be tracked.
+
+        Please fill in as much detail as possible. If the command produced an error or exception, include the full error message.
+
+  - type: input
+    id: version
+    attributes:
+      label: BittyTax version
+      description: Run `bittytax --version` to find this.
+      placeholder: "e.g. v0.6.0"
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      description: Run `python --version` to find this.
+      placeholder: "e.g. 3.12.3"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+
+  - type: dropdown
+    id: command
+    attributes:
+      label: Which command are you running?
+      options:
+        - bittytax_conv
+        - bittytax
+        - bittytax_price
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What exact command did you run? What file(s) did you use?
+      placeholder: |
+        1. Run `bittytax_conv myfile.csv`
+        2. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: error_output
+    attributes:
+      label: Error or exception
+      description: If the command produced an error or exception, paste the full message here.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sample CSV (optional)
+      description: |
+        If the problem is with a specific file, paste a few rows here (header + affected rows).
+        **Please anonymise: remove or replace real wallet addresses, transaction IDs, and personal data.** If you cannot anonymise your file, email it privately to [bittytax@nanonano.co.uk](mailto:bittytax@nanonano.co.uk) with your issue number — do not email for general support.
+      render: csv
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Anything else that might be relevant?

@@ -1,0 +1,41 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > **Not sure if this is the right place?** For general questions or help, use [Discord](https://discord.com/invite/NHE3QFt) or [GitHub Discussions](https://github.com/BittyTax/BittyTax/discussions) instead.
+
+        **Before submitting:** please [search open issues](https://github.com/BittyTax/BittyTax/issues) to check this hasn't already been requested.
+
+        For larger ideas or changes that affect tax calculations, please start a [GitHub Discussion](https://github.com/BittyTax/BittyTax/discussions) first so the approach can be agreed before any code is written.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation or limitation you are running into.
+      placeholder: "e.g. When I have transactions from exchange X, I can't easily..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe what you would like to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you considered any other approaches or workarounds?
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Any other information, screenshots, or examples that might help.
