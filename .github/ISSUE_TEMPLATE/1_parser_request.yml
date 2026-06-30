@@ -1,6 +1,5 @@
 name: Parser Request
 description: Request a new parser or report that an existing parser has broken due to a format change
-labels: ["parser"]
 body:
   - type: markdown
     attributes:
