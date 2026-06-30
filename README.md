@@ -1244,6 +1244,9 @@ Can be set to `True` or `False`. Default is `False`.
 
 You can also override this config setting by using the `--binance_statements_only` argument with the conversion tool.
 
+## Contributing
+Contributions are welcome! Please read the [CONTRIBUTING.md](https://github.com/BittyTax/BittyTax/blob/master/CONTRIBUTING.md) guide before opening an issue or pull request. For developer documentation — environment setup, code style, parser architecture and more — see the [Development](https://github.com/BittyTax/BittyTax/wiki/Development) wiki page.
+
 ## Resources
 **HMRC Links:**
 - https://www.gov.uk/government/collections/cryptoassets
