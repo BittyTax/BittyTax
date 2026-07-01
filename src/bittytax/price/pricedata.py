@@ -4,7 +4,7 @@
 import os
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from colorama import Fore
 from tqdm import tqdm
@@ -47,7 +47,7 @@ class PriceData:
         self.price_tool = price_tool
         self.no_cache = no_cache
         self.data_sources = {}
-        self.progress_bar = None
+        self.progress_bar: "Optional[tqdm[Any]]" = None
 
         if not os.path.exists(CACHE_DIR):
             os.mkdir(CACHE_DIR)

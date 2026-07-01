@@ -8,12 +8,16 @@ import io
 import os
 import sys
 import warnings
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Dict, Iterator, List, Literal, Optional, Tuple, Union, cast
 
 import openpyxl
 import xlrd
 from colorama import Fore
+from openpyxl.cell.cell import Cell, MergedCell
+from openpyxl.worksheet.worksheet import Worksheet
 from typing_extensions import Unpack
+from xlrd.biffh import XLRDError
+from xlrd.compdoc import CompDocError
 
 from ..config import config
 from ..constants import ERROR, WARNING
@@ -133,7 +137,7 @@ class DataFile:
                     sys.stderr.write(f'{ERROR} Unexpected error: "{data_row.failure}"\n')
 
     @classmethod
-    def read_excel_xlsx(cls, filename: str) -> Iterator[xlrd.sheet.Sheet]:
+    def read_excel_xlsx(cls, filename: str) -> Iterator[Worksheet]:
         warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
         with open(filename, "rb") as df:
             try:
@@ -168,7 +172,7 @@ class DataFile:
     @classmethod
     def read_worksheet_xlsx(
         cls,
-        worksheet: openpyxl.worksheet.worksheet.Worksheet,
+        worksheet: Worksheet,
         filename: str,
         args: argparse.Namespace,
     ) -> None:
@@ -209,7 +213,7 @@ class DataFile:
 
                 for worksheet in workbook.sheets():
                     yield worksheet, workbook.datemode
-        except (xlrd.XLRDError, xlrd.compdoc.CompDocError) as e:
+        except (XLRDError, CompDocError) as e:
             raise DataFormatUnrecognised(filename) from e
 
     @classmethod
@@ -243,12 +247,14 @@ class DataFile:
         cls.consolidate_datafiles(data_file)
 
     @staticmethod
-    def get_cell_values_xlsx(rows: List[openpyxl.cell.cell.Cell]) -> Iterator[List[str]]:
+    def get_cell_values_xlsx(
+        rows: Iterator[Tuple[Union[Cell, MergedCell], ...]],
+    ) -> Iterator[List[str]]:
         for row in rows:
             yield [DataFile.convert_cell_xlsx(cell) for cell in row]
 
     @staticmethod
-    def convert_cell_xlsx(cell: openpyxl.cell.cell.Cell) -> str:
+    def convert_cell_xlsx(cell: Union[Cell, MergedCell]) -> str:
         if cell.value is None:
             return ""
         return str(cell.value)
@@ -263,9 +269,10 @@ class DataFile:
     @staticmethod
     def convert_cell_xls(cell: xlrd.sheet.Cell, datemode: int) -> str:
         if cell.ctype == xlrd.XL_CELL_DATE:
-            value = (
-                f"{xlrd.xldate.xldate_as_datetime(cell.value, datemode):%Y-%m-%dT%H:%M:%S.%f %Z}"
+            dt = xlrd.xldate.xldate_as_datetime(
+                cast(float, cell.value), cast(Literal[0, 1], datemode)
             )
+            value = f"{dt:%Y-%m-%dT%H:%M:%S.%f %Z}"
         elif cell.ctype in (
             xlrd.XL_CELL_NUMBER,
             xlrd.XL_CELL_BOOLEAN,
@@ -333,7 +340,7 @@ class DataFile:
     def get_parser(reader: Iterator[List[str]]) -> Optional[DataParser]:
         parser = None
         # Header might not be on first line
-        for row in range(14):
+        for row in range(20):
             try:
                 parser = DataParser.match_header(next(reader), row)
             except KeyError:
