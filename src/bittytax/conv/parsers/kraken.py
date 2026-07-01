@@ -20,6 +20,10 @@ if TYPE_CHECKING:
 
 WALLET = "Kraken"
 
+# Kraken fee credits have a fixed value of 0.01 USD (1000 KFEE = 10 USD)
+# and no market price of their own.
+KFEE_USD_RATE = Decimal("0.01")
+
 QUOTE_ASSETS = [
     "AED",
     "AUD",
@@ -59,7 +63,6 @@ QUOTE_ASSETS = [
 ]
 
 ALT_ASSETS = {
-    "KFEE": "FEE",
     "XETC": "ETC",
     "XETH": "ETH",
     "XLTC": "LTC",
@@ -188,7 +191,20 @@ def _parse_kraken_ledgers_row(
         return
 
     if row_dict["type"] == "deposit":
-        if Decimal(row_dict["amount"]) > 0:
+        if row_dict["asset"] == "KFEE":
+            buy_value = DataParser.convert_currency(
+                Decimal(row_dict["amount"]) * KFEE_USD_RATE, "USD", data_row.timestamp
+            )
+
+            data_row.t_record = TransactionOutRecord(
+                TrType.AIRDROP,
+                data_row.timestamp,
+                buy_quantity=Decimal(row_dict["amount"]),
+                buy_asset=row_dict["asset"],
+                buy_value=buy_value,
+                wallet=WALLET,
+            )
+        elif Decimal(row_dict["amount"]) > 0:
             data_row.t_record = TransactionOutRecord(
                 TrType.DEPOSIT,
                 data_row.timestamp,
@@ -539,6 +555,13 @@ def _make_trade(ref_ids: List["DataRow"], t_type: TrType = TrType.TRADE) -> None
 
         if Decimal(row_dict["amount"]) == 0:
             # Assume zero amount is a secondary fee
+            if row_dict["asset"] == "KFEE":
+                fee_value = DataParser.convert_currency(
+                    Decimal(row_dict["fee"]) * KFEE_USD_RATE, "USD", data_row.timestamp
+                )
+            else:
+                fee_value = None
+
             data_row.t_record = TransactionOutRecord(
                 TrType.SPEND,
                 data_row.timestamp,
@@ -546,6 +569,7 @@ def _make_trade(ref_ids: List["DataRow"], t_type: TrType = TrType.TRADE) -> None
                 sell_asset=_normalise_asset(row_dict["asset"]),
                 fee_quantity=abs(Decimal(row_dict["fee"])),
                 fee_asset=_normalise_asset(row_dict["asset"]),
+                fee_value=fee_value,
                 wallet=WALLET,
                 note="Trading fee",
             )
