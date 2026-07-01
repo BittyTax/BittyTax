@@ -18,6 +18,7 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Price tool: CoinPaprika historical prices were incorrectly using the requested date as the key for all returned entries, causing only the most recent price to be stored; each entry is now keyed by its own date from the API response.
 - Price tool: removed use of deprecated `datetime.utcfromtimestamp`.
 - KuCoin parser: allow the new "Account Mode" column in Spot Orders exports.
+- Kraken parser: sum multi-wallet (spot + earn) legs of a trade instead of overwriting them, which previously under-reported the disposal quantity.
 - Kraken parser: value fees paid in Kraken fee credits (KFEE) at their fixed 0.01 USD value.
 ### Added
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.

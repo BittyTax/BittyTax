@@ -12,7 +12,12 @@ from typing_extensions import Unpack
 from ...bt_types import TrType
 from ...config import config
 from ..dataparser import DataParser, ParserArgs, ParserType
-from ..exceptions import DataRowError, UnexpectedTradingPairError, UnexpectedTypeError
+from ..exceptions import (
+    DataRowError,
+    UnexpectedContentError,
+    UnexpectedTradingPairError,
+    UnexpectedTypeError,
+)
 from ..out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
@@ -430,11 +435,11 @@ def _parse_kraken_ledgers_row(
             wallet=WALLET,
         )
     elif row_dict["type"] == "settled":
-        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("settled",)))
+        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("settled",)), parser)
     elif row_dict["type"] == "trade":
-        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("trade",)))
+        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("trade",)), parser)
     elif row_dict["type"] in ("spend", "receive"):
-        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("spend", "receive")))
+        _make_trade(_get_ref_ids(ref_ids, row_dict["refid"], ("spend", "receive")), parser)
     elif row_dict["type"] == "earn":
         if row_dict["subtype"] == "reward":
             if Decimal(row_dict["amount"]) > 0:
@@ -541,7 +546,9 @@ def _get_ref_ids(
     return [dr for dr in ref_ids[ref_id] if dr.row_dict["type"] in k_type and not dr.parsed]
 
 
-def _make_trade(ref_ids: List["DataRow"], t_type: TrType = TrType.TRADE) -> None:
+def _make_trade(
+    ref_ids: List["DataRow"], parser: DataParser, t_type: TrType = TrType.TRADE
+) -> None:
     buy_quantity = sell_quantity = Decimal(0)
     fee_quantity = None
     buy_asset = sell_asset = config.ccy
@@ -576,12 +583,22 @@ def _make_trade(ref_ids: List["DataRow"], t_type: TrType = TrType.TRADE) -> None
             continue
 
         if Decimal(row_dict["amount"]) > 0:
-            buy_quantity = Decimal(row_dict["amount"])
-            buy_asset = _normalise_asset(row_dict["asset"])
+            if buy_quantity and buy_asset != row_dict["asset"]:
+                raise UnexpectedContentError(
+                    parser.in_header.index("asset"), "asset", row_dict["asset"]
+                )
+
+            buy_quantity += Decimal(row_dict["amount"])
+            buy_asset = row_dict["asset"]
 
         if Decimal(row_dict["amount"]) < 0:
-            sell_quantity = abs(Decimal(row_dict["amount"]))
-            sell_asset = _normalise_asset(row_dict["asset"])
+            if sell_quantity and sell_asset != row_dict["asset"]:
+                raise UnexpectedContentError(
+                    parser.in_header.index("asset"), "asset", row_dict["asset"]
+                )
+
+            sell_quantity += abs(Decimal(row_dict["amount"]))
+            sell_asset = row_dict["asset"]
 
         if not trade_row:
             trade_row = data_row
@@ -589,9 +606,12 @@ def _make_trade(ref_ids: List["DataRow"], t_type: TrType = TrType.TRADE) -> None
         if Decimal(row_dict["fee"]) != 0:
             if not fee_quantity:
                 fee_quantity = abs(Decimal(row_dict["fee"]))
-                fee_asset = _normalise_asset(row_dict["asset"])
+                fee_asset = row_dict["asset"]
+            elif fee_asset == row_dict["asset"]:
+                # Accumulate fees for the same asset
+                fee_quantity += abs(Decimal(row_dict["fee"]))
             else:
-                # Add as secondary fee
+                # Add as secondary fee for a different asset
                 data_row.t_record = TransactionOutRecord(
                     TrType.SPEND,
                     data_row.timestamp,
@@ -607,11 +627,11 @@ def _make_trade(ref_ids: List["DataRow"], t_type: TrType = TrType.TRADE) -> None
             t_type,
             trade_row.timestamp,
             buy_quantity=buy_quantity,
-            buy_asset=buy_asset,
+            buy_asset=_normalise_asset(buy_asset),
             sell_quantity=sell_quantity,
-            sell_asset=sell_asset,
+            sell_asset=_normalise_asset(sell_asset),
             fee_quantity=fee_quantity,
-            fee_asset=fee_asset,
+            fee_asset=_normalise_asset(fee_asset),
             wallet=WALLET,
         )
 
