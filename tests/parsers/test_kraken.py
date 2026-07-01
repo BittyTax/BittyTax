@@ -17,6 +17,10 @@ def test_assets_and_staked_suffix() -> None:
         for asset in response.json()["result"]:
             alt = response.json()["result"][asset]["altname"]
 
+            if asset == "KFEE":
+                # Kraken fee credits
+                continue
+
             if asset != alt:
                 assert ALT_ASSETS[asset] == alt
 
