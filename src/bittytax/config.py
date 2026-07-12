@@ -68,6 +68,7 @@ class Config:
         "coingecko_pro_api_key",
         "coingecko_demo_api_key",
         "coinpaprika_api_key",
+        "coinstats_api_key",
     )
 
     def __init__(self) -> None:
