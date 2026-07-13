@@ -1302,7 +1302,7 @@ class CoinStats(DataSourceBase):
             asset_id,
             {
                 Date(datetime.fromtimestamp(dp[0], TZ_UTC).date()): {
-                    "price": Decimal(repr(dp[1])) if dp[1] else None,
+                    "price": Decimal(repr(dp[1])),
                     "url": SourceUrl(url),
                 }
                 for dp in json_resp
