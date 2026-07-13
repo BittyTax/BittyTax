@@ -9,7 +9,6 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, List, Optional, Union
 
-import _csv
 from colorama import Fore
 
 from ..bt_types import TrType, UnmappedType
@@ -18,6 +17,8 @@ from ..constants import CONV_FORMAT_RECAP
 from .out_record import TransactionOutRecord
 
 if TYPE_CHECKING:
+    import _csv
+
     from .datafile import DataFile
 
 
@@ -146,7 +147,7 @@ class OutputCsv(OutputBase):
             writer = csv.writer(sys.stdout, lineterminator="\n")
             self.write_rows(writer)
 
-    def write_rows(self, writer: "_csv._writer") -> None:
+    def write_rows(self, writer: "_csv.Writer") -> None:
         data_rows = []
         for data_file in self.data_files:
             data_rows.extend(data_file.data_rows)

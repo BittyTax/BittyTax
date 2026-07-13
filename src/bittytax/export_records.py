@@ -4,12 +4,14 @@
 import csv
 import os
 import sys
-from typing import List
+from typing import TYPE_CHECKING, List
 
-import _csv
 from colorama import Fore
 
 from .t_record import TransactionRecord
+
+if TYPE_CHECKING:
+    import _csv
 
 
 class ExportRecords:  # pylint: disable=too-few-public-methods
@@ -61,7 +63,7 @@ class ExportRecords:  # pylint: disable=too-few-public-methods
             f"{Fore.WHITE}export file created: {Fore.YELLOW}{os.path.abspath(filename)}\n"
         )
 
-    def _write_rows(self, writer: "_csv._writer") -> None:
+    def _write_rows(self, writer: "_csv.Writer") -> None:
         writer.writerow(self.OUT_HEADER)
 
         for tr in self.transaction_records:
