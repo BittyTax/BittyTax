@@ -30,6 +30,7 @@ PRECISION = Decimal("0." + "0" * 8)
 WALLET = "Binance"
 
 QUOTE_ASSETS = [
+    "AED",
     "AEUR",
     "ARS",
     "AUD",
@@ -50,10 +51,11 @@ QUOTE_ASSETS = [
     "EURI",
     "FDUSD",
     "GBP",
-    "IDR",
     "GYEN",
+    "IDR",
     "IDRT",
     "JPY",
+    "KZT",
     "MXN",
     "NGN",
     "PAX",
