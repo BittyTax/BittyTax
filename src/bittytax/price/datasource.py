@@ -1158,3 +1158,154 @@ class CoinPaprika(DataSourceBase):
             },
             timestamp,
         )
+
+
+class CoinStats(DataSourceBase):
+    RATE_LIMIT = 2
+    COINS_PER_PAGE = 1000
+
+    HISTORICAL_QUOTES = {
+        "AED",
+        "AMD",
+        "AOA",
+        "ARS",
+        "AUD",
+        "BDT",
+        "BGN",
+        "BHD",
+        "BOB",
+        "BRL",
+        "CAD",
+        "CFA",
+        "CHF",
+        "CLP",
+        "CNY",
+        "COP",
+        "CRC",
+        "CZK",
+        "DKK",
+        "DOP",
+        "EPG",
+        "ETB",
+        "EUR",
+        "GBP",
+        "GEL",
+        "HKD",
+        "HRK",
+        "HTG",
+        "HUF",
+        "IDR",
+        "ILS",
+        "INR",
+        "IRR",
+        "ISK",
+        "JPY",
+        "KRW",
+        "KWD",
+        "LKR",
+        "MAD",
+        "MDL",
+        "MXN",
+        "MYR",
+        "NGN",
+        "NOK",
+        "NZD",
+        "PAB",
+        "PEN",
+        "PHP",
+        "PKR",
+        "PLN",
+        "RON",
+        "RUB",
+        "SAR",
+        "SDG",
+        "SEK",
+        "SGD",
+        "THB",
+        "TRY",
+        "TWD",
+        "UAH",
+        "USD",
+        "VND",
+        "ZAR",
+    }
+    LATEST_QUOTES = HISTORICAL_QUOTES
+
+    def __init__(self, no_cache: bool = False, progress_bar: Optional[tqdm] = None) -> None:
+        super().__init__(no_cache, progress_bar)
+
+        if "coinstats_api_key" in config.config:
+            self.headers["x-api-key"] = config.coinstats_api_key
+            self.api_root = "https://api.coinstats.app/v1"
+        else:
+            return
+
+        cached_ids = self._load_ids()
+        if cached_ids is not None:
+            self.ids = cached_ids
+        else:
+            page = 1
+            has_next_page = True
+
+            while has_next_page:
+                json_resp = self._get_json(
+                    f"{self.api_root}/coins?limit={self.COINS_PER_PAGE}&page={page}"
+                    "&sortby=rank&sortDir=asc"
+                )
+                for c in json_resp["result"]:
+                    symbol = AssetSymbol(c["symbol"].strip().upper())
+                    asset_id = AssetId(c["id"])
+                    name = AssetName(c["name"].strip())
+                    self.ids[asset_id] = {"symbol": symbol, "name": name}
+
+                meta = json_resp.get("meta", {})
+                has_next_page = meta.get("hasNextPage", False)
+                page += 1
+
+            self._save_ids()
+
+        for k, v in self.ids.items():
+            if v["symbol"] not in self.assets:
+                self.assets[v["symbol"]] = {"asset_id": k, "name": v["name"]}
+
+        self._get_config_assets()
+        self._load_prices()
+
+    def get_latest(
+        self, asset: AssetSymbol, quote: QuoteSymbol, asset_id: AssetId = AssetId("")
+    ) -> Optional[Decimal]:
+        if not asset_id:
+            asset_id = self.assets[asset]["asset_id"]
+
+        json_resp = self._get_json(f"{self.api_root}/coins/{asset_id}?currency={quote}")
+
+        if "price" in json_resp:
+            return Decimal(repr(json_resp["price"]))
+        return None
+
+    def get_historical(
+        self,
+        asset: AssetSymbol,
+        quote: QuoteSymbol,
+        timestamp: Timestamp,
+        asset_id: AssetId = AssetId(""),
+    ) -> None:
+        if not asset_id:
+            asset_id = self.assets[asset]["asset_id"]
+
+        url = f"{self.api_root}/coins/{asset_id}/charts?period=all&currency={quote}"
+        json_resp = self._get_json(url)
+        pair = self.pair(asset, quote)
+
+        self._update_prices(
+            pair,
+            asset_id,
+            {
+                Date(datetime.fromtimestamp(dp[0], TZ_UTC).date()): {
+                    "price": Decimal(repr(dp[1])),
+                    "url": SourceUrl(url),
+                }
+                for dp in json_resp
+            },
+            timestamp,
+        )

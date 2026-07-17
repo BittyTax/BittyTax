@@ -72,6 +72,9 @@ data_source_fiat:
 data_source_crypto:
     ['CoinGecko', 'CoinPaprika']
 
+# CoinStats API key (optional, required for CoinStats data source)
+#coinstats_api_key: '<your_api_key>'
+
 # Use BTC as an intermediate for historic prices (legacy method)
 price_via_btc: False
 

@@ -63,6 +63,8 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Conversion tool: added parser for Blockchair explorer. ([#490](https://github.com/BittyTax/BittyTax/issues/490))
 - Kraken parser: added "delistingconversion" and "airdrop" subtypes.
 - Koinly parser: added "Bulk edit in Excel" transactions export.
+- Price tool: added new data source CoinStats.
+- Config: added `coinstats_api_key` optional parameter, used to specify the API key for CoinStats data source.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
