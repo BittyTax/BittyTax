@@ -3,10 +3,11 @@
 
 import sys
 from decimal import Decimal
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Dict, List, Literal
 
 import dateutil.tz
 from colorama import Fore
+from pandas import DataFrame
 from typing_extensions import Unpack
 
 from ...bt_types import TrType
@@ -28,20 +29,37 @@ def parse_okx_trades_v2(
 ) -> None:
     ids: Dict[str, List["DataRow"]] = {}
     orders: Dict[str, List["DataRow"]] = {}
+    import pandas as pd
 
     for dr in data_rows:
-        if dr.row_dict.get(BOM + "id"):
-            dr.row_dict["id"] = dr.row_dict[BOM + "id"]
+        cleaned_dict = {}
+        for k, v in list(dr.row_dict.items()):
+            clean_key = k.replace(BOM, "").strip()
+            clean_val = str(v).replace(BOM, "").strip()
+            cleaned_dict[clean_key] = clean_val
+        dr.row_dict = cleaned_dict
 
-        if dr.row_dict["id"] in ids:
-            ids[dr.row_dict["id"]].append(dr)
-        else:
-            ids[dr.row_dict["id"]] = [dr]
+        print(dr.row_dict)
 
-        if dr.row_dict["Order id"] in orders:
-            orders[dr.row_dict["Order id"]].append(dr)
-        else:
-            orders[dr.row_dict["Order id"]] = [dr]
+    df = DataFrame([o.row_dict for o in data_rows])
+    print(f"\n{df.to_string()}")
+    sell_orders = df.groupby(df["Order id"])
+    assert 0, sell_orders
+    # return
+    #     if dr.row_dict.get(BOM + "id"):
+    #         dr.row_dict["id"] = dr.row_dict[BOM + "id"]
+    #         assert 0, dr.row_dict
+    #
+    #
+    #     if dr.row_dict["id"] in ids:
+    #         ids[dr.row_dict["id"]].append(dr)
+    #     else:
+    #         ids[dr.row_dict["id"]] = [dr]
+    #
+    #     if dr.row_dict["Order id"] in orders:
+    #         orders[dr.row_dict["Order id"]].append(dr)
+    #     else:
+    #         orders[dr.row_dict["Order id"]] = [dr]
 
     for data_row in data_rows:
         if config.debug:
@@ -76,9 +94,9 @@ def _parse_okx_trades_v2_row(
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
     data_row.parsed = True
-
+    assert row_dict.get("Action") is not None, row_dict
     if row_dict["Trade Type"] == "Spot":
-        if row_dict["Type"] in ("Buy", "Sell"):
+        if row_dict["Action"] in ("Buy", "Sell"):
             if not _make_trade(ids[row_dict["id"]], data_row):
                 # Some trades don't have matching id's, try matching by Order id instead
                 if not _make_trade(orders[row_dict["Order id"]], data_row):
@@ -95,9 +113,10 @@ def _parse_okx_trades_v2_row(
 
 
 def _make_trade(ids: List["DataRow"], data_row: "DataRow") -> bool:
-    buy_rows = [dr for dr in ids if dr.row_dict["Type"] == "Buy"]
-    sell_rows = [dr for dr in ids if dr.row_dict["Type"] == "Sell"]
-
+    buy_rows = [dr for dr in ids if dr.row_dict["Action"] == "Buy"]
+    sell_rows = [dr for dr in ids if dr.row_dict["Action"] == "Sell"]
+    # assert 0, ids
+    # assert 0, (len(buy_rows), len(sell_rows))
     if len(buy_rows) == 1 and len(sell_rows) == 1:
         if data_row == buy_rows[0]:
             sell_rows[0].timestamp = DataParser.parse_timestamp(sell_rows[0].row_dict["Time"])
@@ -225,6 +244,278 @@ def parse_okx_funding(
     else:
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
+__founding_cache = {}
+def parse_okx_funding_v2026_sep_07(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+    # handle new OKX columns
+    #
+    #         UID:7777777777777777777,﻿Account Type:Sub,﻿Time Zone:UTC+8
+    #         ﻿id,Time,Type,Amount,Before Balance,After Balance,Symbol
+    #         ﻿7719250007,2025-05-29 14:13:39,Untradable asset collection,2.76842E-5,0.0,2.76842E-5,A
+    #         ﻿7715304784,2025-05-29 06:09:07,Untradable asset collection,-2.76842E-5,2.76842E-5,0.0,EOS
+    #         ﻿5679900771,2024-10-13 05:22:34,Convert,-1.15E-7,1.15E-7,0.0,1INCH
+    #         ﻿5679900774,2024-10-13 05:22:34,Convert,2.982318E-8,0.0,2.982318E-8,USDT
+    #         ﻿5679900730,2024-10-13 05:22:31,Convert,-3.437E-6,3.437E-6,0.0,DOGE
+    #         ﻿5679900733,2024-10-13 05:22:31,Convert,3.82789001E-7,0.0,3.82789001E-7,USDT
+    #         ﻿5679900671,2024-10-13 05:22:28,Convert,-4.6474E-6,4.6474E-6,0.0,SOL
+    #         ﻿5679900674,2024-10-13 05:22:28,Convert,6.805066987599E-4,0.0,6.805066987599E-4,USDT
+    #         ﻿5679900626,2024-10-13 05:22:25,Convert,-4.882E-8,4.882E-8,0.0,BTC
+    #         ﻿5679900629,2024-10-13 05:22:25,Convert,0.003068881167248,0.0,0.003068881167248,USDT
+    #         ﻿5626878067,2024-10-05 04:57:58,Convert,-6.8226E-6,6.8226E-6,0.0,APE
+    #         ﻿5626878070,2024-10-05 04:57:58,Convert,4.8282721488E-6,0.0,4.8282721488E-6,USDT
+    #         ﻿5626877968,2024-10-05 04:57:52,Convert,-3.601E-6,3.601E-6,0.0,1INCH
+    #         ﻿5626877971,2024-10-05 04:57:52,Convert,9.27758039E-7,0.0,9.27758039E-7,USDT
+    #         ﻿5626877907,2024-10-05 04:57:46,Convert,-2.08E-7,2.08E-7,0.0,ETH
+    #         ﻿5626877911,2024-10-05 04:57:46,Convert,5.033190655999E-4,0.0,5.033190655999E-4,USDT
+    #         ﻿5544648054,2024-09-23 02:26:31,Convert,-2.694E-6,2.694E-6,0.0,1INCH
+    #         ﻿5544648058,2024-09-23 02:26:31,Convert,7.364722499E-7,0.0,7.364722499E-7,USDT
+    #         ﻿5544647932,2024-09-23 02:26:28,Convert,-3.515E-6,3.515E-6,0.0,DOGE
+    #         ﻿5544647935,2024-09-23 02:26:28,Convert,3.7203463E-7,0.0,3.7203463E-7,USDT
+    #         ﻿5544647854,2024-09-23 02:26:25,Convert,-5.191E-6,5.191E-6,0.0,SOL
+    #         ﻿5544647857,2024-09-23 02:26:25,Convert,7.460432526E-4,0.0,7.460432526E-4,USDT
+    #         ﻿5544647805,2024-09-23 02:26:22,Convert,-2.396E-6,2.396E-6,0.0,ETH
+    #         ﻿5544647808,2024-09-23 02:26:22,Convert,0.0061553939632,0.0,0.0061553939632,USDT
+    #         ﻿5544647730,2024-09-23 02:26:19,Convert,-6.1276E-8,6.1276E-8,0.0,BTC
+    #         ﻿5544647733,2024-09-23 02:26:19,Convert,0.003840522872284,0.0,0.003840522872284,USDT
+    #         ﻿5531579983,2024-09-20 22:34:12,Transfer from main account,1500.0,0.0,1500.0,USDT
+    #         ﻿5488068805,2024-09-14 01:42:22,Transfer from main account,280.0,0.0,280.0,USDT
+    #         ﻿5461873405,2024-09-10 02:36:44,Transfer from main account,100.0,0.0,100.0,USDT
+    #     """
+    row_dict = data_row.row_dict
+
+    # Skip metadata row
+    if "Account Type" in row_dict or "Time Zone" in row_dict:
+        return
+    if "Type" not in row_dict or not row_dict["Type"]:
+        return
+    if row_dict["Type"] == "Type":
+        return
+    if "Time" not in row_dict or not row_dict["Time"]:
+        return
+
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
+
+    symbol = row_dict["Symbol"]
+    amount = Decimal(row_dict["Amount"])
+    tx_type = row_dict["Type"]
+
+    if tx_type == "Convert":
+        tx_key = data_row.timestamp
+        if tx_key not in __founding_cache:
+            __founding_cache[tx_key] = data_row
+            return
+        else:
+            other_row = __founding_cache.pop(tx_key)
+            if amount < 0:
+                # Sold asset, received USDT
+                sell_quantity = abs(amount)
+                sell_asset = symbol
+                buy_asset = other_row.row_dict["Symbol"]
+                buy_quantity = Decimal(str(other_row.row_dict["Amount"]))
+            else:
+                # buy asset
+                sell_quantity = Decimal(str(other_row.row_dict["Amount"]))
+                sell_asset = other_row.row_dict["Symbol"]
+                buy_asset = symbol
+                buy_quantity = abs(amount)
+        data_row.t_record = TransactionOutRecord(
+            TrType.TRADE,
+            data_row.timestamp,
+            buy_quantity=abs(buy_quantity),
+            buy_asset=buy_asset,
+            sell_quantity=abs(sell_quantity),
+            sell_asset=sell_asset,
+            fee_quantity=Decimal(0),
+            fee_asset=buy_asset,
+            wallet=WALLET,
+        )
+
+    elif tx_type == "Deposit":
+        data_row.t_record = TransactionOutRecord(
+            TrType.DEPOSIT,
+            data_row.timestamp,
+            buy_quantity=amount,
+            buy_asset=symbol,
+            wallet=WALLET,
+        )
+
+    elif tx_type == "Withdrawal":
+        data_row.t_record = TransactionOutRecord(
+            TrType.WITHDRAWAL,
+            data_row.timestamp,
+            sell_quantity=abs(amount),
+            sell_asset=symbol,
+            wallet=WALLET,
+        )
+
+    elif tx_type == "Untradable asset collection":
+        # Token migration/dust collection
+        # Only process the negative row (the one removing the old token)
+        if amount < 0:
+            data_row.t_record = TransactionOutRecord(
+                TrType.TRADE,
+                data_row.timestamp,
+                buy_quantity=abs(amount),
+                buy_asset=symbol,  # The new token (e.g., A for Vaulta)
+                sell_quantity=abs(amount),
+                sell_asset=symbol,  # The old token (e.g., EOS)
+                fee_quantity=Decimal(0),
+                fee_asset="USDT",
+                wallet=WALLET,
+            )
+        # Positive row (new token received) is skipped to avoid duplication
+        return
+    elif tx_type in (
+            "Received",
+            "Stake",
+            "Redeem staking",
+            "Savings subscription",
+            "Savings redemption",
+            "From unified trading account",
+            "To unified trading account",
+            "Received from main account",
+            "Transferred to sub-account",
+    ):
+        # Skip not taxable events (including internal transfers)
+        return
+    else:
+        raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", tx_type)
+
+
+__trade_cache = {}
+
+
+def parse_okx_spot_trades_v2026_09(
+    data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
+) -> None:
+
+    def pop_order(opposite_order: tuple[int, Literal["Buy", "Sell"]]) -> "DataRow|None":
+        if key := next((key for key in __trade_cache if opposite_order in key), None):
+            row = __trade_cache.pop(key)
+            if config.debug:
+                sys.stderr.write(
+                    f"{Fore.YELLOW}conv: "
+                    f" cache pop  {row}\n"
+                )
+            return row
+        return None
+
+    def push_order(tx_id, order: tuple[int, str], row: "DataRow"):
+        if config.debug:
+            sys.stderr.write(
+                f"{Fore.YELLOW}conv: "
+                f" cache push {row}\n"
+            )
+        __trade_cache[(tx_id, order)] = row
+
+    # 1. Clean the BOM hidden markers from keys and values
+    cleaned_dict = {}
+    for k, v in list(data_row.row_dict.items()):
+        clean_key = k.replace(BOM, "").strip()
+        clean_val = str(v).replace(BOM, "").strip() if isinstance(v, str) else v
+        cleaned_dict[clean_key] = clean_val
+        cleaned_dict[clean_key] = clean_val
+    data_row.row_dict = cleaned_dict
+
+    row_dict = data_row.row_dict
+    data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
+
+    # We only care about Spot trades (ignore derivative changes or internal sub-transfers)
+    if row_dict["Trade Type"] != "Spot":
+        data_row.parsed = True
+        return
+
+    _ = row_dict["id"]
+    order_id = row_dict["Order id"]
+    action = row_dict["Action"]
+    pair_parts = str(row_dict["Symbol"]).split("-")
+    base_asset = pair_parts[0]
+    quote_asset = pair_parts[1] if len(pair_parts) > 1 else "USDT"
+    convert_asset = (
+        pair_parts[2] if len(pair_parts) > 2
+                         and pair_parts[2] == "CONVERT"
+                         and action == ""
+        else None
+    )
+
+    # Sort out which row is the 'Buy' side and which is the 'Sell' side
+    if action == "Buy" and row_dict["Trading Unit"] == row_dict["Fee Unit"] == base_asset:
+        # buy order/buy base side
+        if (other_row:= pop_order((order_id, "Sell"))) is not None:
+            buy_row = data_row
+            sell_row = other_row
+        else:
+            push_order(_, (order_id, action), data_row)
+            return
+    elif action == "Sell" and row_dict["Trading Unit"] == base_asset and row_dict["Fee Unit"] == quote_asset:
+        # buy order/sell quote side
+        if (other_row:=pop_order((order_id, "Buy"))) is not None:
+            buy_row = other_row
+            sell_row = data_row
+        else:
+            push_order(_, (order_id, action), data_row)
+            return
+    elif action and row_dict["Trading Unit"] == row_dict["Fee Unit"] == base_asset:
+        # sell order/sell base side
+        if (other_row := pop_order((order_id, "Buy"))) is not None:
+            buy_row = other_row
+            sell_row = data_row
+        else:
+            push_order(_, (order_id, action), data_row)
+            return
+    elif action == "Buy" and row_dict["Trading Unit"] == base_asset and row_dict["Fee Unit"] == quote_asset:
+        # sell order/buy quote side
+        if (other_row := pop_order((order_id, "Sell"))) is not None:
+            buy_row = data_row
+            sell_row = other_row
+        else:
+            push_order(_, (order_id, action), data_row)
+            return
+    elif convert_asset is not None:
+        if row_dict["Trading Unit"] == base_asset and row_dict["Fee Unit"] == quote_asset:
+
+            # buy order/buy quote side
+            if (other_row := pop_order((order_id, "Sell"))) is not None:
+                buy_row = data_row
+                sell_row = other_row
+            else:
+                push_order(_, (order_id, "Buy"), data_row)
+                return
+        elif row_dict["Trading Unit"] == row_dict["Fee Unit"] == base_asset:
+            # sell order/sell base side
+            if (other_row := pop_order((order_id, "Buy"))) is not None:
+                buy_row = other_row
+                sell_row = data_row
+            else:
+                push_order(_, (order_id, "Sell"), data_row)
+                return
+        else:
+            raise UnexpectedContentError(0, "", row_dict["id"])
+
+    else:
+        raise UnexpectedContentError(0, "", row_dict["id"])
+
+    # Mark both rows as fully parsed so BittyTax knows they are resolved
+    data_row.parsed = True
+    other_row.parsed = True
+    fee_asset = buy_row.row_dict.get("Fee Unit", base_asset)
+    fee_amt = abs(Decimal(buy_row.row_dict.get("Fee", 0)))
+
+    # Construct a singular, unified Trade Output record
+    data_row.t_record = TransactionOutRecord(
+        TrType.TRADE,
+        data_row.timestamp,
+        buy_quantity=Decimal(buy_row.row_dict["Amount"]),
+        buy_asset=buy_row.row_dict["Fee Unit"],
+        sell_quantity=Decimal(sell_row.row_dict["Amount"]),
+        sell_asset=sell_row.row_dict["Fee Unit"],
+        fee_quantity=fee_amt,
+        fee_asset=fee_asset,
+        wallet=WALLET,
+    )
+    return
+
 
 DataParser(
     ParserType.EXCHANGE,
@@ -291,4 +582,55 @@ DataParser(
     ],
     worksheet_name="OKX F",
     row_handler=parse_okx_funding,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "OKX Funding v2026 Sep 07",
+    [
+        lambda h: h in ("id", BOM + "id"),
+        lambda h: h in ("Time", BOM + "Time"),
+        lambda h: h in ("Type", BOM + "Type"),
+        lambda h: h in ("Amount", BOM + "Amount"),
+        lambda h: h in ("Before Balance", BOM + "Before Balance"),
+        lambda h: h in ("After Balance", BOM + "After Balance"),
+        lambda h: h in ("Symbol", BOM + "Symbol"),
+        lambda h: h in ("Amount-USD", BOM + "Amount-USD"),
+
+    ],
+    worksheet_name="OKX F",
+    row_handler=parse_okx_funding_v2026_sep_07,
+)
+
+DataParser(
+    ParserType.EXCHANGE,
+    "OKX Spot grouped Transaction History v2026 Sep",
+    [
+        lambda h: h in ("id", BOM + "id", h),
+        "Order id",
+        "Time",
+        "Trade Type",
+        "Symbol",
+        "Action",
+        "Amount",
+        "Trading Unit",
+        "Filled Price",
+        "PnL",
+        "Fee",
+        "Fee Unit",
+        "Position Change",
+        "Position Balance",
+        "Balance Change",
+        "Balance",
+        "Balance Unit",
+        "Filled_price-USD",
+        "Pnl-USD",
+        "Fee-USD",
+        "Balance-USD",
+        "Balance_change-USD"
+
+
+    ],
+    worksheet_name="OKX Trades",
+    row_handler=parse_okx_spot_trades_v2026_09,
 )
