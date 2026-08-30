@@ -101,6 +101,7 @@ ALT_ASSETS = {
 }
 
 STAKED_SUFFIX = [
+    ".CORE",
     ".HOLD",
     ".M",
     ".P",
