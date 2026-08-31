@@ -20,6 +20,7 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - KuCoin parser: allow the new "Account Mode" column in Spot Orders exports.
 - Kraken parser: sum multi-wallet (spot + earn) legs of a trade instead of overwriting them, which previously under-reported the disposal quantity.
 - Kraken parser: value fees paid in Kraken fee credits (KFEE) at their fixed 0.01 USD value.
+- Price tool: Rate-limit was not sleeping unless running in debug.
 ### Added
 - Coinbase parser: added "Cash to Savings", "Savings to Cash", "Interest payout" and "Retail Simple Dust" transaction types.
 - Exodus parser: added new export format. ([#467](https://github.com/BittyTax/BittyTax/issues/467))
