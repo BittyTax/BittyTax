@@ -140,7 +140,7 @@ class DataSourceBase:
         if wait_time > 0:
             if config.debug:
                 print(f"{Fore.YELLOW}price: {self.name()} rate-limit, wait: {wait_time:.2f}s")
-                time.sleep(wait_time)
+            time.sleep(wait_time)
 
         self.last_request_time = time.time()
 
