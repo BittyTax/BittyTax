@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # (c) Nano Nano Ltd 2024
 
+import _csv
 import csv
 import os
 import sys
 from abc import ABC, abstractmethod
 from typing import Dict, List
 
-import _csv
 from colorama import Fore
 
 from .bt_types import DisposalType, Year
@@ -68,7 +68,7 @@ class OutputCapitalGainsCsv(ABC):
                 f"{Fore.WHITE}{self.output_format} file created: {Fore.YELLOW}{self.filename}\n"
             )
 
-    def _write_rows(self, writer: "_csv._writer") -> None:
+    def _write_rows(self, writer: "_csv.Writer") -> None:
         writer.writerow(self.header)
 
         for tax_year in sorted(self.tax_report):

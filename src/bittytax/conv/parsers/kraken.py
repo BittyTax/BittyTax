@@ -366,7 +366,7 @@ def _parse_kraken_ledgers_row(
                 and dr.row_dict["subtype"] == row_dict["subtype"]
                 and not dr.parsed
             ][:2]
-            _make_trade(conversion_rows, TrType.SWAP)
+            _make_trade(conversion_rows, parser, TrType.SWAP)
         elif row_dict["subtype"] in (
             "spottostaking",
             "stakingtospot",
@@ -481,7 +481,7 @@ def _parse_kraken_ledgers_row(
                 and dr.row_dict["subtype"] == row_dict["subtype"]
                 and not dr.parsed
             ][:2]
-            _make_trade(conversion_rows, TrType.SWAP)
+            _make_trade(conversion_rows, parser, TrType.SWAP)
         elif row_dict["subtype"] in (
             "migration",
             "autoallocate",
