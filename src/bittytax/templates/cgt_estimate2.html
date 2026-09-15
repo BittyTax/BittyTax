@@ -1,6 +1,6 @@
 <table width="{{ estimate_width }}">
     <tr>
-        {% if cgt_estimate['allowance_used'] %}
+        {% if cgt_estimate["allowance_used"] %}
             <td>Taxable gain*:</td>
         {% else %}
             <td>Taxable gain:</td>
@@ -19,7 +19,7 @@
         <td align="left" style="padding-left:2px">({{ cgt_estimate['cgt_higher_rate']|ratefilter }})</td>
     </tr>
 </table>
-{% if cgt_estimate['allowance_used'] %}
+{% if cgt_estimate["allowance_used"] %}
     <p>
         *{{ cgt_estimate['allowance_used']|valuefilter }} of the "Annual Exempt Amount" tax-free allowance ({{ cgt_estimate['allowance']|valuefilter }}) used
     </p>

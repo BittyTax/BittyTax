@@ -9,23 +9,23 @@
     </tr>
     {% for h in holdings_report['holdings']|sort %}
         <tr>
-            {% if holdings_report['holdings'][h]['name'] %}
+            {% if holdings_report["holdings"][h]["name"] %}
                 <td>{{ h }} ({{ holdings_report['holdings'][h]['name'] }})</td>
             {% else %}
                 <td>{{ h }}</td>
             {% endif %}
             <td align="right">{{ holdings_report['holdings'][h]['quantity']|quantityfilter }}</td>
             <td align="right">{{ holdings_report['holdings'][h]['cost']|valuefilter }}</td>
-            {% if holdings_report['holdings'][h]['value'] is not none %}
+            {% if holdings_report["holdings"][h]["value"] is not none %}
                 <td align="right">{{ holdings_report['holdings'][h]['value']|valuefilter }}</td>
-                {% if holdings_report['holdings'][h]['gain'] >= 0 %}
+                {% if holdings_report["holdings"][h]["gain"] >= 0 %}
                     <td align="right">{{ holdings_report['holdings'][h]['gain']|valuefilter }}</td>
                 {% else %}
                     <td align="right" class="red-font">{{ holdings_report['holdings'][h]['gain']|valuefilter }}</td>
                 {% endif %}
             {% else %}
                 <td align="right">
-                    {% if holdings_report['holdings'][h].get('api_error') %}
+                    {% if holdings_report["holdings"][h].get("api_error") %}
                         <i class="warning-font">Skipped</i>
                     {% else %}
                         <i>Not available</i>
@@ -42,7 +42,7 @@
         <td align="right"></td>
         <td align="right">{{ holdings_report['totals']['cost']|valuefilter }}</td>
         <td align="right">{{ holdings_report['totals']['value']|valuefilter }}</td>
-        {% if holdings_report['totals']['gain'] >= 0 %}
+        {% if holdings_report["totals"]["gain"] >= 0 %}
             <td align="right">{{ holdings_report['totals']['gain']|valuefilter }}</td>
         {% else %}
             <td align="right" class="red-font">{{ holdings_report['totals']['gain']|valuefilter }}</td>

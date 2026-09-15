@@ -9,7 +9,7 @@
         <td align="right">{{ cgains.ct_estimate['taxable_gain']|valuefilter }}</td>
         <td></td>
     </tr>
-    {% if 'ct_small' in cgains.ct_estimate %}
+    {% if "ct_small" in cgains.ct_estimate %}
         <tr>
             <td>Corporation Tax (Small profits rate):</td>
             <td align="right">{{ cgains.ct_estimate['ct_small']|valuefilter }}</td>
@@ -22,6 +22,6 @@
         <td align="left" style="padding-left:2px">({{ cgains.ct_estimate['ct_main_rates']|ratesfilter }})</td>
     </tr>
 </table>
-{% if None in cgains.ct_estimate['ct_small_rates'] %}
+{% if None in cgains.ct_estimate["ct_small_rates"] %}
     <p>*Main rate used</p>
 {% endif %}
