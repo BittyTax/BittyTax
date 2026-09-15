@@ -31,11 +31,6 @@ from .tax import (
 )
 from .version import __version__
 
-if sys.version_info < (3, 9):
-    import importlib_resources as pkg_resources
-else:
-    import importlib.resources as pkg_resources
-
 
 class ReportPdf:
     AUDIT_FILENAME = "BittyTax_Audit_Report"
@@ -69,7 +64,6 @@ class ReportPdf:
         self.env.filters["audittotalsfilter"] = self.audittotalsfilter
         self.env.filters["mismatchfilter"] = self.mismatchfilter
         self.env.globals["TAX_RULES_UK_COMPANY"] = TAX_RULES_UK_COMPANY
-        self.env.globals["TEMPLATE_PATH"] = pkg_resources.files(__package__).joinpath("templates")
 
         if args.audit_only:
             filename = self.get_output_filename(args.output_filename, self.AUDIT_FILENAME)

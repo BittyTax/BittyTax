@@ -99,6 +99,7 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Price tool: price cache loading performance improved.
 - Price tool: CryptoCompare API deprecated.
 - Config: removed CryptoCompare from `data_source_crypto`.
+- Accounting tool: embedded logo in template instead of referencing a file to prevent issues with latest xhtml2pdf version.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-

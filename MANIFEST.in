@@ -4,4 +4,4 @@ include CHANGELOG.md
 include src/bittytax/resources/bittytax.conf.template
 include src/bittytax/templates/*.html
 include src/bittytax/templates/css/*.html
-include src/bittytax/templates/img/BittyTax300dpi.png
+include src/bittytax/templates/img/*.html
