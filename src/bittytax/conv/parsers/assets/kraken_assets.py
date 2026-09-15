@@ -24,6 +24,9 @@ def get_alt_assets() -> Tuple[Dict[str, str], Set[str]]:
     if response:
         for asset in response.json()["result"]:
             alt = response.json()["result"][asset]["altname"]
+            if asset == "KFEE":
+                continue
+
             if asset != alt:
                 alt_assets[asset] = alt
 
