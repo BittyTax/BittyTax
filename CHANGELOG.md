@@ -9,6 +9,7 @@ The price data cache format has been updated to correctly distinguish assets tha
 The new `price_via_btc` config option may not exist in your config file. If it is missing, BittyTax keeps the legacy BTC-intermediate behaviour for backward compatibility. Add `price_via_btc: False` to your config if you want historic prices to use direct local currency lookups.
 
 ### Fixed
+- Accounting tool: fixed `audit_hide_empty` filtering of empty wallet balances after staking support was added, preserving non-zero staked balances. ([#507](https://github.com/BittyTax/BittyTax/issues/507))
 - Coinbase parser: fixed negative values for Advanced Trade Sells.
 - MEXC parser: fees for spot trades should always be the quote asset.
 - Coinbase parser: fixed regex to ignore extra descriptions at end of trades.
