@@ -221,7 +221,10 @@ class AuditRecords:
     def _prune_empty(self) -> None:
         for wallet in list(self.wallets):
             for asset in list(self.wallets[wallet]):
-                if self.wallets[wallet][asset] == Decimal(0):
+                if (
+                    not self.wallets[wallet][asset].balance
+                    and not self.wallets[wallet][asset].staked
+                ):
                     self.wallets[wallet].pop(asset)
             if not self.wallets[wallet]:
                 self.wallets.pop(wallet)
