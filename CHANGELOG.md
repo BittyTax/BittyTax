@@ -101,6 +101,7 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Price tool: CryptoCompare API deprecated.
 - Config: removed CryptoCompare from `data_source_crypto`.
 - Accounting tool: embedded logo in template instead of referencing a file to prevent issues with latest xhtml2pdf version.
+- Added more detail to binance error message when vault does not contain expected asset.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-
