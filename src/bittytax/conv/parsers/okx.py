@@ -3,11 +3,10 @@
 
 import sys
 from decimal import Decimal
-from typing import TYPE_CHECKING, Dict, List, Literal
+from typing import TYPE_CHECKING, Dict, List
 
 import dateutil.tz
 from colorama import Fore
-from pandas import DataFrame
 from typing_extensions import Unpack
 
 from ...bt_types import TrType
@@ -29,37 +28,20 @@ def parse_okx_trades_v2(
 ) -> None:
     ids: Dict[str, List["DataRow"]] = {}
     orders: Dict[str, List["DataRow"]] = {}
-    import pandas as pd
 
     for dr in data_rows:
-        cleaned_dict = {}
-        for k, v in list(dr.row_dict.items()):
-            clean_key = k.replace(BOM, "").strip()
-            clean_val = str(v).replace(BOM, "").strip()
-            cleaned_dict[clean_key] = clean_val
-        dr.row_dict = cleaned_dict
+        if dr.row_dict.get(BOM + "id"):
+            dr.row_dict["id"] = dr.row_dict[BOM + "id"]
 
-        print(dr.row_dict)
+        if dr.row_dict["id"] in ids:
+            ids[dr.row_dict["id"]].append(dr)
+        else:
+            ids[dr.row_dict["id"]] = [dr]
 
-    df = DataFrame([o.row_dict for o in data_rows])
-    print(f"\n{df.to_string()}")
-    sell_orders = df.groupby(df["Order id"])
-    assert 0, sell_orders
-    # return
-    #     if dr.row_dict.get(BOM + "id"):
-    #         dr.row_dict["id"] = dr.row_dict[BOM + "id"]
-    #         assert 0, dr.row_dict
-    #
-    #
-    #     if dr.row_dict["id"] in ids:
-    #         ids[dr.row_dict["id"]].append(dr)
-    #     else:
-    #         ids[dr.row_dict["id"]] = [dr]
-    #
-    #     if dr.row_dict["Order id"] in orders:
-    #         orders[dr.row_dict["Order id"]].append(dr)
-    #     else:
-    #         orders[dr.row_dict["Order id"]] = [dr]
+        if dr.row_dict["Order id"] in orders:
+            orders[dr.row_dict["Order id"]].append(dr)
+        else:
+            orders[dr.row_dict["Order id"]] = [dr]
 
     for data_row in data_rows:
         if config.debug:
@@ -94,9 +76,9 @@ def _parse_okx_trades_v2_row(
     row_dict = data_row.row_dict
     data_row.timestamp = DataParser.parse_timestamp(row_dict["Time"])
     data_row.parsed = True
-    assert row_dict.get("Action") is not None, row_dict
+
     if row_dict["Trade Type"] == "Spot":
-        if row_dict["Action"] in ("Buy", "Sell"):
+        if row_dict["Type"] in ("Buy", "Sell"):
             if not _make_trade(ids[row_dict["id"]], data_row):
                 # Some trades don't have matching id's, try matching by Order id instead
                 if not _make_trade(orders[row_dict["Order id"]], data_row):
@@ -113,10 +95,9 @@ def _parse_okx_trades_v2_row(
 
 
 def _make_trade(ids: List["DataRow"], data_row: "DataRow") -> bool:
-    buy_rows = [dr for dr in ids if dr.row_dict["Action"] == "Buy"]
-    sell_rows = [dr for dr in ids if dr.row_dict["Action"] == "Sell"]
-    # assert 0, ids
-    # assert 0, (len(buy_rows), len(sell_rows))
+    buy_rows = [dr for dr in ids if dr.row_dict["Type"] == "Buy"]
+    sell_rows = [dr for dr in ids if dr.row_dict["Type"] == "Sell"]
+
     if len(buy_rows) == 1 and len(sell_rows) == 1:
         if data_row == buy_rows[0]:
             sell_rows[0].timestamp = DataParser.parse_timestamp(sell_rows[0].row_dict["Time"])
@@ -248,40 +229,7 @@ __founding_cache = {}
 def parse_okx_funding_v2026_sep_07(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
-    # handle new OKX columns
-    #
-    #         UID:7777777777777777777,﻿Account Type:Sub,﻿Time Zone:UTC+8
-    #         ﻿id,Time,Type,Amount,Before Balance,After Balance,Symbol
-    #         ﻿7719250007,2025-05-29 14:13:39,Untradable asset collection,2.76842E-5,0.0,2.76842E-5,A
-    #         ﻿7715304784,2025-05-29 06:09:07,Untradable asset collection,-2.76842E-5,2.76842E-5,0.0,EOS
-    #         ﻿5679900771,2024-10-13 05:22:34,Convert,-1.15E-7,1.15E-7,0.0,1INCH
-    #         ﻿5679900774,2024-10-13 05:22:34,Convert,2.982318E-8,0.0,2.982318E-8,USDT
-    #         ﻿5679900730,2024-10-13 05:22:31,Convert,-3.437E-6,3.437E-6,0.0,DOGE
-    #         ﻿5679900733,2024-10-13 05:22:31,Convert,3.82789001E-7,0.0,3.82789001E-7,USDT
-    #         ﻿5679900671,2024-10-13 05:22:28,Convert,-4.6474E-6,4.6474E-6,0.0,SOL
-    #         ﻿5679900674,2024-10-13 05:22:28,Convert,6.805066987599E-4,0.0,6.805066987599E-4,USDT
-    #         ﻿5679900626,2024-10-13 05:22:25,Convert,-4.882E-8,4.882E-8,0.0,BTC
-    #         ﻿5679900629,2024-10-13 05:22:25,Convert,0.003068881167248,0.0,0.003068881167248,USDT
-    #         ﻿5626878067,2024-10-05 04:57:58,Convert,-6.8226E-6,6.8226E-6,0.0,APE
-    #         ﻿5626878070,2024-10-05 04:57:58,Convert,4.8282721488E-6,0.0,4.8282721488E-6,USDT
-    #         ﻿5626877968,2024-10-05 04:57:52,Convert,-3.601E-6,3.601E-6,0.0,1INCH
-    #         ﻿5626877971,2024-10-05 04:57:52,Convert,9.27758039E-7,0.0,9.27758039E-7,USDT
-    #         ﻿5626877907,2024-10-05 04:57:46,Convert,-2.08E-7,2.08E-7,0.0,ETH
-    #         ﻿5626877911,2024-10-05 04:57:46,Convert,5.033190655999E-4,0.0,5.033190655999E-4,USDT
-    #         ﻿5544648054,2024-09-23 02:26:31,Convert,-2.694E-6,2.694E-6,0.0,1INCH
-    #         ﻿5544648058,2024-09-23 02:26:31,Convert,7.364722499E-7,0.0,7.364722499E-7,USDT
-    #         ﻿5544647932,2024-09-23 02:26:28,Convert,-3.515E-6,3.515E-6,0.0,DOGE
-    #         ﻿5544647935,2024-09-23 02:26:28,Convert,3.7203463E-7,0.0,3.7203463E-7,USDT
-    #         ﻿5544647854,2024-09-23 02:26:25,Convert,-5.191E-6,5.191E-6,0.0,SOL
-    #         ﻿5544647857,2024-09-23 02:26:25,Convert,7.460432526E-4,0.0,7.460432526E-4,USDT
-    #         ﻿5544647805,2024-09-23 02:26:22,Convert,-2.396E-6,2.396E-6,0.0,ETH
-    #         ﻿5544647808,2024-09-23 02:26:22,Convert,0.0061553939632,0.0,0.0061553939632,USDT
-    #         ﻿5544647730,2024-09-23 02:26:19,Convert,-6.1276E-8,6.1276E-8,0.0,BTC
-    #         ﻿5544647733,2024-09-23 02:26:19,Convert,0.003840522872284,0.0,0.003840522872284,USDT
-    #         ﻿5531579983,2024-09-20 22:34:12,Transfer from main account,1500.0,0.0,1500.0,USDT
-    #         ﻿5488068805,2024-09-14 01:42:22,Transfer from main account,280.0,0.0,280.0,USDT
-    #         ﻿5461873405,2024-09-10 02:36:44,Transfer from main account,100.0,0.0,100.0,USDT
-    #     """
+   
     row_dict = data_row.row_dict
 
     # Skip metadata row
