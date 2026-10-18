@@ -226,7 +226,7 @@ def parse_okx_funding(
         raise UnexpectedTypeError(parser.in_header.index("Type"), "Type", row_dict["Type"])
 
 __founding_cache = {}
-def parse_okx_funding_v2026_sep_07(
+def parse_okx_funding_v2026_09(
     data_row: "DataRow", parser: DataParser, **_kwargs: Unpack[ParserArgs]
 ) -> None:
    
@@ -547,7 +547,7 @@ DataParser(
 
     ],
     worksheet_name="OKX F",
-    row_handler=parse_okx_funding_v2026_sep_07,
+    row_handler=parse_okx_funding_v2026_09,
 )
 
 DataParser(
