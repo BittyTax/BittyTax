@@ -249,7 +249,7 @@ def parse_okx_funding_v2026_09(
     tx_type = row_dict["Type"]
 
     if tx_type == "Convert":
-        tx_key = data_row.timestamp
+        tx_key = (data_row.timestamp, tx_type)
         if tx_key not in __founding_cache:
             __founding_cache[tx_key] = data_row
             return
