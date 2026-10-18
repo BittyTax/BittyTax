@@ -3,7 +3,7 @@
 
 import sys
 from decimal import Decimal
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Dict, List, Literal
 
 import dateutil.tz
 from colorama import Fore
@@ -534,7 +534,7 @@ DataParser(
 
 DataParser(
     ParserType.EXCHANGE,
-    "OKX Funding v2026 Sep 07",
+    "OKX Funding History v2026 Sep",
     [
         lambda h: h in ("id", BOM + "id"),
         lambda h: h in ("Time", BOM + "Time"),
