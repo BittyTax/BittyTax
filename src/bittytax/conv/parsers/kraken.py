@@ -40,6 +40,7 @@ QUOTE_ASSETS = [
     "ETH",
     "EUR",
     "EURC",
+    "EURCV",
     "EUROP",
     "FIDD",
     "GBP",
