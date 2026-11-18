@@ -1,4 +1,5 @@
 from argparse import Namespace
+from pathlib import Path
 
 import pytest
 from pypdf import PdfReader
@@ -11,7 +12,9 @@ from bittytax.report import ReportPdf
 
 @pytest.mark.parametrize("report_type", ["audit", "summary", "full"])
 @pytest.mark.parametrize("legacy_report", [False, True])
-def test_report_embeds_logo(tmp_path, monkeypatch, report_type, legacy_report):
+def test_report_embeds_logo(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, report_type: str, legacy_report: bool
+) -> None:
     monkeypatch.setitem(config.config, "legacy_report", legacy_report)
     args = Namespace(
         audit_only=report_type == "audit",
