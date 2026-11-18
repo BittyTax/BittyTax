@@ -4,14 +4,13 @@
 import atexit
 import json
 import os
-import platform
 import shutil
 import threading
 import time
 from datetime import datetime, timedelta
 from decimal import Decimal
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set
 
 import requests
 from colorama import Fore
@@ -30,7 +29,7 @@ from ..bt_types import (
     TradingPair,
 )
 from ..config import config
-from ..constants import CACHE_DIR, TZ_UTC, WARNING
+from ..constants import CACHE_DIR, TZ_UTC, USER_AGENT, WARNING
 from ..utils import disable_tqdm
 from ..version import __version__
 from .exceptions import DataSourceApiError, UnexpectedDataSourceAssetIdError
@@ -63,15 +62,11 @@ class _CoinPaprikaIdData(TypedDict):
     rank: int
 
 
-class DataSourceBase:
+class DataSourceBase:  # pylint: disable=too-many-instance-attributes
     DEPRECATED = False
-    USER_AGENT = (
-        f"BittyTax/{__version__} Python/{platform.python_version()} "
-        f"{platform.system()}/{platform.release()}"
-    )
 
     TIME_OUT = 30
-    RATE_LIMIT = 5  # requests per second
+    RATE_LIMIT = 5.0  # requests per second
     RETRIES = 3
     BACKOFF_FACTOR = 1  # seconds
     RETRY_AFTER_DEFAULT = 5  # seconds
@@ -82,7 +77,7 @@ class DataSourceBase:
 
     def __init__(self, no_cache: bool = False, progress_bar: Optional[tqdm] = None) -> None:
         self.no_cache = no_cache
-        self.headers = {"User-Agent": self.USER_AGENT}
+        self.headers = {"User-Agent": USER_AGENT}
         self.assets: Dict[AssetSymbol, DsSymbolToAssetData] = {}
         self.ids: Dict[AssetId, DsIdToAssetData] = {}
         self.progress_bar: Optional[tqdm] = progress_bar
@@ -91,6 +86,7 @@ class DataSourceBase:
 
         self.api_lock = threading.Lock()
         self._thread_local = threading.local()
+        self.rate_limit = self.RATE_LIMIT
         self.last_request_time = float(0)
 
         atexit.register(self._save_prices)
@@ -135,7 +131,7 @@ class DataSourceBase:
 
     def _rate_limit(self) -> None:
         elapsed_time = time.time() - self.last_request_time
-        wait_time = (1 / self.RATE_LIMIT) - elapsed_time + 0.05
+        wait_time = (1 / self.rate_limit) - elapsed_time + 0.05
 
         if wait_time > 0:
             if config.debug:
@@ -158,19 +154,8 @@ class DataSourceBase:
             return True
         return False
 
-    def _check_rate_limit_in_response(self, _json_resp: Any) -> Tuple[bool, Optional[int]]:
-        """
-        Check if response contains data source-specific rate limit indicator.
-        Override in sub-classes to implement custom rate limit detection.
-
-        Args:
-            json_resp: The parsed JSON response
-
-        Returns:
-            Tuple of (rate_limited, retry_after_seconds) where retry_after_seconds is None
-            if no specific duration is provided by the API.
-        """
-        return False, None
+    def _handle_response(self, _response: requests.Response, _url: str) -> None:
+        return None
 
     def _get_json(self, url: str) -> Any:
         with self.api_lock:
@@ -190,6 +175,7 @@ class DataSourceBase:
                         )
 
                     response = session.get(url, headers=self.headers, timeout=self.TIME_OUT)
+                    self._handle_response(response, url)
 
                     if response.status_code in [
                         HTTPStatus.UNAUTHORIZED,
@@ -205,7 +191,10 @@ class DataSourceBase:
                             # Handle rate limit
                             retry_after: Optional[int] = self.RETRY_AFTER_DEFAULT
                             if "retry-after" in response.headers:
-                                retry_after = int(response.headers["retry-after"])
+                                try:
+                                    retry_after = max(0, int(response.headers["retry-after"]))
+                                except ValueError:
+                                    pass
 
                             if not self._retry(attempt, retry_after):
                                 raise DataSourceApiError(
@@ -226,20 +215,7 @@ class DataSourceBase:
                         continue
 
                     if response:
-                        json_resp = response.json()
-
-                        rate_limited, retry_after = self._check_rate_limit_in_response(json_resp)
-                        if rate_limited:
-                            if config.debug:
-                                print(
-                                    f"{Fore.YELLOW}price: {self.name()} "
-                                    f"rate limit detected in response"
-                                )
-                            if not self._retry(attempt, retry_after):
-                                raise DataSourceApiError(self.name(), url, "rate limit exceeded")
-                            continue
-
-                        return json_resp
+                        return response.json()
                     return {}
 
                 except requests.exceptions.JSONDecodeError as e:
@@ -537,6 +513,8 @@ class DataSourceBase:
 
 
 class BittyTaxAPI(DataSourceBase):
+    API_ROOT = "https://api.bitty.tax"
+    RATE_LIMIT = 100 / 60
     HISTORICAL_QUOTES = {
         "AUD",
         "BRL",
@@ -573,21 +551,40 @@ class BittyTaxAPI(DataSourceBase):
 
     def __init__(self, no_cache: bool = False, progress_bar: Optional[tqdm] = None) -> None:
         super().__init__(no_cache, progress_bar)
+        if "bittytax_api_key" in config.config:
+            self.headers["Authorization"] = f"Bearer {config.bittytax_api_key}"
         cached_assets = self._load_assets()
         if cached_assets is not None:
             self.assets = cached_assets
         else:
-            json_resp = self._get_json("https://api.bitty.tax/v1/symbols")
+            json_resp = self._get_json(f"{self.API_ROOT}/v1/symbols")
             self.assets = {
                 k: {"asset_id": AssetId(""), "name": v} for k, v in json_resp["symbols"].items()
             }
             self._save_assets()
         self._load_prices()
 
+    def _handle_response(self, response: requests.Response, url: str) -> None:
+        headers = response.headers
+        if (
+            response.status_code == HTTPStatus.TOO_MANY_REQUESTS
+            and headers.get("X-RateLimit-Remaining-Month") == "0"
+        ):
+            reset = headers.get("X-RateLimit-Reset-Month")
+            detail = f"; resets at {reset}" if reset else ""
+            raise DataSourceApiError(self.name(), url, f"monthly rate limit exceeded{detail}")
+        try:
+            minute_limit = int(headers.get("X-RateLimit-Limit-Minute", ""))
+            if minute_limit <= 0:
+                raise ValueError
+            self.rate_limit = minute_limit / 60
+        except (TypeError, ValueError, OverflowError):
+            self.rate_limit = self.RATE_LIMIT
+
     def get_latest(
         self, asset: AssetSymbol, quote: QuoteSymbol, _asset_id: AssetId = AssetId("")
     ) -> Optional[Decimal]:
-        json_resp = self._get_json(f"https://api.bitty.tax/v1/latest?base={asset}&symbols={quote}")
+        json_resp = self._get_json(f"{self.API_ROOT}/v1/latest?base={asset}&symbols={quote}")
         return (
             Decimal(repr(json_resp["rates"][quote]))
             if "rates" in json_resp and quote in json_resp["rates"]
@@ -601,7 +598,7 @@ class BittyTaxAPI(DataSourceBase):
         timestamp: Timestamp,
         _asset_id: AssetId = AssetId(""),
     ) -> None:
-        url = f"https://api.bitty.tax/v1/{timestamp:%Y-%m-%d}?base={asset}&symbols={quote}"
+        url = f"{self.API_ROOT}/v1/{timestamp:%Y-%m-%d}?base={asset}&symbols={quote}"
         json_resp = self._get_json(url)
         pair = self.pair(asset, quote)
         # Date returned in response might not be date requested due to weekends/holidays
@@ -788,7 +785,7 @@ class CryptoCompare(DataSourceBase):
         if cached_ids is not None:
             self.ids = cached_ids
         else:
-            url = "https://api.bitty.tax/v1/ext/cc"
+            url = f"{BittyTaxAPI.API_ROOT}/v1/ext/cc"
             json_resp = self._get_json(url)
             if json_resp["Response"] != "Success":
                 raise DataSourceApiError(
@@ -891,15 +888,15 @@ class CoinGecko(DataSourceBase):
         super().__init__(no_cache, progress_bar)
 
         if "coingecko_pro_api_key" in config.config:
-            CoinGecko.RATE_LIMIT = 20
+            self.rate_limit = 20
             self.headers[self.PRO_KEY] = f"{config.coingecko_pro_api_key}"
             self.api_root = "https://pro-api.coingecko.com/api/v3"
         elif "coingecko_demo_api_key" in config.config:
-            CoinGecko.RATE_LIMIT = 2
+            self.rate_limit = 2
             self.headers[self.DEMO_KEY] = config.coingecko_demo_api_key
             self.api_root = "https://api.coingecko.com/api/v3"
         else:
-            CoinGecko.RATE_LIMIT = 2
+            self.rate_limit = 2
             self.api_root = "https://api.coingecko.com/api/v3"
 
         cached_ids = self._load_ids()
@@ -1064,11 +1061,11 @@ class CoinPaprika(DataSourceBase):
         super().__init__(no_cache, progress_bar)
 
         if "coinpaprika_api_key" in config.config:
-            CoinPaprika.RATE_LIMIT = 20
+            self.rate_limit = 20
             self.headers["Authorization"] = f"{config.coinpaprika_api_key}"
             self.api_root = "https://api-pro.coinpaprika.com/v1"
         else:
-            CoinPaprika.RATE_LIMIT = 2
+            self.rate_limit = 2
             self.api_root = "https://api.coinpaprika.com/v1"
 
         cached_ids = self._load_ids()

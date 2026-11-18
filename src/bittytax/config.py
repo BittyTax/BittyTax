@@ -71,6 +71,7 @@ class Config:
     }
 
     OPTIONAL_CONFIG = (
+        "bittytax_api_key",
         "coingecko_pro_api_key",
         "coingecko_demo_api_key",
         "coinpaprika_api_key",

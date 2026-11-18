@@ -2,13 +2,21 @@
 # (c) Nano Nano Ltd 2023
 
 import os
+import platform
 
 import dateutil.tz
 from colorama import Back, Fore, Style
 
+from .version import __version__
+
 TZ_UTC = dateutil.tz.UTC
 
 PROJECT_URL = "https://github.com/BittyTax/BittyTax"
+
+USER_AGENT = (
+    f"BittyTax/{__version__} Python/{platform.python_version()} "
+    f"{platform.system()}/{platform.release()}"
+)
 
 BITTYTAX_PATH = os.path.join(os.getenv("BITTYTAX_DATA_DIR", os.path.expanduser("~")), ".bittytax")
 CACHE_DIR = os.path.join(BITTYTAX_PATH, "cache")
