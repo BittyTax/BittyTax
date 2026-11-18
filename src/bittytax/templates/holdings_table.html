@@ -8,23 +8,23 @@
     </tr>
     {% for asset in holdings|sort %}
         <tr>
-            {% if holdings[asset]['name'] %}
+            {% if holdings[asset]["name"] %}
                 <td>{{ asset }} ({{ holdings[asset]['name'] }})</td>
             {% else %}
                 <td>{{ asset }}</td>
             {% endif %}
             <td align="left">{{ holdings[asset]['quantity']|quantityfilter }}</td>
             <td align="right">{{ holdings[asset]['cost']|valuefilter }}</td>
-            {% if holdings[asset]['value'] is not none %}
+            {% if holdings[asset]["value"] is not none %}
                 <td align="right">{{ holdings[asset]['value']|valuefilter }}</td>
-                {% if holdings[asset]['gain'] >= 0 %}
+                {% if holdings[asset]["gain"] >= 0 %}
                     <td align="right">{{ holdings[asset]['gain']|valuefilter }}</td>
                 {% else %}
                     <td align="right" class="red-font">{{ holdings[asset]['gain']|valuefilter }}</td>
                 {% endif %}
             {% else %}
                 <td align="right">
-                    {% if holdings[asset].get('api_error') %}
+                    {% if holdings[asset].get("api_error") %}
                         <i class="warning-font">Skipped</i>
                     {% else %}
                         <i>Not available</i>
