@@ -38,7 +38,7 @@
         <td align="left"></td>
         <td align="right">{{ holdings_report['total']['cost']|valuefilter }}</td>
         <td align="right">{{ holdings_report['total']['value']|valuefilter }}</td>
-        {% if holdings_report['total']['gain'] >= 0 %}
+        {% if holdings_report["total"]["gain"] >= 0 %}
             <td align="right">{{ holdings_report['total']['gain']|valuefilter }}</td>
         {% else %}
             <td align="right" class="red-font">{{ holdings_report['total']['gain']|valuefilter }}</td>

@@ -73,7 +73,7 @@
         <td align="left"></td>
         <td align="right">{{ totals['proceeds']|valuefilter }}</td>
         <td align="right">{{ totals['cost']|valuefilter }}</td>
-        {% if totals['gain'] >= 0 %}
+        {% if totals["gain"] >= 0 %}
             <td align="right">{{ totals['gain']|valuefilter }}</td>
         {% else %}
             <td align="right" class="red-font">{{ totals['gain']|valuefilter }}</td>
