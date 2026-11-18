@@ -23,6 +23,7 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Kraken parser: sum multi-wallet (spot + earn) legs of a trade instead of overwriting them, which previously under-reported the disposal quantity.
 - Kraken parser: value fees paid in Kraken fee credits (KFEE) at their fixed 0.01 USD value.
 - Price tool: Rate-limit was not sleeping unless running in debug.
+- Accounting tool: fixed `audit_hide_empty` filtering of empty wallet balances after staking support was added, preserving non-zero staked balances. ([#507](https://github.com/BittyTax/BittyTax/issues/507))
 ### Added
 - MEXC parser: added new export formats.
 - Cash App parser: added new export format.
