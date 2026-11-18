@@ -64,6 +64,7 @@ QUOTE_ASSETS = [
     "RON",
     "RUB",
     "SOL",
+    "THB",
     "TRX",
     "TRY",
     "TUSD",
