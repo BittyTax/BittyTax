@@ -72,6 +72,9 @@ data_source_fiat:
 data_source_crypto:
     ['CoinGecko', 'CoinPaprika']
 
+# BittyTax API key (optional)
+#bittytax_api_key: '<your_api_key>'
+
 # CoinStats API key (optional, required for CoinStats data source)
 #coinstats_api_key: '<your_api_key>'
 
