@@ -48,6 +48,7 @@ QUOTE_ASSETS = [
     "PYUSD",
     "RLUSD",
     "SOL",
+    "SOFID",
     "USD",
     "USD1",
     "USD:BTNL",
@@ -103,6 +104,7 @@ ALT_ASSETS = {
 STAKED_SUFFIX = [
     ".CORE",
     ".HOLD",
+    ".INK",
     ".M",
     ".P",
     ".S",
