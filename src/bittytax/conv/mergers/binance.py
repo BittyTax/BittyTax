@@ -94,7 +94,10 @@ def _do_unstake(
     quantity = Decimal(data_row.row_dict["Change"])
 
     if asset not in vaults[vault_id]:
-        raise AttributeError(f"Vault: {vault_id} does not contain {asset}")
+        raise AttributeError(
+            f"[{data_row.line_num+1}] ({data_row.timestamp.strftime('%Y-%m-%d %H:%M:%S')}): "
+            f"Vault: {vault_id} does not contain {asset} (amount: {quantity})"
+        )
 
     vaults[vault_id][asset] -= quantity
 
