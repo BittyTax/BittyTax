@@ -1,5 +1,6 @@
 from decimal import Decimal
 from types import SimpleNamespace
+from typing import Callable, List, Optional
 
 import pytest
 
@@ -65,7 +66,7 @@ def test_parser_accepts_sender_and_recipient_addresses() -> None:
         ),
     ],
 )
-def test_legacy_headers_remain_fixed(header, handler) -> None:
+def test_legacy_headers_remain_fixed(header: List[str], handler: Callable[..., None]) -> None:
     parser = DataParser.match_header(header, 0)
 
     assert parser.all_handler is handler
@@ -73,7 +74,7 @@ def test_legacy_headers_remain_fixed(header, handler) -> None:
 
 
 @pytest.mark.parametrize("tx_type", ["Receive", "Send", "Retail MGX DEX Send"])
-def test_address_columns_are_preserved(monkeypatch, tx_type: str) -> None:
+def test_address_columns_are_preserved(monkeypatch: pytest.MonkeyPatch, tx_type: str) -> None:
     monkeypatch.setattr(config, "ccy", "GBP")
     header = HEADER + ["Sender Address", "Recipient Address"]
     parser = DataParser.match_header(header, 0)
@@ -106,7 +107,9 @@ def test_address_columns_are_preserved(monkeypatch, tx_type: str) -> None:
 
 
 @pytest.mark.parametrize("tx_type", ["Send", "Retail MGX DEX Send"])
-def test_legacy_send_uses_notes_for_destination(monkeypatch, tx_type: str) -> None:
+def test_legacy_send_uses_notes_for_destination(
+    monkeypatch: pytest.MonkeyPatch, tx_type: str
+) -> None:
     monkeypatch.setattr(config, "ccy", "GBP")
     parser = DataParser.match_header(HEADER, 0)
     row = DataRow(
@@ -136,7 +139,7 @@ def test_legacy_send_uses_notes_for_destination(monkeypatch, tx_type: str) -> No
 
 
 @pytest.mark.parametrize("quantity", ["100", "-100"])
-def test_raise_offering_deposit_is_skipped(monkeypatch, quantity: str) -> None:
+def test_raise_offering_deposit_is_skipped(monkeypatch: pytest.MonkeyPatch, quantity: str) -> None:
     monkeypatch.setattr(config, "ccy", "GBP")
     parser = DataParser.match_header(HEADER, 0)
     row = DataRow(
@@ -165,7 +168,7 @@ def test_raise_offering_deposit_is_skipped(monkeypatch, quantity: str) -> None:
 
 
 @pytest.mark.parametrize("reverse", [False, True])
-def test_raise_offering_trade(monkeypatch, reverse: bool) -> None:
+def test_raise_offering_trade(monkeypatch: pytest.MonkeyPatch, reverse: bool) -> None:
     monkeypatch.setattr(config, "ccy", "GBP")
     header = HEADER + ["Sender Address", "Recipient Address"]
     parser = DataParser.match_header(header, 0)
@@ -230,7 +233,7 @@ def test_raise_offering_trade(monkeypatch, reverse: bool) -> None:
 @pytest.mark.parametrize("reverse", [False, True])
 @pytest.mark.parametrize(("currency", "rate"), [("GBP", "1"), ("USD", "0.75")])
 def test_retail_mgx_dex_buy_values_use_transaction_prices(
-    monkeypatch, reverse: bool, currency: str, rate: str
+    monkeypatch: pytest.MonkeyPatch, reverse: bool, currency: str, rate: str
 ) -> None:
     monkeypatch.setattr(config, "ccy", "GBP")
     monkeypatch.setattr(
@@ -295,7 +298,9 @@ def test_retail_mgx_dex_buy_values_use_transaction_prices(
 
 
 @pytest.mark.parametrize(("price", "expected"), [("", None), ("0", Decimal("0"))])
-def test_trade_with_missing_or_zero_price(monkeypatch, price, expected) -> None:
+def test_trade_with_missing_or_zero_price(
+    monkeypatch: pytest.MonkeyPatch, price: str, expected: Optional[Decimal]
+) -> None:
     monkeypatch.setattr(config, "ccy", "GBP")
     parser = DataParser.match_header(HEADER, 0)
     buy = DataRow(
@@ -382,7 +387,12 @@ def test_trade_with_missing_or_zero_price(monkeypatch, price, expected) -> None:
     ],
 )
 def test_trade_legacy_formats(
-    monkeypatch, header, price_fields, values, buy_type, sell_type
+    monkeypatch: pytest.MonkeyPatch,
+    header: List[str],
+    price_fields: List[str],
+    values: List[str],
+    buy_type: str,
+    sell_type: str,
 ) -> None:
     monkeypatch.setattr(config, "ccy", "GBP")
     parser = DataParser.match_header(header, 0)
