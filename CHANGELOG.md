@@ -68,6 +68,7 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Price tool: added new data source CoinStats.
 - Config: added `coinstats_api_key` optional parameter, used to specify the API key for CoinStats data source.
 - Price tool: BittyTaxAPI supports optional API key authentication and adapts to rate-limit headers.
+- Coinbase parser: added the transaction history format with sender and recipient addresses, and Raise Offering transaction types.
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
@@ -102,6 +103,7 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Price tool: CryptoCompare API deprecated.
 - Config: removed CryptoCompare from `data_source_crypto`.
 - Accounting tool: embedded logo in template instead of referencing a file to prevent issues with latest xhtml2pdf version.
+- Coinbase parser: value Retail MGX DEX trades using quantity and transaction price rather than subtotal.
 
 ## Version [0.6.0] (2025-11-05)
 Important:-

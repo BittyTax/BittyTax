@@ -28,6 +28,7 @@ DUPLICATE = UnmappedType("Duplicate")
 @dataclass
 class TxRecord:
     currency: str
+    price_ccy: Optional[Decimal]
     subtotal_ccy: Optional[Decimal]
     total_ccy: Optional[Decimal]
     fees_ccy: Optional[Decimal]
@@ -42,7 +43,17 @@ def parse_coinbase_v4(
 
     for dr in data_rows:
         dr.timestamp = DataParser.parse_timestamp(dr.row_dict["Timestamp"])
+        if "Sender Address" in parser.in_header:
+            dr.tx_raw = TxRawPos(
+                tx_src_pos=parser.in_header.index("Sender Address"),
+                tx_dest_pos=parser.in_header.index("Recipient Address"),
+            )
         currency = dr.row_dict["Price Currency"]
+        price_ccy = DataParser.convert_currency(
+            re.sub(r"[^-\d.eE]+", "", dr.row_dict["Price at Transaction"]),
+            currency,
+            dr.timestamp,
+        )
         subtotal_ccy = DataParser.convert_currency(
             re.sub(r"[^-\d.eE]+", "", dr.row_dict["Subtotal"]),
             currency,
@@ -58,7 +69,7 @@ def parse_coinbase_v4(
             currency,
             dr.timestamp,
         )
-        tx_record = TxRecord(currency, subtotal_ccy, total_ccy, fees_ccy, dr)
+        tx_record = TxRecord(currency, price_ccy, subtotal_ccy, total_ccy, fees_ccy, dr)
 
         if dr.timestamp not in tx_times:
             tx_times[dr.timestamp] = []
@@ -78,6 +89,11 @@ def parse_coinbase_v3(
     for dr in data_rows:
         dr.timestamp = DataParser.parse_timestamp(dr.row_dict["Timestamp"])
         currency = dr.row_dict["Spot Price Currency"]
+        price_ccy = DataParser.convert_currency(
+            re.sub(r"[^-\d.eE]+", "", dr.row_dict["Spot Price at Transaction"]),
+            currency,
+            dr.timestamp,
+        )
         subtotal_ccy = DataParser.convert_currency(
             dr.row_dict["Subtotal"],
             currency,
@@ -93,7 +109,7 @@ def parse_coinbase_v3(
             currency,
             dr.timestamp,
         )
-        tx_record = TxRecord(currency, subtotal_ccy, total_ccy, fees_ccy, dr)
+        tx_record = TxRecord(currency, price_ccy, subtotal_ccy, total_ccy, fees_ccy, dr)
 
         if dr.timestamp not in tx_times:
             tx_times[dr.timestamp] = []
@@ -113,6 +129,11 @@ def parse_coinbase_v2(
     for dr in data_rows:
         dr.timestamp = DataParser.parse_timestamp(dr.row_dict["Timestamp"])
         currency = dr.row_dict["Spot Price Currency"]
+        price_ccy = DataParser.convert_currency(
+            re.sub(r"[^-\d.eE]+", "", dr.row_dict["Spot Price at Transaction"]),
+            currency,
+            dr.timestamp,
+        )
         subtotal_ccy = DataParser.convert_currency(
             dr.row_dict["Subtotal"],
             currency,
@@ -128,7 +149,7 @@ def parse_coinbase_v2(
             currency,
             dr.timestamp,
         )
-        tx_record = TxRecord(currency, subtotal_ccy, total_ccy, fees_ccy, dr)
+        tx_record = TxRecord(currency, price_ccy, subtotal_ccy, total_ccy, fees_ccy, dr)
 
         if dr.timestamp not in tx_times:
             tx_times[dr.timestamp] = []
@@ -148,6 +169,11 @@ def parse_coinbase_v1(
     for dr in data_rows:
         dr.timestamp = DataParser.parse_timestamp(dr.row_dict["Timestamp"])
         currency = parser.args[0].group(1)
+        price_ccy = DataParser.convert_currency(
+            re.sub(r"[^-\d.eE]+", "", dr.row_dict[parser.in_header[4]]),
+            currency,
+            dr.timestamp,
+        )
         subtotal_ccy = DataParser.convert_currency(
             dr.row_dict[f"{currency} Subtotal"], currency, dr.timestamp
         )
@@ -157,7 +183,7 @@ def parse_coinbase_v1(
         fees_ccy = DataParser.convert_currency(
             dr.row_dict[f"{currency} Fees"], currency, dr.timestamp
         )
-        tx_record = TxRecord(currency, subtotal_ccy, total_ccy, fees_ccy, dr)
+        tx_record = TxRecord(currency, price_ccy, subtotal_ccy, total_ccy, fees_ccy, dr)
 
         if dr.timestamp not in tx_times:
             tx_times[dr.timestamp] = []
@@ -351,7 +377,8 @@ def _do_parse_coinbase_row(
         )
     elif row_dict["Transaction Type"] in ("Send", "Retail MGX DEX Send"):
         # Crypto withdrawal
-        data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Notes"))
+        if "Recipient Address" not in parser.in_header:
+            data_row.tx_raw = TxRawPos(tx_dest_pos=parser.in_header.index("Notes"))
         data_row.t_record = TransactionOutRecord(
             TrType.WITHDRAWAL,
             data_row.timestamp,
@@ -478,6 +505,16 @@ def _do_parse_coinbase_row(
             sell_value=total_ccy,
             wallet=WALLET,
         )
+    elif row_dict["Transaction Type"] in (
+        "Raise Offering Pooling",
+        "Raise Offering Distribution",
+    ):
+        tx_rows = _get_tx_rows(
+            tx_times,
+            data_row.timestamp,
+            ("Raise Offering Pooling", "Raise Offering Distribution"),
+        )
+        _make_trade(tx_rows)
     elif row_dict["Transaction Type"] in ("Asset Migration", "Retail Eth2 Deprecation"):
         if Decimal(row_dict["Quantity Transacted"]) > 0:
             data_row.t_record = TransactionOutRecord(
@@ -510,6 +547,7 @@ def _do_parse_coinbase_row(
         "Transfer",
         "Retail Staking Transfer",
         "Retail Unstaking Transfer",
+        "Raise Offering Deposit",
     ):
         # Skip internal transfers
         return
@@ -607,14 +645,14 @@ def _make_trade(tx_rows: List[TxRecord], t_type: TrType = TrType.TRADE) -> None:
             if buy_quantity is None:
                 buy_quantity = Decimal(row_dict["Quantity Transacted"])
                 buy_asset = row_dict["Asset"]
-                buy_value = tx.subtotal_ccy if tx.subtotal_ccy is not None else None
+                buy_value = buy_quantity * tx.price_ccy if tx.price_ccy is not None else None
                 tx.data_row.parsed = True
 
         if Decimal(row_dict["Quantity Transacted"]) <= 0:
             if sell_quantity is None:
                 sell_quantity = abs(Decimal(row_dict["Quantity Transacted"]))
                 sell_asset = row_dict["Asset"]
-                sell_value = abs(tx.subtotal_ccy) if tx.subtotal_ccy is not None else None
+                sell_value = sell_quantity * tx.price_ccy if tx.price_ccy is not None else None
                 tx.data_row.parsed = True
 
             if tx.fees_ccy:
@@ -818,6 +856,29 @@ def parse_coinbase_transactions(
                 wallet=WALLET,
             )
 
+
+DataParser(
+    ParserType.EXCHANGE,
+    "Coinbase",
+    [
+        "ID",
+        "Timestamp",
+        "Transaction Type",
+        "Asset",
+        "Quantity Transacted",
+        "Price Currency",
+        "Price at Transaction",
+        "Subtotal",
+        "Total (inclusive of fees and/or spread)",
+        "Fees and/or Spread",
+        "Notes",
+        "Sender Address",  # Added
+        "Recipient Address",  # Added
+    ],
+    worksheet_name="Coinbase",
+    all_handler=parse_coinbase_v4,
+    newest_first=True,
+)
 
 DataParser(
     ParserType.EXCHANGE,
