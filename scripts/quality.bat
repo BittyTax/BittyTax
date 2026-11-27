@@ -6,7 +6,7 @@ call :run isort . ^
 && call :run flake8 . ^
 && call :run pylint --spelling-dict=en_GB . ^
 && call :run djlint --check . ^
-&& call :run mypy .
+&& call :run mypy --install-types --non-interactive .
 if errorlevel 1 exit /b %errorlevel%
 
 echo All quality checks passed.

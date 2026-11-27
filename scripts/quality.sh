@@ -11,6 +11,6 @@ run black .
 run flake8 .
 run pylint --spelling-dict=en_GB .
 run djlint --check .
-run mypy .
+run mypy --install-types --non-interactive .
 
 echo "All quality checks passed."
