@@ -68,7 +68,7 @@ The new `price_via_btc` config option may not exist in your config file. If it i
 - Price tool: added new data source CoinStats.
 - Config: added `coinstats_api_key` optional parameter, used to specify the API key for CoinStats data source.
 - Price tool: BittyTaxAPI supports optional API key authentication and adapts to rate-limit headers.
-- Coinbase parser: added the transaction history format with sender and recipient addresses, and Raise Offering transaction types.
+- Coinbase parser: added the transaction history format with sender and recipient addresses, and Raise Offering transaction types. ([#512](https://github.com/BittyTax/BittyTax/issues/512))
 ### Changed
 - Config: fiat_income to True.
 - Price tool: CoinDesk API deprecated.
