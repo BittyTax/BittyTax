@@ -90,7 +90,7 @@ def parse_coinbase_v3(
         dr.timestamp = DataParser.parse_timestamp(dr.row_dict["Timestamp"])
         currency = dr.row_dict["Spot Price Currency"]
         price_ccy = DataParser.convert_currency(
-            re.sub(r"[^-\d.eE]+", "", dr.row_dict["Spot Price at Transaction"]),
+            dr.row_dict["Spot Price at Transaction"],
             currency,
             dr.timestamp,
         )
@@ -130,7 +130,7 @@ def parse_coinbase_v2(
         dr.timestamp = DataParser.parse_timestamp(dr.row_dict["Timestamp"])
         currency = dr.row_dict["Spot Price Currency"]
         price_ccy = DataParser.convert_currency(
-            re.sub(r"[^-\d.eE]+", "", dr.row_dict["Spot Price at Transaction"]),
+            dr.row_dict["Spot Price at Transaction"],
             currency,
             dr.timestamp,
         )
@@ -170,9 +170,7 @@ def parse_coinbase_v1(
         dr.timestamp = DataParser.parse_timestamp(dr.row_dict["Timestamp"])
         currency = parser.args[0].group(1)
         price_ccy = DataParser.convert_currency(
-            re.sub(r"[^-\d.eE]+", "", dr.row_dict[parser.in_header[4]]),
-            currency,
-            dr.timestamp,
+            dr.row_dict[f"{currency} Spot Price at Transaction"], currency, dr.timestamp
         )
         subtotal_ccy = DataParser.convert_currency(
             dr.row_dict[f"{currency} Subtotal"], currency, dr.timestamp
@@ -536,10 +534,7 @@ def _do_parse_coinbase_row(
             )
     elif row_dict["Transaction Type"] == "Retail MGX DEX Buy":
         tx_rows = _get_tx_rows(tx_times, data_row.timestamp, (row_dict["Transaction Type"],))
-        _make_trade(
-            tx_rows,
-            TrType.TRADE,
-        )
+        _make_trade(tx_rows)
     elif row_dict["Transaction Type"] in (
         "Vault Withdrawal",
         "Cash to Savings",
